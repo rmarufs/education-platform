@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Каталог курсов — EduHub{% endblock %}
+
+{% block content %}
+<div class="catalog-page">
+
+  <!-- Заголовок и поиск -->
+  <div class="catalog-header">
+    <h1 data-i18n="catalog.title">📚 Курсы</h1>
+    <form action="/courses/catalog" method="GET" class="search-bar">
+      <input type="text" name="q" value="{{ q }}" class="form-input search-input"
+             placeholder="Поиск курсов..." data-i18n="catalog.search" data-i18n-prop="placeholder" />
+      <select name="category_id" class="form-input select-sm">
+        <option value="0" data-i18n="catalog.all_cat">Все категории</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {{ "selected" if selected_category == cat.id else "" }}>
+          {{ cat.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary" data-i18n="common.search_btn">🔍 Найти</button>
+      {% if q or selected_category %}
+      <a href="/courses/catalog" class="btn btn-outline" data-i18n="common.reset">Сброс</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Результат поиска -->
+  {% if q %}
+  <p class="search-result-info text-muted" data-i18n="catalog.results" data-i18n-params='{"q":"{{ q | e }}", "count":{{ courses | length }}}'>
+    Результаты по запросу: <strong>«{{ q }}»</strong> — {{ courses | length }} курс(ов)
+  </p>
+  {% endif %}
+
+  <!-- Список курсов -->
+  {% if courses %}
+  <div class="courses-grid">
+    {% for course in courses %}
+    <div class="course-card fade-in">
+      <div class="course-card-header">
+        <span class="course-icon">📖</span>
+        {% if course.category %}
+        <span class="category-badge">{{ course.category.name }}</span>
+        {% endif %}
+      </div>
+      <div class="course-card-body">
+        <h3 class="course-title">{{ course.title }}</h3>
+        <p class="course-desc">{{ course.description or "" }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
+        <div class="course-meta">
+          <span class="course-teacher">👨‍🏫 {{ course.teacher.name }}</span>
+          {% if course.rating > 0 %}
+          <span class="course-rating">⭐ {{ "%.1f"|format(course.rating) }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="course-card-footer">
+        <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="catalog.open">Открыть →</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon">🔍</span>
+    {% if q %}
+    <p data-i18n="catalog.empty_q" data-i18n-params='{"q":"{{ q | e }}"}'>Ничего не найдено по запросу «{{ q }}»</p>
+    {% else %}
+    <p data-i18n="catalog.empty">Курсов пока нет</p>
+    {% endif %}
+    {% if q %}
+    <a href="/courses/catalog" class="btn btn-outline" data-i18n="catalog.view_all">Посмотреть все курсы</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

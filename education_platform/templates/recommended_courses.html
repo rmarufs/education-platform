@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Рекомендованные курсы — EduHub{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 40px;">
+    
+    <div style="background: linear-gradient(135deg, #10b981, #047857); color: white; padding: 40px; border-radius: 16px; margin-bottom: 40px; text-align: center;">
+        <h1 style="color: white; margin-bottom: 10px;" data-i18n="rec.title">Recommended Courses</h1>
+        <p style="font-size: 1.2rem; max-width: 600px; margin: 0 auto; opacity: 0.9;">
+            <span data-i18n="rec.level">Ваш текущий уровень:</span> <strong style="color: #fef08a; font-size: 1.3rem;">{{ user.level }}</strong>.
+            <span data-i18n="rec.desc">Мы подобрали для вас программы, которые идеально соответствуют вашим знаниям и целям.</span>
+        </p>
+    </div>
+
+    {% if courses %}
+    <div class="courses-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+        {% for course in courses %}
+        <div class="course-card fade-in">
+            <div class="course-card-header" style="background: url('https://source.unsplash.com/random/400x200/?education,book') center/cover;">
+                <span class="course-badge" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">{{ course.level }}</span>
+            </div>
+            <div class="course-card-body">
+                <h3 class="course-title">{{ course.title }}</h3>
+                <p class="course-desc">{{ course.description or "" }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 0.9rem; color: #64748b;">
+                    <span>👨‍🏫 {{ course.teacher.name }}</span>
+                    <span>⭐ {% if course.rating %}{{ "%.1f"|format(course.rating) }}{% else %}<span data-i18n="common.no_rating">Нет оценок</span>{% endif %}</span>
+                </div>
+            </div>
+            <div class="course-card-footer">
+                <a href="/courses/{{ course.id }}" class="btn btn-primary btn-full" data-i18n="rec.go_course">Перейти к курсу</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-icon">📂</span>
+        <p data-i18n="rec.empty_p1">К сожалению, подходящих курсов пока нет. Попробуйте изучить полный каталог.</p>
+        <a href="/courses/catalog" class="btn btn-primary" style="margin-top: 15px;" data-i18n="rec.full_cat">Полный каталог</a>
+    </div>
+    {% endif %}
+    
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="/dashboard/student" class="btn btn-outline" data-i18n="common.back_cab">Вернуться в кабинет</a>
+    </div>
+</div>
+{% endblock %}

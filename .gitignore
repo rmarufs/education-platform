@@ -1,0 +1,46 @@
+# ── Python ──────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Виртуальное окружение ────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ── Переменные окружения (секреты) ──────────────
+.env
+.env.local
+.env.*.local
+
+# ── База данных ──────────────────────────────────
+data/database.db
+*.db
+*.sqlite3
+
+# ── IDE / редакторы ──────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Логи ────────────────────────────────────────
+*.log
+logs/
+
+# ── Pytest / Coverage ────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Uploads ─────────────────────────────────────
+education_platform/static/uploads/

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru" data-lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" data-i18n="base.description" content="EduHub — современная образовательная платформа для студентов и преподавателей" />
+    <title data-i18n-title="{% block title_key %}nav.home{% endblock %}">{% block title %}EduHub{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <!-- Навигационная панель -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">EduHub</span>
+            </a>
+
+            <div class="nav-links">
+                {% if user %}
+                    <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name": "{{ user.name }}"}'>
+                        Привет, {{ user.name }}
+                    </span>
+                    <a href="/dashboard" class="btn btn-secondary" data-i18n="nav.dashboard">Кабинет</a>
+                    <a href="/logout" class="btn btn-outline" data-i18n="nav.logout">Выйти</a>
+                {% else %}
+                    <a href="/login" class="btn btn-secondary" data-i18n="nav.login">Войти</a>
+                    <a href="/register" class="btn btn-primary" data-i18n="nav.register">Регистрация</a>
+                {% endif %}
+
+                <!-- Переключатель языка -->
+                <div class="lang-switcher">
+                    <button class="lang-btn active" id="lang-ru" onclick="setLang('ru')">RU</button>
+                    <span class="lang-divider">|</span>
+                    <button class="lang-btn" id="lang-tj" onclick="setLang('tj')">TJ</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент страницы -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Подвал -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>© 2024 EduHub. <span data-i18n="footer.rights">Все права защищены.</span></p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/courses.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

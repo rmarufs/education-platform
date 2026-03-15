@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Определение уровня — EduHub{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 40px auto;">
+    <div style="background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <h1 style="margin-bottom: 20px;" data-i18n="ass.title">Добро пожаловать!</h1>
+        <p style="font-size: 1.1rem; color: #4b5563; margin-bottom: 30px;" data-i18n="ass.subtitle">
+            Чтобы предложить вам наиболее подходящие курсы, пожалуйста, ответьте на несколько коротких вопросов. Это поможет определить ваш текущий уровень подготовки.
+        </p>
+
+        <form action="/assessment" method="POST">
+            <!-- Вопрос 1 -->
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: block;" data-i18n="ass.q1">1. Как вы оцениваете свой текущий уровень по математике?</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q1" value="1" required style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q1_1">Я плохо понимаю базовые темы</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q1" value="2" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q1_2">Понимаю основы, но решаю задачи с трудом</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q1" value="3" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q1_3">Средний уровень, могу решать многие задачи</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q1" value="4" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q1_4">Хороший уровень, готовлюсь к сложным задачам тестирования</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 2 -->
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: block;" data-i18n="ass.q2">2. Насколько уверенно вы решаете задачи из национального тестирования?</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q2" value="1" required style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q2_1">Почти не могу решать</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q2" value="2" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q2_2">Иногда могу решить простые</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q2" value="3" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q2_3">Могу решать средние задачи</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q2" value="4" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q2_4">Уверенно решаю большинство задач</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 3 -->
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: block;" data-i18n="ass.q3">3. Сколько времени вы уже готовитесь к поступлению?</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q3" value="1" required style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q3_1">Ещё не начинал</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q3" value="2" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q3_2">Менее 3 месяцев</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q3" value="3" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q3_3">3–6 месяцев</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q3" value="4" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q3_4">Более 6 месяцев</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 4 -->
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: block;" data-i18n="ass.q4">4. Какая цель обучения для вас сейчас?</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q4" value="1" required style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q4_1">Понять базовые темы</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q4" value="2" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q4_2">Подтянуть школьную программу</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q4" value="3" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q4_3">Подготовиться к тестированию</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q4" value="4" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q4_4">Улучшить результаты и решать сложные задачи</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 5 -->
+            <div class="form-group" style="margin-bottom: 40px;">
+                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: block;" data-i18n="ass.q5">5. Сколько времени в неделю вы готовы уделять обучению?</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q5" value="1" required style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q5_1">1–2 часа</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q5" value="2" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q5_2">3–5 часов</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q5" value="3" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q5_3">6–10 часов</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="q5" value="4" style="width: 18px; height: 18px;">
+                        <span data-i18n="ass.q5_4">Более 10 часов</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="font-size: 1.1rem; padding: 12px;" data-i18n="ass.submit">Завершить и посмотреть подходящие курсы</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
