@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Кабинет преподавателя — EduHub{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Боковая панель -->
+    <aside class="sidebar">
+        <div class="sidebar-profile">
+            <div class="avatar">{{ user.name[0].upper() }}</div>
+            <div class="profile-info">
+                <h3>{{ user.name }}</h3>
+                <span class="role-badge role-teacher" data-i18n="role.teacher">Преподаватель</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard/teacher" class="sidebar-link active">
+                <span class="link-icon">📋</span>
+                <span data-i18n="nav.my_courses">Мои курсы</span>
+            </a>
+            <a href="/logout" class="sidebar-link">
+                <span class="link-icon">🚪</span>
+                <span data-i18n="nav.logout">Выйти</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Основной контент -->
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1>
+                    <span data-i18n="teacher.welcome">Добро пожаловать,</span>
+                    {{ user.name }}!
+                </h1>
+                <p data-i18n="teacher.subtitle">Управляйте своими курсами и помогайте студентам учиться</p>
+            </div>
+            <button class="btn btn-primary" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
+                + Создать курс
+            </button>
+        </div>
+
+        <!-- Список курсов преподавателя -->
+        <section>
+            <div class="section-label" data-i18n="teacher.my_courses">Мои курсы</div>
+
+            {% if courses %}
+            <div class="courses-grid">
+                {% for course in courses %}
+                <div class="course-card fade-in" id="course-card-{{ course.id }}">
+                    <div class="course-card-header">
+                        <span class="course-icon">📖</span>
+                    </div>
+                    <div class="course-card-body">
+                        <h3 class="course-title">{{ course.title }}</h3>
+                        <p class="course-desc">{{ course.description or "Нет описания" }}</p>
+                        <div class="course-meta">
+                            <span class="course-date">📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
+                        </div>
+                    </div>
+                    <div class="course-card-footer teacher-actions">
+                        <a href="/courses/{{ course.id }}" class="btn btn-secondary btn-sm" data-i18n="course.view">Просмотр</a>
+                        <!-- data-* атрибуты безопасны с любыми символами (кавычки, кириллица и т.д.) -->
+                        <button
+                            class="btn btn-outline btn-sm edit-course-btn"
+                            data-course-id="{{ course.id }}"
+                            data-course-title="{{ course.title | e }}"
+                            data-course-description="{{ course.description | e }}"
+                            data-course-category="{{ course.category_id or 0 }}"
+                            data-course-level="{{ course.level or 'Beginner' }}"
+                            data-i18n="course.edit"
+                        >Изменить</button>
+                        <button
+                            class="btn btn-danger btn-sm delete-course-btn"
+                            data-course-id="{{ course.id }}"
+                            data-i18n="course.delete"
+                        >Удалить</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">📝</span>
+                <p data-i18n="teacher.no_courses">У вас пока нет курсов. Создайте первый!</p>
+                <button class="btn btn-primary" onclick="openCreateModal()" data-i18n="teacher.add_course">
+                    Создать курс
+                </button>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<!-- Модальное окно: Создание курса -->
+<div class="modal-overlay" id="create-modal" onclick="closeModal('create-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 data-i18n="teacher.create_course">Создать новый курс</h2>
+            <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
+        </div>
+        <form id="create-course-form" action="/courses/create" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="new-title" data-i18n="course.title">Название курса</label>
+                <input type="text" id="new-title" name="title" class="form-input" required
+                    placeholder="Например: Основы Python" />
+            </div>
+            <div class="form-group">
+                <label for="new-description" data-i18n="course.description">Описание</label>
+                <textarea id="new-description" name="description" class="form-input form-textarea"
+                    placeholder="Краткое описание курса..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="new-category" data-i18n="course.category">Категория</label>
+                <select id="new-category" name="category_id" class="form-input">
+                    <option value="0">— Без категории —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="new-level" data-i18n="course.level">Уровень курса</label>
+                <select id="new-level" name="level" class="form-input">
+                    <option value="Beginner" selected>Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="new-files" data-i18n="course.files">Материалы курса (PDF, DOCX, PPTX)</label>
+                <input type="file" id="new-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('create-modal')" data-i18n="action.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="action.create">Создать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно: Редактирование курса -->
+<div class="modal-overlay" id="edit-modal" onclick="closeModal('edit-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 data-i18n="teacher.edit_course">Редактировать курс</h2>
+            <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+        </div>
+        <form id="edit-course-form" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="edit-title" data-i18n="course.title">Название курса</label>
+                <input type="text" id="edit-title" name="title" class="form-input" required />
+            </div>
+            <div class="form-group">
+                <label for="edit-description" data-i18n="course.description">Описание</label>
+                <textarea id="edit-description" name="description" class="form-input form-textarea"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-category" data-i18n="course.category">Категория</label>
+                <select id="edit-category" name="category_id" class="form-input">
+                    <option value="0">— Без категории —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-level" data-i18n="course.level">Уровень курса</label>
+                <select id="edit-level" name="level" class="form-input">
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-files" data-i18n="manage.materials">Добавить материалы (PDF, DOCX, PPTX)</label>
+                <input type="file" id="edit-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('edit-modal')" data-i18n="action.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="action.save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

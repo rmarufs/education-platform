@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title_key %}profile.title{% endblock %}
+{% block title %}Профиль — {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+  <!-- Шапка профиля -->
+  <div class="profile-header fade-in">
+    <div class="profile-avatar">{{ user.name[0].upper() }}</div>
+    <div class="profile-info">
+      <h1>{{ user.name }}</h1>
+      <span class="role-badge {{ 'role-teacher' if user.role.value == 'teacher' else 'role-student' }}">
+        {% if user.role.value == "teacher" %}
+          <span data-i18n="profile.teacher">👨‍🏫 Преподаватель</span>
+        {% else %}
+          <span data-i18n="profile.student">👩‍🎓 Студент</span>
+        {% endif %}
+      </span>
+      <p class="text-muted">{{ user.email }}</p>
+    </div>
+    <a href="{{ '/dashboard/teacher' if user.role.value == 'teacher' else '/dashboard/student' }}"
+       class="btn btn-outline" data-i18n="profile.my_cab">Мой кабинет</a>
+  </div>
+
+  <!-- TEACHER: Мои курсы -->
+  {% if user.role.value == "teacher" %}
+  <section class="profile-section">
+    <div class="section-label" data-i18n="profile.my_courses" data-i18n-params='{"count": {{ courses | length }}}'>📚 Мои курсы ({{ courses | length }})</div>
+    {% if courses %}
+    <div class="courses-grid">
+      {% for course in courses %}
+      <div class="course-card fade-in">
+        <div class="course-card-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">
+            {% set total = namespace(n=0) %}
+            {% for m in course.modules %}{% set total.n = total.n + m.lessons|length %}{% endfor %}
+            <span data-i18n="profile.course_stat" data-i18n-params='{"modules": {{ course.modules|length }}, "lessons": {{ total.n }}}'>{{ course.modules|length }} модул(ей) · {{ total.n }} урок(ов)</span>
+          </p>
+          {% if course.rating > 0 %}
+          <div class="course-meta">⭐ {{ "%.1f"|format(course.rating) }}</div>
+          {% endif %}
+        </div>
+        <div class="course-card-footer">
+          <a href="/courses/{{ course.id }}" class="btn btn-secondary btn-sm" data-i18n="course.view">Просмотр</a>
+          <a href="/courses/{{ course.id }}/manage" class="btn btn-outline btn-sm" data-i18n="teacher.manage">Управление</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">📝</span>
+      <p data-i18n="profile.no_created">Вы ещё не создали ни одного курса</p>
+      <a href="/dashboard/teacher" class="btn btn-primary" data-i18n="profile.create_btn">Создать курс</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- STUDENT: Прогресс -->
+  {% elif user.role.value == "student" %}
+  <section class="profile-section">
+    <div class="section-label" data-i18n="profile.my_progress">📈 Мой прогресс</div>
+    {% if courses_with_progress %}
+    <div class="progress-list">
+      {% for item in courses_with_progress %}
+      <div class="progress-item fade-in">
+        <div class="progress-item-header">
+          <a href="/courses/{{ item.course.id }}" class="progress-course-title">
+            {{ item.course.title }}
+          </a>
+          <span class="progress-pct">{{ item.percent }}%</span>
+        </div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" style="width: {{ item.percent }}%;"></div>
+        </div>
+        <p class="text-muted" data-i18n="profile.passed_of" data-i18n-params='{"done": {{ item.done }}, "total": {{ item.total }}}'>{{ item.done }} / {{ item.total }} уроков пройдено</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">🎯</span>
+      <p data-i18n="profile.no_started">Вы ещё не начали ни одного курса</p>
+      <a href="/courses/catalog" class="btn btn-primary" data-i18n="profile.find_courses">Найти курсы</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Мои отзывы -->
+  {% if reviews %}
+  <section class="profile-section">
+    <div class="section-label" data-i18n="profile.my_reviews">⭐ Мои отзывы</div>
+    <div class="reviews-list">
+      {% for review in reviews %}
+      <div class="review-card">
+        <div class="review-stars">{{ "⭐" * review.rating }}</div>
+        {% if review.text %}
+        <p>{{ review.text }}</p>
+        {% endif %}
+        <span class="text-muted">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

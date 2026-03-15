@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title_key %}home.popular_courses{% endblock %}
+{% block title %}Популярные курсы — EduHub{% endblock %}
+
+{% block content %}
+<!-- Hero секция -->
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title" data-i18n="hero.title">Учись. Развивайся. Достигай.</h1>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">
+            Современная платформа для студентов и преподавателей.
+            Открой доступ к знаниям прямо сейчас.
+        </p>
+        <div class="hero-actions">
+            <a href="/register" class="btn btn-primary btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
+            <a href="/login" class="btn btn-outline btn-lg" data-i18n="hero.cta_login">Войти в аккаунт</a>
+        </div>
+    </div>
+    <div class="hero-illustration">
+        <div class="hero-card floating">
+            <span class="hero-card-icon">📚</span>
+            <span data-i18n="hero.card1">Качественные курсы</span>
+        </div>
+        <div class="hero-card floating delay-1">
+            <span class="hero-card-icon">🏆</span>
+            <span data-i18n="hero.card2">Достижения</span>
+        </div>
+        <div class="hero-card floating delay-2">
+            <span class="hero-card-icon">👩‍🏫</span>
+            <span data-i18n="hero.card3">Лучшие преподаватели</span>
+        </div>
+    </div>
+</section>
+
+<!-- Статистика платформы -->
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-number">500+</span>
+            <span class="stat-label" data-i18n="stats.students">Студентов</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">50+</span>
+            <span class="stat-label" data-i18n="stats.courses">Курсов</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">30+</span>
+            <span class="stat-label" data-i18n="stats.teachers">Преподавателей</span>
+        </div>
+    </div>
+</section>
+
+<!-- Популярные курсы -->
+<section class="courses-section">
+    <div class="section-header">
+        <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
+        <p data-i18n="home.popular_courses_sub">Начни обучение с лучших программ нашей платформы</p>
+    </div>
+
+    <div class="courses-grid" id="courses-grid">
+        {% if courses %}
+            {% for course in courses %}
+            <div class="course-card fade-in">
+                <div class="course-card-header">
+                    <span class="course-icon">📖</span>
+                </div>
+                <div class="course-card-body">
+                    <h3 class="course-title">{{ course.title }}</h3>
+                    <p class="course-desc">{% if course.description %}{{ course.description }}{% else %}<span data-i18n="course.no_description">Нет описания</span>{% endif %}</p>
+                    <div class="course-meta">
+                        <span class="course-teacher">👨‍🏫 {{ course.teacher.name }}</span>
+                        <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
+                    </div>
+                </div>
+                <div class="course-card-footer">
+                    <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="course.open">Открыть курс</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-icon">📭</span>
+                <p data-i18n="home.no_courses">Курсы пока не добавлены. Зарегистрируйся как преподаватель и создай первый!</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- О платформе -->
+<section class="features-section">
+    <div class="section-header">
+        <h2 data-i18n="home.why_us">Почему EduHub?</h2>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3 data-i18n="feature.fast">Быстрый старт</h3>
+            <p data-i18n="feature.fast_desc">Зарегистрируйся за пару минут и сразу начинай обучение</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3 data-i18n="feature.focused">Целевое обучение</h3>
+            <p data-i18n="feature.focused_desc">Чёткие курсы от опытных преподавателей без лишней воды</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💡</div>
+            <h3 data-i18n="feature.simple">Простой интерфейс</h3>
+            <p data-i18n="feature.simple_desc">Удобная платформа без лишней сложности</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

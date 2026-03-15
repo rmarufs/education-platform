@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — EduHub{% endblock %}
+
+{% block content %}
+<div class="course-detail-page">
+  <div class="breadcrumb">
+    <a href="/" data-i18n="course_page.breadcrumbs_home">Главная</a> <span>›</span>
+    <a href="/courses/catalog" data-i18n="course_page.breadcrumbs_cat">Курсы</a> <span>›</span>
+    <span>{{ course.title }}</span>
+  </div>
+
+  <div class="course-detail-layout">
+
+    <!-- Основная информация -->
+    <div class="course-detail-main">
+      <div class="course-detail-hero">
+        <div class="course-hero-icon">📖</div>
+        <div class="course-hero-meta">
+          {% if course.category %}
+          <span class="category-badge">{{ course.category.name }}</span>
+          {% endif %}
+          <h1 class="course-detail-title">{{ course.title }}</h1>
+          <div class="course-detail-info">
+            <span>👨‍🏫 {{ course.teacher.name }}</span>
+            <span>📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
+            {% if course.rating > 0 %}
+            <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ course.reviews|length }}}'>({{ course.reviews|length }} отзыв(ов))</span></span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Описание -->
+      {% if course.description %}
+      <div class="course-detail-body">
+        <h2 data-i18n="course_page.about">О курсе</h2>
+        <p>{{ course.description }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Материалы курса -->
+      {% if course.materials and user and (user.role.value == "teacher" or user.role.value == "student") %}
+      <div class="course-detail-materials" style="margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1rem; color: #334155;" data-i18n="course_page.materials">📎 Материалы курса</h3>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+          {% for mat in course.materials %}
+          <li style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <span style="font-size: 1.2rem;">{{ "📄" if mat.file_type in ["pdf", "doc", "docx"] else "📊" if mat.file_type in ["ppt", "pptx"] else "📎" }}</span>
+            <a href="{{ mat.file_url }}" target="_blank" style="text-decoration: none; color: #2563eb; font-weight: 500; flex-grow: 1;">{{ mat.title }}</a>
+            <span style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase;">{{ mat.file_type }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Прогресс студента -->
+      {% if user and user.role.value == "student" and course.modules %}
+      <div class="course-progress-bar-wrap">
+        <div class="progress-label" data-i18n="course_page.progress" data-i18n-params='{"pct":{{ completion_pct }}}'>Прогресс: {{ completion_pct }}%</div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" style="width:{{ completion_pct }}%"></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Структура курса -->
+      {% if course.modules %}
+      <section class="course-curriculum">
+        <h2 data-i18n="course_page.content">Содержание курса</h2>
+        {% for module in course.modules %}
+        <div class="curriculum-module">
+          <div class="curriculum-module-header">
+            <span class="module-index">{{ loop.index }}</span>
+            <strong>{{ module.title }}</strong>
+            <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
+          </div>
+          <ul class="curriculum-lessons">
+            {% for lesson in module.lessons %}
+            <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
+              <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
+              {% if user %}
+              <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
+              {% else %}
+              <span>{{ lesson.title }}</span>
+              {% endif %}
+              {% if lesson.quiz %}
+              <span class="badge badge-quiz">Квиз</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      <!-- Отзывы -->
+      {% if course.reviews %}
+      <section class="course-reviews">
+        <h2 data-i18n="course_page.reviews" data-i18n-params='{"count":{{ course.reviews|length }}}'>⭐ Отзывы ({{ course.reviews|length }})</h2>
+        <div class="reviews-list">
+          {% for review in course.reviews %}
+          <div class="review-card">
+            <div class="review-header">
+              <span class="avatar-xs">{{ review.student.name[0].upper() }}</span>
+              <strong>{{ review.student.name }}</strong>
+              <span class="review-stars">{{ "⭐" * review.rating }}</span>
+              <span class="text-muted">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
+            </div>
+            {% if review.text %}
+            <p class="review-text">{{ review.text }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- Форма отзыва для студента -->
+      {% if user and user.role.value == "student" %}
+      <section class="leave-review">
+        <h3 data-i18n="{% if user_review %}course_page.edit_review{% else %}course_page.leave_review{% endif %}">{{ "Изменить отзыв" if user_review else "Оставить отзыв" }}</h3>
+        <form action="/courses/{{ course.id }}/review" method="POST" class="review-form">
+          <div class="star-rating-custom">
+            {% for i in [5,4,3,2,1] %}
+            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}"
+                   {{ "checked" if user_review and user_review.rating == i else "" }} required />
+            <label for="star{{ i }}" title="{{ i }} звезды">★</label>
+            {% endfor %}
+          </div>
+          <textarea name="text" class="form-input" rows="3"
+                    data-i18n="course_page.review_ph" data-i18n-prop="placeholder"
+                    placeholder="Ваш отзыв о курсе...">{{ user_review.text if user_review else "" }}</textarea>
+          <button type="submit" class="btn btn-primary btn-sm" data-i18n="course_page.send_review">Отправить отзыв</button>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+
+    <!-- Боковая карточка -->
+    <aside class="course-detail-sidebar">
+      <div class="course-sidebar-card">
+        <div class="sidebar-card-header">
+          <span class="course-icon-lg">📚</span>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="sidebar-info-item">
+            <span class="info-label" data-i18n="course_page.teacher">Преподаватель</span>
+            <span class="info-value">{{ course.teacher.name }}</span>
+          </div>
+          <div class="sidebar-info-item">
+            <span class="info-label" data-i18n="course_page.modules_count">Модулей</span>
+            <span class="info-value">{{ course.modules|length }}</span>
+          </div>
+          <div class="sidebar-info-item">
+            <span class="info-label" data-i18n="course_page.created">Создан</span>
+            <span class="info-value">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
+          </div>
+          {% if course.rating > 0 %}
+          <div class="sidebar-info-item">
+            <span class="info-label" data-i18n="course_page.rating">Рейтинг</span>
+            <span class="info-value">⭐ {{ "%.1f"|format(course.rating) }}</span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="sidebar-card-footer">
+          {% if not user %}
+            <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать обучение</a>
+            <a href="/login" class="btn btn-outline btn-full" style="margin-top:8px" data-i18n="course_page.login_btn">Войти</a>
+          {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
+            <a href="/courses/{{ course.id }}/manage" class="btn btn-primary btn-full" data-i18n="course_page.gear_manage">⚙️ Управление</a>
+          {% else %}
+            <div class="enrolled-badge">
+              <span>✅</span><span data-i18n="course_page.avail">Курс доступен вам</span>
+            </div>
+            {% if course.modules and course.modules[0].lessons %}
+            <a href="/lessons/{{ course.modules[0].lessons[0].id }}"
+               class="btn btn-primary btn-full" style="margin-top:8px" data-i18n="course_page.start_continue">
+               ▶ Начать / Продолжить
+            </a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
