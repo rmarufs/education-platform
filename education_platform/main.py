@@ -13,7 +13,8 @@ from app.models.course import Course
 from app.models.module import Module
 from app.models.user import User
 from app.routers import auth, users, courses
-from app.routers import modules, lessons, quizzes, reviews, comments, profile
+from app.routers import modules, lessons, quizzes, reviews, comments, profile, pages
+from app.routers import admin
 
 # Создаём папку data если её нет
 os.makedirs("data", exist_ok=True)
@@ -38,6 +39,8 @@ app.include_router(quizzes.router)
 app.include_router(reviews.router)
 app.include_router(comments.router)
 app.include_router(profile.router)
+app.include_router(pages.router)
+app.include_router(admin.router)
 
 
 # ── Главная страница ─────────────────────────────────────────────────────────

@@ -32,6 +32,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
     if user.role.value == "teacher":
         return RedirectResponse("/dashboard/teacher", status_code=302)
+    if user.role.value == "teacher_pending":
+        return RedirectResponse("/register/pending", status_code=302)
+    if user.role.value == "admin":
+        return RedirectResponse("/admin", status_code=302)
     return RedirectResponse("/dashboard/student", status_code=302)
 
 
@@ -149,7 +153,9 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
     user, redirect = require_login(request, db)
     if redirect:
         return redirect
-    if user.role.value != "teacher":
+    if user.role.value not in ("teacher", "admin"):
+        if user.role.value == "teacher_pending":
+            return RedirectResponse("/register/pending", status_code=302)
         return RedirectResponse("/dashboard/student", status_code=302)
 
     # Только курсы этого преподавателя (teacher уже загружен, eager load не нужен)

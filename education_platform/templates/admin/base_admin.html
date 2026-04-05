@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Админ-панель{% endblock %} — EduHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/admin.css?v=1" />
+</head>
+<body>
+    <div class="admin-layout">
+
+        <!-- Мобильная кнопка -->
+        <button class="admin-hamburger" onclick="toggleAdminSidebar()" id="admin-hamburger">☰</button>
+
+        <!-- Overlay для мобильного -->
+        <div class="admin-sidebar-overlay" id="admin-overlay" onclick="toggleAdminSidebar()"></div>
+
+        <!-- Боковая панель -->
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <a href="/admin" class="admin-sidebar-logo">
+                <span class="logo-icon">🎓</span>
+                <div>
+                    <div class="logo-label">EduHub</div>
+                    <div class="logo-sub">Панель управления</div>
+                </div>
+            </a>
+
+            <nav class="admin-nav">
+                <a href="/admin" class="admin-nav-link {% if request.url.path == '/admin' %}active{% endif %}">
+                    <span class="nav-icon">📊</span> Главная
+                </a>
+                <a href="/admin/teachers" class="admin-nav-link {% if '/admin/teachers' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">👨‍🏫</span> Заявки
+                    {% if pending_count is defined and pending_count > 0 %}
+                    <span class="admin-nav-badge">{{ pending_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="/admin/users" class="admin-nav-link {% if '/admin/users' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">👥</span> Пользователи
+                </a>
+                <a href="/admin/courses" class="admin-nav-link {% if '/admin/courses' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">📚</span> Курсы
+                </a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <a href="/" class="admin-back-link">
+                    <span>←</span> Вернуться на сайт
+                </a>
+            </div>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="admin-main">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>
+
+    <script>
+    function toggleAdminSidebar() {
+        const sidebar = document.getElementById('admin-sidebar');
+        const overlay = document.getElementById('admin-overlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

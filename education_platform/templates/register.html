@@ -15,7 +15,7 @@
         <div class="alert alert-error" id="error-msg">{{ error }}</div>
         {% endif %}
 
-        <form id="register-form" action="/register" method="POST" class="auth-form" novalidate>
+        <form id="register-form" action="/register" method="POST" class="auth-form" enctype="multipart/form-data" novalidate>
             <div class="form-group">
                 <label for="name" data-i18n="form.name">Ваше имя</label>
                 <input
@@ -69,16 +69,33 @@
                 <label data-i18n="form.role">Я являюсь</label>
                 <div class="role-selector">
                     <label class="role-option" id="role-student-label">
-                        <input type="radio" name="role" value="student" id="role-student" checked />
+                        <input type="radio" name="role" value="student" id="role-student" checked onchange="toggleDocumentField()" />
                         <span class="role-icon">👨‍🎓</span>
                         <span data-i18n="role.student">Студент</span>
                     </label>
                     <label class="role-option" id="role-teacher-label">
-                        <input type="radio" name="role" value="teacher" id="role-teacher" />
+                        <input type="radio" name="role" value="teacher" id="role-teacher" onchange="toggleDocumentField()" />
                         <span class="role-icon">👨‍🏫</span>
                         <span data-i18n="role.teacher">Преподаватель</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Поле загрузки документа (только для преподавателей) -->
+            <div class="form-group" id="document-field" style="display:none;">
+                <label for="document">📎 Документ (диплом, сертификат)</label>
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 8px;">
+                    Загрузите PDF-файл, подтверждающий вашу квалификацию. Это обязательное условие для преподавателей.
+                </p>
+                <input
+                    type="file"
+                    id="document"
+                    name="document"
+                    accept=".pdf"
+                    class="form-input"
+                    style="padding:10px;cursor:pointer;"
+                />
+                <span class="form-error" id="document-error"></span>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" data-i18n="register.submit">
@@ -94,4 +111,51 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleDocumentField() {
+    const teacherRadio = document.getElementById('role-teacher');
+    const docField = document.getElementById('document-field');
+    const docInput = document.getElementById('document');
+
+    if (teacherRadio.checked) {
+        docField.style.display = 'block';
+        docInput.setAttribute('required', 'required');
+    } else {
+        docField.style.display = 'none';
+        docInput.removeAttribute('required');
+        docInput.value = '';
+    }
+}
+
+// Валидация перед отправкой
+document.getElementById('register-form').addEventListener('submit', function(e) {
+    const teacherRadio = document.getElementById('role-teacher');
+    const docInput = document.getElementById('document');
+    const docError = document.getElementById('document-error');
+
+    if (teacherRadio.checked && !docInput.files.length) {
+        e.preventDefault();
+        docError.textContent = 'Пожалуйста, загрузите документ (PDF)';
+        docField.scrollIntoView({behavior: 'smooth'});
+        return;
+    }
+
+    if (teacherRadio.checked && docInput.files[0]) {
+        const file = docInput.files[0];
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            e.preventDefault();
+            docError.textContent = 'Документ должен быть в формате PDF';
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            e.preventDefault();
+            docError.textContent = 'Размер файла не должен превышать 10 МБ';
+            return;
+        }
+    }
+
+    docError.textContent = '';
+});
+</script>
 {% endblock %}

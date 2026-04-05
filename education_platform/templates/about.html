@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}О нас — EduHub{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#3b82f6 100%);color:#fff;padding:80px 24px;text-align:center;">
+  <h1 style="font-size:2.75rem;font-weight:700;margin-bottom:16px;animation:fadeInUp .6s ease both;">Мы делаем обучение доступным для каждого</h1>
+  <p style="font-size:1.15rem;opacity:.88;max-width:600px;margin:0 auto;animation:fadeInUp .6s .15s ease both;">EduHub — платформа, где студенты находят качественные курсы, а преподаватели делятся знаниями.</p>
+</section>
+
+<!-- Наша миссия -->
+<section style="max-width:800px;margin:0 auto;padding:64px 24px;text-align:center;" class="reveal">
+  <h2 style="font-size:1.875rem;font-weight:700;margin-bottom:16px;">🎯 Наша миссия</h2>
+  <p style="font-size:1.05rem;color:var(--text-muted);line-height:1.8;">
+    Мы верим, что образование — это право каждого человека. Наша миссия — создать среду,
+    где каждый может учиться в своём темпе, получить поддержку от лучших преподавателей
+    и достичь своих целей. Мы стремимся устранить любые барьеры на пути к знаниям.
+  </p>
+</section>
+
+<!-- Наши цифры -->
+<section style="background:var(--white);padding:60px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div style="max-width:700px;margin:0 auto;">
+    <h2 style="text-align:center;font-size:1.875rem;font-weight:700;margin-bottom:40px;" class="reveal">📊 Наши цифры</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center;" id="counters-grid">
+      <div class="reveal">
+        <span class="counter" data-target="500" style="font-size:2.5rem;font-weight:700;color:var(--primary);display:block;">0</span>
+        <span style="font-size:.9rem;color:var(--text-muted);font-weight:500;">Студентов</span>
+      </div>
+      <div class="reveal">
+        <span class="counter" data-target="50" style="font-size:2.5rem;font-weight:700;color:var(--primary);display:block;">0</span>
+        <span style="font-size:.9rem;color:var(--text-muted);font-weight:500;">Курсов</span>
+      </div>
+      <div class="reveal">
+        <span class="counter" data-target="20" style="font-size:2.5rem;font-weight:700;color:var(--primary);display:block;">0</span>
+        <span style="font-size:.9rem;color:var(--text-muted);font-weight:500;">Преподавателей</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Наша команда -->
+<section style="max-width:900px;margin:0 auto;padding:64px 24px;">
+  <h2 style="text-align:center;font-size:1.875rem;font-weight:700;margin-bottom:40px;" class="reveal">👥 Наша команда</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;">
+    {% for member in [
+      {"name":"Анвар Саидов","role":"Основатель и CEO","initial":"А"},
+      {"name":"Мадина Каримова","role":"Ведущий разработчик","initial":"М"},
+      {"name":"Фарход Назаров","role":"Дизайнер UX/UI","initial":"Ф"},
+      {"name":"Лола Рахимова","role":"Контент-менеджер","initial":"Л"}
+    ] %}
+    <div class="reveal" style="text-align:center;padding:32px 20px;background:var(--white);border-radius:12px;border:1px solid var(--border);transition:var(--transition);">
+      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:700;margin:0 auto 16px;">{{ member.initial }}</div>
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px;">{{ member.name }}</h3>
+      <p style="font-size:.85rem;color:var(--text-muted);">{{ member.role }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Наши ценности -->
+<section style="background:var(--white);padding:64px 24px;border-top:1px solid var(--border);">
+  <div style="max-width:900px;margin:0 auto;">
+    <h2 style="text-align:center;font-size:1.875rem;font-weight:700;margin-bottom:40px;" class="reveal">💎 Наши ценности</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;">
+      {% for val in [
+        {"icon":"<svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='#2563eb' stroke-width='2'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>","title":"Доступность","desc":"Образование для всех, независимо от местоположения и бюджета."},
+        {"icon":"<svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='#2563eb' stroke-width='2'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>","title":"Качество","desc":"Тщательный отбор курсов и постоянное улучшение контента."},
+        {"icon":"<svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='#2563eb' stroke-width='2'><path d='M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75'/></svg>","title":"Сообщество","desc":"Поддержка и обмен знаниями между студентами и преподавателями."},
+        {"icon":"<svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='#2563eb' stroke-width='2'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>","title":"Инновации","desc":"Современные технологии для максимально эффективного обучения."}
+      ] %}
+      <div class="reveal" style="text-align:center;padding:32px 20px;border-radius:12px;border:1px solid var(--border);transition:var(--transition);">
+        <div style="margin-bottom:16px;">{{ val.icon | safe }}</div>
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">{{ val.title }}</h3>
+        <p style="font-size:.875rem;color:var(--text-muted);">{{ val.desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:64px 24px;text-align:center;" class="reveal">
+  <h2 style="font-size:2rem;font-weight:700;margin-bottom:12px;">Готов начать?</h2>
+  <p style="opacity:.88;margin-bottom:28px;font-size:1.05rem;">Присоединяйся к тысячам студентов и преподавателей на EduHub</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+    <a href="/register" class="btn btn-lg" style="background:#fff;color:#1e3a8a;border-color:#fff;">Зарегистрироваться</a>
+    <a href="/courses/catalog" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.5);">Смотреть курсы</a>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Анимированные счётчики
+(function(){
+  const counters = document.querySelectorAll('.counter');
+  let started = false;
+
+  function animateCounters() {
+    if (started) return;
+    started = true;
+    counters.forEach(el => {
+      const target = parseInt(el.dataset.target);
+      const duration = 2000;
+      const step = target / (duration / 16);
+      let current = 0;
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          el.textContent = target + '+';
+          clearInterval(timer);
+        } else {
+          el.textContent = Math.floor(current) + '+';
+        }
+      }, 16);
+    });
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) animateCounters(); });
+  }, { threshold: 0.3 });
+
+  const grid = document.getElementById('counters-grid');
+  if (grid) observer.observe(grid);
+})();
+</script>
+{% endblock %}

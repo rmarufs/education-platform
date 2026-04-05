@@ -8,6 +8,8 @@ import enum
 class UserRole(str, enum.Enum):
     student = "student"
     teacher = "teacher"
+    teacher_pending = "teacher_pending"
+    admin = "admin"
 
 
 class User(Base):
@@ -20,4 +22,6 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.student, nullable=False)
     level = Column(String(50), nullable=True)
     assessment_completed = Column(Boolean, default=False)
+    documents = Column(String(500), nullable=True)   # путь к PDF-файлу преподавателя
+    is_active = Column(Boolean, default=True)         # для блокировки пользователей
     created_at = Column(DateTime, default=datetime.utcnow)

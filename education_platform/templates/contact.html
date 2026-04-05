@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Контакты — EduHub{% endblock %}
+
+{% block content %}
+<section style="max-width:960px;margin:0 auto;padding:48px 24px 80px;">
+  <h1 style="font-size:2rem;font-weight:700;text-align:center;margin-bottom:8px;" class="reveal">📬 Свяжитесь с нами</h1>
+  <p style="text-align:center;color:var(--text-muted);margin-bottom:48px;" class="reveal">Есть вопрос или предложение? Мы будем рады услышать вас!</p>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:40px;align-items:start;">
+    <!-- Форма -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px;" class="reveal">
+      <form id="contact-form" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="form-group">
+          <label for="c-name">Имя</label>
+          <input type="text" id="c-name" name="name" class="form-input" required placeholder="Ваше имя" />
+          <span class="form-error" id="c-name-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-email">Email</label>
+          <input type="email" id="c-email" name="email" class="form-input" required placeholder="you@example.com" />
+          <span class="form-error" id="c-email-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-subject">Тема</label>
+          <input type="text" id="c-subject" name="subject" class="form-input" required placeholder="Тема сообщения" />
+          <span class="form-error" id="c-subject-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-message">Сообщение</label>
+          <textarea id="c-message" name="message" class="form-input form-textarea" rows="5" required placeholder="Ваше сообщение..."></textarea>
+          <span class="form-error" id="c-message-error"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="contact-btn">Отправить сообщение</button>
+      </form>
+    </div>
+
+    <!-- Контактная информация -->
+    <div class="reveal" style="display:flex;flex-direction:column;gap:24px;">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:28px;">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:20px;">Контактная информация</h3>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.25rem;">📧</span>
+            <div>
+              <div style="font-size:.8rem;color:var(--text-muted);font-weight:600;">Email</div>
+              <a href="mailto:info@eduhub.tj" style="font-weight:500;">info@eduhub.tj</a>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.25rem;">📞</span>
+            <div>
+              <div style="font-size:.8rem;color:var(--text-muted);font-weight:600;">Телефон</div>
+              <span style="font-weight:500;">+992 900 123 456</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.25rem;">📍</span>
+            <div>
+              <div style="font-size:.8rem;color:var(--text-muted);font-weight:600;">Адрес</div>
+              <span style="font-weight:500;">г. Душанбе, Таджикистан</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:16px;padding:28px;">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">Мы в соцсетях</h3>
+        <div style="display:flex;gap:16px;">
+          <a href="#" target="_blank" rel="noopener" style="width:44px;height:44px;border-radius:10px;background:var(--secondary);display:flex;align-items:center;justify-content:center;transition:var(--transition);" title="Telegram">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" style="width:44px;height:44px;border-radius:10px;background:var(--secondary);display:flex;align-items:center;justify-content:center;transition:var(--transition);" title="Instagram">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="var(--primary)"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" style="width:44px;height:44px;border-radius:10px;background:var(--secondary);display:flex;align-items:center;justify-content:center;transition:var(--transition);" title="Facebook">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const form = document.getElementById('contact-form');
+  const btn  = document.getElementById('contact-btn');
+
+  // Валидация в реальном времени
+  ['c-name','c-email','c-subject','c-message'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      el.classList.remove('error');
+      document.getElementById(id + '-error').textContent = '';
+    });
+  });
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    let valid = true;
+
+    const name = document.getElementById('c-name');
+    const email = document.getElementById('c-email');
+    const subject = document.getElementById('c-subject');
+    const message = document.getElementById('c-message');
+
+    if (!name.value.trim()) { showFieldError('c-name','Введите имя'); valid = false; }
+    if (!email.value.trim() || !email.value.includes('@')) { showFieldError('c-email','Введите корректный email'); valid = false; }
+    if (!subject.value.trim()) { showFieldError('c-subject','Введите тему'); valid = false; }
+    if (!message.value.trim()) { showFieldError('c-message','Введите сообщение'); valid = false; }
+
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
+
+    try {
+      const formData = new FormData(form);
+      const res = await fetch('/contact', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        showToast('Сообщение отправлено! Мы свяжемся с вами скоро 🎉', 'success');
+        form.reset();
+      } else {
+        showToast('Ошибка при отправке', 'error');
+      }
+    } catch(err) {
+      showToast('Ошибка сети', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Отправить сообщение';
+  });
+})();
+</script>
+{% endblock %}

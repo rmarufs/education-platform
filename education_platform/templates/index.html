@@ -3,6 +3,25 @@
 {% block title %}Популярные курсы — EduHub{% endblock %}
 
 {% block content %}
+<!-- Баннер раннего доступа -->
+<div id="early-access-banner" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:14px 24px;text-align:center;font-size:0.95rem;font-weight:500;position:relative;display:flex;align-items:center;justify-content:center;gap:10px;">
+  <span>🚀 Платформа находится в стадии раннего доступа. Мы рады первым пользователям!</span>
+  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;opacity:0.8;" title="Закрыть">&times;</button>
+</div>
+<script>
+  (function(){
+    if (sessionStorage.getItem('banner_dismissed')) {
+      var b = document.getElementById('early-access-banner');
+      if (b) b.style.display = 'none';
+    }
+  })();
+  function dismissBanner() {
+    var b = document.getElementById('early-access-banner');
+    if (b) b.style.display = 'none';
+    sessionStorage.setItem('banner_dismissed', '1');
+  }
+</script>
+
 <!-- Hero секция -->
 <section class="hero">
     <div class="hero-content">

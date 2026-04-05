@@ -8,9 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css?v=3" />
 </head>
 <body>
+    <!-- Индикатор прогресса чтения -->
+    <div id="reading-progress" style="position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#6366f1,#2563eb);width:0;z-index:9999;transition:width .1s;"></div>
+
     <!-- Навигационная панель -->
     <nav class="navbar">
         <div class="nav-container">
@@ -19,17 +22,35 @@
                 <span class="logo-text">EduHub</span>
             </a>
 
+            <!-- Ссылки навигации -->
             <div class="nav-links">
-                {% if user %}
-                    <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name": "{{ user.name }}"}'>
-                        Привет, {{ user.name }}
-                    </span>
-                    <a href="/dashboard" class="btn btn-secondary" data-i18n="nav.dashboard">Кабинет</a>
-                    <a href="/logout" class="btn btn-outline" data-i18n="nav.logout">Выйти</a>
-                {% else %}
-                    <a href="/login" class="btn btn-secondary" data-i18n="nav.login">Войти</a>
-                    <a href="/register" class="btn btn-primary" data-i18n="nav.register">Регистрация</a>
-                {% endif %}
+                <div class="nav-center-links">
+                    <a href="/courses/catalog" class="nav-link {% if request and request.url.path == '/courses/catalog' %}active{% endif %}" data-i18n="nav.courses">Курсы</a>
+                    <a href="/search" class="nav-link {% if request and request.url.path == '/search' %}active{% endif %}" data-i18n="nav.search">Поиск</a>
+                    <a href="/how-it-works" class="nav-link {% if request and request.url.path == '/how-it-works' %}active{% endif %}" data-i18n="nav.how_it_works">Как это работает</a>
+                    <a href="/about" class="nav-link {% if request and request.url.path == '/about' %}active{% endif %}" data-i18n="nav.about">О нас</a>
+                    <a href="/contact" class="nav-link {% if request and request.url.path == '/contact' %}active{% endif %}" data-i18n="nav.contact">Контакты</a>
+                </div>
+
+                <div class="nav-auth-links" style="display:flex;align-items:center;gap:8px;">
+                    <span style="border-left:1px solid var(--border);height:24px;margin:0 4px;"></span>
+                    {% if user %}
+                        {% if user.role.value == 'admin' %}
+                        <a href="/admin" class="btn btn-outline btn-sm" style="border-color:var(--primary);color:var(--primary);">🔧 Админ-панель</a>
+                        {% endif %}
+                        <span class="nav-greeting">
+                            Привет, {{ user.name }}
+                        </span>
+                        <a href="/dashboard" class="btn btn-secondary btn-sm">Кабинет</a>
+                        <a href="#" onclick="confirmLogout()" class="btn btn-outline btn-sm">Выйти</a>
+                    {% else %}
+                        <a href="/login" class="btn btn-secondary btn-sm">Войти</a>
+                        <a href="/register" class="btn btn-primary btn-sm">Регистрация</a>
+                    {% endif %}
+                </div>
+
+                <!-- Тёмная тема -->
+                <button class="theme-toggle" onclick="toggleTheme()" title="Сменить тему" id="theme-btn">🌙</button>
 
                 <!-- Переключатель языка -->
                 <div class="lang-switcher">
@@ -37,9 +58,34 @@
                     <span class="lang-divider">|</span>
                     <button class="lang-btn" id="lang-tj" onclick="setLang('tj')">TJ</button>
                 </div>
+
+                <!-- Гамбургер (мобильный) -->
+                <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger-btn" aria-label="Меню">
+                    <span></span><span></span><span></span>
+                </button>
             </div>
         </div>
     </nav>
+
+    <!-- Мобильное меню -->
+    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="/courses/catalog" class="mobile-menu-link">📚 <span data-i18n="nav.courses">Курсы</span></a>
+        <a href="/search" class="mobile-menu-link">🔍 <span data-i18n="nav.search">Поиск</span></a>
+        <a href="/how-it-works" class="mobile-menu-link">📖 <span data-i18n="nav.how_it_works">Как это работает</span></a>
+        <a href="/about" class="mobile-menu-link">ℹ️ <span data-i18n="nav.about">О нас</span></a>
+        <a href="/contact" class="mobile-menu-link">📬 <span data-i18n="nav.contact">Контакты</span></a>
+        {% if user %}
+        {% if user.role.value == 'admin' %}
+        <a href="/admin" class="mobile-menu-link">🔧 Админ-панель</a>
+        {% endif %}
+        <a href="/dashboard" class="mobile-menu-link">📊 Кабинет</a>
+        <a href="#" onclick="confirmLogout()" class="mobile-menu-link">🚪 Выйти</a>
+        {% else %}
+        <a href="/login" class="mobile-menu-link">🔑 Войти</a>
+        <a href="/register" class="mobile-menu-link">✍️ Регистрация</a>
+        {% endif %}
+    </div>
 
     <!-- Основной контент страницы -->
     <main class="main-content">
@@ -47,17 +93,131 @@
     </main>
 
     <!-- Подвал -->
-    <footer class="footer">
-        <div class="footer-container">
-            <p>© 2024 EduHub. <span data-i18n="footer.rights">Все права защищены.</span></p>
+    <footer class="footer-enhanced">
+        <div style="max-width:1100px;margin:0 auto;padding:48px 24px 24px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-bottom:32px;">
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                        <span style="font-size:1.5rem;">🎓</span>
+                        <span style="font-weight:700;font-size:1.25rem;color:var(--primary);">EduHub</span>
+                    </div>
+                    <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;">Современная образовательная платформа для студентов и преподавателей.</p>
+                </div>
+                <div>
+                    <h4 style="font-weight:700;margin-bottom:12px;font-size:.9rem;">Платформа</h4>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <a href="/courses/catalog" style="font-size:.85rem;color:var(--text-muted);" data-i18n="nav.courses">Курсы</a>
+                        <a href="/search" style="font-size:.85rem;color:var(--text-muted);" data-i18n="nav.search">Поиск</a>
+                        <a href="/how-it-works" style="font-size:.85rem;color:var(--text-muted);" data-i18n="nav.how_it_works">Как это работает</a>
+                        <a href="/about" style="font-size:.85rem;color:var(--text-muted);" data-i18n="nav.about">О нас</a>
+                        <a href="/contact" style="font-size:.85rem;color:var(--text-muted);" data-i18n="nav.contact">Контакты</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-weight:700;margin-bottom:12px;font-size:.9rem;">Компания</h4>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <a href="/about" style="font-size:.85rem;color:var(--text-muted);">О нас</a>
+                        <a href="/contact" style="font-size:.85rem;color:var(--text-muted);">Контакты</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-weight:700;margin-bottom:12px;font-size:.9rem;">Соцсети</h4>
+                    <div style="display:flex;gap:12px;">
+                        <a href="#" target="_blank" rel="noopener" title="Telegram" style="color:var(--text-muted);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+                        </a>
+                        <a href="#" target="_blank" rel="noopener" title="Instagram" style="color:var(--text-muted);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:20px;text-align:center;">
+                <p style="font-size:.8rem;color:var(--text-muted);">© 2024 EduHub. Все права защищены.</p>
+            </div>
         </div>
     </footer>
 
+    <!-- Кнопка "Наверх" -->
+    <button id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Наверх" style="display:none;position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;font-size:1.25rem;box-shadow:var(--shadow-md);z-index:90;transition:opacity .3s,transform .3s;">↑</button>
+
     <!-- JavaScript -->
-    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/i18n.js?v=2"></script>
     <script src="/static/js/main.js"></script>
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/courses.js"></script>
+    <script>
+    // Подтверждение выхода
+    function confirmLogout() {
+      if (confirm("Вы уверены, что хотите выйти?")) {
+        window.location.href = "/logout";
+      }
+    }
+
+    // Тёмная тема
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      document.getElementById('theme-btn').textContent = isDark ? '☀️' : '🌙';
+    }
+    (function(){
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.textContent = '☀️';
+      }
+    })();
+
+    // Поиск в навигации
+    function toggleNavSearch() {
+      const bar = document.getElementById('nav-search-bar');
+      bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+      if (bar.style.display === 'block') bar.querySelector('input').focus();
+    }
+
+    // Мобильное меню
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const btn = document.getElementById('hamburger-btn');
+      const overlay = document.getElementById('mobile-overlay');
+      menu.classList.toggle('open');
+      btn.classList.toggle('open');
+      if (overlay) overlay.classList.toggle('open');
+    }
+
+    // Кнопка "Наверх"
+    (function(){
+      const btn = document.getElementById('scroll-top-btn');
+      window.addEventListener('scroll', () => {
+        btn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+      });
+    })();
+
+    // Индикатор прогресса чтения
+    (function(){
+      const bar = document.getElementById('reading-progress');
+      window.addEventListener('scroll', () => {
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        if (h > 0) bar.style.width = (window.scrollY / h * 100) + '%';
+      });
+    })();
+
+    // Анимация появления секций при скролле
+    (function(){
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('revealed');
+            revealObserver.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
