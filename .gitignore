@@ -43,8 +43,11 @@ logs/
 htmlcov/
 
 # ── Uploads & Documents ────────────────────────────
-education_platform/static/uploads/*
-education_platform/static/documents/*
-!education_platform/static/uploads/.gitkeep
-!education_platform/static/documents/.gitkeep
-venv/
+static/uploads/*
+static/documents/*
+!static/uploads/.gitkeep
+!static/documents/.gitkeep
+
+# ── Runtime / local copies ─────────────────────────
+server.log
+education_platform/
