@@ -47,3 +47,4 @@ education_platform/static/uploads/*
 education_platform/static/documents/*
 !education_platform/static/uploads/.gitkeep
 !education_platform/static/documents/.gitkeep
+venv/
