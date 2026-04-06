@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ course.title }} — EduHub{% endblock %}
+{% block title %}{{ course.title }} — Фурузон{% endblock %}
 
 {% block content %}
 <div class="course-detail-page">
@@ -40,14 +40,14 @@
 
       <!-- Материалы курса -->
       {% if course.materials and user and (user.role.value == "teacher" or user.role.value == "student") %}
-      <div class="course-detail-materials" style="margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1rem; color: #334155;" data-i18n="course_page.materials">📎 Материалы курса</h3>
-        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;">
+      <div class="course-detail-materials course-materials" style="margin-top:20px;">
+        <h3 style="margin-top:0;margin-bottom:15px;font-size:1.1rem;" data-i18n="course_page.materials">📎 Материалы курса</h3>
+        <ul class="course-materials-list">
           {% for mat in course.materials %}
-          <li style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <li class="course-materials-item">
             <span style="font-size: 1.2rem;">{{ "📄" if mat.file_type in ["pdf", "doc", "docx"] else "📊" if mat.file_type in ["ppt", "pptx"] else "📎" }}</span>
-            <a href="{{ mat.file_url }}" target="_blank" style="text-decoration: none; color: #2563eb; font-weight: 500; flex-grow: 1;">{{ mat.title }}</a>
-            <span style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase;">{{ mat.file_type }}</span>
+            <a href="{{ mat.file_url }}" target="_blank">{{ mat.title }}</a>
+            <span class="text-muted" style="font-size:0.85rem;text-transform:uppercase;">{{ mat.file_type }}</span>
           </li>
           {% endfor %}
         </ul>
@@ -95,46 +95,147 @@
       </section>
       {% endif %}
 
-      <!-- Отзывы -->
-      {% if course.reviews %}
-      <section class="course-reviews">
-        <h2 data-i18n="course_page.reviews" data-i18n-params='{"count":{{ course.reviews|length }}}'>⭐ Отзывы ({{ course.reviews|length }})</h2>
-        <div class="reviews-list">
+      <!-- ═══════════════ Отзывы ═══════════════ -->
+      <section class="course-reviews" style="margin-top:32px;">
+        <h2 data-i18n="course_page.reviews">⭐ Отзывы</h2>
+
+        <!-- Список существующих отзывов — красивые карточки -->
+        <div class="reviews-list" style="margin-top:16px;">
           {% for review in course.reviews %}
           <div class="review-card">
-            <div class="review-header">
-              <span class="avatar-xs">{{ review.student.name[0].upper() }}</span>
-              <strong>{{ review.student.name }}</strong>
-              <span class="review-stars">{{ "⭐" * review.rating }}</span>
-              <span class="text-muted">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
+            <div class="review-header" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+              <span class="review-avatar-sm">
+                {{ review.student.name[0].upper() }}
+              </span>
+              <div style="flex:1;min-width:0;">
+                <strong style="display:block;font-size:1rem;">{{ review.student.name }}</strong>
+                <span class="text-muted" style="font-size:0.82rem;">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
+              </div>
+              <div style="display:flex;gap:2px;font-size:1.2rem;">
+                {% for i in range(1,6) %}
+                  <span class="{{ 'rating-star' if i <= review.rating else 'rating-star-muted' }}">★</span>
+                {% endfor %}
+              </div>
             </div>
             {% if review.text %}
-            <p class="review-text">{{ review.text }}</p>
+            <p style="margin:0;color:var(--text);line-height:1.6;">{{ review.text }}</p>
             {% endif %}
           </div>
           {% endfor %}
-        </div>
-      </section>
-      {% endif %}
 
-      <!-- Форма отзыва для студента -->
-      {% if user and user.role.value == "student" %}
-      <section class="leave-review">
-        <h3 data-i18n="{% if user_review %}course_page.edit_review{% else %}course_page.leave_review{% endif %}">{{ "Изменить отзыв" if user_review else "Оставить отзыв" }}</h3>
-        <form action="/courses/{{ course.id }}/review" method="POST" class="review-form">
-          <div class="star-rating-custom">
-            {% for i in [5,4,3,2,1] %}
-            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}"
-                   {{ "checked" if user_review and user_review.rating == i else "" }} required />
-            <label for="star{{ i }}" title="{{ i }} звезды">★</label>
-            {% endfor %}
+          {% if not course.reviews %}
+          <div class="text-muted" style="text-align:center;padding:32px;">
+            <span style="font-size:2rem;">💬</span>
+            <p data-i18n="course_page.reviews_empty">Пока нет отзывов. Будьте первым!</p>
           </div>
-          <textarea name="text" class="form-input" rows="3"
-                    data-i18n="course_page.review_ph" data-i18n-prop="placeholder"
-                    placeholder="Ваш отзыв о курсе...">{{ user_review.text if user_review else "" }}</textarea>
-          <button type="submit" class="btn btn-primary btn-sm" data-i18n="course_page.send_review">Отправить отзыв</button>
-        </form>
+          {% endif %}
+        </div>
+
+        <!-- Форма / отображение отзыва студента -->
+        {% if user and user.role.value == "student" %}
+        <div class="review-form-card">
+
+          {% if user_review %}
+          <!-- Студент уже оставил отзыв — показываем его -->
+          <div id="existing-review">
+            <h3 style="margin-top:0;margin-bottom:16px;font-size:1.05rem;" data-i18n="course_page.your_review">Ваш отзыв</h3>
+            <div style="display:flex;gap:2px;font-size:1.3rem;margin-bottom:8px;">
+              {% for i in range(1,6) %}
+                <span class="{{ 'rating-star' if i <= user_review.rating else 'rating-star-muted' }}">★</span>
+              {% endfor %}
+            </div>
+            {% if user_review.text %}
+            <p style="color:var(--text);line-height:1.6;margin:0 0 16px 0;">{{ user_review.text }}</p>
+            {% endif %}
+            <button type="button" onclick="toggleEditReview()" class="btn btn-secondary btn-sm" data-i18n="course_page.edit_review">✏️ Редактировать</button>
+          </div>
+          {% endif %}
+
+          <!-- Форма (скрыта если уже есть отзыв) -->
+          <div id="review-form-wrap" style="{{ 'display:none;' if user_review else '' }}">
+            <h3 style="margin-top:0;margin-bottom:16px;font-size:1.05rem;" data-i18n="{{ 'course_page.edit_review' if user_review else 'course_page.leave_review' }}">
+              {{ "Изменить отзыв" if user_review else "Оставить отзыв" }}
+            </h3>
+            <form action="/courses/{{ course.id }}/review" method="POST" id="review-form">
+              <div id="star-selector" class="star-selector" style="direction:ltr;">
+                {% for i in range(1,6) %}
+                <span class="star-pick {{ 'active' if user_review and i <= user_review.rating else '' }}" data-value="{{ i }}">★</span>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="rating" id="rating-input" value="{{ user_review.rating if user_review else '' }}" required />
+
+              <textarea name="text" rows="3"
+                        placeholder="Напишите ваш отзыв..."
+                        class="form-input form-textarea"
+                        data-i18n="course_page.review_ph"
+                        data-i18n-prop="placeholder">{{ user_review.text if user_review else '' }}</textarea>
+
+              <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+                <button type="submit" id="review-submit-btn" class="btn btn-primary btn-sm" data-i18n="course_page.send_review">Отправить отзыв</button>
+                {% if user_review %}
+                <button type="button" onclick="toggleEditReview()" class="btn btn-outline btn-sm" data-i18n="action.cancel">Отмена</button>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+        </div>
+        {% elif not user %}
+        <div class="review-panel" style="margin-top:20px;text-align:center;">
+          <p style="margin:0;color:var(--text-muted);"><a href="/login" style="font-weight:600;" data-i18n="nav.login">Войдите</a>, <span data-i18n="course_page.login_to_review">чтобы оставить отзыв</span></p>
+        </div>
+        {% endif %}
       </section>
+
+      {% if user and user.role.value == "student" %}
+      <script>
+      (function(){
+        const stars = document.querySelectorAll('.star-pick');
+        const ratingInput = document.getElementById('rating-input');
+        let currentRating = parseInt(ratingInput.value) || 0;
+
+        function highlightStars(upTo) {
+          stars.forEach(s => {
+            s.classList.toggle('active', parseInt(s.dataset.value) <= upTo);
+          });
+        }
+
+        stars.forEach(star => {
+          star.addEventListener('mouseenter', () => highlightStars(parseInt(star.dataset.value)));
+          star.addEventListener('mouseleave', () => highlightStars(currentRating));
+          star.addEventListener('click', () => {
+            currentRating = parseInt(star.dataset.value);
+            ratingInput.value = currentRating;
+            highlightStars(currentRating);
+          });
+        });
+
+        // Visual feedback на кнопку отправки
+        const form = document.getElementById('review-form');
+        const btn = document.getElementById('review-submit-btn');
+        form.addEventListener('submit', function(e) {
+          if (!ratingInput.value) {
+            e.preventDefault();
+            alert(t('validation.rating_required'));
+            return;
+          }
+          btn.textContent = t('course_page.send_review') + ' ✓';
+          btn.disabled = true;
+          btn.style.opacity = '0.7';
+        });
+      })();
+
+      function toggleEditReview() {
+        const existing = document.getElementById('existing-review');
+        const formWrap = document.getElementById('review-form-wrap');
+        if (formWrap.style.display === 'none') {
+          formWrap.style.display = 'block';
+          if (existing) existing.style.display = 'none';
+        } else {
+          formWrap.style.display = 'none';
+          if (existing) existing.style.display = 'block';
+        }
+      }
+      </script>
       {% endif %}
     </div>
 

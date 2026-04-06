@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title_key %}role.teacher{% endblock %}
+{% block title %}{{ teacher.name }} — Преподаватель Фурузон{% endblock %}
+
+{% block content %}
+<div class="teacher-profile-shell">
+
+  <!-- Профиль -->
+  <div class="teacher-profile-header reveal">
+    <div class="teacher-profile-avatar" style="width:96px;height:96px;font-size:2.5rem;">
+      {{ teacher.name[0].upper() }}
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:4px;">{{ teacher.name }}</h1>
+      <span class="role-badge role-teacher" data-i18n="role.teacher">Преподаватель</span>
+      <p style="color:var(--text-muted);margin-top:8px;font-size:.9rem;" data-i18n="teacher_profile.registered" data-i18n-params='{"date":"{{ teacher.created_at.strftime("%d.%m.%Y") }}"}'>
+        Зарегистрирован: {{ teacher.created_at.strftime("%d.%m.%Y") }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Статистика -->
+  <div class="teacher-profile-stats reveal">
+    <div class="teacher-stat-card">
+      <div class="teacher-stat-value">{{ courses|length }}</div>
+      <div class="teacher-stat-label" data-i18n="teacher_profile.courses">Курсов</div>
+    </div>
+    <div class="teacher-stat-card">
+      <div class="teacher-stat-value">{{ total_students }}</div>
+      <div class="teacher-stat-label" data-i18n="teacher_profile.students">Студентов</div>
+    </div>
+    <div class="teacher-stat-card">
+      <div class="teacher-stat-value rating-text">{% if avg_rating > 0 %}⭐ {{ avg_rating }}{% else %}—{% endif %}</div>
+      <div class="teacher-stat-label" data-i18n="teacher_profile.rating">Средний рейтинг</div>
+    </div>
+  </div>
+
+  <!-- Курсы -->
+  <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:24px;" class="reveal" data-i18n="teacher_profile.courses_title">📚 Курсы преподавателя</h2>
+  {% if courses %}
+  <div class="courses-grid">
+    {% for course in courses %}
+    <div class="course-card reveal" style="animation-delay:{{ loop.index0 * 0.06 }}s;">
+      <div class="course-card-header">
+        <span class="course-icon">📖</span>
+      </div>
+      <div class="course-card-body">
+        <h3 class="course-title">{{ course.title }}</h3>
+        <p class="course-desc">{{ course.description or "" }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+        <div class="course-meta">
+          <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f"|format(course.rating) }}{% endif %}</span>
+          <span class="level-badge" data-level="{{ course.level }}">{{ course.level }}</span>
+        </div>
+      </div>
+      <div class="course-card-footer">
+        <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="teacher_profile.open_course">Открыть курс →</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon">📭</span>
+    <p data-i18n="teacher_profile.no_courses">У преподавателя пока нет курсов.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

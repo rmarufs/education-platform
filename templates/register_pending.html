@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title_key %}pending.title{% endblock %}
+{% block title %}Заявка отправлена — Фурузон{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card pending-card">
+        <div style="font-size:4rem;margin-bottom:16px;">📨</div>
+        <h1 style="font-size:1.5rem;margin-bottom:12px;color:var(--text);" data-i18n="pending.title">Ваша заявка отправлена!</h1>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:24px;" data-i18n="pending.desc">
+            Спасибо за регистрацию. Мы рассмотрим вашу заявку и документы в ближайшее время. После одобрения вы сможете создавать курсы и обучать студентов на платформе Фурузон.
+        </p>
+        <div class="pending-status-card" style="margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+                <span style="font-size:1.5rem;">⏳</span>
+                <div style="text-align:left;">
+                    <strong style="display:block;font-size:0.95rem;" data-i18n="pending.status">Статус: На рассмотрении</strong>
+                    <span style="font-size:0.85rem;color:var(--text-muted);" data-i18n="pending.status_hint">Обычно это занимает 1–2 рабочих дня</span>
+                </div>
+            </div>
+        </div>
+        <div class="pending-actions">
+            <a href="/" class="btn btn-primary" data-i18n="pending.home">← На главную</a>
+            <a href="/logout" class="btn btn-outline" data-i18n="pending.logout">Выйти</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

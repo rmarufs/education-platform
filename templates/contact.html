@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title_key %}contact.title{% endblock %}
+{% block title %}Контакты — Фурузон{% endblock %}
+
+{% block content %}
+<section class="page-shell" style="max-width:960px;">
+  <h1 style="font-size:2rem;font-weight:700;text-align:center;margin-bottom:8px;" class="reveal" data-i18n="contact.title">📬 Свяжитесь с нами</h1>
+  <p style="text-align:center;color:var(--text-muted);margin-bottom:48px;" class="reveal" data-i18n="contact.subtitle">Есть вопрос или предложение? Мы будем рады услышать вас!</p>
+
+  <div class="contact-grid">
+    <div class="page-card reveal">
+      <form id="contact-form" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="form-group">
+          <label for="c-name" data-i18n="contact.name">Имя</label>
+          <input type="text" id="c-name" name="name" class="form-input" required placeholder="Ваше имя" data-i18n="contact.name_ph" data-i18n-prop="placeholder" />
+          <span class="form-error" id="c-name-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-email" data-i18n="form.email">Email</label>
+          <input type="email" id="c-email" name="email" class="form-input" required placeholder="you@example.com" />
+          <span class="form-error" id="c-email-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-subject" data-i18n="contact.subject">Тема</label>
+          <input type="text" id="c-subject" name="subject" class="form-input" required placeholder="Тема сообщения" data-i18n="contact.subject_ph" data-i18n-prop="placeholder" />
+          <span class="form-error" id="c-subject-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="c-message" data-i18n="contact.message">Сообщение</label>
+          <textarea id="c-message" name="message" class="form-input form-textarea" rows="5" required placeholder="Ваше сообщение..." data-i18n="contact.message_ph" data-i18n-prop="placeholder"></textarea>
+          <span class="form-error" id="c-message-error"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="contact-btn" data-i18n="contact.send">Отправить сообщение</button>
+      </form>
+    </div>
+
+    <div class="contact-side reveal">
+      <div class="page-card">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:20px;" data-i18n="contact.info_title">Контактная информация</h3>
+        <div class="contact-info-list">
+          <div class="contact-info-item">
+            <span style="font-size:1.25rem;">📧</span>
+            <div>
+              <div class="contact-info-label" data-i18n="contact.email">Email</div>
+              <a href="mailto:info@furuzon.tj" style="font-weight:500;">info@furuzon.tj</a>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <span style="font-size:1.25rem;">📞</span>
+            <div>
+              <div class="contact-info-label" data-i18n="contact.phone">Телефон</div>
+              <span style="font-weight:500;">+992 900 123 456</span>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <span style="font-size:1.25rem;">📍</span>
+            <div>
+              <div class="contact-info-label" data-i18n="contact.address">Адрес</div>
+              <span style="font-weight:500;" data-i18n="contact.address_value">г. Душанбе, Таджикистан</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-card">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;" data-i18n="contact.social_title">Мы в соцсетях</h3>
+        <div class="social-links">
+          <a href="#" target="_blank" rel="noopener" class="social-link" title="Telegram">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" class="social-link" title="Instagram">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="var(--primary)"/></svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" class="social-link" title="Facebook">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3V2z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const form = document.getElementById('contact-form');
+  const btn  = document.getElementById('contact-btn');
+
+  // Валидация в реальном времени
+  ['c-name','c-email','c-subject','c-message'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      el.classList.remove('error');
+      document.getElementById(id + '-error').textContent = '';
+    });
+  });
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    let valid = true;
+
+    const name = document.getElementById('c-name');
+    const email = document.getElementById('c-email');
+    const subject = document.getElementById('c-subject');
+    const message = document.getElementById('c-message');
+
+    if (!name.value.trim()) { showFieldError('c-name', t('validation.name_required')); valid = false; }
+    if (!email.value.trim() || !email.value.includes('@')) { showFieldError('c-email', t('validation.email_invalid')); valid = false; }
+    if (!subject.value.trim()) { showFieldError('c-subject', t('validation.subject_required')); valid = false; }
+    if (!message.value.trim()) { showFieldError('c-message', t('validation.message_required')); valid = false; }
+
+    if (!valid) return;
+
+    btn.disabled = true;
+    btn.textContent = t('action.sending');
+
+    try {
+      const formData = new FormData(form);
+      const res = await fetch('/contact', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(t('contact.toast_success'), 'success');
+        form.reset();
+      } else {
+        showToast(t('contact.toast_error'), 'error');
+      }
+    } catch(err) {
+      showToast(t('contact.toast_network'), 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = t('contact.send');
+  });
+})();
+</script>
+{% endblock %}

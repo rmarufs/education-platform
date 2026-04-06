@@ -34,6 +34,8 @@ def courses_catalog(
     request: Request,
     q: str = "",
     category_id: int = 0,
+    page: int = 1,
+    per_page: int = 9,
     db: Session = Depends(get_db),
 ):
     query = db.query(Course).options(joinedload(Course.teacher), joinedload(Course.category))
@@ -41,9 +43,14 @@ def courses_catalog(
         query = query.filter(Course.title.ilike(f"%{q}%"))
     if category_id:
         query = query.filter(Course.category_id == category_id)
-    courses = query.order_by(Course.rating.desc()).all()
+        
+    total = query.count()
+    courses = query.order_by(Course.rating.desc()).offset((page - 1) * per_page).limit(per_page).all()
     categories = db.query(Category).order_by(Category.name).all()
     user = get_user(request, db)
+    
+    total_pages = (total + per_page - 1) // per_page
+
     return templates.TemplateResponse("courses_list.html", {
         "request": request,
         "courses": courses,
@@ -51,6 +58,8 @@ def courses_catalog(
         "q": q,
         "selected_category": category_id,
         "user": user,
+        "page": page,
+        "total_pages": total_pages,
     })
 
 
@@ -161,7 +170,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
 @router.get("/{course_id}/manage", response_class=HTMLResponse)
 def manage_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
+        if user and user.role.value == "teacher_pending":
+            return RedirectResponse("/register/pending", status_code=302)
         return RedirectResponse("/login", status_code=302)
 
     course = (
@@ -234,7 +245,9 @@ def create_course(
     db: Session = Depends(get_db),
 ):
     user = get_user(request, db)
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
+        if user and user.role.value == "teacher_pending":
+            raise HTTPException(status_code=403, detail="Ваш аккаунт ещё не подтверждён")
         raise HTTPException(status_code=403, detail="Только преподаватели могут создавать курсы")
 
     course = Course(
@@ -283,7 +296,7 @@ def edit_course(
     db: Session = Depends(get_db),
 ):
     user = get_user(request, db)
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
 
     course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
@@ -321,7 +334,7 @@ def edit_course(
 @router.post("/{course_id}/delete")
 def delete_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
 
     course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
@@ -342,7 +355,7 @@ def delete_course_material(
     db: Session = Depends(get_db)
 ):
     user = get_user(request, db)
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
 
     material = db.query(Material).filter(Material.id == material_id).first()

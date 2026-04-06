@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title_key %}search.title{% endblock %}
+{% block title %}Поиск курсов — Фурузон{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+  <div class="reveal" style="margin-bottom:32px;">
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px;" data-i18n="search.title">🔍 Поиск курсов</h1>
+    <p class="text-muted" style="margin-bottom:20px;" data-i18n="search.subtitle">Найдите программу по теме, уровню и рейтингу.</p>
+    <div class="search-toolbar">
+      <input type="text" id="search-q" class="form-input" style="flex:2;min-width:200px;" placeholder="Введите название или ключевое слово..." data-i18n="search.placeholder" data-i18n-prop="placeholder" />
+      <select id="search-category" class="form-input" style="max-width:200px;">
+        <option value="" data-i18n="catalog.all_cat">Все категории</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}">{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <select id="search-level" class="form-input" style="max-width:180px;">
+        <option value="" data-i18n="search.all_levels">Все уровни</option>
+        <option value="Beginner" data-i18n="level.beginner">Начинающий</option>
+        <option value="Intermediate" data-i18n="level.intermediate">Средний</option>
+        <option value="Advanced" data-i18n="level.advanced">Продвинутый</option>
+      </select>
+      <select id="search-sort" class="form-input" style="max-width:180px;">
+        <option value="rating" data-i18n="search.sort_rating">По рейтингу</option>
+        <option value="newest" data-i18n="search.sort_newest">Новые</option>
+        <option value="oldest" data-i18n="search.sort_oldest">Старые</option>
+      </select>
+    </div>
+  </div>
+
+  <p id="search-info" class="search-summary"></p>
+  <div id="search-results" class="courses-grid"></div>
+  <div id="search-empty" style="display:none;">
+    <div class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <p data-i18n="search.empty">Ничего не найдено. Попробуйте другой запрос.</p>
+    </div>
+  </div>
+
+  <div id="search-pagination" style="display:flex;justify-content:center;gap:8px;margin-top:32px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const qInput   = document.getElementById('search-q');
+  const catSel   = document.getElementById('search-category');
+  const lvlSel   = document.getElementById('search-level');
+  const sortSel  = document.getElementById('search-sort');
+  const results  = document.getElementById('search-results');
+  const emptyEl  = document.getElementById('search-empty');
+  const infoEl   = document.getElementById('search-info');
+  const pagEl    = document.getElementById('search-pagination');
+  let debounceTimer;
+  function doSearch(page) {
+    currentPage = page || 1;
+    const params = new URLSearchParams({
+      q: qInput.value,
+      category_id: catSel.value || 0,
+      level: lvlSel.value,
+      sort: sortSel.value,
+      page: currentPage,
+      per_page: 12
+    });
+
+    fetch('/api/search?' + params)
+      .then(r => r.json())
+      .then(data => {
+        results.innerHTML = '';
+        emptyEl.style.display = 'none';
+
+        if (data.courses.length === 0) {
+          emptyEl.style.display = 'block';
+          infoEl.textContent = '';
+          pagEl.innerHTML = '';
+          return;
+        }
+
+        infoEl.textContent = t('search.found', { count: data.total });
+
+        data.courses.forEach((c, i) => {
+          const card = document.createElement('div');
+          card.className = 'course-card';
+          card.style.animation = 'fadeInUp .4s ' + (i * 0.05) + 's ease both';
+          const stars = '★'.repeat(Math.round(c.rating)) + '☆'.repeat(5 - Math.round(c.rating));
+          card.innerHTML = `
+            <div class="course-card-header">
+              <span class="course-icon">📖</span>
+              ${c.category ? '<span class="category-badge">' + c.category + '</span>' : ''}
+            </div>
+            <div class="course-card-body">
+              <h3 class="course-title">${c.title}</h3>
+              <p class="course-desc">${c.description || t('common.no_desc')}</p>
+              <div class="course-meta">
+                <span class="course-teacher">👨‍🏫 ${c.teacher_name}</span>
+                <span class="rating-text" style="font-size:.85rem;">${stars} ${c.rating.toFixed(1)}</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <span class="level-badge">${t('level.' + c.level.toLowerCase())}</span>
+              </div>
+            </div>
+            <div class="course-card-footer">
+              <a href="/courses/${c.id}" class="btn btn-primary btn-sm">${t('common.more')} →</a>
+            </div>
+          `;
+          results.appendChild(card);
+        });
+
+        // Пагинация
+        const totalPages = Math.ceil(data.total / data.per_page);
+        pagEl.innerHTML = '';
+        for (let p = 1; p <= totalPages; p++) {
+          const btn = document.createElement('button');
+          btn.textContent = p;
+          btn.className = 'btn ' + (p === currentPage ? 'btn-primary' : 'btn-secondary') + ' btn-sm';
+          btn.onclick = () => doSearch(p);
+          pagEl.appendChild(btn);
+        }
+      });
+  }
+
+  // Debounce при вводе
+  qInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => doSearch(1), 400);
+  });
+  catSel.addEventListener('change', () => doSearch(1));
+  lvlSel.addEventListener('change', () => doSearch(1));
+  sortSel.addEventListener('change', () => doSearch(1));
+
+  // Начальный поиск (чтение 'q' из URL если есть)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('q')) {
+    qInput.value = urlParams.get('q');
+  }
+  
+  doSearch(1);
+})();
+</script>
+{% endblock %}

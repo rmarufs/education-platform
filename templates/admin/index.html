@@ -1,0 +1,74 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Главная{% endblock %}
+{% block title_key %}admin.nav.home{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div>
+        <h1 data-i18n="admin.home.title">📊 Панель управления</h1>
+        <p data-i18n="admin.home.subtitle" data-i18n-params='{"name":"{{ user.name }}"}'>Добро пожаловать, {{ user.name }}! Вот обзор платформы.</p>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon">👥</div>
+        <div class="admin-stat-value">{{ stats.total_users }}</div>
+        <div class="admin-stat-label" data-i18n="admin.home.users">Всего пользователей</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon">👨‍🎓</div>
+        <div class="admin-stat-value">{{ stats.students }}</div>
+        <div class="admin-stat-label" data-i18n="admin.home.students">Студентов</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon">👨‍🏫</div>
+        <div class="admin-stat-value">{{ stats.teachers }}</div>
+        <div class="admin-stat-label" data-i18n="admin.home.teachers">Преподавателей</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon">📚</div>
+        <div class="admin-stat-value">{{ stats.courses }}</div>
+        <div class="admin-stat-label" data-i18n="admin.home.courses">Курсов</div>
+    </div>
+    <div class="admin-stat-card {% if stats.pending > 0 %}is-warning{% endif %}">
+        <div class="admin-stat-icon">⏳</div>
+        <div class="admin-stat-value {% if stats.pending > 0 %}is-warning{% endif %}">{{ stats.pending }}</div>
+        <div class="admin-stat-label" data-i18n="admin.home.pending">Заявок на рассмотрении</div>
+    </div>
+</div>
+
+<!-- Быстрые ссылки -->
+<h2 class="admin-section-title" data-i18n="admin.home.quick_actions">⚡ Быстрые действия</h2>
+<div class="admin-quick-links">
+    <a href="/admin/teachers" class="admin-quick-card">
+        <div class="qc-icon">👨‍🏫</div>
+        <div>
+            <div class="qc-title" data-i18n="admin.home.link_teachers_title">Заявки преподавателей</div>
+            <div class="qc-desc" data-i18n="admin.home.link_teachers_desc">Рассмотреть и одобрить заявки</div>
+        </div>
+    </a>
+    <a href="/admin/users" class="admin-quick-card">
+        <div class="qc-icon">👥</div>
+        <div>
+            <div class="qc-title" data-i18n="admin.home.link_users_title">Пользователи</div>
+            <div class="qc-desc" data-i18n="admin.home.link_users_desc">Управление аккаунтами</div>
+        </div>
+    </a>
+    <a href="/admin/courses" class="admin-quick-card">
+        <div class="qc-icon">📚</div>
+        <div>
+            <div class="qc-title" data-i18n="admin.home.link_courses_title">Курсы</div>
+            <div class="qc-desc" data-i18n="admin.home.link_courses_desc">Просмотр и модерация курсов</div>
+        </div>
+    </a>
+    <a href="/" class="admin-quick-card">
+        <div class="qc-icon">🌐</div>
+        <div>
+            <div class="qc-title" data-i18n="admin.home.link_site_title">Перейти на сайт</div>
+            <div class="qc-desc" data-i18n="admin.home.link_site_desc">Открыть главную страницу</div>
+        </div>
+    </a>
+</div>
+{% endblock %}

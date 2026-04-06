@@ -4,7 +4,7 @@ INFO:     Started reloader process [4431] using WatchFiles
 INFO:     Started server process [4434]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-✅ EduHub запущен. База данных инициализирована.
+✅ Фурузон запущен. База данных инициализирована.
 INFO:     127.0.0.1:49476 - "GET /dashboard/teacher HTTP/1.1" 200 OK
 INFO:     127.0.0.1:49483 - "GET /courses/6 HTTP/1.1" 200 OK
 INFO:     127.0.0.1:49483 - "GET /courses/6/manage HTTP/1.1" 200 OK
@@ -49,7 +49,7 @@ INFO:     Finished server process [4692]
 INFO:     Started server process [4956]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-✅ EduHub запущен. База данных инициализирована.
+✅ Фурузон запущен. База данных инициализирована.
 INFO:     127.0.0.1:49523 - "GET / HTTP/1.1" 200 OK
 INFO:     127.0.0.1:49526 - "GET /logout HTTP/1.1" 302 Found
 INFO:     127.0.0.1:49526 - "GET / HTTP/1.1" 200 OK

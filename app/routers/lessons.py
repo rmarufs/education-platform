@@ -1,6 +1,9 @@
 # Роутер уроков
+import os
+import uuid
+import shutil
 from datetime import datetime
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
@@ -29,9 +32,33 @@ def require_teacher(request: Request, db: Session):
     if not uid:
         raise HTTPException(status_code=401)
     user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
     return user
+
+
+def _save_uploaded_files(files, lesson_id, db):
+    """Сохраняет загруженные файлы как материалы урока."""
+    if not files:
+        return
+    for file in files:
+        if not file.filename:
+            continue
+        ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "other"
+        os.makedirs("static/materials", exist_ok=True)
+        filename = f"{uuid.uuid4().hex}_{file.filename}"
+        save_path = f"static/materials/{filename}"
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        material = Material(
+            lesson_id=lesson_id,
+            title=file.filename,
+            file_url="/" + save_path,
+            file_type=ext,
+        )
+        db.add(material)
+    db.commit()
 
 
 # ── Страница урока ─────────────────────────────────────────────
@@ -56,11 +83,15 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
 
     # Прогресс студента
     progress = None
+    progress_data = {}
     if user and user.role.value == "student":
         progress = db.query(Progress).filter(
             Progress.student_id == user.id,
             Progress.lesson_id == lesson_id
         ).first()
+        # Прогресс по всем урокам для навигации
+        all_progress = db.query(Progress).filter(Progress.student_id == user.id).all()
+        progress_data = {p.lesson_id: p.completed for p in all_progress}
 
     # Все уроки курса для навигации
     from app.models.course import Course
@@ -73,6 +104,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "lesson": lesson,
         "user": user,
         "progress": progress,
+        "progress_data": progress_data,
         "course": course,
         "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
     })
@@ -80,12 +112,13 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
 
 # ── Создать урок ───────────────────────────────────────────────
 @router.post("/create")
-def create_lesson(
+async def create_lesson(
     request: Request,
     module_id: int = Form(...),
     title: str = Form(...),
     video_url: str = Form(""),
     description: str = Form(""),
+    files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
     teacher = require_teacher(request, db)
@@ -107,17 +140,23 @@ def create_lesson(
     )
     db.add(lesson)
     db.commit()
+    db.refresh(lesson)
+
+    # Сохраняем загруженные файлы
+    _save_uploaded_files(files, lesson.id, db)
+
     return RedirectResponse(f"/courses/{module.course_id}/manage", status_code=302)
 
 
 # ── Редактировать урок ─────────────────────────────────────────
 @router.post("/{lesson_id}/edit")
-def edit_lesson(
+async def edit_lesson(
     lesson_id: int,
     request: Request,
     title: str = Form(...),
     video_url: str = Form(""),
     description: str = Form(""),
+    files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
     teacher = require_teacher(request, db)
@@ -133,10 +172,14 @@ def edit_lesson(
     lesson.video_url = video_url or None
     lesson.description = description or None
     db.commit()
+
+    # Сохраняем новые загруженные файлы
+    _save_uploaded_files(files, lesson.id, db)
+
     return RedirectResponse(f"/courses/{lesson.module.course_id}/manage", status_code=302)
 
 
-# ── Добавить материал к уроку ──────────────────────────────────
+# ── Добавить материал к уроку (через URL) ──────────────────────
 @router.post("/{lesson_id}/material")
 def add_material(
     lesson_id: int,
@@ -159,6 +202,27 @@ def add_material(
     db.add(material)
     db.commit()
     return RedirectResponse(f"/courses/{lesson.module.course_id}/manage", status_code=302)
+
+
+# ── Загрузить файл к уроку ─────────────────────────────────────
+@router.post("/{lesson_id}/upload")
+async def upload_lesson_material(
+    lesson_id: int,
+    request: Request,
+    files: list[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+):
+    teacher = require_teacher(request, db)
+    lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404)
+    from app.models.course import Course
+    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    if not course:
+        raise HTTPException(status_code=403)
+
+    _save_uploaded_files(files, lesson.id, db)
+    return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
 
 
 # ── Отметить урок завершённым (студент) ───────────────────────

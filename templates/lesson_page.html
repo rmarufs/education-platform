@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ lesson.title }} — EduHub{% endblock %}
+{% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
 <div class="lesson-layout">
@@ -32,13 +32,21 @@
       {% set vid = lesson.video_url %}
       {% if "youtube.com/watch?v=" in vid %}
         {% set vid_id = vid.split("v=")[1].split("&")[0] %}
-        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen></iframe>
+        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% elif "youtu.be/" in vid %}
         {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
-        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen></iframe>
+        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% else %}
-        <iframe src="{{ vid }}" allowfullscreen></iframe>
+        <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% endif %}
+    </div>
+    {% else %}
+    <div class="video-placeholder">
+      <div class="video-placeholder-inner">
+        <span style="font-size:3rem;">🎬</span>
+        <p style="font-weight:600;font-size:1.1rem;margin:8px 0 4px;" data-i18n="lesson.video_soon">Видео скоро появится</p>
+        <p style="color:var(--text-muted);font-size:0.85rem;" data-i18n="lesson.video_pending">Преподаватель ещё не добавил видео к этому уроку</p>
+      </div>
     </div>
     {% endif %}
 
@@ -171,13 +179,20 @@
 
       <div class="comments-list">
         {% for comment in top_comments %}
-        <div class="comment-card">
+        <div class="comment-card" id="comment-{{ comment.id }}">
           <div class="comment-author">
             <span class="avatar-xs">{{ comment.author.name[0].upper() }}</span>
             <strong>{{ comment.author.name }}</strong>
             <span class="comment-time text-muted">{{ comment.created_at.strftime("%d.%m.%Y %H:%M") }}</span>
           </div>
           <p class="comment-text">{{ comment.text }}</p>
+
+          <!-- Кнопка "Ответить" — только для корневых комментариев -->
+          {% if user %}
+          <button type="button" class="btn btn-outline btn-xs"
+                  onclick="toggleReplyForm({{ comment.id }})"
+                  data-i18n="lesson.reply_btn">↩ Ответить</button>
+          {% endif %}
 
           <!-- Ответы -->
           {% for reply in comment.replies %}
@@ -189,12 +204,13 @@
           </div>
           {% endfor %}
 
-          <!-- Форма ответа -->
+          <!-- Форма ответа (скрыта по умолчанию) -->
           {% if user %}
-          <form action="/comments/{{ comment.id }}/reply" method="POST" class="reply-form">
+          <form action="/comments/{{ comment.id }}/reply" method="POST"
+                class="reply-form" id="reply-form-{{ comment.id }}" style="display:none;">
             <input type="text" name="text" class="form-input form-input-sm"
                    data-i18n="lesson.reply_ph" placeholder="Ответить..." required />
-            <button type="submit" class="btn btn-outline btn-xs" data-i18n="lesson.reply_btn">↩ Ответить</button>
+            <button type="submit" class="btn btn-outline btn-xs" data-i18n="lesson.send">Отправить</button>
           </form>
           {% endif %}
         </div>
@@ -217,6 +233,30 @@ function addAnswerRow() {
   d.innerHTML = `<input type="text" name="answer_${answerCount}" class="form-input" data-i18n="lesson.ans_ph" data-i18n-params='{"n": ${answerCount}}' placeholder="Вариант ${answerCount}" />
     <label><input type="checkbox" name="correct_${answerCount}" /><span data-i18n="lesson.ans_correct"> ${t('lesson.ans_correct')}</span></label>`;
   c.appendChild(d);
+  setLang(currentLang);
+}
+
+function toggleReplyForm(commentId) {
+  const form = document.getElementById('reply-form-' + commentId);
+  if (!form) return;
+  if (form.style.display === 'none' || !form.style.display) {
+    // Скрыть все формы
+    document.querySelectorAll('.reply-form').forEach(f => f.style.display = 'none');
+    form.style.display = 'flex';
+    form.querySelector('input[name="text"]').focus();
+  } else {
+    form.style.display = 'none';
+  }
 }
 </script>
+<style>
+.lesson-video-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 12px;
+}
+</style>
 {% endblock %}

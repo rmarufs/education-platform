@@ -1,8 +1,27 @@
 {% extends "base.html" %}
 {% block title_key %}home.popular_courses{% endblock %}
-{% block title %}Популярные курсы — EduHub{% endblock %}
+{% block title %}Популярные курсы — Фурузон{% endblock %}
 
 {% block content %}
+<!-- Баннер раннего доступа -->
+<div id="early-access-banner" class="page-hero" style="padding:14px 24px;font-size:0.95rem;display:flex;align-items:center;justify-content:center;gap:10px;">
+  <span data-i18n="hero.early_access">Платформа находится в стадии раннего доступа. Мы рады первым пользователям!</span>
+  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;opacity:0.8;" title="Close" type="button">&times;</button>
+</div>
+<script>
+  (function(){
+    if (sessionStorage.getItem('banner_dismissed')) {
+      var b = document.getElementById('early-access-banner');
+      if (b) b.style.display = 'none';
+    }
+  })();
+  function dismissBanner() {
+    var b = document.getElementById('early-access-banner');
+    if (b) b.style.display = 'none';
+    sessionStorage.setItem('banner_dismissed', '1');
+  }
+</script>
+
 <!-- Hero секция -->
 <section class="hero">
     <div class="hero-content">
@@ -89,7 +108,7 @@
 <!-- О платформе -->
 <section class="features-section">
     <div class="section-header">
-        <h2 data-i18n="home.why_us">Почему EduHub?</h2>
+        <h2 data-i18n="home.why_us">Почему Фурузон?</h2>
     </div>
     <div class="features-grid">
         <div class="feature-card">

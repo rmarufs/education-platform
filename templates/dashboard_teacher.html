@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Кабинет преподавателя — EduHub{% endblock %}
+{% block title_key %}nav.dashboard{% endblock %}
+{% block title %}Кабинет преподавателя — Фурузон{% endblock %}
 
 {% block content %}
 <div class="dashboard">
@@ -52,7 +53,7 @@
                     </div>
                     <div class="course-card-body">
                         <h3 class="course-title">{{ course.title }}</h3>
-                        <p class="course-desc">{{ course.description or "Нет описания" }}</p>
+                        <p class="course-desc">{{ course.description or "" }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
                         <div class="course-meta">
                             <span class="course-date">📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
                         </div>
@@ -112,7 +113,7 @@
             <div class="form-group">
                 <label for="new-category" data-i18n="course.category">Категория</label>
                 <select id="new-category" name="category_id" class="form-input">
-                    <option value="0">— Без категории —</option>
+                    <option value="0" data-i18n="course.no_category">— Без категории —</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
                     {% endfor %}
@@ -121,9 +122,9 @@
             <div class="form-group">
                 <label for="new-level" data-i18n="course.level">Уровень курса</label>
                 <select id="new-level" name="level" class="form-input">
-                    <option value="Beginner" selected>Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
+                    <option value="Beginner" selected data-i18n="level.beginner">Beginner</option>
+                    <option value="Intermediate" data-i18n="level.intermediate">Intermediate</option>
+                    <option value="Advanced" data-i18n="level.advanced">Advanced</option>
                 </select>
             </div>
             <div class="form-group">
@@ -157,7 +158,7 @@
             <div class="form-group">
                 <label for="edit-category" data-i18n="course.category">Категория</label>
                 <select id="edit-category" name="category_id" class="form-input">
-                    <option value="0">— Без категории —</option>
+                    <option value="0" data-i18n="course.no_category">— Без категории —</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
                     {% endfor %}
@@ -166,9 +167,9 @@
             <div class="form-group">
                 <label for="edit-level" data-i18n="course.level">Уровень курса</label>
                 <select id="edit-level" name="level" class="form-input">
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
+                    <option value="Beginner" data-i18n="level.beginner">Beginner</option>
+                    <option value="Intermediate" data-i18n="level.intermediate">Intermediate</option>
+                    <option value="Advanced" data-i18n="level.advanced">Advanced</option>
                 </select>
             </div>
             <div class="form-group">

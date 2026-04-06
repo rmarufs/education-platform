@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title_key %}login.title_page{% endblock %}
-{% block title %}Вход — EduHub{% endblock %}
+{% block title %}Вход — Фурузон{% endblock %}
 
 {% block content %}
 <div class="auth-page">
@@ -12,7 +12,7 @@
         </div>
 
         {% if error %}
-        <div class="alert alert-error" id="error-msg">{{ error }}</div>
+        <div class="alert alert-error" id="error-msg" data-server-msg="{{ error }}">{{ error }}</div>
         {% endif %}
 
         <form id="login-form" action="/login" method="POST" class="auth-form" novalidate>

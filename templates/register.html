@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title_key %}register.title_page{% endblock %}
-{% block title %}Регистрация — EduHub{% endblock %}
+{% block title %}Регистрация — Фурузон{% endblock %}
 
 {% block content %}
 <div class="auth-page">
@@ -12,10 +12,10 @@
         </div>
 
         {% if error %}
-        <div class="alert alert-error" id="error-msg">{{ error }}</div>
+        <div class="alert alert-error" id="error-msg" data-server-msg="{{ error }}">{{ error }}</div>
         {% endif %}
 
-        <form id="register-form" action="/register" method="POST" class="auth-form" novalidate>
+        <form id="register-form" action="/register" method="POST" class="auth-form" enctype="multipart/form-data" novalidate>
             <div class="form-group">
                 <label for="name" data-i18n="form.name">Ваше имя</label>
                 <input
@@ -69,15 +69,48 @@
                 <label data-i18n="form.role">Я являюсь</label>
                 <div class="role-selector">
                     <label class="role-option" id="role-student-label">
-                        <input type="radio" name="role" value="student" id="role-student" checked />
+                        <input type="radio" name="role" value="student" id="role-student" checked onchange="toggleTeacherFields()" />
                         <span class="role-icon">👨‍🎓</span>
                         <span data-i18n="role.student">Студент</span>
                     </label>
                     <label class="role-option" id="role-teacher-label">
-                        <input type="radio" name="role" value="teacher" id="role-teacher" />
+                        <input type="radio" name="role" value="teacher" id="role-teacher" onchange="toggleTeacherFields()" />
                         <span class="role-icon">👨‍🏫</span>
                         <span data-i18n="role.teacher">Преподаватель</span>
                     </label>
+                </div>
+            </div>
+
+            <!-- Дополнительные поля для преподавателей (необязательные) -->
+            <div id="teacher-extra-fields" style="display:none;">
+                <div class="form-group">
+                    <label for="document" data-i18n="register.teacher_docs">📎 Прикрепите ваши сертификаты или дипломы (необязательно)</label>
+                    <input
+                        type="file"
+                        id="document"
+                        name="document"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        class="form-input"
+                        style="padding:10px;cursor:pointer;"
+                    />
+                    <span class="form-error" id="document-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio" data-i18n="register.teacher_bio">✍️ Расскажите о себе</label>
+                    <textarea
+                        id="bio"
+                        name="bio"
+                        class="form-input form-textarea"
+                        rows="3"
+                        placeholder="Расскажите о себе и почему хотите стать преподавателем..."
+                        data-i18n="register.teacher_bio_ph"
+                        data-i18n-prop="placeholder"
+                        style="resize:vertical;"
+                    ></textarea>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="register.teacher_bio_hint">
+                        Расскажите о себе и почему хотите стать преподавателем (необязательно)
+                    </p>
                 </div>
             </div>
 
@@ -94,4 +127,17 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleTeacherFields() {
+    const teacherRadio = document.getElementById('role-teacher');
+    const extraFields = document.getElementById('teacher-extra-fields');
+
+    if (teacherRadio.checked) {
+        extraFields.style.display = 'block';
+    } else {
+        extraFields.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

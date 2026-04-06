@@ -13,11 +13,11 @@
 
       {% if course.materials %}
       <div class="course-materials" style="margin-top: 15px;">
-        <h4 style="margin-bottom: 5px; font-size: 0.9rem; color: #64748b;" data-i18n="manage.materials">Материалы курса:</h4>
-        <ul style="list-style: none; padding: 0; margin: 0;">
+        <h4 style="margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted);" data-i18n="manage.materials">Материалы курса:</h4>
+        <ul class="simple-list">
           {% for mat in course.materials %}
-          <li style="margin-bottom: 5px; display: flex; align-items: center; gap: 10px;">
-            <a href="{{ mat.file_url }}" target="_blank" style="text-decoration: none; color: #3b82f6; font-size: 0.9rem;">📄 {{ mat.title }}</a>
+          <li style="display:flex;align-items:center;gap:10px;">
+            <a href="{{ mat.file_url }}" target="_blank" style="font-size:0.9rem;">📄 {{ mat.title }}</a>
             <form action="/courses/materials/{{ mat.id }}/delete" method="POST" style="margin: 0;" class="delete-file-form">
               <button type="submit" class="btn btn-danger btn-xs" style="padding: 2px 6px; font-size: 0.75rem;">🗑</button>
             </form>
@@ -106,42 +106,42 @@
   <section class="manage-section" style="margin-top: 40px;">
     <div class="section-label" data-i18n="manage.activity_lbl">Активность студентов</div>
     {% if student_activity %}
-    <div style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden;">
-      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+    <div class="data-table-wrap">
+      <table class="data-table">
         <thead>
-          <tr style="background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
-            <th style="padding: 12px 16px; font-weight: 600; font-size: 0.875rem; color: #475569;" data-i18n="manage.student">Студент</th>
-            <th style="padding: 12px 16px; font-weight: 600; font-size: 0.875rem; color: #475569;" data-i18n="manage.progress">Прогресс</th>
-            <th style="padding: 12px 16px; font-weight: 600; font-size: 0.875rem; color: #475569;" data-i18n="manage.passed_lessons">Пройдено уроков</th>
-            <th style="padding: 12px 16px; font-weight: 600; font-size: 0.875rem; color: #475569;" data-i18n="manage.last_active">Последняя активность</th>
+          <tr>
+            <th data-i18n="manage.student">Студент</th>
+            <th data-i18n="manage.progress">Прогресс</th>
+            <th data-i18n="manage.passed_lessons">Пройдено уроков</th>
+            <th data-i18n="manage.last_active">Последняя активность</th>
           </tr>
         </thead>
         <tbody>
           {% for activity in student_activity %}
-          <tr style="border-bottom: 1px solid #e5e7eb;">
-            <td style="padding: 12px 16px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
                   {{ activity.student.name[0].upper() }}
                 </div>
                 <div>
-                  <div style="font-weight: 500; color: #1e293b; font-size: 0.9rem;">{{ activity.student.name }}</div>
-                  <div style="font-size: 0.75rem; color: #64748b;">{{ activity.student.email }}</div>
+                  <div style="font-weight:500;color:var(--text);font-size:0.9rem;">{{ activity.student.name }}</div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);">{{ activity.student.email }}</div>
                 </div>
               </div>
             </td>
-            <td style="padding: 12px 16px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="flex-grow: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; max-width: 100px;">
-                  <div style="height: 100%; background: {{ '#10b981' if activity.progress_pct == 100 else '#3b82f6' }}; width: {{ activity.progress_pct }}%;"></div>
+            <td>
+              <div class="progress-inline">
+                <div class="progress-inline-bar">
+                  <div class="progress-inline-fill {{ 'done' if activity.progress_pct == 100 else '' }}" style="width: {{ activity.progress_pct }}%;"></div>
                 </div>
-                <span style="font-size: 0.875rem; font-weight: 600; color: #334155;">{{ activity.progress_pct }}%</span>
+                <span style="font-size:0.875rem;font-weight:600;color:var(--text);">{{ activity.progress_pct }}%</span>
               </div>
             </td>
-            <td style="padding: 12px 16px; font-size: 0.875rem; color: #475569;">
+            <td class="text-muted" data-i18n="manage.completed_of" data-i18n-params='{"done":{{ activity.completed }},"total":{{ activity.total }}}'>
               {{ activity.completed }} из {{ activity.total }}
             </td>
-            <td style="padding: 12px 16px; font-size: 0.875rem; color: #475569;">
+            <td class="text-muted">
               {% if activity.last_active %}
                 {{ activity.last_active.strftime("%d.%m.%Y %H:%M") }}
               {% else %}
@@ -154,7 +154,7 @@
       </table>
     </div>
     {% else %}
-    <div class="empty-state" style="padding: 40px; background: white;">
+    <div class="empty-state" style="padding:40px;">
       <span class="empty-icon" style="font-size: 2.5rem; margin-bottom: 10px; display: block;">👥</span>
       <p style="margin: 0;" data-i18n="manage.no_students">Пока нет студентов, начавших обучение на этом курсе.</p>
     </div>
@@ -182,7 +182,7 @@
       <div class="form-group">
         <label for="ec-cat" data-i18n="course.category">Категория</label>
         <select id="ec-cat" name="category_id" class="form-input">
-          <option value="0">— Без категории —</option>
+          <option value="0" data-i18n="course.no_category">— Без категории —</option>
           {% for cat in categories %}
           <option value="{{ cat.id }}" {{ "selected" if course.category_id == cat.id else "" }}>{{ cat.name }}</option>
           {% endfor %}
@@ -207,7 +207,7 @@
       <h2 data-i18n="manage.new_lesson">Новый урок</h2>
       <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
     </div>
-    <form action="/lessons/create" method="POST">
+    <form action="/lessons/create" method="POST" enctype="multipart/form-data">
       <input type="hidden" id="add-lesson-module-id" name="module_id" value="" />
       <div class="form-group">
         <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
@@ -223,6 +223,11 @@
         <textarea id="l-desc" name="description" class="form-input form-textarea"
                   placeholder="" data-i18n="manage.lesson_desc" data-i18n-prop="placeholder"></textarea>
       </div>
+      <div class="form-group">
+        <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word, PPT)</label>
+        <input type="file" id="l-files" name="files" multiple class="form-input"
+               accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="action.cancel">Отмена</button>
         <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
@@ -235,10 +240,10 @@
 <div class="modal-overlay" id="edit-lesson-modal" onclick="closeModal('edit-lesson-modal')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h2 data-i18n="manage.new_lesson">Редактировать урок</h2>
+      <h2 data-i18n="manage.edit_lesson">Редактировать урок</h2>
       <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>
     </div>
-    <form id="edit-lesson-form" method="POST">
+    <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
       <div class="form-group">
         <label for="el-title" data-i18n="manage.lesson_title">Название</label>
         <input type="text" id="el-title" name="title" class="form-input" required />
@@ -250,6 +255,11 @@
       <div class="form-group">
         <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>
         <textarea id="el-desc" name="description" class="form-input form-textarea"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="el-files" data-i18n="manage.lesson_files">📎 Добавить материалы (PDF, Word, PPT)</label>
+        <input type="file" id="el-files" name="files" multiple class="form-input"
+               accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('edit-lesson-modal')" data-i18n="action.cancel">Отмена</button>

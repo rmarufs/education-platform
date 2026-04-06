@@ -50,11 +50,14 @@ def reply_comment(
     if not text.strip():
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
 
+    # Всегда привязываем ответ к корневому комментарию (максимум 2 уровня)
+    root_id = parent.parent_comment_id if parent.parent_comment_id else parent.id
+
     reply = Comment(
         lesson_id=parent.lesson_id,
         user_id=uid,
         text=text.strip(),
-        parent_comment_id=comment_id,
+        parent_comment_id=root_id,
     )
     db.add(reply)
     db.commit()

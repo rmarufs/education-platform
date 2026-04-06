@@ -1,0 +1,74 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Заявки преподавателей{% endblock %}
+{% block title_key %}admin.nav.teachers{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div>
+        <h1 data-i18n="admin.teachers.title">👨‍🏫 Заявки преподавателей</h1>
+        <p data-i18n="admin.teachers.subtitle">Рассмотрите заявки и документы от новых преподавателей</p>
+    </div>
+</div>
+
+{% if teachers %}
+<div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th data-i18n="admin.teachers.name">Имя</th>
+                <th data-i18n="admin.teachers.email">Email</th>
+                <th data-i18n="admin.teachers.date">Дата регистрации</th>
+                <th data-i18n="admin.teachers.document">Документ</th>
+                <th data-i18n="admin.teachers.actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in teachers %}
+            <tr>
+                <td>
+                    <div class="admin-flex">
+                        <span class="admin-avatar admin-avatar-lg">
+                            {{ t.name[0].upper() }}
+                        </span>
+                        <strong>{{ t.name }}</strong>
+                    </div>
+                </td>
+                <td>{{ t.email }}</td>
+                <td>{{ t.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
+                <td>
+                    {% if t.documents %}
+                    <a href="{{ t.documents }}" target="_blank" class="admin-doc-link">
+                        📄 <span data-i18n="admin.teachers.open_doc">Открыть PDF</span>
+                    </a>
+                    {% else %}
+                    <span class="admin-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="admin-actions">
+                        <form action="/admin/teachers/{{ t.id }}/approve" method="POST" style="display:inline;">
+                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm">
+                                ✅ <span data-i18n="admin.teachers.approve">Одобрить</span>
+                            </button>
+                        </form>
+                        <form action="/admin/teachers/{{ t.id }}/reject" method="POST" style="display:inline;"
+                              onsubmit="return confirm(t('admin.teachers.reject_confirm', { name: '{{ t.name }}' }))">
+                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">
+                                ❌ <span data-i18n="admin.teachers.reject">Отклонить</span>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="admin-empty">
+    <div class="admin-empty-icon">🎉</div>
+    <p data-i18n="admin.teachers.empty_title">Нет заявок на рассмотрении</p>
+    <p style="font-size:0.85rem;" data-i18n="admin.teachers.empty_subtitle">Все заявки обработаны. Отличная работа!</p>
+</div>
+{% endif %}
+{% endblock %}

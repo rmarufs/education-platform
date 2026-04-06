@@ -1,78 +1,175 @@
 {% extends "base.html" %}
-{% block title %}Каталог курсов — EduHub{% endblock %}
+{% block title_key %}catalog.title{% endblock %}
+{% block title %}Каталог курсов — Фурузон{% endblock %}
 
 {% block content %}
-<div class="catalog-page">
+<div class="catalog-layout">
 
-  <!-- Заголовок и поиск -->
-  <div class="catalog-header">
-    <h1 data-i18n="catalog.title">📚 Курсы</h1>
-    <form action="/courses/catalog" method="GET" class="search-bar">
-      <input type="text" name="q" value="{{ q }}" class="form-input search-input"
-             placeholder="Поиск курсов..." data-i18n="catalog.search" data-i18n-prop="placeholder" />
-      <select name="category_id" class="form-input select-sm">
-        <option value="0" data-i18n="catalog.all_cat">Все категории</option>
-        {% for cat in categories %}
-        <option value="{{ cat.id }}" {{ "selected" if selected_category == cat.id else "" }}>
-          {{ cat.name }}
-        </option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-primary" data-i18n="common.search_btn">🔍 Найти</button>
-      {% if q or selected_category %}
-      <a href="/courses/catalog" class="btn btn-outline" data-i18n="common.reset">Сброс</a>
-      {% endif %}
-    </form>
-  </div>
-
-  <!-- Результат поиска -->
-  {% if q %}
-  <p class="search-result-info text-muted" data-i18n="catalog.results" data-i18n-params='{"q":"{{ q | e }}", "count":{{ courses | length }}}'>
-    Результаты по запросу: <strong>«{{ q }}»</strong> — {{ courses | length }} курс(ов)
-  </p>
-  {% endif %}
-
-  <!-- Список курсов -->
-  {% if courses %}
-  <div class="courses-grid">
-    {% for course in courses %}
-    <div class="course-card fade-in">
-      <div class="course-card-header">
-        <span class="course-icon">📖</span>
-        {% if course.category %}
-        <span class="category-badge">{{ course.category.name }}</span>
-        {% endif %}
-      </div>
-      <div class="course-card-body">
-        <h3 class="course-title">{{ course.title }}</h3>
-        <p class="course-desc">{{ course.description or "" }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
-        <div class="course-meta">
-          <span class="course-teacher">👨‍🏫 {{ course.teacher.name }}</span>
-          {% if course.rating > 0 %}
-          <span class="course-rating">⭐ {{ "%.1f"|format(course.rating) }}</span>
-          {% endif %}
+  <!-- Sidebar: Фильтры -->
+  <aside class="catalog-sidebar">
+    <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:20px;" data-i18n="catalog.filters">Фильтры</h2>
+    <form action="/courses/catalog" method="GET" id="catalog-form" style="display:flex;flex-direction:column;gap:16px;">
+      
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="font-weight:600;font-size:.9rem;display:block;margin-bottom:8px;" data-i18n="catalog.search_label">Поиск</label>
+        <div style="position:relative;">
+          <input type="text" name="q" value="{{ q }}" class="form-input" placeholder="Название курса..." style="padding-left:36px;" data-i18n="catalog.search_placeholder" data-i18n-prop="placeholder" />
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5;">🔍</span>
         </div>
       </div>
-      <div class="course-card-footer">
-        <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="catalog.open">Открыть →</a>
+      
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="font-weight:600;font-size:.9rem;display:block;margin-bottom:8px;" data-i18n="catalog.category_label">Категория</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.9rem;">
+            <input type="radio" name="category_id" value="0" {% if selected_category == 0 %}checked{% endif %} onchange="this.form.submit()" />
+            <span data-i18n="catalog.all_cat">Все категории</span>
+          </label>
+          {% for cat in categories %}
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.9rem;">
+            <input type="radio" name="category_id" value="{{ cat.id }}" {% if selected_category == cat.id %}checked{% endif %} onchange="this.form.submit()" />
+            <span>{{ cat.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Кнопка очистки -->
+      {% if q or selected_category %}
+      <a href="/courses/catalog" class="btn btn-outline btn-sm" style="margin-top:8px;text-align:center;" data-i18n="catalog.reset_filters">Сбросить фильтры</a>
+      {% endif %}
+    </form>
+  </aside>
+
+  <!-- Main Content -->
+  <div style="flex:1;">
+    <!-- Toolbar -->
+    <div class="catalog-toolbar">
+      <div>
+        <h1 style="font-size:1.5rem;font-weight:700;margin:0;" data-i18n="catalog.title">📚 Каталог курсов</h1>
+        {% if q %}
+        <p style="font-size:.9rem;color:var(--text-muted);margin:4px 0 0;" data-i18n="catalog.results" data-i18n-params='{"q":"{{ q }}","count":{{ courses|length }}}'>
+          По запросу «<b>{{ q }}</b>» найдено
+        </p>
+        {% endif %}
+      </div>
+      
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:.9rem;color:var(--text-muted);font-weight:500;" data-i18n="catalog.view">Вид:</span>
+        <div class="catalog-view-switch">
+          <button id="view-grid" onclick="setViewMode('grid')" class="catalog-view-btn active" title="Grid" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </button>
+          <button id="view-list" onclick="setViewMode('list')" class="catalog-view-btn" title="List" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
     </div>
-    {% endfor %}
-  </div>
 
-  {% else %}
-  <div class="empty-state">
-    <span class="empty-icon">🔍</span>
-    {% if q %}
-    <p data-i18n="catalog.empty_q" data-i18n-params='{"q":"{{ q | e }}"}'>Ничего не найдено по запросу «{{ q }}»</p>
+    <!-- Список курсов -->
+    {% if courses %}
+    <div id="catalog-container" class="courses-grid" style="transition:all .3s ease;">
+      {% for course in courses %}
+      <div class="course-card reveal" style="animation-delay:{{ loop.index0 * 0.05 }}s;">
+        <div class="course-card-header">
+          <span class="course-icon">📖</span>
+          {% if course.category %}
+          <span class="category-badge">{{ course.category.name }}</span>
+          {% endif %}
+        </div>
+        <div class="course-card-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">{{ course.description or "" }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+          <div class="course-meta">
+            <span class="course-teacher">👨‍🏫 {{ course.teacher.name }}</span>
+            <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f"|format(course.rating) }}{% else %}⭐ 0.0{% endif %}</span>
+          </div>
+        </div>
+        <div class="course-card-footer">
+          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" style="width:100%;" data-i18n="catalog.open">Открыть →</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if total_pages > 1 %}
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:40px;">
+      {% for p in range(1, total_pages + 1) %}
+      <a href="/courses/catalog?q={{ q }}&category_id={{ selected_category }}&page={{ p }}" class="btn {{ 'btn-primary' if p == page else 'btn-secondary' }} btn-sm" style="width:36px;padding:0;display:flex;justify-content:center;align-items:center;">{{ p }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {% else %}
-    <p data-i18n="catalog.empty">Курсов пока нет</p>
+    <div class="empty-state reveal">
+      <span class="empty-icon">🔍</span>
+      {% if q or selected_category %}
+      <p data-i18n="catalog.empty_filtered">Ничего не найдено. Попробуйте изменить параметры поиска.</p>
+      {% else %}
+      <p data-i18n="catalog.empty_all">Курсов пока нет.</p>
+      {% endif %}
+    </div>
     {% endif %}
-    {% if q %}
-    <a href="/courses/catalog" class="btn btn-outline" data-i18n="catalog.view_all">Посмотреть все курсы</a>
-    {% endif %}
-  </div>
-  {% endif %}
 
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setViewMode(mode) {
+  const container = document.getElementById('catalog-container');
+  const btnGrid = document.getElementById('view-grid');
+  const btnList = document.getElementById('view-list');
+  if(!container) return;
+
+  if(mode === 'list') {
+    container.style.gridTemplateColumns = '1fr';
+    btnList.classList.add('active');
+    btnGrid.classList.remove('active');
+    localStorage.setItem('catalog_view', 'list');
+  } else {
+    container.style.gridTemplateColumns = '';
+    btnGrid.classList.add('active');
+    btnList.classList.remove('active');
+    localStorage.setItem('catalog_view', 'grid');
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('catalog_view') === 'list') {
+    setViewMode('list');
+  }
+});
+</script>
+<style>
+/* Стили для list view курсов */
+@media(min-width: 768px) {
+  #catalog-container[style*="1fr"] .course-card {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+  #catalog-container[style*="1fr"] .course-card-header {
+    width: 200px;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    justify-content: center;
+    border-radius: 12px 0 0 12px;
+  }
+  #catalog-container[style*="1fr"] .course-card-body {
+    flex: 1;
+    border-bottom: none;
+  }
+  #catalog-container[style*="1fr"] .course-card-footer {
+    width: 200px;
+    border-top: none;
+    border-left: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+</style>
 {% endblock %}

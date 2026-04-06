@@ -1,63 +1,212 @@
 <!DOCTYPE html>
-<html lang="ru" data-lang="ru">
+<html lang="tj" data-lang="tj" data-theme="light">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" data-i18n="base.description" content="EduHub — современная образовательная платформа для студентов и преподавателей" />
-    <title data-i18n-title="{% block title_key %}nav.home{% endblock %}">{% block title %}EduHub{% endblock %}</title>
+    <meta name="description" data-i18n="base.description" content="Фурузон — платформаи муосири таълимӣ барои донишҷӯён ва омӯзгорон" />
+    <title data-i18n-title="{% block title_key %}{% endblock %}">{% block title %}Фурузон{% endblock %}</title>
+    <script>
+    (function () {
+      try {
+        const root = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        const savedLang = localStorage.getItem('lang') || 'tj';
+        root.dataset.theme = savedTheme;
+        root.dataset.lang = savedLang;
+        root.lang = savedLang === 'tj' ? 'tg' : 'ru';
+        root.classList.toggle('dark', savedTheme === 'dark');
+        root.style.colorScheme = savedTheme === 'dark' ? 'dark' : 'light';
+      } catch (_) {}
+    })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css?v=4" />
 </head>
 <body>
-    <!-- Навигационная панель -->
+    <div id="reading-progress"></div>
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="nav-logo">
                 <span class="logo-icon">🎓</span>
-                <span class="logo-text">EduHub</span>
+                <span class="logo-text">Фурузон</span>
             </a>
 
             <div class="nav-links">
-                {% if user %}
-                    <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name": "{{ user.name }}"}'>
-                        Привет, {{ user.name }}
-                    </span>
-                    <a href="/dashboard" class="btn btn-secondary" data-i18n="nav.dashboard">Кабинет</a>
-                    <a href="/logout" class="btn btn-outline" data-i18n="nav.logout">Выйти</a>
-                {% else %}
-                    <a href="/login" class="btn btn-secondary" data-i18n="nav.login">Войти</a>
-                    <a href="/register" class="btn btn-primary" data-i18n="nav.register">Регистрация</a>
-                {% endif %}
-
-                <!-- Переключатель языка -->
-                <div class="lang-switcher">
-                    <button class="lang-btn active" id="lang-ru" onclick="setLang('ru')">RU</button>
-                    <span class="lang-divider">|</span>
-                    <button class="lang-btn" id="lang-tj" onclick="setLang('tj')">TJ</button>
+                <div class="nav-center-links">
+                    <a href="/courses/catalog" class="nav-link {% if request and request.url.path == '/courses/catalog' %}active{% endif %}" data-i18n="nav.courses">Курсҳо</a>
+                    <a href="/search" class="nav-link {% if request and request.url.path == '/search' %}active{% endif %}" data-i18n="nav.search">Ҷустуҷӯ</a>
+                    <a href="/how-it-works" class="nav-link {% if request and request.url.path == '/how-it-works' %}active{% endif %}" data-i18n="nav.how_it_works">Тарзи кор</a>
+                    <a href="/about" class="nav-link {% if request and request.url.path == '/about' %}active{% endif %}" data-i18n="nav.about">Дар бораи</a>
+                    <a href="/contact" class="nav-link {% if request and request.url.path == '/contact' %}active{% endif %}" data-i18n="nav.contact">Тамос</a>
                 </div>
+
+                <div class="nav-auth-links">
+                    <span class="nav-divider"></span>
+                    {% if user %}
+                        {% if user.role.value == 'admin' %}
+                        <a href="/admin" class="btn btn-outline btn-sm" data-i18n="nav.admin">Панели мудир</a>
+                        {% endif %}
+                        <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
+                        <a href="/dashboard" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Кабинет</a>
+                        <a href="#" onclick="confirmLogout(); return false;" class="btn btn-outline btn-sm" data-i18n="nav.logout">Баромадан</a>
+                    {% else %}
+                        <a href="/login" class="btn btn-secondary btn-sm" data-i18n="nav.login">Вуруд</a>
+                        <a href="/register" class="btn btn-primary btn-sm" data-i18n="nav.register">Сабти ном</a>
+                    {% endif %}
+                </div>
+
+                <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+
+                <div class="lang-switcher">
+                    <button class="lang-btn" id="lang-ru" onclick="setLang('ru')" type="button">RU</button>
+                    <span class="lang-divider">|</span>
+                    <button class="lang-btn" id="lang-tj" onclick="setLang('tj')" type="button">TJ</button>
+                </div>
+
+                <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger-btn" aria-label="Меню" type="button">
+                    <span></span><span></span><span></span>
+                </button>
             </div>
         </div>
     </nav>
 
-    <!-- Основной контент страницы -->
+    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="/courses/catalog" class="mobile-menu-link">📚 <span data-i18n="nav.courses">Курсҳо</span></a>
+        <a href="/search" class="mobile-menu-link">🔍 <span data-i18n="nav.search">Ҷустуҷӯ</span></a>
+        <a href="/how-it-works" class="mobile-menu-link">📖 <span data-i18n="nav.how_it_works">Тарзи кор</span></a>
+        <a href="/about" class="mobile-menu-link">ℹ️ <span data-i18n="nav.about">Дар бораи</span></a>
+        <a href="/contact" class="mobile-menu-link">📬 <span data-i18n="nav.contact">Тамос</span></a>
+        {% if user %}
+        {% if user.role.value == 'admin' %}
+        <a href="/admin" class="mobile-menu-link">🔧 <span data-i18n="nav.admin">Панели мудир</span></a>
+        {% endif %}
+        <a href="/dashboard" class="mobile-menu-link">📊 <span data-i18n="nav.dashboard">Кабинет</span></a>
+        <a href="#" onclick="confirmLogout(); return false;" class="mobile-menu-link">🚪 <span data-i18n="nav.logout">Баромадан</span></a>
+        {% else %}
+        <a href="/login" class="mobile-menu-link">🔑 <span data-i18n="nav.login">Вуруд</span></a>
+        <a href="/register" class="mobile-menu-link">✍️ <span data-i18n="nav.register">Сабти ном</span></a>
+        {% endif %}
+    </div>
+
     <main class="main-content">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Подвал -->
-    <footer class="footer">
-        <div class="footer-container">
-            <p>© 2024 EduHub. <span data-i18n="footer.rights">Все права защищены.</span></p>
+    <footer class="footer-enhanced">
+        <div class="footer-shell">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="footer-logo-icon">🎓</span>
+                        <span class="footer-logo-text">Фурузон</span>
+                    </div>
+                    <p class="footer-tagline" data-i18n="footer.tagline">Платформаи муосири таълимӣ барои донишҷӯён ва омӯзгорон.</p>
+                </div>
+                <div>
+                    <h4 class="footer-title" data-i18n="footer.platform">Платформа</h4>
+                    <div class="footer-links">
+                        <a href="/courses/catalog" data-i18n="nav.courses">Курсҳо</a>
+                        <a href="/search" data-i18n="nav.search">Ҷустуҷӯ</a>
+                        <a href="/how-it-works" data-i18n="nav.how_it_works">Тарзи кор</a>
+                        <a href="/about" data-i18n="nav.about">Дар бораи</a>
+                        <a href="/contact" data-i18n="nav.contact">Тамос</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer-title" data-i18n="footer.company">Ширкат</h4>
+                    <div class="footer-links">
+                        <a href="/about" data-i18n="nav.about">Дар бораи</a>
+                        <a href="/contact" data-i18n="nav.contact">Тамос</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer-title" data-i18n="footer.social">Шабакаҳои иҷтимоӣ</h4>
+                    <div class="footer-socials">
+                        <a href="#" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+                        </a>
+                        <a href="#" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 Фурузон. <span data-i18n="footer.rights">Ҳамаи ҳуқуқҳо ҳифз шудаанд.</span></p>
+            </div>
         </div>
     </footer>
 
-    <!-- JavaScript -->
-    <script src="/static/js/i18n.js"></script>
-    <script src="/static/js/main.js"></script>
+    <button id="scroll-top-btn" class="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Наверх" type="button">↑</button>
+
+    <script src="/static/js/i18n.js?v=3"></script>
+    <script src="/static/js/main.js?v=2"></script>
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/courses.js"></script>
+    <script>
+    function syncThemeToggle() {
+      const btn = document.getElementById('theme-btn');
+      if (!btn) return;
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      btn.textContent = isDark ? '☀️' : '🌙';
+      btn.title = isDark ? 'Light mode' : 'Dark mode';
+    }
+
+    function confirmLogout() {
+      if (confirm(t('confirm.logout'))) {
+        window.location.href = '/logout';
+      }
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = nextTheme;
+      root.classList.toggle('dark', nextTheme === 'dark');
+      root.style.colorScheme = nextTheme === 'dark' ? 'dark' : 'light';
+      localStorage.setItem('theme', nextTheme);
+      syncThemeToggle();
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const btn = document.getElementById('hamburger-btn');
+      const overlay = document.getElementById('mobile-overlay');
+      menu.classList.toggle('open');
+      btn.classList.toggle('open');
+      overlay.classList.toggle('open');
+    }
+
+    (function () {
+      syncThemeToggle();
+
+      const scrollBtn = document.getElementById('scroll-top-btn');
+      window.addEventListener('scroll', () => {
+        scrollBtn.classList.toggle('visible', window.scrollY > 400);
+      });
+
+      const bar = document.getElementById('reading-progress');
+      window.addEventListener('scroll', () => {
+        const height = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.width = height > 0 ? (window.scrollY / height * 100) + '%' : '0';
+      });
+
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+    })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
