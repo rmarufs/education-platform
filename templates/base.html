@@ -29,9 +29,25 @@
 
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="nav-logo">
-                <span class="logo-icon">🎓</span>
-                <span class="logo-text">Фурузон</span>
+            <a href="/" class="nav-logo" aria-label="Фурузон">
+                <span class="logo-mark" aria-hidden="true">
+                    <svg class="logo-cap" viewBox="0 0 64 64" role="presentation" focusable="false">
+                        <defs>
+                            <linearGradient id="logo-cap-fill" x1="10%" y1="10%" x2="90%" y2="90%">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="1" />
+                                <stop offset="100%" stop-color="currentColor" stop-opacity=".82" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M32 10 8 22l24 12 24-12-24-12Z" fill="url(#logo-cap-fill)" />
+                        <path d="M18 28v10c0 3 7 8 14 8s14-5 14-8V28" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M48 26v12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+                        <circle cx="48" cy="41" r="3.5" fill="currentColor" />
+                        <path d="M48 38.5c0 0 4 4.5 4 8.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+                    </svg>
+                </span>
+                <span class="logo-copy">
+                    <span class="logo-text">Фурузон</span>
+                </span>
             </a>
 
             <div class="nav-links">
@@ -145,6 +161,7 @@
 
     <script src="/static/js/i18n.js?v=3"></script>
     <script src="/static/js/main.js?v=2"></script>
+    <script src="/static/js/richtext.js?v=1"></script>
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/courses.js"></script>
     <script>

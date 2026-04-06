@@ -35,7 +35,7 @@ const translations = {
     "stats.courses": "Курсов",
     "stats.teachers": "Преподавателей",
 
-    "home.popular_courses": "Популярные курсы",
+    "home.popular_courses": "Фурузон  — Образовательная платформа",
     "home.popular_courses_sub": "Начни обучение с лучших программ нашей платформы",
     "home.no_courses": "Курсы пока не добавлены. Зарегистрируйтесь как преподаватель и создайте первый.",
     "home.why_us": "Почему Фурузон?",
@@ -169,8 +169,12 @@ const translations = {
     "manage.no_lessons": "Уроков пока нет",
     "manage.add_lesson": "+ Добавить урок",
     "manage.no_modules": "Модулей пока нет. Добавьте первый.",
+    "manage.new_module": "Новый модуль",
     "manage.new_mod_ph": "Название нового модуля",
+    "manage.module_desc": "Описание модуля",
     "manage.add_mod_btn": "+ Модуль",
+    "manage.edit_module": "Редактировать модуль",
+    "manage.module_save": "Сохранить модуль",
     "manage.activity_lbl": "Активность студентов",
     "manage.student": "Студент",
     "manage.progress": "Прогресс",
@@ -188,6 +192,16 @@ const translations = {
     "manage.edit_lesson": "Редактировать урок",
     "manage.lesson_files": "Прикрепить материалы",
     "manage.completed_of": "{done} из {total}",
+    "editor.bold": "Жирный текст",
+    "editor.italic": "Курсив",
+    "editor.strike": "Зачеркнутый текст",
+    "editor.link": "Вставить ссылку",
+    "editor.bullets": "Маркированный список",
+    "editor.numbered": "Нумерованный список",
+    "editor.align_left": "Выравнивание по левому краю",
+    "editor.align_center": "Выравнивание по центру",
+    "editor.align_right": "Выравнивание по правому краю",
+    "editor.link_prompt": "Введите ссылку",
 
     "course_page.breadcrumbs_home": "Главная",
     "course_page.breadcrumbs_cat": "Курсы",
@@ -541,7 +555,7 @@ const translations = {
     "stats.courses": "Курс",
     "stats.teachers": "Омӯзгор",
 
-    "home.popular_courses": "Курсҳои машҳур",
+    "home.popular_courses": "Фурузон — Платформаи омӯзишӣ",
     "home.popular_courses_sub": "Омӯзишро аз барномаҳои беҳтарини платформа оғоз кунед.",
     "home.no_courses": "Ҳоло курс илова нашудааст. Ҳамчун омӯзгор сабти ном кунед ва аввалин курсро созед.",
     "home.why_us": "Чаро Фурузон?",
@@ -675,8 +689,12 @@ const translations = {
     "manage.no_lessons": "Ҳоло дарс нест",
     "manage.add_lesson": "+ Иловаи дарс",
     "manage.no_modules": "Ҳоло модул нест. Аввалинро илова кунед.",
+    "manage.new_module": "Модули нав",
     "manage.new_mod_ph": "Номи модули нав",
+    "manage.module_desc": "Тавсифи модул",
     "manage.add_mod_btn": "+ Модул",
+    "manage.edit_module": "Таҳрири модул",
+    "manage.module_save": "Захираи модул",
     "manage.activity_lbl": "Фаъолияти донишҷӯён",
     "manage.student": "Донишҷӯ",
     "manage.progress": "Пешрафт",
@@ -1008,7 +1026,18 @@ const translations = {
     "server.only_teachers": "Танҳо омӯзгорон",
     "server.request_not_found": "Дархост ёфт нашуд",
     "server.cannot_block_self": "Бастани аккаунти худ мумкин нест",
-    "server.cannot_delete_self": "Ҳазфи аккаунти худ мумкин нест"
+    "server.cannot_delete_self": "Ҳазфи аккаунти худ мумкин нест",
+
+    "editor.bold": "Матни ғафс",
+    "editor.italic": "Курсив",
+    "editor.strike": "Хатзада",
+    "editor.link": "Гузоштани пайванд",
+    "editor.bullets": "Рӯйхати нуқтадор",
+    "editor.numbered": "Рӯйхати рақамдор",
+    "editor.align_left": "Ҳамворкунӣ аз чап",
+    "editor.align_center": "Ҳамворкунӣ аз марказ",
+    "editor.align_right": "Ҳамворкунӣ аз рост",
+    "editor.link_prompt": "Пайвандро ворид кунед"
   }
 };
 
@@ -1134,6 +1163,10 @@ function setLang(lang) {
   }
 
   applySpecialTranslations(lang);
+
+  if (typeof window.refreshRichTextToolbars === 'function') {
+    window.refreshRichTextToolbars();
+  }
 }
 
 function t(key, params = {}) {

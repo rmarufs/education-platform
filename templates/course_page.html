@@ -75,6 +75,9 @@
             <strong>{{ module.title }}</strong>
             <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
           </div>
+          {% if module.description %}
+          <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
+          {% endif %}
           <ul class="curriculum-lessons">
             {% for lesson in module.lessons %}
             <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">

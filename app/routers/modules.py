@@ -27,6 +27,7 @@ def create_module(
     request: Request,
     course_id: int = Form(...),
     title: str = Form(...),
+    description: str = Form(""),
     db: Session = Depends(get_db),
 ):
     teacher = get_teacher(request, db)
@@ -36,7 +37,12 @@ def create_module(
 
     # Определяем порядковый номер
     max_order = db.query(Module).filter(Module.course_id == course_id).count()
-    module = Module(course_id=course_id, title=title, order_index=max_order)
+    module = Module(
+        course_id=course_id,
+        title=title,
+        description=description or None,
+        order_index=max_order,
+    )
     db.add(module)
     db.commit()
     return RedirectResponse(f"/courses/{course_id}/manage", status_code=302)
@@ -48,6 +54,7 @@ def edit_module(
     module_id: int,
     request: Request,
     title: str = Form(...),
+    description: str = Form(""),
     db: Session = Depends(get_db),
 ):
     teacher = get_teacher(request, db)
@@ -60,6 +67,7 @@ def edit_module(
         raise HTTPException(status_code=403)
 
     module.title = title
+    module.description = description or None
     db.commit()
     return RedirectResponse(f"/courses/{module.course_id}/manage", status_code=302)
 

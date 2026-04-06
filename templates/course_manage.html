@@ -43,11 +43,20 @@
         <span class="module-index">{{ loop.index }}</span>
         <h3 class="module-title">{{ module.title }}</h3>
         <div class="module-actions">
+          <button class="btn btn-outline btn-xs"
+            data-module-id="{{ module.id }}"
+            data-module-title="{{ module.title | e }}"
+            data-module-desc="{{ (module.description or '') | e }}"
+            onclick="openEditModuleModal(this.dataset)">✏️</button>
           <button class="btn btn-danger btn-xs"
             data-module-id="{{ module.id }}"
             onclick="deleteModule(this.dataset.moduleId)">🗑</button>
         </div>
       </div>
+
+      {% if module.description %}
+      <div class="module-description rich-text-content">{{ module.description | safe }}</div>
+      {% endif %}
 
       <!-- Уроки модуля -->
       <ul class="lessons-list">
@@ -69,7 +78,7 @@
               data-lesson-id="{{ lesson.id }}"
               data-lesson-title="{{ lesson.title | e }}"
               data-lesson-video="{{ lesson.video_url | e }}"
-              data-lesson-desc="{{ lesson.description | e }}"
+              data-lesson-desc="{{ (lesson.description or '') | e }}"
               onclick="openEditLessonModal(this.dataset)">✏️</button>
           </div>
         </li>
@@ -92,14 +101,7 @@
     </div>
     {% endfor %}
 
-    <!-- Добавить модуль -->
-    <form action="/modules/create" method="POST" class="add-module-form">
-      <input type="hidden" name="course_id" value="{{ course.id }}" />
-      <div class="inline-form">
-        <input type="text" name="title" class="form-input" placeholder="Название нового модуля" data-i18n="manage.new_mod_ph" data-i18n-prop="placeholder" required />
-        <button type="submit" class="btn btn-primary" data-i18n="manage.add_mod_btn">+ Модуль</button>
-      </div>
-    </form>
+    <button type="button" class="btn btn-primary add-module-form" onclick="openAddModuleModal()" data-i18n="manage.add_mod_btn">+ Модуль</button>
   </section>
 
   <!-- Активность студентов -->
@@ -162,6 +164,71 @@
   </section>
 </div>
 
+<!-- MODAL: Добавить модуль -->
+<div class="modal-overlay" id="add-module-modal" onclick="closeModal('add-module-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 data-i18n="manage.new_module">Новый модуль</h2>
+      <button class="modal-close" onclick="closeModal('add-module-modal')">✕</button>
+    </div>
+    <form action="/modules/create" method="POST">
+      <input type="hidden" name="course_id" value="{{ course.id }}" />
+      <div class="form-group">
+        <label for="m-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
+        <input type="text" id="m-title" name="title" class="form-input" data-i18n="manage.new_mod_ph" data-i18n-prop="placeholder" required />
+      </div>
+      <div class="form-group">
+        <label data-i18n="manage.module_desc">Описание модуля</label>
+        <div class="rich-editor">
+          <input type="hidden" id="m-desc-input" name="description" class="rich-editor-input" value="" />
+          <div class="rich-editor-shell">
+            <div id="m-desc-surface" class="rich-editor-surface" contenteditable="true"
+                 data-placeholder="Описание модуля"
+                 data-i18n="manage.module_desc"
+                 data-i18n-prop="data-placeholder"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('add-module-modal')" data-i18n="action.cancel">Отмена</button>
+        <button type="submit" class="btn btn-primary" data-i18n="manage.add_mod_btn">+ Модуль</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Редактировать модуль -->
+<div class="modal-overlay" id="edit-module-modal" onclick="closeModal('edit-module-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 data-i18n="manage.edit_module">Редактировать модуль</h2>
+      <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
+    </div>
+    <form id="edit-module-form" method="POST">
+      <div class="form-group">
+        <label for="em-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
+        <input type="text" id="em-title" name="title" class="form-input" required />
+      </div>
+      <div class="form-group">
+        <label data-i18n="manage.module_desc">Описание модуля</label>
+        <div class="rich-editor">
+          <input type="hidden" id="em-desc-input" name="description" class="rich-editor-input" value="" />
+          <div class="rich-editor-shell">
+            <div id="em-desc-surface" class="rich-editor-surface" contenteditable="true"
+                 data-placeholder="Описание модуля"
+                 data-i18n="manage.module_desc"
+                 data-i18n-prop="data-placeholder"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('edit-module-modal')" data-i18n="action.cancel">Отмена</button>
+        <button type="submit" class="btn btn-primary" data-i18n="manage.module_save">Сохранить модуль</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: Редактировать курс -->
 <div class="modal-overlay" id="edit-course-modal" onclick="closeModal('edit-course-modal')">
   <div class="modal" onclick="event.stopPropagation()">
@@ -220,8 +287,15 @@
       </div>
       <div class="form-group">
         <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
-        <textarea id="l-desc" name="description" class="form-input form-textarea"
-                  placeholder="" data-i18n="manage.lesson_desc" data-i18n-prop="placeholder"></textarea>
+        <div class="rich-editor">
+          <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
+          <div class="rich-editor-shell">
+            <div id="l-desc" class="rich-editor-surface" contenteditable="true"
+                 data-placeholder="Описание урока"
+                 data-i18n="manage.lesson_desc"
+                 data-i18n-prop="data-placeholder"></div>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word, PPT)</label>
@@ -254,7 +328,15 @@
       </div>
       <div class="form-group">
         <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>
-        <textarea id="el-desc" name="description" class="form-input form-textarea"></textarea>
+        <div class="rich-editor">
+          <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
+          <div class="rich-editor-shell">
+            <div id="el-desc" class="rich-editor-surface" contenteditable="true"
+                 data-placeholder="Описание урока"
+                 data-i18n="manage.lesson_desc"
+                 data-i18n-prop="data-placeholder"></div>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label for="el-files" data-i18n="manage.lesson_files">📎 Добавить материалы (PDF, Word, PPT)</label>
@@ -273,11 +355,23 @@
 function openEditCourseModal() {
   document.getElementById('edit-course-modal').classList.add('open');
 }
+function openAddModuleModal() {
+  document.getElementById('m-title').value = '';
+  setRichTextValue('m-desc-input', '');
+  document.getElementById('add-module-modal').classList.add('open');
+}
+function openEditModuleModal(dataset) {
+  const form = document.getElementById('edit-module-form');
+  form.action = `/modules/${dataset.moduleId}/edit`;
+  document.getElementById('em-title').value = dataset.moduleTitle || '';
+  setRichTextValue('em-desc-input', dataset.moduleDesc || '');
+  document.getElementById('edit-module-modal').classList.add('open');
+}
 function openAddLessonModal(moduleId) {
   document.getElementById('add-lesson-module-id').value = moduleId;
   document.getElementById('l-title').value = '';
   document.getElementById('l-video').value = '';
-  document.getElementById('l-desc').value = '';
+  setRichTextValue('l-desc-input', '');
   document.getElementById('add-lesson-modal').classList.add('open');
 }
 function openEditLessonModal(dataset) {
@@ -285,7 +379,7 @@ function openEditLessonModal(dataset) {
   form.action = `/lessons/${dataset.lessonId}/edit`;
   document.getElementById('el-title').value = dataset.lessonTitle || '';
   document.getElementById('el-video').value = dataset.lessonVideo || '';
-  document.getElementById('el-desc').value = dataset.lessonDesc || '';
+  setRichTextValue('el-desc-input', dataset.lessonDesc || '');
   document.getElementById('edit-lesson-modal').classList.add('open');
 }
 async function deleteModule(id) {
@@ -303,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') ['edit-course-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
+  if (e.key === 'Escape') ['add-module-modal','edit-module-modal','edit-course-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
 });
 </script>
 {% endblock %}

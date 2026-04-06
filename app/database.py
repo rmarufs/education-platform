@@ -65,6 +65,15 @@ def _migrate_enum_and_columns():
         except Exception:
             conn.rollback()
 
+        # 5. Добавляем описание модуля, если его нет
+        try:
+            conn.execute(text(
+                "ALTER TABLE modules ADD COLUMN IF NOT EXISTS description TEXT"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
 
 def init_db():
     """Создаёт все таблицы в базе данных при старте приложения."""
