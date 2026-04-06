@@ -66,35 +66,40 @@
 
       <!-- Структура курса -->
       {% if course.modules %}
-      <section class="course-curriculum">
-        <h2 data-i18n="course_page.content">Содержание курса</h2>
-        {% for module in course.modules %}
-        <div class="curriculum-module">
-          <div class="curriculum-module-header">
-            <span class="module-index">{{ loop.index }}</span>
-            <strong>{{ module.title }}</strong>
-            <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
-          </div>
-          {% if module.description %}
-          <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
-          {% endif %}
-          <ul class="curriculum-lessons">
-            {% for lesson in module.lessons %}
-            <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
-              <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
-              {% if user %}
-              <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
-              {% else %}
-              <span>{{ lesson.title }}</span>
-              {% endif %}
-              {% if lesson.quiz %}
-              <span class="badge badge-quiz">Квиз</span>
-              {% endif %}
-            </li>
-            {% endfor %}
-          </ul>
+      <section class="course-curriculum" id="course-curriculum">
+        <div class="course-curriculum-header">
+          <h2 data-i18n="course_page.content">Содержание курса</h2>
+          <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
         </div>
-        {% endfor %}
+        <div class="course-curriculum-body" id="course-curriculum-body">
+          {% for module in course.modules %}
+          <div class="curriculum-module">
+            <div class="curriculum-module-header">
+              <span class="module-index">{{ loop.index }}</span>
+              <strong>{{ module.title }}</strong>
+              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
+            </div>
+            {% if module.description %}
+            <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
+            {% endif %}
+            <ul class="curriculum-lessons">
+              {% for lesson in module.lessons %}
+              <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
+                <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
+                {% if user %}
+                <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
+                {% else %}
+                <span>{{ lesson.title }}</span>
+                {% endif %}
+                {% if lesson.quiz %}
+                <span class="badge badge-quiz">Квиз</span>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </div>
       </section>
       {% endif %}
 
@@ -290,4 +295,46 @@
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  (function () {
+    const section = document.getElementById('course-curriculum');
+    const toggle = document.getElementById('curriculum-toggle');
+    if (!section || !toggle) return;
+
+    const updateState = () => {
+      const mobile = window.innerWidth <= 768;
+      const isOpen = !mobile || section.classList.contains('is-open');
+      toggle.hidden = !mobile;
+      toggle.setAttribute('aria-expanded', String(isOpen));
+      toggle.textContent = mobile
+        ? t(isOpen ? 'course_page.hide_lessons' : 'course_page.show_lessons')
+        : t('course_page.content');
+    };
+
+    if (window.innerWidth > 768) {
+      section.classList.add('is-open');
+    }
+
+    toggle.addEventListener('click', () => {
+      section.classList.toggle('is-open');
+      updateState();
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        section.classList.add('is-open');
+      } else if (!section.classList.contains('is-open')) {
+        section.classList.remove('is-open');
+      }
+      updateState();
+    });
+
+    document.addEventListener('languageChanged', updateState);
+    updateState();
+  })();
+</script>
 {% endblock %}

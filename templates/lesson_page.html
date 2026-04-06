@@ -2,25 +2,61 @@
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
-<div class="lesson-layout">
+<div class="lesson-layout" id="lesson-layout">
+  <button type="button"
+          class="lesson-sidebar-toggle"
+          id="lesson-sidebar-toggle"
+          aria-controls="lesson-sidebar"
+          aria-expanded="false">
+    <span class="lesson-sidebar-toggle-icon" aria-hidden="true">
+      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-menu">☰</span>
+      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-close">✕</span>
+    </span>
+    <span class="lesson-sidebar-toggle-text" data-i18n="lesson.sidebar_open">Уроки курса</span>
+  </button>
+
+  <div class="lesson-sidebar-overlay" id="lesson-sidebar-overlay"></div>
 
   <!-- Боковая навигация по урокам -->
-  <aside class="lesson-sidebar">
-    <div class="lesson-sidebar-title">
-      <a href="/courses/{{ course.id }}" data-i18n="lesson.back_course" data-i18n-params='{"title": "{{ course.title }}"}'>← {{ course.title }}</a>
+  <aside class="lesson-sidebar" id="lesson-sidebar">
+    <div class="lesson-sidebar-head">
+      <div class="lesson-sidebar-title">
+        <a href="/courses/{{ course.id }}" data-i18n="lesson.back_course" data-i18n-params='{"title": "{{ course.title }}"}'>← {{ course.title }}</a>
+      </div>
+      <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
     </div>
+
+    <div class="lesson-sidebar-body">
     {% for module in course.modules %}
-    <div class="lesson-module-group">
-      <div class="lesson-module-label">{{ module.title }}</div>
-      {% for l in module.lessons %}
-      <a href="/lessons/{{ l.id }}"
-         class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if progress_data and progress_data.get(l.id) else '' }}">
-        <span class="lesson-nav-icon">{{ "✅" if progress_data and progress_data.get(l.id) else ("🎬" if l.video_url else "📄") }}</span>
-        {{ l.title }}
-      </a>
-      {% endfor %}
+    {% set is_current_module = module.lessons | selectattr('id', 'equalto', lesson.id) | list | length > 0 %}
+    <div class="lesson-module-group {{ 'is-expanded' if is_current_module else '' }}">
+      <button type="button"
+              class="lesson-module-trigger"
+              data-module-trigger
+              aria-expanded="{{ 'true' if is_current_module else 'false' }}">
+        <span class="lesson-module-trigger-main">
+          <span class="module-index">{{ loop.index }}</span>
+          <span class="lesson-module-meta">
+            <span class="lesson-module-label">{{ module.title }}</span>
+            <span class="lesson-module-count" data-i18n="course_page.lessons_count" data-i18n-params='{"count": {{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
+          </span>
+        </span>
+        <span class="lesson-module-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="lesson-module-panel">
+        <div class="lesson-module-panel-inner">
+          {% for l in module.lessons %}
+          <a href="/lessons/{{ l.id }}"
+             class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if progress_data and progress_data.get(l.id) else '' }}">
+            <span class="lesson-nav-icon">{{ "✅" if progress_data and progress_data.get(l.id) else ("🎬" if l.video_url else "📄") }}</span>
+            <span class="lesson-nav-title">{{ l.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
     </div>
     {% endfor %}
+    </div>
   </aside>
 
   <!-- Основной контент -->
@@ -248,15 +284,67 @@ function toggleReplyForm(commentId) {
     form.style.display = 'none';
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const layout = document.getElementById('lesson-layout');
+  const sidebar = document.getElementById('lesson-sidebar');
+  const overlay = document.getElementById('lesson-sidebar-overlay');
+  const toggle = document.getElementById('lesson-sidebar-toggle');
+  const closeBtn = document.getElementById('lesson-sidebar-close');
+  const desktopMq = window.matchMedia('(min-width: 769px)');
+
+  if (!layout || !sidebar || !toggle || !overlay) return;
+
+  function syncSidebarLabel() {
+    const isOpen = layout.classList.contains('sidebar-open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    const label = toggle.querySelector('.lesson-sidebar-toggle-text');
+    if (label) {
+      label.textContent = t(isOpen ? 'lesson.sidebar_close' : 'lesson.sidebar_open');
+    }
+  }
+
+  function setSidebarOpen(open) {
+    layout.classList.toggle('sidebar-open', open);
+    if (desktopMq.matches) {
+      document.body.classList.remove('lesson-sidebar-open');
+    } else {
+      document.body.classList.toggle('lesson-sidebar-open', open);
+    }
+    syncSidebarLabel();
+  }
+
+  toggle.addEventListener('click', () => {
+    setSidebarOpen(!layout.classList.contains('sidebar-open'));
+  });
+
+  closeBtn?.addEventListener('click', () => setSidebarOpen(false));
+  overlay.addEventListener('click', () => setSidebarOpen(false));
+
+  document.querySelectorAll('[data-module-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const group = trigger.closest('.lesson-module-group');
+      if (!group) return;
+      const nextState = !group.classList.contains('is-expanded');
+      group.classList.toggle('is-expanded', nextState);
+      trigger.setAttribute('aria-expanded', String(nextState));
+    });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      setSidebarOpen(false);
+    }
+  });
+
+  document.addEventListener('languageChanged', syncSidebarLabel);
+  window.addEventListener('resize', () => {
+    if (desktopMq.matches) {
+      document.body.classList.remove('lesson-sidebar-open');
+    }
+  });
+
+  syncSidebarLabel();
+});
 </script>
-<style>
-.lesson-video-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: 12px;
-}
-</style>
 {% endblock %}

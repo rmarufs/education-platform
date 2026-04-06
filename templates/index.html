@@ -31,7 +31,11 @@
         </p>
         <div class="hero-actions">
             <a href="/register" class="btn btn-primary btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
+            {% if user %}
+            <a href="/dashboard" class="btn btn-outline btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
+            {% else %}
             <a href="/login" class="btn btn-outline btn-lg" data-i18n="hero.cta_login">Войти в аккаунт</a>
+            {% endif %}
         </div>
     </div>
     <div class="hero-illustration">

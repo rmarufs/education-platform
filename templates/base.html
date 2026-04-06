@@ -67,7 +67,7 @@
                         {% endif %}
                         <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
                         <a href="/dashboard" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Кабинет</a>
-                        <a href="#" onclick="confirmLogout(); return false;" class="btn btn-outline btn-sm" data-i18n="nav.logout">Баромадан</a>
+                        <a href="/logout" class="btn btn-outline btn-sm" data-logout-link data-i18n="nav.logout">Баромадан</a>
                     {% else %}
                         <a href="/login" class="btn btn-secondary btn-sm" data-i18n="nav.login">Вуруд</a>
                         <a href="/register" class="btn btn-primary btn-sm" data-i18n="nav.register">Сабти ном</a>
@@ -101,11 +101,25 @@
         <a href="/admin" class="mobile-menu-link">🔧 <span data-i18n="nav.admin">Панели мудир</span></a>
         {% endif %}
         <a href="/dashboard" class="mobile-menu-link">📊 <span data-i18n="nav.dashboard">Кабинет</span></a>
-        <a href="#" onclick="confirmLogout(); return false;" class="mobile-menu-link">🚪 <span data-i18n="nav.logout">Баромадан</span></a>
+        <a href="/logout" class="mobile-menu-link" data-logout-link>🚪 <span data-i18n="nav.logout">Баромадан</span></a>
         {% else %}
         <a href="/login" class="mobile-menu-link">🔑 <span data-i18n="nav.login">Вуруд</span></a>
         <a href="/register" class="mobile-menu-link">✍️ <span data-i18n="nav.register">Сабти ном</span></a>
         {% endif %}
+    </div>
+
+    <div class="modal-overlay" id="logout-modal" aria-hidden="true">
+        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="logout-modal-title" data-i18n="confirm.logout">Вы уверены, что хотите выйти?</h2>
+                <button class="modal-close" type="button" onclick="closeLogoutModal()" aria-label="Close">✕</button>
+            </div>
+            <p class="confirm-modal-text" data-i18n="confirm.logout_hint">Вы сможете войти снова в любой момент.</p>
+            <div class="modal-footer confirm-modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeLogoutModal()" data-i18n="action.cancel">Отмена</button>
+                <button type="button" class="btn btn-danger" id="logout-confirm-btn" data-i18n="confirm.logout_yes">Да, выйти</button>
+            </div>
+        </div>
     </div>
 
     <main class="main-content">
@@ -173,10 +187,31 @@
       btn.title = isDark ? 'Light mode' : 'Dark mode';
     }
 
-    function confirmLogout() {
-      if (confirm(t('confirm.logout'))) {
-        window.location.href = '/logout';
+    let pendingLogoutUrl = '/logout';
+
+    function confirmLogout(url = '/logout') {
+      pendingLogoutUrl = url || '/logout';
+      const modal = document.getElementById('logout-modal');
+      if (!modal) {
+        window.location.href = pendingLogoutUrl;
+        return;
       }
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+      document.getElementById('logout-confirm-btn')?.focus();
+    }
+
+    function closeLogoutModal() {
+      const modal = document.getElementById('logout-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+
+    function performLogout() {
+      window.location.href = pendingLogoutUrl || '/logout';
     }
 
     function toggleTheme() {
@@ -189,17 +224,43 @@
       syncThemeToggle();
     }
 
-    function toggleMobileMenu() {
+    function toggleMobileMenu(forceState) {
       const menu = document.getElementById('mobile-menu');
       const btn = document.getElementById('hamburger-btn');
       const overlay = document.getElementById('mobile-overlay');
-      menu.classList.toggle('open');
-      btn.classList.toggle('open');
-      overlay.classList.toggle('open');
+      const shouldOpen = typeof forceState === 'boolean' ? forceState : !menu.classList.contains('open');
+      menu.classList.toggle('open', shouldOpen);
+      btn.classList.toggle('open', shouldOpen);
+      overlay.classList.toggle('open', shouldOpen);
     }
 
     (function () {
       syncThemeToggle();
+
+      document.getElementById('logout-confirm-btn')?.addEventListener('click', performLogout);
+      document.getElementById('logout-modal')?.addEventListener('click', closeLogoutModal);
+
+      document.addEventListener('click', (event) => {
+        const logoutLink = event.target.closest('[data-logout-link]');
+        if (logoutLink) {
+          event.preventDefault();
+          toggleMobileMenu(false);
+          confirmLogout(logoutLink.getAttribute('href'));
+          return;
+        }
+
+        const menu = document.getElementById('mobile-menu');
+        const btn = document.getElementById('hamburger-btn');
+        if (menu?.classList.contains('open') && !menu.contains(event.target) && !btn?.contains(event.target)) {
+          toggleMobileMenu(false);
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        closeLogoutModal();
+        toggleMobileMenu(false);
+      });
 
       const scrollBtn = document.getElementById('scroll-top-btn');
       window.addEventListener('scroll', () => {

@@ -15,6 +15,8 @@ const translations = {
     "nav.admin": "Админ-панель",
     "base.description": "Фурузон — современная образовательная платформа для студентов и преподавателей",
     "confirm.logout": "Вы уверены, что хотите выйти?",
+    "confirm.logout_hint": "Вы сможете войти снова в любой момент.",
+    "confirm.logout_yes": "Да, выйти",
 
     "footer.rights": "Все права защищены.",
     "footer.tagline": "Современная образовательная платформа для студентов и преподавателей.",
@@ -26,6 +28,7 @@ const translations = {
     "hero.subtitle": "Открой доступ к знаниям прямо сейчас",
     "hero.cta_register": "Начать бесплатно",
     "hero.cta_login": "Войти в аккаунт",
+    "hero.cta_dashboard": "Перейти в кабинет",
     "hero.card1": "Качественные курсы",
     "hero.card2": "Достижения",
     "hero.card3": "Лучшие преподаватели",
@@ -210,6 +213,8 @@ const translations = {
     "course_page.materials": "Материалы курса",
     "course_page.progress": "Прогресс: {pct}%",
     "course_page.content": "Содержание курса",
+    "course_page.show_lessons": "Показать уроки",
+    "course_page.hide_lessons": "Скрыть уроки",
     "course_page.lessons_count": "{count} урок(ов)",
     "course_page.reviews": "Отзывы",
     "course_page.leave_review": "Оставить отзыв",
@@ -263,6 +268,8 @@ const translations = {
     "lesson.video_soon": "Видео скоро появится",
     "lesson.video_pending": "Преподаватель еще не добавил видео к этому уроку.",
     "lesson.sidebar_title": "← Урок",
+    "lesson.sidebar_open": "Уроки курса",
+    "lesson.sidebar_close": "Скрыть уроки",
 
     "quiz.result": "Результат: {score}%",
     "quiz.correct_of": "Правильных ответов: <strong>{correct}</strong> из <strong>{total}</strong>",
@@ -535,6 +542,8 @@ const translations = {
     "nav.admin": "Панели мудир",
     "base.description": "Фурузон — платформаи муосири таълимӣ барои донишҷӯён ва омӯзгорон",
     "confirm.logout": "Шумо воқеан мехоҳед аз аккаунт бароед?",
+    "confirm.logout_hint": "Шумо метавонед ҳар вақт дубора ворид шавед.",
+    "confirm.logout_yes": "Бале, баромадан",
 
     "footer.rights": "Ҳамаи ҳуқуқҳо ҳифз шудаанд.",
     "footer.tagline": "Платформаи муосири таълимӣ барои донишҷӯён ва омӯзгорон.",
@@ -546,6 +555,7 @@ const translations = {
     "hero.subtitle": "Илм бо мо, ҳамеша дастрас аст!",
     "hero.cta_register": "Оғози ройгон",
     "hero.cta_login": "Вуруд ба аккаунт",
+    "hero.cta_dashboard": "Гузариш ба кабинет",
     "hero.card1": "Курсҳои босифат",
     "hero.card2": "Дастовардҳо",
     "hero.card3": "Беҳтарин омӯзгорон",
@@ -720,6 +730,8 @@ const translations = {
     "course_page.materials": "Маводи курс",
     "course_page.progress": "Пешрафт: {pct}%",
     "course_page.content": "Мундариҷаи курс",
+    "course_page.show_lessons": "Намоиши дарсҳо",
+    "course_page.hide_lessons": "Пинҳон кардани дарсҳо",
     "course_page.lessons_count": "{count} дарс",
     "course_page.reviews": "Тафсирҳо",
     "course_page.leave_review": "Навиштани тафсир",
@@ -773,6 +785,8 @@ const translations = {
     "lesson.video_soon": "Видео ба зудӣ дастрас мешавад",
     "lesson.video_pending": "Омӯзгор ҳоло барои ин дарс видео илова накардааст.",
     "lesson.sidebar_title": "← Дарс",
+    "lesson.sidebar_open": "Дарсҳои курс",
+    "lesson.sidebar_close": "Пинҳон кардани дарсҳо",
 
     "quiz.result": "Натиҷа: {score}%",
     "quiz.correct_of": "Ҷавобҳои дуруст: <strong>{correct}</strong> аз <strong>{total}</strong>",
@@ -1167,6 +1181,10 @@ function setLang(lang) {
   if (typeof window.refreshRichTextToolbars === 'function') {
     window.refreshRichTextToolbars();
   }
+
+  document.dispatchEvent(new CustomEvent('languageChanged', {
+    detail: { lang }
+  }));
 }
 
 function t(key, params = {}) {

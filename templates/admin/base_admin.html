@@ -88,11 +88,12 @@
       btn.textContent = document.documentElement.dataset.theme === 'dark' ? '☀️' : '🌙';
     }
 
-    function toggleAdminSidebar() {
+    function toggleAdminSidebar(forceState) {
       const sidebar = document.getElementById('admin-sidebar');
       const overlay = document.getElementById('admin-overlay');
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('open');
+      const shouldOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', shouldOpen);
+      overlay.classList.toggle('open', shouldOpen);
     }
 
     function toggleTheme() {
@@ -106,6 +107,21 @@
     }
 
     syncThemeToggle();
+
+    document.addEventListener('click', (event) => {
+      const sidebar = document.getElementById('admin-sidebar');
+      const hamburger = document.getElementById('admin-hamburger');
+      if (window.innerWidth > 768 || !sidebar?.classList.contains('open')) return;
+      if (!sidebar.contains(event.target) && !hamburger?.contains(event.target)) {
+        toggleAdminSidebar(false);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        toggleAdminSidebar(false);
+      }
+    });
     </script>
     {% block scripts %}{% endblock %}
 </body>
