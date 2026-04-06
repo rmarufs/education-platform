@@ -36,25 +36,6 @@
   </div>
 </section>
 
-<!-- Наша команда -->
-<section style="max-width:900px;margin:0 auto;padding:64px 24px;">
-  <h2 style="text-align:center;font-size:1.875rem;font-weight:700;margin-bottom:40px;" class="reveal" data-i18n="about.team_title">👥 Наша команда</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;">
-    {% for member in [
-      {"name":"Анвар Саидов","role_key":"about.team.role1","role":"Основатель и CEO","initial":"А"},
-      {"name":"Мадина Каримова","role_key":"about.team.role2","role":"Ведущий разработчик","initial":"М"},
-      {"name":"Фарход Назаров","role_key":"about.team.role3","role":"Дизайнер UX/UI","initial":"Ф"},
-      {"name":"Лола Рахимова","role_key":"about.team.role4","role":"Контент-менеджер","initial":"Л"}
-    ] %}
-    <div class="reveal" style="text-align:center;padding:32px 20px;background:var(--white);border-radius:12px;border:1px solid var(--border);transition:var(--transition);">
-      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:700;margin:0 auto 16px;">{{ member.initial }}</div>
-      <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px;">{{ member.name }}</h3>
-      <p style="font-size:.85rem;color:var(--text-muted);" data-i18n="{{ member.role_key }}">{{ member.role }}</p>
-    </div>
-    {% endfor %}
-  </div>
-</section>
-
 <!-- Наши ценности -->
 <section style="background:var(--white);padding:64px 24px;border-top:1px solid var(--border);">
   <div style="max-width:900px;margin:0 auto;">
