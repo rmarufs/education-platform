@@ -26,7 +26,7 @@ def require_teacher(request, db):
     if not uid:
         raise HTTPException(status_code=401)
     user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
     return user
 

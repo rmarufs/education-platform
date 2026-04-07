@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}nav.dashboard{% endblock %}
 {% block title %}Кабинет студента — Фурузон{% endblock %}
 
@@ -44,8 +45,8 @@
             <div class="courses-grid">
                 {% for item in my_courses %}
                 <div class="course-card fade-in">
-                    <div class="course-card-header" style="background: linear-gradient(135deg, var(--success-soft), rgba(34,197,94,.08));">
-                        <span class="course-icon">🎓</span>
+                    <div class="course-card-header">
+                        {{ course_cover(item.course) }}
                     </div>
                     <div class="course-card-body">
                         <h3 class="course-title">{{ item.course.title }}</h3>

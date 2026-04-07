@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}home.popular_courses{% endblock %}
 {% block title %}Популярные курсы — Фурузон{% endblock %}
 
@@ -84,7 +85,7 @@
             {% for course in courses %}
             <div class="course-card fade-in">
                 <div class="course-card-header">
-                    <span class="course-icon">📖</span>
+                    {{ course_cover(course) }}
                 </div>
                 <div class="course-card-body">
                     <h3 class="course-title">{{ course.title }}</h3>

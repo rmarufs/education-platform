@@ -32,6 +32,10 @@ def leave_review(
     if rating < 1 or rating > 5:
         raise HTTPException(status_code=400, detail="Рейтинг от 1 до 5")
 
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+
     # Обновляем или создаём отзыв
     review = db.query(Review).filter(
         Review.course_id == course_id, Review.student_id == uid
@@ -48,9 +52,7 @@ def leave_review(
 
     # Пересчитываем средний рейтинг курса
     avg = db.query(func.avg(Review.rating)).filter(Review.course_id == course_id).scalar()
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if course:
-        course.rating = round(avg or 0, 1)
-        db.commit()
+    course.rating = round(avg or 0, 1)
+    db.commit()
 
     return RedirectResponse(f"/courses/{course_id}", status_code=302)

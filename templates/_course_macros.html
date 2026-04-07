@@ -1,0 +1,16 @@
+{% macro course_cover(course, extra_class="") -%}
+<div class="course-cover {{ extra_class }}">
+  {% if course.image %}
+  <img
+    src="{{ course.image }}"
+    alt="Обложка курса {{ course.title }}"
+    class="course-cover-image"
+    loading="lazy"
+  />
+  {% else %}
+  <div class="course-cover-placeholder">
+    <span class="course-cover-letter">{{ (course.title or "?")[0].upper() }}</span>
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}

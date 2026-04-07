@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
+from collections import defaultdict
 
 from app.database import get_db
 from app.models.user import User
 from app.models.course import Course
+from app.models.module import Module
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -92,36 +94,51 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
     if user.role.value != "student":
         return RedirectResponse("/dashboard/teacher", status_code=302)
 
-    # All courses
-    all_courses = db.query(Course).options(joinedload(Course.teacher)).all()
-    
-    # User progress
     from app.models.progress import Progress
     from app.models.lesson import Lesson
-    user_progress = db.query(Progress).filter(Progress.student_id == user.id).all()
-    
-    lessons = db.query(Lesson).options(joinedload(Lesson.module)).all()
-    lesson_to_course = {l.id: l.module.course_id for l in lessons if l.module}
-    
-    # Group progress by course
     from datetime import datetime
-    course_progress_data = {}
-    for p in user_progress:
-        c_id = lesson_to_course.get(p.lesson_id)
-        if c_id:
-            pt_time = p.completed_at or datetime.min
-            if c_id not in course_progress_data:
-                course_progress_data[c_id] = {
-                    "completed_lessons": set(),
-                    "last_accessed_lesson_id": p.lesson_id,
-                    "last_accessed_time": pt_time
-                }
-            if p.completed:
-                course_progress_data[c_id]["completed_lessons"].add(p.lesson_id)
-            
-            if pt_time > course_progress_data[c_id]["last_accessed_time"]:
-                course_progress_data[c_id]["last_accessed_time"] = pt_time
-                course_progress_data[c_id]["last_accessed_lesson_id"] = p.lesson_id
+
+    user_progress = (
+        db.query(Progress)
+        .options(joinedload(Progress.lesson).joinedload(Lesson.module))
+        .filter(Progress.student_id == user.id)
+        .all()
+    )
+
+    course_progress_data = defaultdict(lambda: {
+        "completed_lessons": set(),
+        "last_accessed_lesson_id": None,
+        "last_accessed_time": datetime.min,
+    })
+    course_ids = set()
+    last_lesson_ids = set()
+
+    for progress in user_progress:
+        if not progress.lesson or not progress.lesson.module:
+            continue
+        course_id = progress.lesson.module.course_id
+        course_ids.add(course_id)
+        pt_time = progress.completed_at or datetime.min
+        data = course_progress_data[course_id]
+        if progress.completed:
+            data["completed_lessons"].add(progress.lesson_id)
+
+        if pt_time >= data["last_accessed_time"]:
+            data["last_accessed_time"] = pt_time
+            data["last_accessed_lesson_id"] = progress.lesson_id
+            last_lesson_ids.add(progress.lesson_id)
+
+    all_courses = (
+        db.query(Course)
+        .options(joinedload(Course.teacher), joinedload(Course.modules).joinedload(Module.lessons))
+        .filter(Course.id.in_(course_ids))
+        .all()
+    ) if course_ids else []
+
+    last_lessons = {
+        lesson.id: lesson
+        for lesson in db.query(Lesson).filter(Lesson.id.in_(last_lesson_ids)).all()
+    } if last_lesson_ids else {}
 
     my_courses = []
     for c in all_courses:
@@ -129,13 +146,11 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             data = course_progress_data[c.id]
             total_lessons = sum(len(m.lessons) for m in c.modules)
             pct = int((len(data["completed_lessons"]) / total_lessons) * 100) if total_lessons > 0 else 0
-            
-            last_lesson = next((l for l in lessons if l.id == data["last_accessed_lesson_id"]), None)
-            
+
             my_courses.append({
                 "course": c,
                 "progress_pct": pct,
-                "last_lesson": last_lesson
+                "last_lesson": last_lessons.get(data["last_accessed_lesson_id"])
             })
 
     return templates.TemplateResponse(
@@ -163,7 +178,7 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
     
     # Загружаем категории для списка выбора
     from app.models.category import Category
-    categories = db.query(Category).all()
+    categories = db.query(Category).order_by(Category.name).all()
     
     return templates.TemplateResponse(
         "dashboard_teacher.html",

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}nav.dashboard{% endblock %}
 {% block title %}Кабинет преподавателя — Фурузон{% endblock %}
 
@@ -49,7 +50,7 @@
                 {% for course in courses %}
                 <div class="course-card fade-in" id="course-card-{{ course.id }}">
                     <div class="course-card-header">
-                        <span class="course-icon">📖</span>
+                        {{ course_cover(course) }}
                     </div>
                     <div class="course-card-body">
                         <h3 class="course-title">{{ course.title }}</h3>
@@ -68,6 +69,7 @@
                             data-course-description="{{ course.description | e }}"
                             data-course-category="{{ course.category_id or 0 }}"
                             data-course-level="{{ course.level or 'Beginner' }}"
+                            data-course-image="{{ course.image or '' }}"
                             data-i18n="course.edit"
                         >Изменить</button>
                         <button
@@ -128,6 +130,35 @@
                 </select>
             </div>
             <div class="form-group">
+                <div class="course-cover-field">
+                    <div class="course-cover-field-head">
+                        <div>
+                            <label for="new-image" data-i18n="course.cover">Обложка курса</label>
+                            <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn hidden data-i18n="course.cover_remove">Удалить обложку</button>
+                    </div>
+                    <div class="course-cover-uploader" id="create-course-cover-uploader" data-course-cover-uploader data-title-source="new-title" data-current-image="">
+                        <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
+                        <input type="file" id="new-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
+                        <label for="new-image" class="course-cover-dropzone" data-course-cover-dropzone>
+                            <div class="course-cover-preview-shell">
+                                <img class="course-cover-preview-image" data-course-cover-preview-image alt="" hidden />
+                                <div class="course-cover-preview-placeholder" data-course-cover-placeholder>
+                                    <span class="course-cover-preview-letter" data-course-cover-letter>К</span>
+                                </div>
+                            </div>
+                            <div class="course-cover-dropzone-copy">
+                                <div class="course-cover-dropzone-icon">🖼️</div>
+                                <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
+                                <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
+                            </div>
+                        </label>
+                        <p class="form-error course-cover-error" data-course-cover-error></p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
                 <label for="new-files" data-i18n="course.files">Материалы курса (PDF, DOCX, PPTX)</label>
                 <input type="file" id="new-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
             </div>
@@ -171,6 +202,35 @@
                     <option value="Intermediate" data-i18n="level.intermediate">Intermediate</option>
                     <option value="Advanced" data-i18n="level.advanced">Advanced</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <div class="course-cover-field">
+                    <div class="course-cover-field-head">
+                        <div>
+                            <label for="edit-image" data-i18n="course.cover">Обложка курса</label>
+                            <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn hidden data-i18n="course.cover_remove">Удалить обложку</button>
+                    </div>
+                    <div class="course-cover-uploader" id="edit-course-cover-uploader" data-course-cover-uploader data-title-source="edit-title" data-current-image="">
+                        <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
+                        <input type="file" id="edit-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
+                        <label for="edit-image" class="course-cover-dropzone" data-course-cover-dropzone>
+                            <div class="course-cover-preview-shell">
+                                <img class="course-cover-preview-image" data-course-cover-preview-image alt="" hidden />
+                                <div class="course-cover-preview-placeholder" data-course-cover-placeholder>
+                                    <span class="course-cover-preview-letter" data-course-cover-letter>К</span>
+                                </div>
+                            </div>
+                            <div class="course-cover-dropzone-copy">
+                                <div class="course-cover-dropzone-icon">🖼️</div>
+                                <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
+                                <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
+                            </div>
+                        </label>
+                        <p class="form-error course-cover-error" data-course-cover-error></p>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label for="edit-files" data-i18n="manage.materials">Добавить материалы (PDF, DOCX, PPTX)</label>

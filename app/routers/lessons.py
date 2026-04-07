@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
 from app.models.user import User
@@ -15,9 +15,13 @@ from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.progress import Progress
 from app.models.comment import Comment
+from app.models.course import Course
 
 router = APIRouter(prefix="/lessons")
 templates = Jinja2Templates(directory="templates")
+MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
+MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
+MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}
 
 
 def get_user(request: Request, db: Session):
@@ -37,17 +41,30 @@ def require_teacher(request: Request, db: Session):
     return user
 
 
+def _validate_material_upload(file: UploadFile) -> str:
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in MATERIAL_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
+
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > MATERIAL_UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
+    return ext
+
+
 def _save_uploaded_files(files, lesson_id, db):
     """Сохраняет загруженные файлы как материалы урока."""
     if not files:
         return
+    os.makedirs(MATERIAL_UPLOAD_DIR, exist_ok=True)
     for file in files:
         if not file.filename:
             continue
-        ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "other"
-        os.makedirs("static/materials", exist_ok=True)
+        ext = _validate_material_upload(file)
         filename = f"{uuid.uuid4().hex}_{file.filename}"
-        save_path = f"static/materials/{filename}"
+        save_path = os.path.join(MATERIAL_UPLOAD_DIR, filename)
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
@@ -68,10 +85,10 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         db.query(Lesson)
         .options(
             joinedload(Lesson.module),
-            joinedload(Lesson.materials),
+            selectinload(Lesson.materials),
             joinedload(Lesson.quiz),
-            joinedload(Lesson.comments).joinedload(Comment.author),
-            joinedload(Lesson.comments).joinedload(Comment.replies).joinedload(Comment.author),
+            selectinload(Lesson.comments).joinedload(Comment.author),
+            selectinload(Lesson.comments).selectinload(Comment.replies).joinedload(Comment.author),
         )
         .filter(Lesson.id == lesson_id)
         .first()
@@ -81,6 +98,21 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
 
     user = get_user(request, db)
 
+    course = (
+        db.query(Course)
+        .options(selectinload(Course.modules).selectinload(Module.lessons))
+        .filter(Course.id == lesson.module.course_id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+
+    course_lesson_ids = [
+        course_lesson.id
+        for module in course.modules
+        for course_lesson in module.lessons
+    ]
+
     # Прогресс студента
     progress = None
     progress_data = {}
@@ -89,15 +121,15 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
             Progress.student_id == user.id,
             Progress.lesson_id == lesson_id
         ).first()
-        # Прогресс по всем урокам для навигации
-        all_progress = db.query(Progress).filter(Progress.student_id == user.id).all()
+        all_progress = (
+            db.query(Progress)
+            .filter(
+                Progress.student_id == user.id,
+                Progress.lesson_id.in_(course_lesson_ids),
+            )
+            .all()
+        )
         progress_data = {p.lesson_id: p.completed for p in all_progress}
-
-    # Все уроки курса для навигации
-    from app.models.course import Course
-    course = db.query(Course).filter(
-        Course.id == lesson.module.course_id
-    ).options(joinedload(Course.modules).joinedload(Module.lessons)).first()
 
     return templates.TemplateResponse("lesson_page.html", {
         "request": request,
@@ -122,10 +154,12 @@ async def create_lesson(
     db: Session = Depends(get_db),
 ):
     teacher = require_teacher(request, db)
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название урока")
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(status_code=404)
-    from app.models.course import Course
     course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
@@ -160,10 +194,12 @@ async def edit_lesson(
     db: Session = Depends(get_db),
 ):
     teacher = require_teacher(request, db)
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название урока")
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    from app.models.course import Course
     course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
@@ -193,7 +229,6 @@ def add_material(
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    from app.models.course import Course
     course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
@@ -216,7 +251,6 @@ async def upload_lesson_material(
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    from app.models.course import Course
     course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
@@ -234,6 +268,10 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     user = db.query(User).filter(User.id == uid).first()
     if not user or user.role.value != "student":
         raise HTTPException(status_code=403)
+
+    lesson_exists = db.query(Lesson.id).filter(Lesson.id == lesson_id).first()
+    if not lesson_exists:
+        raise HTTPException(status_code=404, detail="Урок не найден")
 
     progress = db.query(Progress).filter(
         Progress.student_id == uid, Progress.lesson_id == lesson_id

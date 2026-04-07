@@ -16,7 +16,7 @@ def get_teacher(request: Request, db: Session) -> User:
     if not uid:
         raise HTTPException(status_code=401, detail="Необходима авторизация")
     user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value != "teacher":
+    if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Только преподаватели")
     return user
 
@@ -30,6 +30,10 @@ def create_module(
     description: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название курса")
+
     teacher = get_teacher(request, db)
     course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == teacher.id).first()
     if not course:
@@ -57,6 +61,10 @@ def edit_module(
     description: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название курса")
+
     teacher = get_teacher(request, db)
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:

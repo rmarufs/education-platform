@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -20,8 +21,11 @@
   <!-- Боковая навигация по урокам -->
   <aside class="lesson-sidebar" id="lesson-sidebar">
     <div class="lesson-sidebar-head">
-      <div class="lesson-sidebar-title">
-        <a href="/courses/{{ course.id }}" data-i18n="lesson.back_course" data-i18n-params='{"title": "{{ course.title }}"}'>← {{ course.title }}</a>
+      <div class="lesson-sidebar-course">
+        {{ course_cover(course, "course-cover-sidebar-sm") }}
+        <div class="lesson-sidebar-title">
+          <a href="/courses/{{ course.id }}" data-i18n="lesson.back_course" data-i18n-params='{"title": "{{ course.title }}"}'>← {{ course.title }}</a>
+        </div>
       </div>
       <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
     </div>

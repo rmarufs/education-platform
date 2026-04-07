@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}500 — Ошибка сервера{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="error-page-shell">
+    <span class="error-page-status">500</span>
+    <h1 class="error-page-title">{{ error_title or "Что-то пошло не так" }}</h1>
+    <p class="error-page-message">{{ error_message or "Мы уже получили информацию об ошибке. Попробуйте обновить страницу чуть позже." }}</p>
+    <div class="error-page-actions">
+      <a href="/" class="btn btn-primary">На главную</a>
+      <button type="button" class="btn btn-outline" onclick="window.location.reload()">Обновить страницу</button>
+    </div>
+  </div>
+</section>
+{% endblock %}

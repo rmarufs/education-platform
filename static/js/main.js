@@ -37,11 +37,14 @@ function clearFormErrors(form) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!('IntersectionObserver' in window)) return;
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.style.opacity = '1';
         entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
       }
     });
   }, { threshold: 0.1 });
@@ -49,4 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.course-card, .feature-card, .stat-item, .reveal-card').forEach((el) => {
     observer.observe(el);
   });
+
+  window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
 });

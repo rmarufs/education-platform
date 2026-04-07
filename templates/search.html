@@ -87,7 +87,7 @@
           const stars = '★'.repeat(Math.round(c.rating)) + '☆'.repeat(5 - Math.round(c.rating));
           card.innerHTML = `
             <div class="course-card-header">
-              <span class="course-icon">📖</span>
+              ${renderCourseCoverMarkup(c)}
               ${c.category ? '<span class="category-badge">' + c.category + '</span>' : ''}
             </div>
             <div class="course-card-body">

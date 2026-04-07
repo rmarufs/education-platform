@@ -4,7 +4,8 @@ import shutil
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import case, func
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
 from app.models.user import User
@@ -19,12 +20,103 @@ from app.models.review import Review
 router = APIRouter(prefix="/courses")
 templates = Jinja2Templates(directory="templates")
 
+COURSE_IMAGE_DIR = os.path.join("static", "uploads", "courses")
+COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
+COURSE_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
+COURSE_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+
 
 def get_user(request: Request, db: Session) -> User | None:
     user_id = request.session.get("user_id")
     if not user_id:
         return None
     return db.query(User).filter(User.id == user_id).first()
+
+
+def _course_image_public_path(filename: str) -> str:
+    return f"/static/uploads/courses/{filename}"
+
+
+def _course_image_fs_path(image_url: str | None) -> str | None:
+    if not image_url or not image_url.startswith("/static/"):
+        return None
+    relative = image_url.removeprefix("/static/")
+    return os.path.join("static", relative)
+
+
+def _delete_course_image(image_url: str | None) -> None:
+    path = _course_image_fs_path(image_url)
+    if path and os.path.isfile(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+def _save_course_image(image: UploadFile | None) -> str | None:
+    if not image or not image.filename:
+        return None
+
+    ext = os.path.splitext(image.filename)[1].lower()
+    if ext not in COURSE_IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
+
+    image.file.seek(0, os.SEEK_END)
+    size = image.file.tell()
+    image.file.seek(0)
+    if size > COURSE_IMAGE_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
+
+    os.makedirs(COURSE_IMAGE_DIR, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(COURSE_IMAGE_DIR, filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    return _course_image_public_path(filename)
+
+
+def _validate_course_material_upload(file: UploadFile) -> str:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Не выбран файл")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in COURSE_MATERIAL_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
+
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > COURSE_MATERIAL_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
+    return ext
+
+
+def _save_course_materials(files: list[UploadFile] | None, course_id: int, db: Session) -> None:
+    if not files:
+        return
+
+    os.makedirs(COURSE_MATERIAL_DIR, exist_ok=True)
+    for file in files:
+        if not file.filename:
+            continue
+
+        ext = _validate_course_material_upload(file)
+        original_name = os.path.basename(file.filename)
+        filename = f"{uuid.uuid4().hex}_{original_name}"
+        save_path = os.path.join(COURSE_MATERIAL_DIR, filename)
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        db.add(Material(
+            course_id=course_id,
+            title=original_name,
+            file_url="/" + save_path,
+            file_type=ext.lstrip("."),
+        ))
+    db.commit()
 
 
 # ── Каталог курсов с поиском и фильтром ─────────────────────────────────────
@@ -76,6 +168,7 @@ def list_courses_api(q: str = "", db: Session = Depends(get_db)):
             "id": c.id,
             "title": c.title,
             "description": c.description,
+            "image": c.image,
             "teacher_name": c.teacher.name,
             "rating": c.rating,
             "level": c.level,
@@ -96,7 +189,7 @@ def recommended_courses(request: Request, db: Session = Depends(get_db)):
     if not user.assessment_completed:
         return RedirectResponse("/assessment", status_code=302)
         
-    query = db.query(Course).options(joinedload(Course.teacher))
+    query = db.query(Course).options(joinedload(Course.teacher), joinedload(Course.category))
     
     if user.level == "Beginner":
         query = query.filter(Course.level == "Beginner")
@@ -123,8 +216,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         .options(
             joinedload(Course.teacher),
             joinedload(Course.category),
-            joinedload(Course.modules).joinedload(Module.lessons),
-            joinedload(Course.reviews).joinedload(Review.student),
+            selectinload(Course.modules).selectinload(Module.lessons),
+            selectinload(Course.reviews).joinedload(Review.student),
+            selectinload(Course.materials),
         )
         .filter(Course.id == course_id)
         .first()
@@ -138,8 +232,15 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     progress_data = {}
     completion_pct = 0
     if user and user.role.value == "student":
-        from app.models.progress import Progress
-        progress_rows = db.query(Progress).filter(Progress.student_id == user.id).all()
+        course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
+        progress_rows = (
+            db.query(Progress)
+            .filter(
+                Progress.student_id == user.id,
+                Progress.lesson_id.in_(course_lesson_ids),
+            )
+            .all()
+        ) if course_lesson_ids else []
         progress_data = {p.lesson_id: p.completed for p in progress_rows}
 
         total_lessons = sum(len(m.lessons) for m in course.modules)
@@ -178,8 +279,8 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
     course = (
         db.query(Course)
         .options(
-            joinedload(Course.modules).joinedload(Module.lessons).joinedload(Lesson.materials),
-            joinedload(Course.modules).joinedload(Module.lessons).joinedload(Lesson.quiz),
+            selectinload(Course.modules).selectinload(Module.lessons).selectinload(Lesson.materials),
+            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
         )
         .filter(Course.id == course_id, Course.teacher_id == user.id)
         .first()
@@ -187,7 +288,7 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
-    categories = db.query(Category).all()
+    categories = db.query(Category).order_by(Category.name).all()
 
     # ── Подсчет активности студентов ──────────────────────────────────────────
     course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
@@ -195,33 +296,31 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
 
     student_activity = []
     if total_lessons > 0:
-        active_student_ids = [s[0] for s in db.query(Progress.student_id).filter(
-            Progress.lesson_id.in_(course_lesson_ids)
-        ).distinct().all()]
+        student_rows = (
+            db.query(
+                User,
+                func.count(
+                    func.distinct(
+                        case((Progress.completed == True, Progress.lesson_id), else_=None)  # noqa: E712
+                    )
+                ).label("completed_count"),
+                func.max(Progress.completed_at).label("last_active"),
+            )
+            .join(Progress, Progress.student_id == User.id)
+            .filter(Progress.lesson_id.in_(course_lesson_ids))
+            .group_by(User.id)
+            .all()
+        )
 
-        if active_student_ids:
-            from sqlalchemy import func
-            students = db.query(User).filter(User.id.in_(active_student_ids)).all()
-            for s in students:
-                completed_count = db.query(Progress).filter(
-                    Progress.student_id == s.id,
-                    Progress.lesson_id.in_(course_lesson_ids),
-                    Progress.completed == True
-                ).count()
-                
-                last_activity = db.query(func.max(Progress.completed_at)).filter(
-                    Progress.student_id == s.id,
-                    Progress.lesson_id.in_(course_lesson_ids)
-                ).scalar()
-
-                pct = int((completed_count / total_lessons) * 100)
-                student_activity.append({
-                    "student": s,
-                    "completed": completed_count,
-                    "total": total_lessons,
-                    "progress_pct": pct,
-                    "last_active": last_activity
-                })
+        for student, completed_count, last_activity in student_rows:
+            pct = int((completed_count / total_lessons) * 100)
+            student_activity.append({
+                "student": student,
+                "completed": completed_count,
+                "total": total_lessons,
+                "progress_pct": pct,
+                "last_active": last_activity,
+            })
 
     return templates.TemplateResponse("course_manage.html", {
         "request": request,
@@ -241,6 +340,7 @@ def create_course(
     description: str = Form(""),
     category_id: int = Form(0),
     level: str = Form("Beginner"),
+    image: UploadFile | None = File(None),
     files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
@@ -250,9 +350,19 @@ def create_course(
             raise HTTPException(status_code=403, detail="Ваш аккаунт ещё не подтверждён")
         raise HTTPException(status_code=403, detail="Только преподаватели могут создавать курсы")
 
+    title = title.strip()
+    description = description.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название курса")
+    if files:
+        for file in files:
+            if file and file.filename:
+                _validate_course_material_upload(file)
+
     course = Course(
         title=title,
-        description=description,
+        description=description or None,
+        image=_save_course_image(image),
         level=level,
         teacher_id=user.id,
         category_id=category_id or None,
@@ -261,23 +371,7 @@ def create_course(
     db.commit()
     db.refresh(course)
 
-    if files:
-        for file in files:
-            if file.filename:
-                ext = file.filename.split('.')[-1]
-                save_path = f"static/uploads/{uuid.uuid4().hex}_{file.filename}"
-                os.makedirs("static/uploads", exist_ok=True)
-                with open(save_path, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                
-                material = Material(
-                    course_id=course.id,
-                    title=file.filename,
-                    file_url="/" + save_path,
-                    file_type=ext
-                )
-                db.add(material)
-        db.commit()
+    _save_course_materials(files, course.id, db)
 
     return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
 
@@ -292,6 +386,8 @@ def edit_course(
     description: str = Form(""),
     category_id: int = Form(0),
     level: str = Form("Beginner"),
+    remove_image: bool = Form(False),
+    image: UploadFile | None = File(None),
     files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
@@ -299,33 +395,35 @@ def edit_course(
     if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
 
+    title = title.strip()
+    description = description.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название курса")
+    if files:
+        for file in files:
+            if file and file.filename:
+                _validate_course_material_upload(file)
+
     course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
     if not course:
         raise HTTPException(status_code=404)
 
     course.title = title
-    course.description = description
+    course.description = description or None
     course.level = level
     course.category_id = category_id or None
 
-    if files:
-        for file in files:
-            if file.filename:
-                ext = file.filename.split('.')[-1]
-                save_path = f"static/uploads/{uuid.uuid4().hex}_{file.filename}"
-                os.makedirs("static/uploads", exist_ok=True)
-                with open(save_path, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                
-                material = Material(
-                    course_id=course.id,
-                    title=file.filename,
-                    file_url="/" + save_path,
-                    file_type=ext
-                )
-                db.add(material)
+    new_image_path = _save_course_image(image)
+    if new_image_path:
+        if course.image:
+            _delete_course_image(course.image)
+        course.image = new_image_path
+    elif remove_image and course.image:
+        _delete_course_image(course.image)
+        course.image = None
 
     db.commit()
+    _save_course_materials(files, course.id, db)
     return RedirectResponse(f"/courses/{course_id}/manage", status_code=302)
 
 
@@ -341,6 +439,7 @@ def delete_course(course_id: int, request: Request, db: Session = Depends(get_db
     if not course:
         raise HTTPException(status_code=404)
 
+    _delete_course_image(course.image)
     db.delete(course)
     db.commit()
     return RedirectResponse("/dashboard/teacher", status_code=302)
@@ -358,23 +457,32 @@ def delete_course_material(
     if not user or user.role.value not in ("teacher", "admin"):
         raise HTTPException(status_code=403)
 
-    material = db.query(Material).filter(Material.id == material_id).first()
+    material = (
+        db.query(Material)
+        .options(
+            joinedload(Material.course),
+            joinedload(Material.lesson).joinedload(Lesson.module),
+        )
+        .filter(Material.id == material_id)
+        .first()
+    )
     if not material:
         raise HTTPException(status_code=404)
 
     course_id = None
     if material.course_id:
-        course = db.query(Course).filter(Course.id == material.course_id).first()
+        course = material.course
         if not course or course.teacher_id != user.id:
             raise HTTPException(status_code=403)
         course_id = course.id
     elif material.lesson_id:
-        lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == material.lesson_id).first()
-        if lesson:
-            course = db.query(Course).filter(Course.id == lesson.module.course_id).first()
-            if not course or course.teacher_id != user.id:
-                raise HTTPException(status_code=403)
-            course_id = course.id
+        lesson = material.lesson
+        if not lesson or not lesson.module:
+            raise HTTPException(status_code=404)
+        course = db.query(Course).filter(Course.id == lesson.module.course_id).first()
+        if not course or course.teacher_id != user.id:
+            raise HTTPException(status_code=403)
+        course_id = course.id
 
     if material.file_url:
         file_path = material.file_url.lstrip("/")

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}rec.title{% endblock %}
 {% block title %}Рекомендованные курсы — Фурузон{% endblock %}
 
@@ -17,7 +18,8 @@
     <div class="courses-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         {% for course in courses %}
         <div class="course-card fade-in">
-            <div class="course-card-header" style="background: url('https://source.unsplash.com/random/400x200/?education,book') center/cover;">
+            <div class="course-card-header">
+                {{ course_cover(course) }}
                 <span class="course-badge" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;" data-level="{{ course.level }}">{{ course.level }}</span>
             </div>
             <div class="course-card-body">

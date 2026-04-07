@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title %}{{ course.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -14,7 +15,7 @@
     <!-- Основная информация -->
     <div class="course-detail-main">
       <div class="course-detail-hero">
-        <div class="course-hero-icon">📖</div>
+        {{ course_cover(course, "course-cover-hero") }}
         <div class="course-hero-meta">
           {% if course.category %}
           <span class="category-badge">{{ course.category.name }}</span>
@@ -251,7 +252,7 @@
     <aside class="course-detail-sidebar">
       <div class="course-sidebar-card">
         <div class="sidebar-card-header">
-          <span class="course-icon-lg">📚</span>
+          {{ course_cover(course, "course-cover-sidebar") }}
         </div>
         <div class="sidebar-card-body">
           <div class="sidebar-info-item">

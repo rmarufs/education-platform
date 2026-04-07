@@ -11,6 +11,7 @@ class Course(Base):
     id          = Column(Integer, primary_key=True, index=True)
     title       = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
+    image       = Column(String(500), nullable=True)
     level       = Column(String(50), default="Beginner")
     teacher_id  = Column(Integer, ForeignKey("users.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
@@ -26,4 +27,3 @@ class Course(Base):
                             foreign_keys="Review.course_id")
     materials = relationship("Material", back_populates="course",
                              cascade="all, delete-orphan")
-

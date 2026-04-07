@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.models.comment import Comment
+from app.models.lesson import Lesson
 
 router = APIRouter()
 
@@ -24,6 +25,10 @@ def add_comment(
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
+
+    lesson_exists = db.query(Lesson.id).filter(Lesson.id == lesson_id).first()
+    if not lesson_exists:
+        raise HTTPException(status_code=404, detail="Урок не найден")
 
     comment = Comment(lesson_id=lesson_id, user_id=uid, text=text.strip())
     db.add(comment)

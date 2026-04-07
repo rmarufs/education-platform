@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}404 — Страница не найдена{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="error-page-shell">
+    <span class="error-page-status">404</span>
+    <h1 class="error-page-title">{{ error_title or "Страница не найдена" }}</h1>
+    <p class="error-page-message">{{ error_message or "Похоже, такой страницы больше нет или ссылка неверна." }}</p>
+    <div class="error-page-actions">
+      <a href="/" class="btn btn-primary">На главную</a>
+      <a href="/courses/catalog" class="btn btn-outline">Каталог курсов</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

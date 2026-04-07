@@ -74,6 +74,15 @@ def _migrate_enum_and_columns():
         except Exception:
             conn.rollback()
 
+        # 6. Добавляем обложку курса, если её нет
+        try:
+            conn.execute(text(
+                "ALTER TABLE courses ADD COLUMN IF NOT EXISTS image VARCHAR(500)"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
 
 def init_db():
     """Создаёт все таблицы в базе данных при старте приложения."""

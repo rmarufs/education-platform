@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
@@ -57,6 +57,14 @@ def contact_submit(
     message: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    name = name.strip()
+    email = email.strip()
+    subject = subject.strip()
+    message = message.strip()
+
+    if not name or not email or not subject or not message:
+        raise HTTPException(status_code=400, detail="Заполните все поля формы")
+
     msg = ContactMessage(name=name, email=email, subject=subject, message=message)
     db.add(msg)
     db.commit()
@@ -84,7 +92,11 @@ def search_api(
     per_page: int = 12,
     db: Session = Depends(get_db),
 ):
-    query = db.query(Course).options(joinedload(Course.teacher), joinedload(Course.category))
+    query = db.query(Course).options(
+        joinedload(Course.teacher),
+        joinedload(Course.category),
+        selectinload(Course.modules),
+    )
 
     if q:
         query = query.filter(
@@ -115,6 +127,7 @@ def search_api(
                 "id": c.id,
                 "title": c.title,
                 "description": (c.description or "")[:120],
+                "image": c.image,
                 "teacher_name": c.teacher.name,
                 "rating": c.rating,
                 "level": c.level,
@@ -148,30 +161,17 @@ def teacher_profile(teacher_id: int, request: Request, db: Session = Depends(get
         Course.teacher_id == teacher_id, Course.rating > 0
     ).scalar()
 
-    total_students = db.query(func.count(func.distinct(Progress.student_id))).join(
-        Course, Course.id == func.any_(
-            db.query(Course.id).filter(Course.teacher_id == teacher_id).correlate(None).scalar_subquery()
-        )
-    ).scalar() or 0
-
-    # Простой подсчёт уникальных студентов, имеющих прогресс у курсов этого учителя
     teacher_course_ids = [c.id for c in courses]
     if teacher_course_ids:
         from app.models.lesson import Lesson
         from app.models.module import Module
-        lesson_ids = (
-            db.query(Lesson.id)
-            .join(Module)
+        total_students = (
+            db.query(func.count(func.distinct(Progress.student_id)))
+            .join(Lesson, Lesson.id == Progress.lesson_id)
+            .join(Module, Module.id == Lesson.module_id)
             .filter(Module.course_id.in_(teacher_course_ids))
-            .all()
-        )
-        lesson_id_list = [lid[0] for lid in lesson_ids]
-        if lesson_id_list:
-            total_students = db.query(func.count(func.distinct(Progress.student_id))).filter(
-                Progress.lesson_id.in_(lesson_id_list)
-            ).scalar() or 0
-        else:
-            total_students = 0
+            .scalar()
+        ) or 0
     else:
         total_students = 0
 

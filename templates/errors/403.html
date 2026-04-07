@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}403 — Доступ запрещён{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="error-page-shell">
+    <span class="error-page-status">403</span>
+    <h1 class="error-page-title">{{ error_title or "Доступ запрещён" }}</h1>
+    <p class="error-page-message">{{ error_message or "У вас нет прав для просмотра этой страницы." }}</p>
+    <div class="error-page-actions">
+      <a href="/" class="btn btn-primary">На главную</a>
+      {% if user %}
+      <a href="/dashboard" class="btn btn-outline">В кабинет</a>
+      {% else %}
+      <a href="/login" class="btn btn-outline">Войти</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

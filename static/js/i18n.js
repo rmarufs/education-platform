@@ -110,6 +110,10 @@ const translations = {
     "course.description": "Описание",
     "course.category": "Категория",
     "course.files": "Материалы курса",
+    "course.cover": "Обложка курса",
+    "course.cover_hint": "Рекомендуемый размер: 1280x720 пикселей",
+    "course.cover_drop": "Нажмите или перетащите изображение сюда",
+    "course.cover_remove": "Удалить обложку",
     "course.level": "Уровень курса",
     "course.no_category": "Без категории",
 
@@ -129,6 +133,8 @@ const translations = {
     "validation.subject_required": "Введите тему сообщения",
     "validation.message_required": "Введите сообщение",
     "validation.rating_required": "Пожалуйста, выберите рейтинг от 1 до 5.",
+    "validation.image_too_large": "Изображение должно быть не больше 5MB.",
+    "validation.image_invalid": "Разрешены только JPG, JPEG, PNG и WEBP.",
 
     "common.error_delete": "Не удалось удалить запись",
     "common.error_conn": "Ошибка соединения",
@@ -637,6 +643,10 @@ const translations = {
     "course.description": "Тавсиф",
     "course.category": "Категория",
     "course.files": "Маводи курс",
+    "course.cover": "Сарпӯши курс",
+    "course.cover_hint": "Андозаи тавсияшаванда: 1280x720 пиксел",
+    "course.cover_drop": "Тасвирро пахш кунед ё ба ин ҷо кашед",
+    "course.cover_remove": "Пок кардани сарпӯш",
     "course.level": "Сатҳи курс",
     "course.no_category": "Бе категория",
 
@@ -656,6 +666,8 @@ const translations = {
     "validation.subject_required": "Мавзӯи паёмро ворид кунед",
     "validation.message_required": "Матни паёмро ворид кунед",
     "validation.rating_required": "Лутфан аз 1 то 5 баҳо интихоб кунед.",
+    "validation.image_too_large": "Андозаи тасвир набояд аз 5MB зиёд бошад.",
+    "validation.image_invalid": "Танҳо JPG, JPEG, PNG ва WEBP иҷозат дода мешаванд.",
 
     "common.error_delete": "Ҳазф анҷом дода нашуд",
     "common.error_conn": "Хатои пайвастшавӣ",

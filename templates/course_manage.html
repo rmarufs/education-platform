@@ -256,6 +256,43 @@
         </select>
       </div>
       <div class="form-group">
+        <label for="ec-level" data-i18n="course.level">Уровень курса</label>
+        <select id="ec-level" name="level" class="form-input">
+          <option value="Beginner" {{ "selected" if course.level == "Beginner" else "" }} data-i18n="level.beginner">Beginner</option>
+          <option value="Intermediate" {{ "selected" if course.level == "Intermediate" else "" }} data-i18n="level.intermediate">Intermediate</option>
+          <option value="Advanced" {{ "selected" if course.level == "Advanced" else "" }} data-i18n="level.advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="course-cover-field">
+          <div class="course-cover-field-head">
+            <div>
+              <label for="ec-image" data-i18n="course.cover">Обложка курса</label>
+              <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn {{ "hidden" if not course.image else "" }} data-i18n="course.cover_remove">Удалить обложку</button>
+          </div>
+          <div class="course-cover-uploader" id="manage-course-cover-uploader" data-course-cover-uploader data-title-source="ec-title" data-current-image="{{ course.image or '' }}" data-title="{{ course.title }}">
+            <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
+            <input type="file" id="ec-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
+            <label for="ec-image" class="course-cover-dropzone" data-course-cover-dropzone>
+              <div class="course-cover-preview-shell">
+                <img class="course-cover-preview-image" data-course-cover-preview-image alt="" {{ "hidden" if not course.image else "" }} />
+                <div class="course-cover-preview-placeholder" data-course-cover-placeholder {{ "hidden" if course.image else "" }}>
+                  <span class="course-cover-preview-letter" data-course-cover-letter>{{ course.title[0].upper() }}</span>
+                </div>
+              </div>
+              <div class="course-cover-dropzone-copy">
+                <div class="course-cover-dropzone-icon">🖼️</div>
+                <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
+                <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
+              </div>
+            </label>
+            <p class="form-error course-cover-error" data-course-cover-error></p>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
         <label for="ec-files" data-i18n="course.files">Добавить материалы (PDF, DOCX, PPTX)</label>
         <input type="file" id="ec-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
       </div>
@@ -353,6 +390,13 @@
 
 <script>
 function openEditCourseModal() {
+  document.querySelector('#edit-course-modal form')?.reset();
+  if (typeof setCourseCoverUploaderState === 'function') {
+    setCourseCoverUploaderState('manage-course-cover-uploader', {
+      currentImage: '{{ course.image or "" }}',
+      title: '{{ course.title | e }}'
+    });
+  }
   document.getElementById('edit-course-modal').classList.add('open');
 }
 function openAddModuleModal() {

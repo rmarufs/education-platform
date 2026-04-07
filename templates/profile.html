@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}profile.title{% endblock %}
 {% block title %}Профиль — {{ user.name }}{% endblock %}
 
@@ -31,6 +32,9 @@
     <div class="courses-grid">
       {% for course in courses %}
       <div class="course-card fade-in">
+        <div class="course-card-header">
+          {{ course_cover(course) }}
+        </div>
         <div class="course-card-body">
           <h3 class="course-title">{{ course.title }}</h3>
           <p class="course-desc">

@@ -10,6 +10,8 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.progress import Progress
+from app.models.module import Module
+from app.models.lesson import Lesson
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="templates")
@@ -172,37 +174,34 @@ def admin_courses(request: Request, db: Session = Depends(get_db)):
 
     courses = (
         db.query(Course)
-        .options(joinedload(Course.teacher))
+        .options(joinedload(Course.teacher), joinedload(Course.modules).joinedload(Module.lessons))
         .order_by(Course.created_at.desc())
         .all()
     )
 
-    # Подсчитаем кол-во студентов для каждого курса
-    course_data = []
-    for course in courses:
-        # Считаем уникальных студентов через Progress
-        from app.models.module import Module
-        from app.models.lesson import Lesson
-        lesson_ids = (
-            db.query(Lesson.id)
-            .join(Module, Module.id == Lesson.module_id)
-            .filter(Module.course_id == course.id)
+    course_ids = [course.id for course in courses]
+    student_count_map = {
+        course_id: count
+        for course_id, count in (
+            db.query(
+                Module.course_id,
+                func.count(func.distinct(Progress.student_id)),
+            )
+            .join(Lesson, Lesson.module_id == Module.id)
+            .outerjoin(Progress, Progress.lesson_id == Lesson.id)
+            .filter(Module.course_id.in_(course_ids))
+            .group_by(Module.course_id)
             .all()
         )
-        lesson_id_list = [lid[0] for lid in lesson_ids]
+    } if course_ids else {}
 
-        student_count = 0
-        if lesson_id_list:
-            student_count = (
-                db.query(func.count(func.distinct(Progress.student_id)))
-                .filter(Progress.lesson_id.in_(lesson_id_list))
-                .scalar()
-            ) or 0
-
-        course_data.append({
+    course_data = [
+        {
             "course": course,
-            "student_count": student_count,
-        })
+            "student_count": student_count_map.get(course.id, 0),
+        }
+        for course in courses
+    ]
 
     return templates.TemplateResponse("admin/courses.html", {
         "request": request,

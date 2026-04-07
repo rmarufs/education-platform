@@ -43,17 +43,24 @@ def profile(request: Request, db: Session = Depends(get_db)):
         # Пройденные уроки
         completed = (
             db.query(Progress)
+            .options(joinedload(Progress.lesson).joinedload(Lesson.module))
             .filter(Progress.student_id == uid, Progress.completed == True)  # noqa: E712
             .all()
         )
         completed_lesson_ids = {p.lesson_id for p in completed}
+        course_ids = {
+            p.lesson.module.course_id
+            for p in completed
+            if p.lesson and p.lesson.module
+        }
 
         # Курсы в которых есть прогресс
         courses_with_progress = []
-        if completed_lesson_ids:
+        if completed_lesson_ids and course_ids:
             all_courses = (
                 db.query(Course)
                 .options(joinedload(Course.modules).joinedload(Module.lessons))
+                .filter(Course.id.in_(course_ids))
                 .all()
             )
             for course in all_courses:
@@ -73,11 +80,7 @@ def profile(request: Request, db: Session = Depends(get_db)):
                     })
 
         # Отзывы студента
-        reviews = (
-            db.query(Review)
-            .filter(Review.student_id == uid)
-            .all()
-        )
+        reviews = db.query(Review).filter(Review.student_id == uid).all()
 
         context["courses_with_progress"] = courses_with_progress
         context["reviews"] = reviews

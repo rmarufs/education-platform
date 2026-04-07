@@ -13,6 +13,8 @@ from app.models.user import User, UserRole
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
+DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 
 
 def hash_password(password: str) -> str:
@@ -31,6 +33,21 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         return None
     return db.query(User).filter(User.id == user_id).first()
+
+
+def _validate_teacher_document(document: UploadFile | None) -> None:
+    if not document or not document.filename:
+        return
+
+    ext = os.path.splitext(document.filename)[1].lower()
+    if ext not in DOCUMENT_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Неверный формат документа")
+
+    document.file.seek(0, os.SEEK_END)
+    size = document.file.tell()
+    document.file.seek(0)
+    if size > DOCUMENT_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
 
 
 # ── Страница регистрации ────────────────────────────────────────────────────
@@ -54,6 +71,17 @@ async def register(
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
+    name = name.strip()
+    email = email.strip().lower()
+    password = password.strip()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Введите имя")
+    if not email:
+        raise HTTPException(status_code=400, detail="Введите email")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Пароль должен быть не менее 6 символов")
+
     # Проверяем, что пользователь с таким email не существует
     existing = db.query(User).filter(User.email == email).first()
     if existing:
@@ -78,6 +106,7 @@ async def register(
 
         # Документ необязателен — сохраняем если есть
         if document and document.filename:
+            _validate_teacher_document(document)
             os.makedirs("static/documents", exist_ok=True)
             filename = f"{uuid.uuid4().hex}_{document.filename}"
             save_path = f"static/documents/{filename}"
@@ -98,6 +127,7 @@ async def register(
     db.refresh(user)
 
     # Сохраняем сессию
+    request.session.clear()
     request.session["user_id"] = user.id
     request.session["user_role"] = user.role.value
     request.session["user_name"] = user.name
@@ -138,6 +168,7 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    email = email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
@@ -154,6 +185,7 @@ def login(
             status_code=403,
         )
 
+    request.session.clear()
     request.session["user_id"] = user.id
     request.session["user_role"] = user.role.value
     request.session["user_name"] = user.name

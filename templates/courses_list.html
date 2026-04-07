@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
 {% block title_key %}catalog.title{% endblock %}
 {% block title %}Каталог курсов — Фурузон{% endblock %}
 
@@ -73,7 +74,7 @@
       {% for course in courses %}
       <div class="course-card reveal" style="animation-delay:{{ loop.index0 * 0.05 }}s;">
         <div class="course-card-header">
-          <span class="course-icon">📖</span>
+          {{ course_cover(course) }}
           {% if course.category %}
           <span class="category-badge">{{ course.category.name }}</span>
           {% endif %}
@@ -153,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   #catalog-container[style*="1fr"] .course-card-header {
     width: 200px;
+    aspect-ratio: auto;
+    min-height: 100%;
     border-bottom: none;
     border-right: 1px solid var(--border);
     justify-content: center;
