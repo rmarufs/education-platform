@@ -54,7 +54,7 @@
                     </div>
                     <div class="course-card-body">
                         <h3 class="course-title">{{ course.title }}</h3>
-                        <p class="course-desc">{{ course.description or "" }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+                        <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
                         <div class="course-meta">
                             <span class="course-date">📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
                         </div>
@@ -109,8 +109,15 @@
             </div>
             <div class="form-group">
                 <label for="new-description" data-i18n="course.description">Описание</label>
-                <textarea id="new-description" name="description" class="form-input form-textarea"
-                    placeholder="Краткое описание курса..."></textarea>
+                <div class="rich-editor">
+                    <input type="hidden" id="new-description-input" name="description" class="rich-editor-input" value="" />
+                    <div class="rich-editor-shell">
+                        <div id="new-description" class="rich-editor-surface" contenteditable="true"
+                            data-placeholder="Краткое описание курса..."
+                            data-i18n="course.description"
+                            data-i18n-prop="data-placeholder"></div>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label for="new-category" data-i18n="course.category">Категория</label>
@@ -184,7 +191,15 @@
             </div>
             <div class="form-group">
                 <label for="edit-description" data-i18n="course.description">Описание</label>
-                <textarea id="edit-description" name="description" class="form-input form-textarea"></textarea>
+                <div class="rich-editor">
+                    <input type="hidden" id="edit-description-input" name="description" class="rich-editor-input" value="" />
+                    <div class="rich-editor-shell">
+                        <div id="edit-description" class="rich-editor-surface" contenteditable="true"
+                            data-placeholder="Краткое описание курса..."
+                            data-i18n="course.description"
+                            data-i18n-prop="data-placeholder"></div>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label for="edit-category" data-i18n="course.category">Категория</label>

@@ -221,6 +221,9 @@ function openCreateModal() {
   const modal = document.getElementById('create-modal');
   if (!modal) return;
   document.getElementById('create-course-form').reset();
+  if (typeof setRichTextValue === 'function') {
+    setRichTextValue('new-description-input', '');
+  }
   resetCourseCoverUploader('create-course-cover-uploader');
   modal.classList.add('open');
   // Фокус на первое поле
@@ -238,7 +241,9 @@ function openEditModal(dataset) {
   const form = document.getElementById('edit-course-form');
   form.action = `/courses/${dataset.courseId}/edit`;
   document.getElementById('edit-title').value = dataset.courseTitle || '';
-  document.getElementById('edit-description').value = dataset.courseDescription || '';
+  if (typeof setRichTextValue === 'function') {
+    setRichTextValue('edit-description-input', dataset.courseDescription || '');
+  }
   const catEl = document.getElementById('edit-category');
   if (catEl) catEl.value = dataset.courseCategory || "0";
   const levelEl = document.getElementById('edit-level');

@@ -47,7 +47,7 @@
       </div>
       <div class="course-card-body">
         <h3 class="course-title">{{ course.title }}</h3>
-        <p class="course-desc">{{ course.description or "" }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+        <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
         <div class="course-meta">
           <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f"|format(course.rating) }}{% endif %}</span>
           <span class="level-badge" data-level="{{ course.level }}">{{ course.level }}</span>

@@ -9,7 +9,7 @@
     <div>
       <a href="/dashboard/teacher" class="back-link" data-i18n="manage.back">← Мои курсы</a>
       <h1>{{ course.title }}</h1>
-      <p class="text-muted">{{ course.description or "" }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
+      <p class="text-muted">{{ (course.description or "") | striptags }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
 
       {% if course.materials %}
       <div class="course-materials" style="margin-top: 15px;">
@@ -244,7 +244,15 @@
       </div>
       <div class="form-group">
         <label for="ec-desc" data-i18n="course.description">Описание</label>
-        <textarea id="ec-desc" name="description" class="form-input form-textarea">{{ course.description or "" }}</textarea>
+        <div class="rich-editor">
+          <input type="hidden" id="ec-desc-input" name="description" class="rich-editor-input" value="{{ course.description or '' }}" />
+          <div class="rich-editor-shell">
+            <div id="ec-desc" class="rich-editor-surface" contenteditable="true"
+                 data-placeholder="Краткое описание курса..."
+                 data-i18n="course.description"
+                 data-i18n-prop="data-placeholder"></div>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label for="ec-cat" data-i18n="course.category">Категория</label>
@@ -391,6 +399,7 @@
 <script>
 function openEditCourseModal() {
   document.querySelector('#edit-course-modal form')?.reset();
+  setRichTextValue('ec-desc-input', {{ (course.description or '') | tojson }});
   if (typeof setCourseCoverUploaderState === 'function') {
     setCourseCoverUploaderState('manage-course-cover-uploader', {
       currentImage: '{{ course.image or "" }}',

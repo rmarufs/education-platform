@@ -24,7 +24,7 @@
             </div>
             <div class="course-card-body">
                 <h3 class="course-title">{{ course.title }}</h3>
-                <p class="course-desc">{{ course.description or "" }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
+                <p class="course-desc">{{ (course.description or "") | striptags }} <span data-i18n="common.no_desc" style="display:{% if course.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);">
                     <span>👨‍🏫 {{ course.teacher.name }}</span>

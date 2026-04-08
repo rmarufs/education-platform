@@ -89,7 +89,7 @@
                 </div>
                 <div class="course-card-body">
                     <h3 class="course-title">{{ course.title }}</h3>
-                    <p class="course-desc">{% if course.description %}{{ course.description }}{% else %}<span data-i18n="course.no_description">Нет описания</span>{% endif %}</p>
+                    <p class="course-desc">{% if course.description %}{{ course.description | striptags }}{% else %}<span data-i18n="course.no_description">Нет описания</span>{% endif %}</p>
                     <div class="course-meta">
                         <span class="course-teacher">👨‍🏫 {{ course.teacher.name }}</span>
                         <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>

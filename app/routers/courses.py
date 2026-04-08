@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import shutil
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
@@ -26,6 +27,12 @@ COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
 COURSE_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
 COURSE_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+
+
+def _plain_text(value: str | None) -> str:
+    if not value:
+        return ""
+    return re.sub(r"<[^>]+>", "", value).strip()
 
 
 def get_user(request: Request, db: Session) -> User | None:
@@ -167,7 +174,7 @@ def list_courses_api(q: str = "", db: Session = Depends(get_db)):
         {
             "id": c.id,
             "title": c.title,
-            "description": c.description,
+            "description": _plain_text(c.description),
             "image": c.image,
             "teacher_name": c.teacher.name,
             "rating": c.rating,

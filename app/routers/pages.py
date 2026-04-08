@@ -1,4 +1,5 @@
 # Роутер статических страниц: О нас, Как это работает, Контакты, Поиск, Профиль преподавателя
+import re
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -15,6 +16,12 @@ from app.models.contact import ContactMessage
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+def _plain_text(value: str | None) -> str:
+    if not value:
+        return ""
+    return re.sub(r"<[^>]+>", "", value).strip()
 
 
 def get_user(request: Request, db: Session):
@@ -126,7 +133,7 @@ def search_api(
             {
                 "id": c.id,
                 "title": c.title,
-                "description": (c.description or "")[:120],
+                "description": _plain_text(c.description)[:120],
                 "image": c.image,
                 "teacher_name": c.teacher.name,
                 "rating": c.rating,

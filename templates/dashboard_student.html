@@ -56,7 +56,7 @@
                             </div>
                             <span style="font-size: 0.875rem; font-weight: 600; color: var(--text);">{{ item.progress_pct }}%</span>
                         </div>
-                        <p class="course-desc" style="-webkit-line-clamp: 2;">{{ item.course.description or "" }}{% if not item.course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+                        <p class="course-desc" style="-webkit-line-clamp: 2;">{{ (item.course.description or "") | striptags }}{% if not item.course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
                     </div>
                     <div class="course-card-footer" style="display: flex; flex-direction: column; gap: 8px;">
                         {% if item.last_lesson %}
