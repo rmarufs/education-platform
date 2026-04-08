@@ -185,71 +185,73 @@
             <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
         </div>
         <form id="edit-course-form" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="edit-title" data-i18n="course.title">Название курса</label>
-                <input type="text" id="edit-title" name="title" class="form-input" required />
-            </div>
-            <div class="form-group">
-                <label for="edit-description" data-i18n="course.description">Описание</label>
-                <div class="rich-editor">
-                    <input type="hidden" id="edit-description-input" name="description" class="rich-editor-input" value="" />
-                    <div class="rich-editor-shell">
-                        <div id="edit-description" class="rich-editor-surface" contenteditable="true"
-                            data-placeholder="Краткое описание курса..."
-                            data-i18n="course.description"
-                            data-i18n-prop="data-placeholder"></div>
-                    </div>
+            <div class="edit-course-scroll-panel">
+                <div class="form-group">
+                    <label for="edit-title" data-i18n="course.title">Название курса</label>
+                    <input type="text" id="edit-title" name="title" class="form-input" required />
                 </div>
-            </div>
-            <div class="form-group">
-                <label for="edit-category" data-i18n="course.category">Категория</label>
-                <select id="edit-category" name="category_id" class="form-input">
-                    <option value="0" data-i18n="course.no_category">— Без категории —</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat.id }}">{{ cat.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="edit-level" data-i18n="course.level">Уровень курса</label>
-                <select id="edit-level" name="level" class="form-input">
-                    <option value="Beginner" data-i18n="level.beginner">Beginner</option>
-                    <option value="Intermediate" data-i18n="level.intermediate">Intermediate</option>
-                    <option value="Advanced" data-i18n="level.advanced">Advanced</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <div class="course-cover-field">
-                    <div class="course-cover-field-head">
-                        <div>
-                            <label for="edit-image" data-i18n="course.cover">Обложка курса</label>
-                            <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+                <div class="form-group">
+                    <label for="edit-description" data-i18n="course.description">Описание</label>
+                    <div class="rich-editor">
+                        <input type="hidden" id="edit-description-input" name="description" class="rich-editor-input" value="" />
+                        <div class="rich-editor-shell">
+                            <div id="edit-description" class="rich-editor-surface" contenteditable="true"
+                                data-placeholder="Краткое описание курса..."
+                                data-i18n="course.description"
+                                data-i18n-prop="data-placeholder"></div>
                         </div>
-                        <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn hidden data-i18n="course.cover_remove">Удалить обложку</button>
-                    </div>
-                    <div class="course-cover-uploader" id="edit-course-cover-uploader" data-course-cover-uploader data-title-source="edit-title" data-current-image="">
-                        <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
-                        <input type="file" id="edit-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
-                        <label for="edit-image" class="course-cover-dropzone" data-course-cover-dropzone>
-                            <div class="course-cover-preview-shell">
-                                <img class="course-cover-preview-image" data-course-cover-preview-image alt="" hidden />
-                                <div class="course-cover-preview-placeholder" data-course-cover-placeholder>
-                                    <span class="course-cover-preview-letter" data-course-cover-letter>К</span>
-                                </div>
-                            </div>
-                            <div class="course-cover-dropzone-copy">
-                                <div class="course-cover-dropzone-icon">🖼️</div>
-                                <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
-                                <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
-                            </div>
-                        </label>
-                        <p class="form-error course-cover-error" data-course-cover-error></p>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label for="edit-files" data-i18n="manage.materials">Добавить материалы (PDF, DOCX, PPTX)</label>
-                <input type="file" id="edit-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+                <div class="form-group">
+                    <label for="edit-category" data-i18n="course.category">Категория</label>
+                    <select id="edit-category" name="category_id" class="form-input">
+                        <option value="0" data-i18n="course.no_category">— Без категории —</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-level" data-i18n="course.level">Уровень курса</label>
+                    <select id="edit-level" name="level" class="form-input">
+                        <option value="Beginner" data-i18n="level.beginner">Beginner</option>
+                        <option value="Intermediate" data-i18n="level.intermediate">Intermediate</option>
+                        <option value="Advanced" data-i18n="level.advanced">Advanced</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <div class="course-cover-field">
+                        <div class="course-cover-field-head">
+                            <div>
+                                <label for="edit-image" data-i18n="course.cover">Обложка курса</label>
+                                <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+                            </div>
+                            <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn hidden data-i18n="course.cover_remove">Удалить обложку</button>
+                        </div>
+                        <div class="course-cover-uploader" id="edit-course-cover-uploader" data-course-cover-uploader data-title-source="edit-title" data-current-image="">
+                            <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
+                            <input type="file" id="edit-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
+                            <label for="edit-image" class="course-cover-dropzone" data-course-cover-dropzone>
+                                <div class="course-cover-preview-shell">
+                                    <img class="course-cover-preview-image" data-course-cover-preview-image alt="" hidden />
+                                    <div class="course-cover-preview-placeholder" data-course-cover-placeholder>
+                                        <span class="course-cover-preview-letter" data-course-cover-letter>К</span>
+                                    </div>
+                                </div>
+                                <div class="course-cover-dropzone-copy">
+                                    <div class="course-cover-dropzone-icon">🖼️</div>
+                                    <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
+                                    <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
+                                </div>
+                            </label>
+                            <p class="form-error course-cover-error" data-course-cover-error></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-files" data-i18n="manage.materials">Добавить материалы (PDF, DOCX, PPTX)</label>
+                    <input type="file" id="edit-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('edit-modal')" data-i18n="action.cancel">Отмена</button>

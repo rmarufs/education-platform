@@ -1172,6 +1172,42 @@ body.dark .logo-copy::after {
   margin-top: 8px;
 }
 
+#edit-modal .modal {
+  max-width: min(720px, 100%);
+  height: min(88vh, 860px);
+  max-height: min(88vh, 860px);
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+#edit-course-form {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+#edit-modal .edit-course-scroll-panel {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+#edit-modal .modal-footer {
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0), var(--bg-card) 22%);
+  padding-top: 14px;
+}
+
 /* ── Страница курса ─────────────────────────────────────────── */
 .course-detail-page {
   max-width: 1100px;
@@ -2803,6 +2839,11 @@ body { transition: background-color .3s ease, color .3s ease; }
     max-height: min(90vh, 720px);
     overflow-y: auto;
     padding: 20px;
+  }
+  #edit-modal .modal {
+    height: min(90vh, 720px);
+    max-height: min(90vh, 720px);
+    overflow: hidden;
   }
 }
 
