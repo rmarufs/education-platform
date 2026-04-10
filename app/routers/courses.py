@@ -1,7 +1,10 @@
 import os
 import re
-import uuid
 import shutil
+from urllib.parse import urlparse
+
+import cloudinary
+import cloudinary.uploader
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -17,16 +20,23 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.review import Review
+from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 
 router = APIRouter(prefix="/courses")
 templates = Jinja2Templates(directory="templates")
 
-COURSE_IMAGE_DIR = os.path.join("static", "uploads", "courses")
 COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
 COURSE_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
 COURSE_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True,
+)
 
 
 def _plain_text(value: str | None) -> str:
@@ -42,10 +52,6 @@ def get_user(request: Request, db: Session) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-def _course_image_public_path(filename: str) -> str:
-    return f"/static/uploads/courses/{filename}"
-
-
 def _course_image_fs_path(image_url: str | None) -> str | None:
     if not image_url or not image_url.startswith("/static/"):
         return None
@@ -53,7 +59,40 @@ def _course_image_fs_path(image_url: str | None) -> str | None:
     return os.path.join("static", relative)
 
 
+def _course_image_public_id(image_url: str | None) -> str | None:
+    if not image_url:
+        return None
+
+    parsed_url = urlparse(image_url)
+    if "res.cloudinary.com" not in parsed_url.netloc:
+        return None
+
+    path_parts = [part for part in parsed_url.path.split("/") if part]
+    try:
+        upload_index = path_parts.index("upload")
+    except ValueError:
+        return None
+
+    public_id_parts = path_parts[upload_index + 1:]
+    if public_id_parts and re.fullmatch(r"v\d+", public_id_parts[0]):
+        public_id_parts = public_id_parts[1:]
+    if not public_id_parts:
+        return None
+
+    public_id = "/".join(public_id_parts)
+    public_id, _ = os.path.splitext(public_id)
+    return public_id
+
+
 def _delete_course_image(image_url: str | None) -> None:
+    public_id = _course_image_public_id(image_url)
+    if public_id:
+        try:
+            cloudinary.uploader.destroy(public_id, invalidate=True, resource_type="image")
+        except Exception:
+            pass
+        return
+
     path = _course_image_fs_path(image_url)
     if path and os.path.isfile(path):
         try:
@@ -76,13 +115,20 @@ def _save_course_image(image: UploadFile | None) -> str | None:
     if size > COURSE_IMAGE_MAX_BYTES:
         raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
 
-    os.makedirs(COURSE_IMAGE_DIR, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(COURSE_IMAGE_DIR, filename)
-    with open(save_path, "wb") as buffer:
-        shutil.copyfileobj(image.file, buffer)
+    try:
+        upload_result = cloudinary.uploader.upload(
+            image.file,
+            folder="courses",
+            resource_type="image",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Не удалось загрузить изображение курса") from exc
 
-    return _course_image_public_path(filename)
+    image_url = upload_result.get("secure_url")
+    if not image_url:
+        raise HTTPException(status_code=500, detail="Cloudinary не вернул ссылку на изображение")
+
+    return image_url
 
 
 def _validate_course_material_upload(file: UploadFile) -> str:

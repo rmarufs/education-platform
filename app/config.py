@@ -11,6 +11,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-key-in-production")
 # URL подключения к базе данных (PostgreSQL)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://myuser:mypassword@localhost/education_db")
 
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "dyjgc9lc5")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "988373662391686")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
+
 # Название платформы
 PLATFORM_NAME = "Фурузон"
 
