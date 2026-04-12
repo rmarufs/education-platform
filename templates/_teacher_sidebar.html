@@ -1,0 +1,23 @@
+<aside class="sidebar">
+  <div class="sidebar-profile">
+    <div class="avatar">{{ user.name[0].upper() }}</div>
+    <div class="profile-info">
+      <h3>{{ user.name }}</h3>
+      <span class="role-badge role-teacher" data-i18n="role.teacher">Преподаватель</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard/teacher" class="sidebar-link {{ 'active' if active_page == 'dashboard' else '' }}">
+      <span class="link-icon">📋</span>
+      <span data-i18n="nav.my_courses">Мои курсы</span>
+    </a>
+    <a href="/dashboard/teacher/quiz-results" class="sidebar-link {{ 'active' if active_page == 'quiz_results' else '' }}">
+      <span class="link-icon">🧪</span>
+      <span data-i18n="teacher.quiz_results">Результаты тестов</span>
+    </a>
+    <a href="/logout" class="sidebar-link" data-logout-link>
+      <span class="link-icon">🚪</span>
+      <span data-i18n="nav.logout">Выйти</span>
+    </a>
+  </nav>
+</aside>

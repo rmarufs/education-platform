@@ -16,6 +16,7 @@ from app.models.material import Material
 from app.models.progress import Progress
 from app.models.comment import Comment
 from app.models.course import Course
+from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
 templates = Jinja2Templates(directory="templates")
@@ -116,6 +117,8 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     # Прогресс студента
     progress = None
     progress_data = {}
+    lesson_quiz_visible = False
+    continue_url = None
     if user and user.role.value == "student":
         progress = db.query(Progress).filter(
             Progress.student_id == user.id,
@@ -130,6 +133,9 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
             .all()
         )
         progress_data = {p.lesson_id: p.completed for p in all_progress}
+        lesson_quiz_visible = bool(lesson.quiz and lesson_quiz_unlocked(db, user.id, lesson))
+        if progress and progress.completed:
+            continue_url = next_after_lesson(db, user.id, lesson.id)
 
     return templates.TemplateResponse("lesson_page.html", {
         "request": request,
@@ -137,6 +143,8 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "user": user,
         "progress": progress,
         "progress_data": progress_data,
+        "lesson_quiz_visible": lesson_quiz_visible,
+        "continue_url": continue_url,
         "course": course,
         "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
     })
@@ -284,4 +292,25 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
         progress.completed = True
         progress.completed_at = datetime.utcnow()
     db.commit()
-    return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
+    return RedirectResponse(next_after_lesson(db, user.id, lesson_id), status_code=302)
+
+
+@router.get("/{lesson_id}/continue")
+def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
+    uid = request.session.get("user_id")
+    if not uid:
+        return RedirectResponse("/login", status_code=302)
+
+    user = db.query(User).filter(User.id == uid).first()
+    if not user or user.role.value != "student":
+        raise HTTPException(status_code=403)
+
+    progress = db.query(Progress).filter(
+        Progress.student_id == uid,
+        Progress.lesson_id == lesson_id,
+        Progress.completed == True,  # noqa: E712
+    ).first()
+    if not progress:
+        return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
+
+    return RedirectResponse(next_after_lesson(db, user.id, lesson_id), status_code=302)

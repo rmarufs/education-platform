@@ -27,3 +27,5 @@ class Course(Base):
                             foreign_keys="Review.course_id")
     materials = relationship("Material", back_populates="course",
                              cascade="all, delete-orphan")
+    quiz = relationship("Quiz", back_populates="course",
+                        uselist=False, cascade="all, delete-orphan")

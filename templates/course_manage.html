@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
 {% block title %}Управление курсом — {{ course.title }}{% endblock %}
 
 {% block content %}
@@ -62,24 +63,29 @@
       <ul class="lessons-list">
         {% for lesson in module.lessons %}
         <li class="lesson-item">
-          <span class="lesson-icon">{{ "🎬" if lesson.video_url else "📄" }}</span>
-          <span class="lesson-title">{{ lesson.title }}</span>
-          <div class="lesson-meta">
-            {% if lesson.materials %}
-              <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
-            {% endif %}
-            {% if lesson.quiz %}
-              <span class="badge badge-quiz">Квиз</span>
-            {% endif %}
+          <div class="lesson-manage-main">
+            <span class="lesson-icon">{{ "🎬" if lesson.video_url else "📄" }}</span>
+            <span class="lesson-title">{{ lesson.title }}</span>
+            <div class="lesson-meta">
+              {% if lesson.materials %}
+                <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
+              {% endif %}
+              {% if lesson.quiz %}
+                <span class="badge badge-quiz">Квиз</span>
+              {% endif %}
+            </div>
+            <div class="lesson-actions">
+              <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
+              <button class="btn btn-outline btn-xs"
+                data-lesson-id="{{ lesson.id }}"
+                data-lesson-title="{{ lesson.title | e }}"
+                data-lesson-video="{{ lesson.video_url | e }}"
+                data-lesson-desc="{{ (lesson.description or '') | e }}"
+                onclick="openEditLessonModal(this.dataset)">✏️</button>
+            </div>
           </div>
-          <div class="lesson-actions">
-            <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
-            <button class="btn btn-outline btn-xs"
-              data-lesson-id="{{ lesson.id }}"
-              data-lesson-title="{{ lesson.title | e }}"
-              data-lesson-video="{{ lesson.video_url | e }}"
-              data-lesson-desc="{{ (lesson.description or '') | e }}"
-              onclick="openEditLessonModal(this.dataset)">✏️</button>
+          <div class="lesson-inline-quiz">
+            {{ render_quiz_editor(lesson.quiz, "lesson", lesson.id, "manage.add_lesson_quiz", "Добавить квиз к уроку", "lesson-quiz-" ~ lesson.id) }}
           </div>
         </li>
         {% else %}
@@ -93,6 +99,10 @@
         onclick="openAddLessonModal(this.dataset.moduleId)" data-i18n="manage.add_lesson">
         + Добавить урок
       </button>
+
+      <div class="manage-quiz-block">
+        {{ render_quiz_editor(module.quiz, "module", module.id, "manage.add_module_quiz", "Добавить квиз к модулю", "module-quiz-" ~ module.id) }}
+      </div>
     </div>
     {% else %}
     <div class="empty-state">
@@ -102,6 +112,10 @@
     {% endfor %}
 
     <button type="button" class="btn btn-primary add-module-form" onclick="openAddModuleModal()" data-i18n="manage.add_mod_btn">+ Модуль</button>
+
+    <div class="manage-course-quiz">
+      {{ render_quiz_editor(course.quiz, "course", course.id, "manage.add_course_quiz", "Добавить квиз к курсу", "course-quiz-main") }}
+    </div>
   </section>
 
   <!-- Активность студентов -->
@@ -396,6 +410,7 @@
   </div>
 </div>
 
+<script src="/static/js/quiz_builder.js"></script>
 <script>
 function openEditCourseModal() {
   document.querySelector('#edit-course-modal form')?.reset();

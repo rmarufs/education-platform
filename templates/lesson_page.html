@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
+{% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -119,7 +120,7 @@
     {% endif %}
 
     <!-- Квиз -->
-    {% if lesson.quiz %}
+    {% if lesson.quiz and (not user or user.role.value != "student" or lesson_quiz_visible) %}
     <section class="lesson-quiz-promo">
       <div class="quiz-card">
         <span class="quiz-icon">🧠</span>
@@ -130,13 +131,26 @@
         <a href="/quiz/{{ lesson.quiz.id }}" class="btn btn-primary" data-i18n="lesson.quiz">Пройти квиз →</a>
       </div>
     </section>
+    {% elif lesson.quiz and user and user.role.value == "student" %}
+    <section class="lesson-quiz-promo">
+      <div class="quiz-card quiz-card-locked">
+        <span class="quiz-icon">🔒</span>
+        <div>
+          <h3>{{ lesson.quiz.title }}</h3>
+          <p data-i18n="lesson.quiz_unlock">Квиз откроется после отметки урока как пройденного.</p>
+        </div>
+      </div>
+    </section>
     {% endif %}
 
     <!-- Прогресс студента -->
     {% if user and user.role.value == "student" %}
     <div class="lesson-complete-bar">
       {% if progress and progress.completed %}
-        <div class="complete-badge" data-i18n="lesson.done">✅ Урок завершён</div>
+        <div class="lesson-complete-actions">
+          <div class="complete-badge" data-i18n="lesson.done">✅ Урок завершён</div>
+          <a href="{{ continue_url or ('/lessons/' ~ lesson.id ~ '/continue') }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+        </div>
       {% else %}
         <form action="/lessons/{{ lesson.id }}/complete" method="POST" style="display:inline">
           <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">✅ Отметить как пройденный</button>
@@ -167,37 +181,9 @@
 
         <!-- Создать квиз -->
         {% if not lesson.quiz %}
-        <form action="/quiz/create" method="POST" class="tool-form">
-          <h4 data-i18n="lesson.create_quiz">🧠 Создать квиз</h4>
-          <input type="hidden" name="lesson_id" value="{{ lesson.id }}" />
-          <input type="text" name="title" class="form-input" data-i18n="lesson.quiz_title" placeholder="Название квиза" required />
-          <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.quiz_create">Создать</button>
-        </form>
+        {{ render_quiz_editor(None, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
         {% else %}
-        <div class="tool-form">
-          <h4 data-i18n="lesson.quiz_exists">🧠 Квиз уже создан</h4>
-          <a href="/quiz/{{ lesson.quiz.id }}" class="btn btn-secondary btn-sm" data-i18n="lesson.quiz_open">Открыть квиз</a>
-          <!-- Добавить вопрос -->
-          <form action="/quiz/{{ lesson.quiz.id }}/question" method="POST" class="question-form" style="margin-top:12px">
-            <input type="text" name="question_text" class="form-input" data-i18n="lesson.q_text" placeholder="Текст вопроса" required />
-            <select name="question_type" class="form-input">
-              <option value="single" data-i18n="lesson.q_single">Один ответ</option>
-              <option value="multiple" data-i18n="lesson.q_multi">Несколько ответов</option>
-            </select>
-            <div id="answers-container">
-              <div class="answer-row">
-                <input type="text" name="answer_1" class="form-input" data-i18n="lesson.ans_ph" data-i18n-params='{"n": 1}' placeholder="Вариант 1" />
-                <label><input type="checkbox" name="correct_1" /><span data-i18n="lesson.ans_correct"> Правильный</span></label>
-              </div>
-              <div class="answer-row">
-                <input type="text" name="answer_2" class="form-input" data-i18n="lesson.ans_ph" data-i18n-params='{"n": 2}' placeholder="Вариант 2" />
-                <label><input type="checkbox" name="correct_2" /><span data-i18n="lesson.ans_correct"> Правильный</span></label>
-              </div>
-            </div>
-            <button type="button" class="btn btn-outline btn-sm" data-i18n="lesson.add_variant" onclick="addAnswerRow()">+ Вариант</button>
-            <button type="submit" class="btn btn-primary btn-sm" data-i18n="lesson.add_q">Добавить вопрос</button>
-          </form>
-        </div>
+        {{ render_quiz_editor(lesson.quiz, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
         {% endif %}
       </div>
     </section>
@@ -263,19 +249,8 @@
   </main>
 </div>
 
+<script src="/static/js/quiz_builder.js"></script>
 <script>
-let answerCount = 2;
-function addAnswerRow() {
-  answerCount++;
-  const c = document.getElementById('answers-container');
-  const d = document.createElement('div');
-  d.className = 'answer-row';
-  d.innerHTML = `<input type="text" name="answer_${answerCount}" class="form-input" data-i18n="lesson.ans_ph" data-i18n-params='{"n": ${answerCount}}' placeholder="Вариант ${answerCount}" />
-    <label><input type="checkbox" name="correct_${answerCount}" /><span data-i18n="lesson.ans_correct"> ${t('lesson.ans_correct')}</span></label>`;
-  c.appendChild(d);
-  setLang(currentLang);
-}
-
 function toggleReplyForm(commentId) {
   const form = document.getElementById('reply-form-' + commentId);
   if (!form) return;

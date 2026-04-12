@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Результаты тестов — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  {% include "_teacher_sidebar.html" %}
+
+  <div class="dashboard-main">
+    <div class="dashboard-header">
+      <div>
+        <h1 data-i18n="teacher.quiz_results">Результаты тестов</h1>
+        <p data-i18n="teacher.quiz_results_subtitle">Сводка по квизам, где включено сохранение результатов студентов.</p>
+      </div>
+    </div>
+
+    {% if quiz_cards %}
+    <div class="quiz-results-grid">
+      {% for card in quiz_cards %}
+      <a href="/dashboard/teacher/quiz-results/{{ card.quiz.id }}" class="quiz-results-card fade-in">
+        <div class="quiz-results-card-head">
+          <span class="badge badge-quiz">{{ card.binding_label }}</span>
+          <strong>{{ card.quiz.title }}</strong>
+        </div>
+        <div class="quiz-results-metrics">
+          <div class="quiz-results-metric">
+            <span class="quiz-results-metric-value">{{ card.students_count }}</span>
+            <span class="quiz-results-metric-label" data-i18n="teacher.quiz_students">Студентов прошли</span>
+          </div>
+          <div class="quiz-results-metric">
+            <span class="quiz-results-metric-value">{{ card.average_percentage }}%</span>
+            <span class="quiz-results-metric-label" data-i18n="teacher.quiz_average">Средний балл группы</span>
+          </div>
+        </div>
+        <span class="quiz-results-open" data-i18n="teacher.quiz_open_details">Открыть детали →</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">🧪</span>
+      <p data-i18n="teacher.quiz_results_empty">Пока нет квизов с включённым сохранением результатов.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

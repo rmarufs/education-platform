@@ -1,10 +1,9 @@
 import os
 import re
 import shutil
+import uuid
 from urllib.parse import urlparse
 
-import cloudinary
-import cloudinary.uploader
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -20,23 +19,33 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.review import Review
+from app.models.quiz import Quiz, Question
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+from app.quiz_flow import course_progress_state, is_course_ready_for_quiz, is_module_ready_for_quiz
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+except ModuleNotFoundError:
+    cloudinary = None
 
 router = APIRouter(prefix="/courses")
 templates = Jinja2Templates(directory="templates")
 
 COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+COURSE_IMAGE_DIR = os.path.join("static", "uploads", "course_images")
 COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
 COURSE_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
 COURSE_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
 
-cloudinary.config(
-    cloud_name=CLOUDINARY_CLOUD_NAME,
-    api_key=CLOUDINARY_API_KEY,
-    api_secret=CLOUDINARY_API_SECRET,
-    secure=True,
-)
+if cloudinary:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True,
+    )
 
 
 def _plain_text(value: str | None) -> str:
@@ -115,20 +124,28 @@ def _save_course_image(image: UploadFile | None) -> str | None:
     if size > COURSE_IMAGE_MAX_BYTES:
         raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
 
-    try:
-        upload_result = cloudinary.uploader.upload(
-            image.file,
-            folder="courses",
-            resource_type="image",
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Не удалось загрузить изображение курса") from exc
+    if cloudinary and CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+        try:
+            upload_result = cloudinary.uploader.upload(
+                image.file,
+                folder="courses",
+                resource_type="image",
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail="Не удалось загрузить изображение курса") from exc
 
-    image_url = upload_result.get("secure_url")
-    if not image_url:
-        raise HTTPException(status_code=500, detail="Cloudinary не вернул ссылку на изображение")
+        image_url = upload_result.get("secure_url")
+        if not image_url:
+            raise HTTPException(status_code=500, detail="Cloudinary не вернул ссылку на изображение")
+        return image_url
 
-    return image_url
+    os.makedirs(COURSE_IMAGE_DIR, exist_ok=True)
+    image.file.seek(0)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(COURSE_IMAGE_DIR, filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+    return f"/static/uploads/course_images/{filename}"
 
 
 def _validate_course_material_upload(file: UploadFile) -> str:
@@ -269,7 +286,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         .options(
             joinedload(Course.teacher),
             joinedload(Course.category),
-            selectinload(Course.modules).selectinload(Module.lessons),
+            joinedload(Course.quiz).selectinload(Quiz.questions),
+            selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions),
+            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
             selectinload(Course.reviews).joinedload(Review.student),
             selectinload(Course.materials),
         )
@@ -284,6 +303,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     # Прогресс студента по этому курсу
     progress_data = {}
     completion_pct = 0
+    module_quiz_states = {}
+    course_quiz_unlocked = False
+    course_quiz_passed = False
     if user and user.role.value == "student":
         course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
         progress_rows = (
@@ -302,6 +324,19 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         )
         completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
 
+        state_course, completed_lesson_ids, passed_quiz_ids = course_progress_state(db, user.id, course.id)
+        if state_course:
+            module_quiz_states = {
+                module.id: {
+                    "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
+                    "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
+                }
+                for module in state_course.modules
+                if module.quiz
+            }
+            course_quiz_unlocked = bool(state_course.quiz and is_course_ready_for_quiz(state_course, completed_lesson_ids, passed_quiz_ids))
+            course_quiz_passed = bool(state_course.quiz and state_course.quiz.id in passed_quiz_ids)
+
     # Уже оставлял отзыв?
     user_review = None
     if user:
@@ -315,6 +350,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "user": user,
         "progress_data": progress_data,
         "completion_pct": completion_pct,
+        "module_quiz_states": module_quiz_states,
+        "course_quiz_unlocked": course_quiz_unlocked,
+        "course_quiz_passed": course_quiz_passed,
         "user_review": user_review,
     })
 
@@ -332,8 +370,10 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
     course = (
         db.query(Course)
         .options(
+            joinedload(Course.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
+            selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
             selectinload(Course.modules).selectinload(Module.lessons).selectinload(Lesson.materials),
-            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
+            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
         )
         .filter(Course.id == course_id, Course.teacher_id == user.id)
         .first()
@@ -496,6 +536,43 @@ def delete_course(course_id: int, request: Request, db: Session = Depends(get_db
     db.delete(course)
     db.commit()
     return RedirectResponse("/dashboard/teacher", status_code=302)
+
+
+@router.get("/{course_id}/completed", response_class=HTMLResponse)
+def course_completed(course_id: int, request: Request, db: Session = Depends(get_db)):
+    course = (
+        db.query(Course)
+        .options(joinedload(Course.teacher))
+        .filter(Course.id == course_id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+
+    user = get_user(request, db)
+    if not user or user.role.value != "student":
+        return RedirectResponse("/login", status_code=302)
+
+    state_course, completed_lesson_ids, passed_quiz_ids = course_progress_state(db, user.id, course.id)
+    if not state_course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+
+    total_lessons = sum(len(module.lessons) for module in state_course.modules)
+    done_lessons = sum(1 for lesson_id in completed_lesson_ids if lesson_id in {lesson.id for module in state_course.modules for lesson in module.lessons})
+    completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
+    course_finished = is_course_ready_for_quiz(state_course, completed_lesson_ids, passed_quiz_ids)
+    if state_course.quiz:
+        course_finished = course_finished and state_course.quiz.id in passed_quiz_ids
+
+    if not course_finished and state_course.modules:
+        return RedirectResponse(f"/courses/{course.id}", status_code=302)
+
+    return templates.TemplateResponse("course_completed.html", {
+        "request": request,
+        "user": user,
+        "course": course,
+        "completion_pct": completion_pct,
+    })
 
 
 # ── Удаление материала ───────────────────────────────────────────────────────

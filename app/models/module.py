@@ -17,3 +17,5 @@ class Module(Base):
     lessons = relationship("Lesson", back_populates="module",
                            order_by="Lesson.order_index",
                            cascade="all, delete-orphan")
+    quiz    = relationship("Quiz", back_populates="module",
+                           uselist=False, cascade="all, delete-orphan")

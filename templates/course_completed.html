@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Курс завершён — Фурузон{% endblock %}
+
+{% block content %}
+<div class="quiz-page">
+  <section class="quiz-result-screen course-completion-screen fade-in">
+    <div class="quiz-result-badge">🎓</div>
+    <p class="quiz-result-kicker" data-i18n="course_page.completed_kicker">Курс завершён</p>
+    <h1 data-i18n="course_page.completed_title" data-i18n-params='{{ {"title": course.title} | tojson }}'>Поздравляем с завершением курса {{ course.title }}</h1>
+    <p class="result-msg success" data-i18n="course_page.completed_text">Вы прошли все уроки и квизы. Отличная работа.</p>
+
+    <div class="quiz-result-stats">
+      <div class="quiz-result-stat">
+        <span class="quiz-result-stat-value">{{ completion_pct }}%</span>
+        <span class="quiz-result-stat-label" data-i18n="course_page.progress_label">Прогресс</span>
+      </div>
+      <div class="quiz-result-stat">
+        <span class="quiz-result-stat-value">{{ course.teacher.name }}</span>
+        <span class="quiz-result-stat-label" data-i18n="course_page.teacher">Преподаватель</span>
+      </div>
+    </div>
+
+    <div class="quiz-result-actions">
+      <a href="/courses/{{ course.id }}" class="btn btn-primary" data-i18n="course.view">Просмотр</a>
+      <a href="/dashboard/student" class="btn btn-outline" data-i18n="nav.dashboard">Кабинет</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
