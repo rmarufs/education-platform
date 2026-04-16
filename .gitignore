@@ -48,6 +48,11 @@ static/documents/*
 !static/uploads/.gitkeep
 !static/documents/.gitkeep
 
+# ── Локальная документация (оптимизация, внутренние заметки) ────
+docs/optimization/
+docs/internal/
+*.optimization.md
+
 # ── Runtime / local copies ─────────────────────────
 server.log
 education_platform/

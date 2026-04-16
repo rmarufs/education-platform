@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
+{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}{{ course.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -65,7 +66,34 @@
       </div>
       {% endif %}
 
-      {% if course.quiz %}
+      <!-- Google Forms финальный тест -->
+      {% if course.quiz_url %}
+      <section class="lesson-google-forms-promo">
+        <div class="google-forms-banner course-forms-banner">
+          <span class="banner-icon">🏁</span>
+          <div>
+            <h3>Финальный тест курса</h3>
+            {% if user and user.role.value == "student" and not course_quiz_unlocked %}
+            <p>Финальный тест откроется после завершения всех модулей курса.</p>
+            {% else %}
+            <p class="text-muted">Проверьте свои знания с помощью финального теста</p>
+            {% endif %}
+          </div>
+          {% if not (user and user.role.value == "student" and not course_quiz_unlocked) %}
+          <button type="button" 
+                  class="btn btn-primary"
+                  onclick="openGoogleFormsIframe('{{ course.quiz_url }}', 'Финальный тест курса: {{ course.title }}')">
+            Пройти тест →
+          </button>
+          {% else %}
+          <span class="btn btn-outline disabled" aria-disabled="true">Недоступно</span>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- Старая система квизов (DISABLED) -->
+      {% if false and course.quiz %}
       <section class="lesson-quiz-promo">
         <div class="quiz-card quiz-card-course {{ 'quiz-card-locked' if user and user.role.value == 'student' and not course_quiz_unlocked and not course_quiz_passed else '' }}">
           <span class="quiz-icon">🏁</span>

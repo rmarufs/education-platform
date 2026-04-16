@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
 {% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
+{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -119,8 +120,36 @@
     </section>
     {% endif %}
 
-    <!-- Квиз -->
-    {% if lesson.quiz and (not user or user.role.value != "student" or lesson_quiz_visible) %}
+    <!-- Google Forms тест -->
+    {% if lesson.quiz_url and (not user or user.role.value != "student" or lesson_quiz_visible) %}
+    <section class="lesson-google-forms-promo">
+      <div class="google-forms-banner">
+        <span class="banner-icon">📋</span>
+        <div>
+          <h3>Тест</h3>
+          <p class="text-muted">Проверьте свои знания с помощью теста</p>
+        </div>
+        <button type="button" 
+                class="btn btn-primary"
+                onclick="openGoogleFormsIframe('{{ lesson.quiz_url }}', 'Тест: {{ lesson.title }}')">
+          Пройти тест →
+        </button>
+      </div>
+    </section>
+    {% elif lesson.quiz_url and user and user.role.value == "student" %}
+    <section class="lesson-google-forms-promo">
+      <div class="google-forms-banner google-forms-locked">
+        <span class="banner-icon">🔒</span>
+        <div>
+          <h3>Тест</h3>
+          <p>Тест откроется после отметки урока как пройденного.</p>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Старая система квизов (DISABLED) -->
+    {% if false and lesson.quiz and (not user or user.role.value != "student" or lesson_quiz_visible) %}
     <section class="lesson-quiz-promo">
       <div class="quiz-card">
         <span class="quiz-icon">🧠</span>
@@ -131,7 +160,7 @@
         <a href="/quiz/{{ lesson.quiz.id }}" class="btn btn-primary" data-i18n="lesson.quiz">Пройти квиз →</a>
       </div>
     </section>
-    {% elif lesson.quiz and user and user.role.value == "student" %}
+    {% elif false and lesson.quiz and user and user.role.value == "student" %}
     <section class="lesson-quiz-promo">
       <div class="quiz-card quiz-card-locked">
         <span class="quiz-icon">🔒</span>
@@ -179,11 +208,20 @@
           <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.mat_add">Добавить</button>
         </form>
 
+        <!-- Google Forms тест -->
+        <div class="tool-form">
+          <h4>📋 Управление тестом</h4>
+          {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
+        </div>
+
+        <!-- Старая система квизов (DISABLED) -->
+        {% if false %}
         <!-- Создать квиз -->
         {% if not lesson.quiz %}
         {{ render_quiz_editor(None, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
         {% else %}
         {{ render_quiz_editor(lesson.quiz, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
+        {% endif %}
         {% endif %}
       </div>
     </section>

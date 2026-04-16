@@ -4,8 +4,20 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.config import DATABASE_URL
 
-# Создаём движок PostgreSQL
-engine = create_engine(DATABASE_URL)
+# Создаём движок PostgreSQL с оптимизированным пулом соединений
+engine = create_engine(
+    DATABASE_URL,
+    # Пул соединений: оптимизировано для Render и малых инстансов
+    pool_size=5,              # Базовое количество соединений в пуле
+    max_overflow=10,          # Максимум дополнительных соединений сверх pool_size
+    pool_pre_ping=True,       # Проверять соединение перед использованием (исправляет stale connections)
+    pool_recycle=3600,        # Переиспользовать соединение каждый час (PostgreSQL по умолчанию таймаут 1ч)
+    echo=False,               # Не логировать SQL запросы (вкл. в разработке при отладке)
+    connect_args={
+        "connect_timeout": 10,
+        "application_name": "education_platform",
+    }
+)
 
 # Фабрика сессий БД
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -207,6 +219,66 @@ def _migrate_enum_and_columns():
             except Exception:
                 conn.rollback()
 
+        # 7. Добавляем quiz_url для курсов, если его нет
+        try:
+            conn.execute(text(
+                "ALTER TABLE courses ADD COLUMN IF NOT EXISTS quiz_url VARCHAR(500)"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+        # 8. Добавляем quiz_url для модулей, если его нет
+        try:
+            conn.execute(text(
+                "ALTER TABLE modules ADD COLUMN IF NOT EXISTS quiz_url VARCHAR(500)"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+        # 9. Добавляем quiz_url для уроков, если его нет
+        try:
+            conn.execute(text(
+                "ALTER TABLE lessons ADD COLUMN IF NOT EXISTS quiz_url VARCHAR(500)"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+
+def _create_performance_indexes():
+    """Создаёт индексы для оптимизации поиска и фильтрации."""
+    with engine.connect() as conn:
+        # Индексы для быстрого поиска по названиям
+        indexes_to_create = [
+            ("idx_courses_title", "courses", "title"),
+            ("idx_lessons_title", "lessons", "title"),
+            ("idx_modules_title", "modules", "title"),
+            ("idx_categories_name", "categories", "name"),
+            # Индексы для внешних ключей (улучшают JOIN)
+            ("idx_courses_category_id", "courses", "category_id"),
+            ("idx_courses_teacher_id", "courses", "teacher_id"),
+            ("idx_modules_course_id", "modules", "course_id"),
+            ("idx_lessons_module_id", "lessons", "module_id"),
+            ("idx_materials_lesson_id", "materials", "lesson_id"),
+            ("idx_progress_student_id", "progress", "student_id"),
+            ("idx_progress_lesson_id", "progress", "lesson_id"),
+            ("idx_reviews_student_id", "reviews", "student_id"),
+            ("idx_comments_lesson_id", "comments", "lesson_id"),
+            ("idx_comments_author_id", "comments", "author_id"),
+        ]
+        
+        for index_name, table_name, column_name in indexes_to_create:
+            try:
+                conn.execute(text(
+                    f"CREATE INDEX IF NOT EXISTS {index_name} ON {table_name} ({column_name})"
+                ))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                # Индекс может уже существовать, что нормально
+
 
 def init_db():
     """Создаёт все таблицы в базе данных при старте приложения."""
@@ -218,3 +290,6 @@ def init_db():
 
     # Миграция: добавить новые роли и столбцы
     _migrate_enum_and_columns()
+    
+    # Оптимизация: создать индексы для быстрого поиска
+    _create_performance_indexes()

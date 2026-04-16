@@ -16,6 +16,7 @@ class Course(Base):
     teacher_id  = Column(Integer, ForeignKey("users.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     rating      = Column(Float, default=0.0)          # средний рейтинг
+    quiz_url    = Column(String(500), nullable=True)  # ссылка на Google Forms для теста курса
     created_at  = Column(DateTime, default=datetime.utcnow)
 
     teacher  = relationship("User", backref="courses")

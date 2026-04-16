@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
+{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}Управление курсом — {{ course.title }}{% endblock %}
 
 {% block content %}
@@ -85,7 +86,7 @@
             </div>
           </div>
           <div class="lesson-inline-quiz">
-            {{ render_quiz_editor(lesson.quiz, "lesson", lesson.id, "manage.add_lesson_quiz", "Добавить квиз к уроку", "lesson-quiz-" ~ lesson.id) }}
+            {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
           </div>
         </li>
         {% else %}
@@ -101,7 +102,7 @@
       </button>
 
       <div class="manage-quiz-block">
-        {{ render_quiz_editor(module.quiz, "module", module.id, "manage.add_module_quiz", "Добавить квиз к модулю", "module-quiz-" ~ module.id) }}
+        {{ render_google_forms_editor(module.quiz_url, "module", module.id, "Модуль: " ~ module.title) }}
       </div>
     </div>
     {% else %}
@@ -114,7 +115,7 @@
     <button type="button" class="btn btn-primary add-module-form" onclick="openAddModuleModal()" data-i18n="manage.add_mod_btn">+ Модуль</button>
 
     <div class="manage-course-quiz">
-      {{ render_quiz_editor(course.quiz, "course", course.id, "manage.add_course_quiz", "Добавить квиз к курсу", "course-quiz-main") }}
+      {{ render_google_forms_editor(course.quiz_url, "course", course.id, "Курс: " ~ course.title) }}
     </div>
   </section>
 

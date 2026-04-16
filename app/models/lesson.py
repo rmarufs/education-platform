@@ -12,6 +12,7 @@ class Lesson(Base):
     title       = Column(String(200), nullable=False)
     video_url   = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
+    quiz_url    = Column(String(500), nullable=True)  # ссылка на Google Forms для теста урока
     order_index = Column(Integer, default=0, nullable=False)
 
     module    = relationship("Module", back_populates="lessons")

@@ -11,6 +11,7 @@ class Module(Base):
     course_id   = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     title       = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
+    quiz_url    = Column(String(500), nullable=True)  # ссылка на Google Forms для теста модуля
     order_index = Column(Integer, default=0, nullable=False)
 
     course  = relationship("Course", back_populates="modules")

@@ -55,3 +55,209 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
 });
+
+/* ────────────────────────────────────────────────────────────
+   Google Forms Integration
+──────────────────────────────────────────────────────────────── */
+
+// Open Google Forms in iframe
+function openGoogleFormsIframe(formUrl, title) {
+  if (!formUrl) {
+    showToast('Форма не была добавлена', 'error');
+    return;
+  }
+
+  const container = document.getElementById('google-forms-iframe-container');
+  if (!container) {
+    // Create container if it doesn't exist
+    const newContainer = document.createElement('div');
+    newContainer.id = 'google-forms-iframe-container';
+    newContainer.className = 'active';
+    newContainer.innerHTML = `
+      <div class="google-forms-iframe-header">
+        <h3>${escapeHtml(title)}</h3>
+        <button class="google-forms-iframe-close" onclick="closeGoogleFormsIframe()">✕</button>
+      </div>
+      <div class="google-forms-iframe-body">
+        <iframe src="${escapeHtml(formUrl)}&embedded=true" frameborder="0" marginheight="0" marginwidth="0" loading="lazy"></iframe>
+      </div>
+    `;
+    document.body.appendChild(newContainer);
+    newContainer.addEventListener('click', (e) => {
+      if (e.target === newContainer) closeGoogleFormsIframe();
+    });
+  } else {
+    container.classList.add('active');
+    const iframe = container.querySelector('iframe');
+    if (iframe) {
+      iframe.src = formUrl + '&embedded=true';
+    }
+    const header = container.querySelector('h3');
+    if (header) header.textContent = title;
+  }
+}
+
+// Close Google Forms iframe
+function closeGoogleFormsIframe() {
+  const container = document.getElementById('google-forms-iframe-container');
+  if (container) {
+    container.classList.remove('active');
+  }
+}
+
+// Open modal to add/edit Google Forms URL
+function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
+  const modal = document.getElementById('google-forms-modal');
+  const existing = modal || createGoogleFormsModal();
+  
+  existing.querySelector('h2').textContent = 'Добавить ссылку на Google Forms';
+  const input = existing.querySelector('input[name="quiz_url"]');
+  input.value = currentUrl || '';
+  input.placeholder = 'Вставьте ссылку на Google Forms...';
+  
+  const form = existing.querySelector('form');
+  form.dataset.scopeName = scopeName;
+  form.dataset.scopeId = scopeId;
+  
+  existing.classList.add('active');
+  input.focus();
+}
+
+// Create Google Forms modal if it doesn't exist
+function createGoogleFormsModal() {
+  const existing = document.getElementById('google-forms-modal');
+  if (existing) return existing;
+  
+  const modal = document.createElement('div');
+  modal.id = 'google-forms-modal';
+  modal.innerHTML = `
+    <div class="google-forms-modal-content" onclick="event.stopPropagation()">
+      <div class="google-forms-modal-header">
+        <h2>Добавить ссылку на Google Forms</h2>
+        <button type="button" onclick="closeGoogleFormsModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);">✕</button>
+      </div>
+      <div class="google-forms-modal-body">
+        <form class="google-forms-modal-form" id="google-forms-form">
+          <div>
+            <label for="quiz-url-input">Ссылка на Google Forms</label>
+            <input type="url" id="quiz-url-input" name="quiz_url" placeholder="https://forms.gle/..." required />
+          </div>
+          <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button type="button" class="btn btn-outline" onclick="closeGoogleFormsModal()">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeGoogleFormsModal();
+  });
+  
+  const form = modal.querySelector('#google-forms-form');
+  form.addEventListener('submit', handleGoogleFormsSubmit);
+  
+  document.body.appendChild(modal);
+  return modal;
+}
+
+// Handle Google Forms form submission
+async function handleGoogleFormsSubmit(e) {
+  e.preventDefault();
+  
+  const form = e.target;
+  const scopeName = form.dataset.scopeName;
+  const scopeId = form.dataset.scopeId;
+  const quizUrl = form.querySelector('input[name="quiz_url"]').value.trim();
+  
+  if (!quizUrl) {
+    showToast('Пожалуйста, введите ссылку', 'error');
+    return;
+  }
+  
+  // Validate URL format
+  try {
+    new URL(quizUrl);
+  } catch {
+    showToast('Введите корректную ссылку', 'error');
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('scope_name', scopeName);
+    formData.append('scope_id', scopeId);
+    formData.append('quiz_url', quizUrl);
+    
+    const response = await fetch(`/courses/api/quiz-url`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      showToast(data.detail || 'Ошибка при сохранении', 'error');
+      return;
+    }
+    
+    showToast('Ссылка сохранена успешно', 'success');
+    closeGoogleFormsModal();
+    
+    // Refresh the page to show updated content
+    window.location.reload();
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Ошибка при сохранении ссылки', 'error');
+  }
+}
+
+// Close Google Forms modal
+function closeGoogleFormsModal() {
+  const modal = document.getElementById('google-forms-modal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// Delete Google Forms URL
+async function deleteGoogleFormsUrl(scopeName, scopeId) {
+  if (!confirm('Вы уверены, что хотите удалить ссылку на Google Forms?')) {
+    return;
+  }
+  
+  try {
+    const formData = new FormData();
+    formData.append('scope_name', scopeName);
+    formData.append('scope_id', scopeId);
+    
+    const response = await fetch(`/courses/api/quiz-url`, {
+      method: 'DELETE',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      showToast(data.detail || 'Ошибка при удалении', 'error');
+      return;
+    }
+    
+    showToast('Ссылка удалена', 'success');
+    window.location.reload();
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Ошибка при удалении ссылки', 'error');
+  }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}

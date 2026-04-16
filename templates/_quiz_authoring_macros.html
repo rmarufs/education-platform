@@ -138,3 +138,37 @@
   {% endif %}
 </div>
 {% endmacro %}
+
+{# NEW: Google Forms-based quiz macro #}
+{% macro render_google_forms_editor(quiz_url, scope_name, scope_id, label) %}
+<div class="google-forms-editor" data-google-forms-scope="{{ scope_name }}-{{ scope_id }}">
+  {% if not quiz_url %}
+  <button type="button" 
+          class="btn btn-outline btn-sm google-forms-add-btn"
+          onclick="openGoogleFormsModal('{{ scope_name }}', {{ scope_id }}, '{{ label }}')">
+    + Добавить тест
+  </button>
+  {% else %}
+  <div class="google-forms-card">
+    <div class="google-forms-header">
+      <span class="badge badge-quiz">Google Forms</span>
+      <a href="{{ quiz_url }}" target="_blank" class="btn btn-secondary btn-xs">📋 Открыть форму</a>
+    </div>
+    <p class="google-forms-url" title="{{ quiz_url }}">{{ quiz_url | truncate(60, True, '...') }}</p>
+    <span class="text-muted small">Результаты доступны в вашем Google Forms аккаунте</span>
+    <div class="google-forms-actions" style="margin-top: 8px; display: flex; gap: 8px;">
+      <button type="button" 
+              class="btn btn-outline btn-xs"
+              onclick="openGoogleFormsModal('{{ scope_name }}', {{ scope_id }}, '{{ label }}', '{{ quiz_url }}')">
+        ✏️ Изменить
+      </button>
+      <button type="button" 
+              class="btn btn-danger btn-xs"
+              onclick="deleteGoogleFormsUrl('{{ scope_name }}', {{ scope_id }})">
+        🗑 Удалить
+      </button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
