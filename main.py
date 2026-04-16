@@ -19,7 +19,7 @@ from app.models.user import User
 from app.models.category import Category
 from app.routers import auth, users, courses
 from app.routers import modules, lessons, reviews, comments, profile, pages
-# from app.routers import quizzes  # OLD QUIZ SYSTEM - DISABLED FOR GOOGLE FORMS MIGRATION
+from app.routers import quizzes  # QUIZ SYSTEM - RESTORED
 from app.routers import admin
 
 # Создаём папку data если её нет
@@ -117,8 +117,8 @@ app.include_router(users.router)
 app.include_router(courses.router)
 app.include_router(modules.router)
 app.include_router(lessons.router)
-# app.include_router(quizzes.router)  # OLD QUIZ SYSTEM - DISABLED FOR GOOGLE FORMS MIGRATION
-# app.include_router(quizzes.dashboard_router)  # OLD QUIZ SYSTEM - DISABLED FOR GOOGLE FORMS MIGRATION
+app.include_router(quizzes.router)  # QUIZ SYSTEM - RESTORED
+app.include_router(quizzes.dashboard_router)  # QUIZ SYSTEM - RESTORED
 app.include_router(reviews.router)
 app.include_router(comments.router)
 app.include_router(profile.router)
