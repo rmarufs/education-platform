@@ -30,7 +30,7 @@
                         Вопрос {{ number }}
                     </h2>
                     <div class="assessment-options-grid">
-                        {% for value in range(1, 5) %}
+                        {% for value in range(1, 4) %}
                         <label class="assessment-option-card">
                             <input type="radio" name="q{{ number }}" value="{{ value }}" required onchange="nextStep({{ number }})">
                             <div class="option-content">
@@ -44,12 +44,12 @@
                 {% endfor %}
 
                 <div class="assessment-step" id="step-final" style="display: none; text-align: center;">
-                    <h2 style="margin-bottom:20px;">🎉 Готово!</h2>
+                    <h2 style="margin-bottom:20px;">🎉 Поздравляем!</h2>
                     <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;">
-                        Спасибо за ответы. Мы проанализировали ваши предпочтения.
+                        Вы успешно зарегистрировались и завершили опрос.
                     </p>
-                    <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" data-i18n="ass.submit">
-                        Показать подходящие курсы
+                    <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;">
+                        Перейти в каталог курсов
                     </button>
                 </div>
             </form>

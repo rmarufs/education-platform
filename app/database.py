@@ -285,7 +285,7 @@ def init_db():
     from app.models import user, course, category  # noqa
     from app.models import module, lesson, material  # noqa
     from app.models import quiz, progress, review, comment  # noqa
-    from app.models import contact  # noqa
+    from app.models import contact, assessment  # noqa
     Base.metadata.create_all(bind=engine)
 
     # Миграция: добавить новые роли и столбцы

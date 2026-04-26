@@ -70,11 +70,25 @@ def process_assessment(
     if redirect:
         return redirect
         
+    from app.models.assessment import AssessmentResponse
+    
+    # Сохраняем ответы в отдельную таблицу
+    response = db.query(AssessmentResponse).filter(AssessmentResponse.user_id == user.id).first()
+    if not response:
+        response = AssessmentResponse(user_id=user.id)
+        db.add(response)
+        
+    response.q1_answer = q1
+    response.q2_answer = q2
+    response.q3_answer = q3
+    response.q4_answer = q4
+    response.q5_answer = q5
+    
     score = q1 + q2 + q3 + q4 + q5
     
-    if score <= 9:
+    if score <= 6:
         user_level = "Beginner"
-    elif score <= 15:
+    elif score <= 11:
         user_level = "Intermediate"
     else:
         user_level = "Advanced"
@@ -83,7 +97,7 @@ def process_assessment(
     user.assessment_completed = True
     db.commit()
     
-    return RedirectResponse("/courses/recommended", status_code=302)
+    return RedirectResponse("/catalog", status_code=302)
 
 
 @router.get("/dashboard/student", response_class=HTMLResponse)
