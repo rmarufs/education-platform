@@ -1,9 +1,14 @@
 # Конфигурация приложения
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Загружаем переменные из .env (если файл существует)
-load_dotenv()
+# Загружаем переменные из .env
+# Сначала пытаемся загрузить из config/.env, потом из корня проекта
+env_path = Path(__file__).parent.parent / "config" / ".env"
+if not env_path.exists():
+    env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
 
 # ── Обязательные переменные окружения ──────────────────────────────────────
 
