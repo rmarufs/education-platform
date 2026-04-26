@@ -17,7 +17,6 @@ from app.database import init_db, SessionLocal, get_db
 from app.models.course import Course
 from app.models.user import User
 from app.models.category import Category
-from app.init_video_tables import init_video_tables
 from app.routers import auth, users, courses
 from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import quizzes  # QUIZ SYSTEM - RESTORED
@@ -194,7 +193,6 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
 @app.on_event("startup")
 def on_startup():
     init_db()
-    init_video_tables()
     print(f"✅ {PLATFORM_NAME} запущен. База данных инициализирована.")
 
 
