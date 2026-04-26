@@ -114,6 +114,10 @@ async def register(
                 shutil.copyfileobj(document.file, buffer)
             doc_path = "/" + save_path
 
+    # Если это первый пользователь в базе данных, делаем его админом
+    if db.query(User).count() == 0:
+        actual_role = UserRole.admin
+
     user = User(
         name=name,
         email=email,
