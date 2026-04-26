@@ -95,6 +95,20 @@
                <div class="progress-bar" id="progress-bar"></div>
            </div>
            <span class="time-display" id="time-display">0:00 / 0:00</span>
+           
+           <!-- Выбор скорости -->
+           <div class="speed-control-wrapper">
+             <button type="button" id="speed-btn" class="ctrl-btn text-btn" aria-label="Playback Speed">1x</button>
+             <div class="speed-menu" id="speed-menu">
+               <button type="button" class="speed-option" data-speed="0.5">0.5x</button>
+               <button type="button" class="speed-option" data-speed="0.75">0.75x</button>
+               <button type="button" class="speed-option active" data-speed="1">Обычная (1x)</button>
+               <button type="button" class="speed-option" data-speed="1.25">1.25x</button>
+               <button type="button" class="speed-option" data-speed="1.5">1.5x</button>
+               <button type="button" class="speed-option" data-speed="2">2x</button>
+             </div>
+           </div>
+
            <button type="button" id="mute-btn" class="ctrl-btn" aria-label="Mute/Unmute">🔊</button>
            <button type="button" id="fullscreen-btn" class="ctrl-btn" aria-label="Fullscreen">⛶</button>
         </div>
@@ -441,6 +455,25 @@ document.addEventListener('DOMContentLoaded', () => {
         player.seekTo(pos * duration, true);
       });
     }
+
+    var speedBtn = document.getElementById('speed-btn');
+    if (speedBtn) speedBtn.addEventListener('click', toggleSpeedMenu);
+    
+    var speedOptions = document.querySelectorAll('.speed-option');
+    speedOptions.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        var rate = parseFloat(e.target.getAttribute('data-speed'));
+        setSpeed(rate);
+      });
+    });
+
+    document.addEventListener('click', function(e) {
+      var wrapper = document.querySelector('.speed-control-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        var menu = document.getElementById('speed-menu');
+        if (menu) menu.classList.remove('show');
+      }
+    });
     
     updateTimeDisplay();
   }
@@ -534,6 +567,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.msExitFullscreen();
       }
     }
+  }
+
+  function toggleSpeedMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('speed-menu');
+    if (menu) menu.classList.toggle('show');
+  }
+
+  function setSpeed(rate) {
+    if (!player || !player.setPlaybackRate) return;
+    player.setPlaybackRate(rate);
+    
+    var speedBtn = document.getElementById('speed-btn');
+    if (speedBtn) speedBtn.innerText = rate === 1 ? '1x' : rate + 'x';
+    
+    var options = document.querySelectorAll('.speed-option');
+    options.forEach(function(btn) {
+      if (parseFloat(btn.getAttribute('data-speed')) === rate) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    
+    var menu = document.getElementById('speed-menu');
+    if (menu) menu.classList.remove('show');
   }
 </script>
 {% endblock %}
