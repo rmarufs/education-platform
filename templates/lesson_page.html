@@ -70,14 +70,34 @@
 
     <!-- Видео: внешние ссылки (YouTube) -->
     {% if lesson.video_url %}
-    <div class="video-container">
+    <div class="video-container" id="custom-video-container">
       {% set vid = lesson.video_url %}
+      {% set vid_id = None %}
       {% if "youtube.com/watch?v=" in vid %}
         {% set vid_id = vid.split("v=")[1].split("&")[0] %}
-        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% elif "youtu.be/" in vid %}
         {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
-        <iframe src="https://www.youtube.com/embed/{{ vid_id }}" allowfullscreen class="lesson-video-frame"></iframe>
+      {% endif %}
+
+      {% if vid_id %}
+        <!-- Кастомный YouTube плеер -->
+        <div id="yt-player" data-video-id="{{ vid_id }}"></div>
+        
+        <!-- Невидимый слой для перехвата кликов (блокирует переход на YT) -->
+        <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
+            <div class="big-play-btn" id="big-play-btn">▶</div>
+        </div>
+        
+        <!-- Кастомные элементы управления -->
+        <div class="custom-video-controls" id="custom-controls" oncontextmenu="return false;" onclick="event.stopPropagation()">
+           <button type="button" id="play-pause-btn" class="ctrl-btn" aria-label="Play/Pause">▶</button>
+           <div class="progress-container" id="progress-container">
+               <div class="progress-bar" id="progress-bar"></div>
+           </div>
+           <span class="time-display" id="time-display">0:00 / 0:00</span>
+           <button type="button" id="mute-btn" class="ctrl-btn" aria-label="Mute/Unmute">🔊</button>
+           <button type="button" id="fullscreen-btn" class="ctrl-btn" aria-label="Fullscreen">⛶</button>
+        </div>
       {% else %}
         <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% endif %}
@@ -367,4 +387,153 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  var player;
+  var progressInterval;
+  var isPlaying = false;
+  
+  function onYouTubeIframeAPIReady() {
+    var ytPlayerEl = document.getElementById('yt-player');
+    if (!ytPlayerEl) return;
+    
+    var videoId = ytPlayerEl.getAttribute('data-video-id');
+    
+    player = new YT.Player('yt-player', {
+      videoId: videoId,
+      playerVars: {
+        'controls': 0,        // Скрыть контролы ютуба
+        'rel': 0,             // Не показывать похожие видео
+        'modestbranding': 1,  // Минимизировать брендинг
+        'disablekb': 1,       // Отключить управление клавиатурой
+        'fs': 0,              // Отключить кнопку фуллскрина ютуба
+        'playsinline': 1,     // Для мобильных
+        'iv_load_policy': 3   // Скрыть аннотации
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+
+  function onPlayerReady(event) {
+    // Привязываем события к нашим кнопкам
+    var playBtn = document.getElementById('play-pause-btn');
+    var overlay = document.getElementById('video-click-overlay');
+    var muteBtn = document.getElementById('mute-btn');
+    var fsBtn = document.getElementById('fullscreen-btn');
+    var progressContainer = document.getElementById('progress-container');
+
+    if(playBtn) playBtn.addEventListener('click', togglePlay);
+    if(overlay) overlay.addEventListener('click', togglePlay);
+    if(muteBtn) muteBtn.addEventListener('click', toggleMute);
+    if(fsBtn) fsBtn.addEventListener('click', toggleFullScreen);
+    
+    if(progressContainer) {
+      progressContainer.addEventListener('click', function(e) {
+        var rect = progressContainer.getBoundingClientRect();
+        var pos = (e.clientX - rect.left) / rect.width;
+        var duration = player.getDuration();
+        player.seekTo(pos * duration, true);
+      });
+    }
+    
+    updateTimeDisplay();
+  }
+
+  function onPlayerStateChange(event) {
+    var playBtn = document.getElementById('play-pause-btn');
+    var container = document.getElementById('custom-video-container');
+    
+    if (event.data == YT.PlayerState.PLAYING) {
+      isPlaying = true;
+      if(playBtn) playBtn.innerText = '⏸';
+      if(container) container.classList.add('playing');
+      progressInterval = setInterval(updateProgressBar, 500);
+    } else {
+      isPlaying = false;
+      if(playBtn) playBtn.innerText = '▶';
+      if(container) container.classList.remove('playing');
+      clearInterval(progressInterval);
+    }
+    updateTimeDisplay();
+  }
+
+  function togglePlay() {
+    if (!player || !player.playVideo) return;
+    if (isPlaying) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
+    }
+  }
+
+  function toggleMute() {
+    if (!player || !player.isMuted) return;
+    var muteBtn = document.getElementById('mute-btn');
+    if (player.isMuted()) {
+      player.unMute();
+      if(muteBtn) muteBtn.innerText = '🔊';
+    } else {
+      player.mute();
+      if(muteBtn) muteBtn.innerText = '🔇';
+    }
+  }
+
+  function updateProgressBar() {
+    if (!player || !player.getDuration) return;
+    var duration = player.getDuration();
+    var currentTime = player.getCurrentTime();
+    if (duration > 0) {
+      var percent = (currentTime / duration) * 100;
+      var bar = document.getElementById('progress-bar');
+      if(bar) bar.style.width = percent + '%';
+      updateTimeDisplay();
+    }
+  }
+
+  function formatTime(time) {
+    if(isNaN(time)) time = 0;
+    time = Math.round(time);
+    var minutes = Math.floor(time / 60);
+    var seconds = time - minutes * 60;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+    return minutes + ":" + seconds;
+  }
+
+  function updateTimeDisplay() {
+    if (!player || !player.getDuration) return;
+    var duration = player.getDuration() || 0;
+    var currentTime = player.getCurrentTime() || 0;
+    var display = document.getElementById('time-display');
+    if(display) display.innerText = formatTime(currentTime) + ' / ' + formatTime(duration);
+  }
+
+  function toggleFullScreen() {
+    var container = document.getElementById('custom-video-container');
+    if (!container) return;
+    
+    if (!document.fullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) { /* Safari */
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) { /* IE11 */
+        container.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) { /* Safari */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE11 */
+        document.msExitFullscreen();
+      }
+    }
+  }
+</script>
 {% endblock %}
