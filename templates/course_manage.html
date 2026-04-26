@@ -81,6 +81,7 @@
                 data-lesson-id="{{ lesson.id }}"
                 data-lesson-title="{{ lesson.title | e }}"
                 data-lesson-video="{{ lesson.video_url | e }}"
+                data-lesson-video-filename="{{ lesson.video_filename | e }}"
                 data-lesson-desc="{{ (lesson.description or '') | e }}"
                 onclick="openEditLessonModal(this.dataset)">✏️</button>
             </div>
@@ -188,19 +189,21 @@
     </div>
     <form action="/modules/create" method="POST">
       <input type="hidden" name="course_id" value="{{ course.id }}" />
-      <div class="form-group">
-        <label for="m-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
-        <input type="text" id="m-title" name="title" class="form-input" data-i18n="manage.new_mod_ph" data-i18n-prop="placeholder" required />
-      </div>
-      <div class="form-group">
-        <label data-i18n="manage.module_desc">Описание модуля</label>
-        <div class="rich-editor">
-          <input type="hidden" id="m-desc-input" name="description" class="rich-editor-input" value="" />
-          <div class="rich-editor-shell">
-            <div id="m-desc-surface" class="rich-editor-surface" contenteditable="true"
-                 data-placeholder="Описание модуля"
-                 data-i18n="manage.module_desc"
-                 data-i18n-prop="data-placeholder"></div>
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="m-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
+          <input type="text" id="m-title" name="title" class="form-input" data-i18n="manage.new_mod_ph" data-i18n-prop="placeholder" required />
+        </div>
+        <div class="form-group">
+          <label data-i18n="manage.module_desc">Описание модуля</label>
+          <div class="rich-editor">
+            <input type="hidden" id="m-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="m-desc-surface" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Описание модуля"
+                   data-i18n="manage.module_desc"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -220,19 +223,21 @@
       <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
     </div>
     <form id="edit-module-form" method="POST">
-      <div class="form-group">
-        <label for="em-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
-        <input type="text" id="em-title" name="title" class="form-input" required />
-      </div>
-      <div class="form-group">
-        <label data-i18n="manage.module_desc">Описание модуля</label>
-        <div class="rich-editor">
-          <input type="hidden" id="em-desc-input" name="description" class="rich-editor-input" value="" />
-          <div class="rich-editor-shell">
-            <div id="em-desc-surface" class="rich-editor-surface" contenteditable="true"
-                 data-placeholder="Описание модуля"
-                 data-i18n="manage.module_desc"
-                 data-i18n-prop="data-placeholder"></div>
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="em-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
+          <input type="text" id="em-title" name="title" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label data-i18n="manage.module_desc">Описание модуля</label>
+          <div class="rich-editor">
+            <input type="hidden" id="em-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="em-desc-surface" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Описание модуля"
+                   data-i18n="manage.module_desc"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -252,72 +257,74 @@
       <button class="modal-close" onclick="closeModal('edit-course-modal')">✕</button>
     </div>
     <form action="/courses/{{ course.id }}/edit" method="POST" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="ec-title" data-i18n="course.title">Название</label>
-        <input type="text" id="ec-title" name="title" class="form-input"
-               value="{{ course.title | e }}" required />
-      </div>
-      <div class="form-group">
-        <label for="ec-desc" data-i18n="course.description">Описание</label>
-        <div class="rich-editor">
-          <input type="hidden" id="ec-desc-input" name="description" class="rich-editor-input" value="{{ course.description or '' }}" />
-          <div class="rich-editor-shell">
-            <div id="ec-desc" class="rich-editor-surface" contenteditable="true"
-                 data-placeholder="Краткое описание курса..."
-                 data-i18n="course.description"
-                 data-i18n-prop="data-placeholder"></div>
-          </div>
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="ec-title" data-i18n="course.title">Название</label>
+          <input type="text" id="ec-title" name="title" class="form-input"
+                 value="{{ course.title | e }}" required />
         </div>
-      </div>
-      <div class="form-group">
-        <label for="ec-cat" data-i18n="course.category">Категория</label>
-        <select id="ec-cat" name="category_id" class="form-input">
-          <option value="0" data-i18n="course.no_category">— Без категории —</option>
-          {% for cat in categories %}
-          <option value="{{ cat.id }}" {{ "selected" if course.category_id == cat.id else "" }}>{{ cat.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="ec-level" data-i18n="course.level">Уровень курса</label>
-        <select id="ec-level" name="level" class="form-input">
-          <option value="Beginner" {{ "selected" if course.level == "Beginner" else "" }} data-i18n="level.beginner">Beginner</option>
-          <option value="Intermediate" {{ "selected" if course.level == "Intermediate" else "" }} data-i18n="level.intermediate">Intermediate</option>
-          <option value="Advanced" {{ "selected" if course.level == "Advanced" else "" }} data-i18n="level.advanced">Advanced</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <div class="course-cover-field">
-          <div class="course-cover-field-head">
-            <div>
-              <label for="ec-image" data-i18n="course.cover">Обложка курса</label>
-              <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+        <div class="form-group">
+          <label for="ec-desc" data-i18n="course.description">Описание</label>
+          <div class="rich-editor">
+            <input type="hidden" id="ec-desc-input" name="description" class="rich-editor-input" value="{{ course.description or '' }}" />
+            <div class="rich-editor-shell">
+              <div id="ec-desc" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Краткое описание курса..."
+                   data-i18n="course.description"
+                   data-i18n-prop="data-placeholder"></div>
             </div>
-            <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn {{ "hidden" if not course.image else "" }} data-i18n="course.cover_remove">Удалить обложку</button>
-          </div>
-          <div class="course-cover-uploader" id="manage-course-cover-uploader" data-course-cover-uploader data-title-source="ec-title" data-current-image="{{ course.image or '' }}" data-title="{{ course.title }}">
-            <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
-            <input type="file" id="ec-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
-            <label for="ec-image" class="course-cover-dropzone" data-course-cover-dropzone>
-              <div class="course-cover-preview-shell">
-                <img class="course-cover-preview-image" data-course-cover-preview-image alt="" {{ "hidden" if not course.image else "" }} />
-                <div class="course-cover-preview-placeholder" data-course-cover-placeholder {{ "hidden" if course.image else "" }}>
-                  <span class="course-cover-preview-letter" data-course-cover-letter>{{ course.title[0].upper() }}</span>
-                </div>
-              </div>
-              <div class="course-cover-dropzone-copy">
-                <div class="course-cover-dropzone-icon">🖼️</div>
-                <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
-                <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
-              </div>
-            </label>
-            <p class="form-error course-cover-error" data-course-cover-error></p>
           </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="ec-files" data-i18n="course.files">Добавить материалы (PDF, DOCX, PPTX)</label>
-        <input type="file" id="ec-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+        <div class="form-group">
+          <label for="ec-cat" data-i18n="course.category">Категория</label>
+          <select id="ec-cat" name="category_id" class="form-input">
+            <option value="0" data-i18n="course.no_category">— Без категории —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {{ "selected" if course.category_id == cat.id else "" }}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="ec-level" data-i18n="course.level">Уровень курса</label>
+          <select id="ec-level" name="level" class="form-input">
+            <option value="Beginner" {{ "selected" if course.level == "Beginner" else "" }} data-i18n="level.beginner">Beginner</option>
+            <option value="Intermediate" {{ "selected" if course.level == "Intermediate" else "" }} data-i18n="level.intermediate">Intermediate</option>
+            <option value="Advanced" {{ "selected" if course.level == "Advanced" else "" }} data-i18n="level.advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="course-cover-field">
+            <div class="course-cover-field-head">
+              <div>
+                <label for="ec-image" data-i18n="course.cover">Обложка курса</label>
+                <p class="form-hint" data-i18n="course.cover_hint">Рекомендуемый размер: 1280x720 пикселей</p>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm course-cover-remove-btn" data-course-cover-remove-btn {{ "hidden" if not course.image else "" }} data-i18n="course.cover_remove">Удалить обложку</button>
+            </div>
+            <div class="course-cover-uploader" id="manage-course-cover-uploader" data-course-cover-uploader data-title-source="ec-title" data-current-image="{{ course.image or '' }}" data-title="{{ course.title }}">
+              <input type="hidden" name="remove_image" value="0" data-course-cover-remove />
+              <input type="file" id="ec-image" name="image" accept=".jpg,.jpeg,.png,.webp" data-course-cover-input hidden />
+              <label for="ec-image" class="course-cover-dropzone" data-course-cover-dropzone>
+                <div class="course-cover-preview-shell">
+                  <img class="course-cover-preview-image" data-course-cover-preview-image alt="" {{ "hidden" if not course.image else "" }} />
+                  <div class="course-cover-preview-placeholder" data-course-cover-placeholder {{ "hidden" if course.image else "" }}>
+                    <span class="course-cover-preview-letter" data-course-cover-letter>{{ course.title[0].upper() }}</span>
+                  </div>
+                </div>
+                <div class="course-cover-dropzone-copy">
+                  <div class="course-cover-dropzone-icon">🖼️</div>
+                  <div class="course-cover-dropzone-title" data-i18n="course.cover_drop">Нажмите или перетащите изображение сюда</div>
+                  <div class="course-cover-dropzone-meta">JPG, JPEG, PNG, WEBP · 5MB</div>
+                </div>
+              </label>
+              <p class="form-error course-cover-error" data-course-cover-error></p>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ec-files" data-i18n="course.files">Добавить материалы (PDF, DOCX, PPTX)</label>
+          <input type="file" id="ec-files" name="files" multiple class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx" />
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('edit-course-modal')" data-i18n="action.cancel">Отмена</button>
@@ -336,31 +343,33 @@
     </div>
     <form action="/lessons/create" method="POST" enctype="multipart/form-data">
       <input type="hidden" id="add-lesson-module-id" name="module_id" value="" />
-      <div class="form-group">
-        <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
-        <input type="text" id="l-title" name="title" class="form-input" required />
-      </div>
-      <div class="form-group">
-        <label for="l-video" data-i18n="manage.lesson_video">Ссылка на видео (YouTube/Vimeo)</label>
-        <input type="url" id="l-video" name="video_url" class="form-input"
-               placeholder="https://youtube.com/watch?v=..." />
-      </div>
-      <div class="form-group">
-        <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
-        <div class="rich-editor">
-          <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
-          <div class="rich-editor-shell">
-            <div id="l-desc" class="rich-editor-surface" contenteditable="true"
-                 data-placeholder="Описание урока"
-                 data-i18n="manage.lesson_desc"
-                 data-i18n-prop="data-placeholder"></div>
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
+          <input type="text" id="l-title" name="title" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label for="l-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
+          <input type="url" id="l-video" name="video_url" class="form-input"
+                 placeholder="https://youtube.com/watch?v=..." />
+        </div>
+        <div class="form-group">
+          <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
+          <div class="rich-editor">
+            <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="l-desc" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Описание урока"
+                   data-i18n="manage.lesson_desc"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word, PPT)</label>
-        <input type="file" id="l-files" name="files" multiple class="form-input"
-               accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
+        <div class="form-group">
+          <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word, PPT)</label>
+          <input type="file" id="l-files" name="files" multiple class="form-input"
+                 accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="action.cancel">Отмена</button>
@@ -378,30 +387,32 @@
       <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>
     </div>
     <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="el-title" data-i18n="manage.lesson_title">Название</label>
-        <input type="text" id="el-title" name="title" class="form-input" required />
-      </div>
-      <div class="form-group">
-        <label for="el-video" data-i18n="manage.lesson_video">Ссылка на видео</label>
-        <input type="url" id="el-video" name="video_url" class="form-input" />
-      </div>
-      <div class="form-group">
-        <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>
-        <div class="rich-editor">
-          <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
-          <div class="rich-editor-shell">
-            <div id="el-desc" class="rich-editor-surface" contenteditable="true"
-                 data-placeholder="Описание урока"
-                 data-i18n="manage.lesson_desc"
-                 data-i18n-prop="data-placeholder"></div>
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="el-title" data-i18n="manage.lesson_title">Название</label>
+          <input type="text" id="el-title" name="title" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label for="el-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
+          <input type="url" id="el-video" name="video_url" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>
+          <div class="rich-editor">
+            <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="el-desc" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Описание урока"
+                   data-i18n="manage.lesson_desc"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="el-files" data-i18n="manage.lesson_files">📎 Добавить материалы (PDF, Word, PPT)</label>
-        <input type="file" id="el-files" name="files" multiple class="form-input"
-               accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
+        <div class="form-group">
+          <label for="el-files" data-i18n="manage.lesson_files">📎 Добавить материалы (PDF, Word, PPT)</label>
+          <input type="file" id="el-files" name="files" multiple class="form-input"
+                 accept=".pdf,.doc,.docx,.ppt,.pptx" style="cursor:pointer;" />
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('edit-lesson-modal')" data-i18n="action.cancel">Отмена</button>
@@ -413,6 +424,21 @@
 
 <script src="/static/js/quiz_builder.js"></script>
 <script>
+// Локальные определения для модальных окон (не зависят от порядка загрузки courses.js)
+function _openModalOverlay(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    document.body.classList.add('modal-open');
+    modal.classList.add('open');
+  }
+}
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('open');
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.classList.remove('modal-open');
+  }
+}
 function openEditCourseModal() {
   document.querySelector('#edit-course-modal form')?.reset();
   setRichTextValue('ec-desc-input', {{ (course.description or '') | tojson }});
@@ -422,26 +448,26 @@ function openEditCourseModal() {
       title: '{{ course.title | e }}'
     });
   }
-  document.getElementById('edit-course-modal').classList.add('open');
+  _openModalOverlay('edit-course-modal');
 }
 function openAddModuleModal() {
   document.getElementById('m-title').value = '';
   setRichTextValue('m-desc-input', '');
-  document.getElementById('add-module-modal').classList.add('open');
+  _openModalOverlay('add-module-modal');
 }
 function openEditModuleModal(dataset) {
   const form = document.getElementById('edit-module-form');
   form.action = `/modules/${dataset.moduleId}/edit`;
   document.getElementById('em-title').value = dataset.moduleTitle || '';
   setRichTextValue('em-desc-input', dataset.moduleDesc || '');
-  document.getElementById('edit-module-modal').classList.add('open');
+  _openModalOverlay('edit-module-modal');
 }
 function openAddLessonModal(moduleId) {
   document.getElementById('add-lesson-module-id').value = moduleId;
   document.getElementById('l-title').value = '';
   document.getElementById('l-video').value = '';
   setRichTextValue('l-desc-input', '');
-  document.getElementById('add-lesson-modal').classList.add('open');
+  _openModalOverlay('add-lesson-modal');
 }
 function openEditLessonModal(dataset) {
   const form = document.getElementById('edit-lesson-form');
@@ -449,7 +475,7 @@ function openEditLessonModal(dataset) {
   document.getElementById('el-title').value = dataset.lessonTitle || '';
   document.getElementById('el-video').value = dataset.lessonVideo || '';
   setRichTextValue('el-desc-input', dataset.lessonDesc || '');
-  document.getElementById('edit-lesson-modal').classList.add('open');
+  _openModalOverlay('edit-lesson-modal');
 }
 async function deleteModule(id) {
   if (!confirm(t('manage.confirm_del_mod'))) return;
@@ -469,4 +495,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') ['add-module-modal','edit-module-modal','edit-course-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
 });
 </script>
+
+
+
 {% endblock %}

@@ -225,7 +225,7 @@ function openCreateModal() {
     setRichTextValue('new-description-input', '');
   }
   resetCourseCoverUploader('create-course-cover-uploader');
-  modal.classList.add('open');
+  _openModalOverlay('create-modal');
   // Фокус на первое поле
   setTimeout(() => document.getElementById('new-title')?.focus(), 100);
 }
@@ -253,7 +253,7 @@ function openEditModal(dataset) {
     title: dataset.courseTitle || ''
   });
 
-  modal.classList.add('open');
+  _openModalOverlay('edit-modal');
   setTimeout(() => document.getElementById('edit-title')?.focus(), 100);
 }
 
@@ -264,6 +264,18 @@ function openEditModal(dataset) {
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('open');
+  // Unlock body scroll if no modals are visible
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.classList.remove('modal-open');
+  }
+}
+
+function _openModalOverlay(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    document.body.classList.add('modal-open');
+    modal.classList.add('open');
+  }
 }
 
 /**

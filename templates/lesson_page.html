@@ -68,7 +68,7 @@
   <!-- Основной контент -->
   <main class="lesson-content">
 
-    <!-- Видео -->
+    <!-- Видео: внешние ссылки (YouTube) -->
     {% if lesson.video_url %}
     <div class="video-container">
       {% set vid = lesson.video_url %}
@@ -82,6 +82,8 @@
         <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% endif %}
     </div>
+    
+    <!-- Нет видео -->
     {% else %}
     <div class="video-placeholder">
       <div class="video-placeholder-inner">
@@ -364,4 +366,5 @@ document.addEventListener('DOMContentLoaded', () => {
   syncSidebarLabel();
 });
 </script>
+
 {% endblock %}

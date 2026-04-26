@@ -17,6 +17,7 @@ from app.database import init_db, SessionLocal, get_db
 from app.models.course import Course
 from app.models.user import User
 from app.models.category import Category
+from app.init_video_tables import init_video_tables
 from app.routers import auth, users, courses
 from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import quizzes  # QUIZ SYSTEM - RESTORED
@@ -117,6 +118,7 @@ app.include_router(users.router)
 app.include_router(courses.router)
 app.include_router(modules.router)
 app.include_router(lessons.router)
+
 app.include_router(quizzes.router)  # QUIZ SYSTEM - RESTORED
 app.include_router(quizzes.dashboard_router)  # QUIZ SYSTEM - RESTORED
 app.include_router(reviews.router)
@@ -144,7 +146,7 @@ def _get_popular_courses_cached(db):
         db.query(Course)
         .options(joinedload(Course.teacher), joinedload(Course.category))
         .order_by(Course.rating.desc())
-        .limit(6)
+        .limit(10)
         .all()
     )
     _popular_courses_cache["data"] = courses
@@ -192,6 +194,7 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
 @app.on_event("startup")
 def on_startup():
     init_db()
+    init_video_tables()
     print(f"✅ {PLATFORM_NAME} запущен. База данных инициализирована.")
 
 

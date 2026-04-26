@@ -219,15 +219,14 @@ def courses_catalog(
     # ПРИМЕЧАНИЕ: Для больших датасетов рекомендуется использ. query.count() отдельно,
     # но с page-based pagination можно сначала получить count из первого запроса
     # Для корректного подсчёта total без доп. query используем func.count()
+    # Получаем total
     from sqlalchemy import func
-    total = db.query(func.count(Course.id)).options(
-        joinedload(Course.teacher), joinedload(Course.category)
-    )
+    total_query = db.query(func.count(Course.id))
     if q:
-        total = total.filter(Course.title.ilike(f"%{q}%"))
+        total_query = total_query.filter(Course.title.ilike(f"%{q}%"))
     if category_id:
-        total = total.filter(Course.category_id == category_id)
-    total = total.scalar()
+        total_query = total_query.filter(Course.category_id == category_id)
+    total = total_query.scalar()
 
     categories = db.query(Category).order_by(Category.name).all()
     user = get_user(request, db)

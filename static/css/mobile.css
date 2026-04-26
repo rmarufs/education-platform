@@ -1,0 +1,397 @@
+/* ═══════════════════════════════════════════════════════
+   Фурузон — Мобильная адаптация (Mobile-First Overrides)
+   Этот файл ПЕРЕЗАПИСЫВАЕТ стили из style.css для мобильных
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Tablet & Mobile: <= 768px ────────────────────────── */
+@media (max-width: 768px) {
+
+  /* ── Навигация ─────────────────────────────────── */
+  .nav-center-links, .nav-auth-links { display: none !important; }
+  .hamburger { display: flex; }
+  .nav-greeting { display: none; }
+  .nav-container { gap: 8px; padding: 0 16px; }
+  .nav-links { gap: 6px; }
+  body { overflow-x: hidden; }
+
+  /* ── Hero ───────────────────────────────────────── */
+  .hero {
+    padding: 40px 20px;
+    gap: 24px;
+    flex-direction: column;
+    text-align: center;
+  }
+  .hero-title { font-size: 1.75rem; line-height: 1.25; }
+  .hero-subtitle { font-size: 1rem; margin-bottom: 24px; }
+  .hero-illustration { display: none; }
+  .hero-content { max-width: 100%; }
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Статистика ────────────────────────────────── */
+  .stats-section { padding: 28px 16px; }
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px;
+  }
+  .stat-number { font-size: 1.5rem; }
+  .stat-label { font-size: .75rem; }
+
+  /* ── Секции (курсы, фичи) ──────────────────────── */
+  .courses-section, .features-section {
+    padding: 40px 16px;
+  }
+  .section-header { margin-bottom: 24px; }
+  .section-header h2 { font-size: 1.5rem; }
+  .courses-grid,
+  .features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  /* На главной — карточки не растягиваются на всю ширину */
+  .courses-section .courses-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Dashboard преподавателя ────────────────────── */
+  .dashboard { grid-template-columns: 1fr; }
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    border-right: none;
+  }
+  .sidebar-nav { flex-direction: row; padding: 0; gap: 4px; }
+  .sidebar-nav a { font-size: .8rem; padding: 8px 12px; }
+  .dashboard-main { padding: 20px 16px; }
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+  .dashboard-header h1 { font-size: 1.35rem; }
+  .dashboard-header .btn { width: 100%; justify-content: center; }
+
+  /* ── Страница курса (course_page) ──────────────── */
+  .course-detail-page {
+    padding: 16px 16px 48px;
+    gap: 16px;
+  }
+  .breadcrumb { font-size: .8rem; gap: 6px; flex-wrap: wrap; }
+
+  .course-detail-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  /* Sidebar карточка — наверх на мобильном для быстрого доступа */
+  .course-detail-sidebar {
+    order: -1;
+  }
+  .course-detail-main {
+    order: 1;
+    min-width: 0;
+  }
+  .course-sidebar-card {
+    position: static;
+    top: auto;
+  }
+
+  /* Hero курса — вертикальный стек */
+  .course-detail-hero {
+    flex-direction: column;
+    padding: 20px !important;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .course-cover-hero {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: var(--radius-md);
+    aspect-ratio: 16 / 9;
+  }
+  .course-detail-title { font-size: 1.35rem; }
+  .course-detail-info { gap: 12px; font-size: .8rem; }
+
+  /* Блоки курса */
+  .course-detail-body,
+  .course-materials,
+  .course-curriculum,
+  .course-sidebar-card {
+    padding: 16px !important;
+  }
+  .course-detail-body h2 { font-size: 1rem; }
+
+  /* Учебная программа */
+  .course-curriculum-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .curriculum-toggle {
+    display: inline-flex;
+    justify-content: center;
+  }
+  .course-curriculum-body {
+    display: none;
+  }
+  .course-curriculum.is-open .course-curriculum-body {
+    display: block;
+  }
+  .curriculum-module-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .curriculum-lesson {
+    align-items: flex-start;
+  }
+
+  /* Sidebar card — компактный вид на мобильном */
+  .sidebar-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .sidebar-card-header {
+    aspect-ratio: 21 / 9;
+  }
+  .sidebar-card-footer { padding: 12px 16px; }
+  .sidebar-card-footer .btn {
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  /* ── Lesson Page ───────────────────────────────── */
+  .lesson-layout,
+  .lesson-layout.sidebar-open {
+    padding-left: 0;
+  }
+  .lesson-layout.sidebar-open .lesson-sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .lesson-sidebar {
+    width: min(86vw, 320px);
+    transform: translateX(calc(-100% - 20px));
+  }
+  .lesson-layout.sidebar-open .lesson-sidebar-toggle {
+    left: 16px;
+  }
+  .lesson-sidebar-toggle {
+    top: 76px;
+    left: 12px;
+    padding: 0 14px;
+  }
+  .lesson-sidebar-toggle-text {
+    display: none;
+  }
+  .lesson-sidebar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lesson-content {
+    width: 100%;
+    padding: 80px 16px 40px !important;
+  }
+  .lesson-module-trigger {
+    padding: 14px;
+  }
+  .lesson-nav-item {
+    padding: 12px 10px;
+  }
+  /* Видео на всю ширину экрана без боковых отступов */
+  .video-container {
+    border-radius: 0;
+    margin-left: -16px;
+    margin-right: -16px;
+    width: calc(100% + 32px);
+  }
+
+  /* ── Формы и кнопки для touch ──────────────────── */
+  .form-input,
+  .form-textarea,
+  select.form-input {
+    font-size: 16px;  /* Prevents iOS zoom on focus */
+    padding: 12px;
+    width: 100%;
+  }
+  .btn, .btn-sm, .btn-lg {
+    min-height: 48px;
+    border-radius: 12px;
+  }
+  .auth-card { padding: 28px 20px; }
+  .assessment-form-card,
+  .page-card { padding: 24px 16px; }
+
+  /* ── Модальные окна ────────────────────────────── */
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  #create-modal .modal,
+  #add-lesson-modal .modal,
+  #edit-lesson-modal .modal,
+  #edit-course-modal .modal {
+    max-width: 100%;
+  }
+  .modal .modal-header {
+    padding: 16px 18px 12px;
+  }
+  .modal-scroll-body {
+    padding: 0 18px 8px;
+  }
+  .modal .modal-footer {
+    padding: 10px 18px 16px;
+  }
+  .modal-footer {
+    flex-direction: column;
+  }
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  #edit-modal .modal {
+    height: min(90vh, 720px);
+    max-height: min(90vh, 720px);
+    overflow: hidden;
+  }
+
+  /* ── Actions (кнопки под карточками) ──────────── */
+  .pending-actions,
+  .teacher-actions,
+  .course-cover-field-head {
+    flex-direction: column;
+    width: 100%;
+  }
+  .pending-actions .btn,
+  .teacher-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Прочие адаптации ──────────────────────────── */
+  .contact-grid { grid-template-columns: 1fr; }
+  .catalog-layout { flex-direction: column; }
+  .catalog-sidebar { width: 100%; position: static; }
+  .teacher-profile-stats { grid-template-columns: 1fr !important; }
+  .course-cover-dropzone { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; white-space: nowrap; width: 100%; }
+  .contact-grid-resp { grid-template-columns: 1fr !important; }
+  .footer-shell { padding-left: 16px; padding-right: 16px; }
+
+  /* Отзывы */
+  .review-card { padding: 16px !important; }
+  .star-selector { font-size: 2rem; }
+
+  /* Google Forms Banner */
+  .google-forms-banner,
+  .course-forms-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  .google-forms-banner .btn {
+    width: 100%;
+  }
+
+  /* Прогресс бар */
+  .course-progress-bar-wrap {
+    margin: 12px 0;
+  }
+}
+
+/* ── Small phones: <= 480px ──────────────────────────── */
+@media (max-width: 480px) {
+  body { font-size: 14px; }
+  .nav-container { padding: 0 12px; height: 56px; }
+  .logo-text { font-size: 1.15rem; }
+
+  /* Hero ещё компактнее */
+  .hero { padding: 28px 14px; }
+  .hero-title { font-size: 1.4rem; }
+  .hero-subtitle { font-size: .85rem; }
+
+  /* Курсы */
+  .courses-section, .features-section {
+    padding: 28px 12px;
+  }
+  .section-header h2 { font-size: 1.3rem; }
+
+  /* Lesson sidebar toggle — только иконка */
+  .lesson-sidebar-toggle {
+    width: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+  .lesson-content {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .video-container {
+    margin-left: -12px;
+    margin-right: -12px;
+    width: calc(100% + 24px);
+  }
+
+  /* Страница курса */
+  .course-detail-page {
+    padding: 10px 12px 40px;
+  }
+  .course-detail-hero { padding: 14px !important; }
+  .course-detail-title { font-size: 1.15rem; }
+  .course-detail-body,
+  .course-materials,
+  .course-curriculum,
+  .course-sidebar-card {
+    padding: 12px !important;
+  }
+
+  /* Dashboard */
+  .dashboard-main {
+    padding: 16px 12px;
+  }
+
+  /* Общие отступы */
+  .teacher-profile-shell,
+  .profile-page,
+  .catalog-layout {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Статистика — вертикально на очень малых экранах */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  /* Sidebar info — один столбец */
+  .sidebar-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  .review-card div[style*="flex-wrap:wrap"] {
+    flex-direction: column;
+    align-items: start !important;
+  }
+}
