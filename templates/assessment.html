@@ -3,34 +3,110 @@
 {% block title %}Определение уровня — Фурузон{% endblock %}
 
 {% block content %}
-<div class="assessment-card">
-    <div class="assessment-form-card">
-        <h1 style="margin-bottom:20px;" data-i18n="ass.title">Добро пожаловать!</h1>
-        <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;" data-i18n="ass.subtitle">
-            Чтобы предложить вам наиболее подходящие курсы, пожалуйста, ответьте на несколько коротких вопросов. Это поможет определить ваш текущий уровень подготовки.
-        </p>
-
-        <form action="/assessment" method="POST">
-            {% for number in range(1, 6) %}
-            <div class="assessment-question">
-                <label style="font-size:1.1rem;font-weight:600;margin-bottom:12px;display:block;" data-i18n="ass.q{{ number }}">
-                    Вопрос {{ number }}
-                </label>
-                <div class="assessment-options">
-                    {% for value in range(1, 5) %}
-                    <label class="assessment-option">
-                        <input type="radio" name="q{{ number }}" value="{{ value }}" {% if value == 1 %}required{% endif %}>
-                        <span data-i18n="ass.q{{ number }}_{{ value }}">Вариант</span>
-                    </label>
-                    {% endfor %}
-                </div>
+<div class="assessment-wrapper">
+    <!-- Progress Bar -->
+    <div class="assessment-progress-container">
+        <div class="assessment-progress-bar" id="assessment-progress" style="width: 0%;"></div>
+    </div>
+    
+    <div class="assessment-card">
+        <div class="assessment-form-card">
+            
+            <div id="assessment-intro" class="assessment-step active">
+                <h1 style="margin-bottom:20px;" data-i18n="ass.title">Добро пожаловать!</h1>
+                <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;" data-i18n="ass.subtitle">
+                    Чтобы предложить вам наиболее подходящие курсы, пожалуйста, ответьте на несколько коротких вопросов. Это поможет определить ваш текущий уровень подготовки.
+                </p>
+                <button type="button" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" onclick="startAssessment()">
+                    Начать опрос →
+                </button>
             </div>
-            {% endfor %}
 
-            <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" data-i18n="ass.submit">
-                Завершить и посмотреть подходящие курсы
-            </button>
-        </form>
+            <form action="/assessment" method="POST" id="assessment-form">
+                {% for number in range(1, 6) %}
+                <div class="assessment-step" id="step-{{ number }}" style="display: none;">
+                    <div class="step-counter">Шаг {{ number }} из 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q{{ number }}">
+                        Вопрос {{ number }}
+                    </h2>
+                    <div class="assessment-options-grid">
+                        {% for value in range(1, 5) %}
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q{{ number }}" value="{{ value }}" required onchange="nextStep({{ number }})">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q{{ number }}_{{ value }}">Вариант</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="assessment-step" id="step-final" style="display: none; text-align: center;">
+                    <h2 style="margin-bottom:20px;">🎉 Готово!</h2>
+                    <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;">
+                        Спасибо за ответы. Мы проанализировали ваши предпочтения.
+                    </p>
+                    <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" data-i18n="ass.submit">
+                        Показать подходящие курсы
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const totalSteps = 5;
+    
+    function updateProgress(step) {
+        const progress = document.getElementById('assessment-progress');
+        // Intro is step 0. Final is step 6.
+        let pct = (step / (totalSteps + 1)) * 100;
+        progress.style.width = pct + '%';
+    }
+
+    function showStep(idToShow, currentId) {
+        if (currentId) {
+            const current = document.getElementById(currentId);
+            current.classList.add('fade-out');
+            setTimeout(() => {
+                current.style.display = 'none';
+                current.classList.remove('fade-out', 'active');
+                
+                const next = document.getElementById(idToShow);
+                next.style.display = 'block';
+                // Trigger reflow
+                void next.offsetWidth;
+                next.classList.add('active');
+            }, 300); // 300ms transition
+        } else {
+            const next = document.getElementById(idToShow);
+            next.style.display = 'block';
+            void next.offsetWidth;
+            next.classList.add('active');
+        }
+    }
+
+    function startAssessment() {
+        showStep('step-1', 'assessment-intro');
+        updateProgress(1);
+    }
+
+    function nextStep(currentNumber) {
+        // Add a slight delay to let user see their selection before transitioning
+        setTimeout(() => {
+            if (currentNumber < totalSteps) {
+                showStep('step-' + (currentNumber + 1), 'step-' + currentNumber);
+                updateProgress(currentNumber + 1);
+            } else {
+                showStep('step-final', 'step-' + currentNumber);
+                updateProgress(totalSteps + 1);
+            }
+        }, 350);
+    }
+</script>
 {% endblock %}
