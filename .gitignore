@@ -19,9 +19,14 @@ env/
 .env
 .env.local
 .env.*.local
+config/.env
+config/.env.production
+config/.env.*.local
 
 # ── База данных ──────────────────────────────────
 data/database.db
+data/*.db
+data/*.sqlite3
 *.db
 *.sqlite3
 
@@ -36,6 +41,8 @@ Thumbs.db
 # ── Логи ────────────────────────────────────────
 *.log
 logs/
+data/logs/
+data/backups/
 
 # ── Pytest / Coverage ────────────────────────────
 .pytest_cache/
@@ -45,8 +52,10 @@ htmlcov/
 # ── Uploads & Documents ────────────────────────────
 static/uploads/*
 static/documents/*
+static/materials/*
 !static/uploads/.gitkeep
 !static/documents/.gitkeep
+!static/materials/.gitkeep
 
 # ── Локальная документация (оптимизация, внутренние заметки) ────
 docs/optimization/
