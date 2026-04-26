@@ -2,6 +2,7 @@
 import os
 import uuid
 import shutil
+import base64
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -20,6 +21,7 @@ from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
 templates = Jinja2Templates(directory="templates")
+templates.env.filters["b64encode"] = lambda s: base64.b64encode(s.encode("utf-8")).decode("utf-8") if s else ""
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}

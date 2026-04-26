@@ -81,7 +81,7 @@
 
       {% if vid_id %}
         <!-- Кастомный YouTube плеер -->
-        <div id="yt-player" data-video-id="{{ vid_id }}"></div>
+        <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
         
         <!-- Невидимый слой для перехвата кликов (блокирует переход на YT) -->
         <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
@@ -406,6 +406,33 @@ document.addEventListener('DOMContentLoaded', () => {
 {% block scripts %}
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
+  // --- ЗАЩИТА ОТ ИЗВЛЕЧЕНИЯ ССЫЛКИ ---
+  // 1. Блокировка горячих клавиш (F12, Ctrl+Shift+I, Ctrl+U)
+  document.addEventListener('keydown', function(e) {
+    if (
+      e.key === 'F12' || 
+      (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+      (e.ctrlKey && e.shiftKey && e.key === 'C') || 
+      (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+      (e.ctrlKey && e.key === 'U') ||
+      (e.metaKey && e.altKey && e.key === 'I') // Mac: Cmd+Option+I
+    ) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Отключаем правый клик по всей области контента урока (если нужно)
+  var lessonContent = document.querySelector('.lesson-content');
+  if (lessonContent) {
+    lessonContent.addEventListener('contextmenu', function(e) {
+      if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+  }
+
+  // --- ЛОГИКА ПЛЕЕРА ---
   var player;
   var progressInterval;
   var isPlaying = false;
@@ -414,7 +441,15 @@ document.addEventListener('DOMContentLoaded', () => {
     var ytPlayerEl = document.getElementById('yt-player');
     if (!ytPlayerEl) return;
     
-    var videoId = ytPlayerEl.getAttribute('data-video-id');
+    // 2. Расшифровка ID видео
+    var videoToken = ytPlayerEl.getAttribute('data-video-token');
+    var videoId = "";
+    try {
+      videoId = atob(videoToken); // Расшифровка из Base64
+    } catch(e) {
+      console.error("Invalid video token");
+      return;
+    }
     
     player = new YT.Player('yt-player', {
       videoId: videoId,
