@@ -223,6 +223,23 @@ async def edit_lesson(
     return RedirectResponse(f"/courses/{lesson.module.course_id}/manage", status_code=302)
 
 
+# ── Удалить урок ───────────────────────────────────────────────
+@router.post("/{lesson_id}/delete")
+def delete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
+    teacher = require_teacher(request, db)
+    lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404)
+    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    if not course:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this lesson")
+    
+    course_id = lesson.module.course_id
+    db.delete(lesson)
+    db.commit()
+    return RedirectResponse(f"/courses/{course_id}/manage", status_code=302)
+
+
 # ── Добавить материал к уроку (через URL) ──────────────────────
 @router.post("/{lesson_id}/material")
 def add_material(

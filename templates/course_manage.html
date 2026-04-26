@@ -75,15 +75,18 @@
                 <span class="badge badge-quiz">Квиз</span>
               {% endif %}
             </div>
-            <div class="lesson-actions">
+            <div class="lesson-actions" style="display: flex; gap: 4px;">
               <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
-              <button class="btn btn-outline btn-xs"
+              <button type="button" class="btn btn-outline btn-xs"
                 data-lesson-id="{{ lesson.id }}"
                 data-lesson-title="{{ lesson.title | e }}"
                 data-lesson-video="{{ lesson.video_url | e }}"
                 data-lesson-video-filename="{{ lesson.video_filename | e }}"
                 data-lesson-desc="{{ (lesson.description or '') | e }}"
                 onclick="openEditLessonModal(this.dataset)">✏️</button>
+              <form action="/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="return confirm('Вы уверены, что хотите удалить этот урок? Действие нельзя отменить.');">
+                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок">🗑️</button>
+              </form>
             </div>
           </div>
           <div class="lesson-inline-quiz">
