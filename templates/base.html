@@ -22,11 +22,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/style.css?v=15" />
+    <link rel="stylesheet" href="/static/css/style.css?v=16" />
     <link rel="stylesheet" href="/static/css/mobile.css?v=1" />
 </head>
 <body>
-    <div id="reading-progress"></div>
 
     <nav class="navbar">
         <div class="nav-container">
@@ -268,11 +267,6 @@
         scrollBtn.classList.toggle('visible', window.scrollY > 400);
       });
 
-      const bar = document.getElementById('reading-progress');
-      window.addEventListener('scroll', () => {
-        const height = document.documentElement.scrollHeight - window.innerHeight;
-        bar.style.width = height > 0 ? (window.scrollY / height * 100) + '%' : '0';
-      });
 
       const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -284,6 +278,32 @@
       }, { threshold: 0.1 });
 
       document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+    })();
+    </script>
+    <script>
+    /* ── Глобальная защита от двойной отправки форм ── */
+    (function() {
+      document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form.dataset.submitted === 'true') {
+          e.preventDefault();
+          return;
+        }
+        form.dataset.submitted = 'true';
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.pointerEvents = 'none';
+          /* Восстановить через 5 сек (на случай ошибки валидации в браузере) */
+          setTimeout(function() {
+            btn.disabled = false;
+            btn.style.opacity = '';
+            btn.style.pointerEvents = '';
+            form.dataset.submitted = '';
+          }, 5000);
+        }
+      }, true);
     })();
     </script>
     {% block scripts %}{% endblock %}

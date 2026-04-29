@@ -224,6 +224,8 @@ def admin_delete_course(course_id: int, request: Request, db: Session = Depends(
     db.delete(course)
     db.commit()
 
+    from main import invalidate_courses_cache
+    invalidate_courses_cache()
     return RedirectResponse("/admin/courses", status_code=302)
 
 

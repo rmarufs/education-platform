@@ -486,6 +486,8 @@ def create_course(
 
     _save_course_materials(files, course.id, db)
 
+    from main import invalidate_courses_cache
+    invalidate_courses_cache()
     return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
 
 
@@ -537,6 +539,8 @@ def edit_course(
 
     db.commit()
     _save_course_materials(files, course.id, db)
+    from main import invalidate_courses_cache
+    invalidate_courses_cache()
     return RedirectResponse(f"/courses/{course_id}/manage", status_code=302)
 
 
@@ -555,6 +559,8 @@ def delete_course(course_id: int, request: Request, db: Session = Depends(get_db
     _delete_course_image(course.image)
     db.delete(course)
     db.commit()
+    from main import invalidate_courses_cache
+    invalidate_courses_cache()
     return RedirectResponse("/dashboard/teacher", status_code=302)
 
 

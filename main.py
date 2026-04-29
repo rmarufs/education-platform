@@ -153,6 +153,15 @@ def _get_popular_courses_cached(db):
     return courses
 
 
+def invalidate_courses_cache():
+    """Сбрасывает кэш популярных курсов и категорий (вызывается при создании/удалении/редактировании)."""
+    _popular_courses_cache["data"] = None
+    _popular_courses_cache["timestamp"] = 0
+    if hasattr(_get_categories_cached, "_cache"):
+        _get_categories_cached._cache["data"] = None
+        _get_categories_cached._cache["timestamp"] = 0
+
+
 def _get_categories_cached(db):
     """Получить категории с кэшированием на 1 час."""
     import time

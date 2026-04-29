@@ -2549,16 +2549,7 @@ body { transition: background-color .3s ease, color .3s ease; }
 }
 .footer-enhanced a:hover { color: var(--primary); }
 
-#reading-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  width: 0;
-  z-index: 9999;
-  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-  transition: width .1s ease;
-}
+
 
 .nav-auth-links {
   display: flex;
