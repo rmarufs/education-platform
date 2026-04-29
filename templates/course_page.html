@@ -13,32 +13,65 @@
 
   <div class="course-detail-layout">
 
-    <!-- Основная информация -->
+    <!-- Основная информация в единой карточке -->
     <div class="course-detail-main">
-      <div class="course-detail-hero">
-        {{ course_cover(course, "course-cover-hero") }}
-        <div class="course-hero-meta">
-          {% if course.category %}
-          <span class="category-badge">{{ course.category.name }}</span>
-          {% endif %}
-          <h1 class="course-detail-title">{{ course.title }}</h1>
-          <div class="course-detail-info">
-            <span>👨‍🏫 {{ course.teacher.name }}</span>
-            <span>📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
-            {% if course.rating > 0 %}
-            <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ course.reviews|length }}}'>({{ course.reviews|length }} отзыв(ов))</span></span>
+      <div class="course-detail-card">
+        <!-- Заголовок + изображение -->
+        <div class="course-detail-hero">
+          {{ course_cover(course, "course-cover-hero") }}
+          <div class="course-hero-meta">
+            {% if course.category %}
+            <span class="category-badge">{{ course.category.name }}</span>
             {% endif %}
+            <h1 class="course-detail-title">{{ course.title }}</h1>
+            <div class="course-detail-info">
+              <span>👨‍🏫 {{ course.teacher.name }}</span>
+              <span>📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
+              {% if course.rating > 0 %}
+              <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ course.reviews|length }}}'>({{ course.reviews|length }} отзыв(ов))</span></span>
+              {% endif %}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Описание -->
-      {% if course.description %}
-      <div class="course-detail-body">
-        <h2 data-i18n="course_page.about">О курсе</h2>
-        <div class="rich-text-content">{{ course.description | safe }}</div>
+        <!-- Описание -->
+        {% if course.description %}
+        <div class="course-detail-body">
+          <h2 data-i18n="course_page.about">О курсе</h2>
+          <div class="rich-text-content">{{ course.description | safe }}</div>
+        </div>
+        {% endif %}
+        
+        <!-- CTA кнопки для гостей и студентов (видны всегда) -->
+        <div class="course-detail-cta-section">
+          {% if not user %}
+          <div class="cta-guest">
+            <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.95rem;" data-i18n="course_page.guest_description">Чтобы начать обучение, создайте или войдите в аккаунт</p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать обучение</a>
+              <a href="/login" class="btn btn-outline btn-full" data-i18n="course_page.login_btn">Войти</a>
+            </div>
+          </div>
+          {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
+          <div class="cta-teacher">
+            <a href="/courses/{{ course.id }}/manage" class="btn btn-primary btn-full" data-i18n="course_page.gear_manage">⚙️ Управление курсом</a>
+          </div>
+          {% else %}
+          <div class="cta-student">
+            <div class="enrolled-badge">
+              <span>✅</span><span data-i18n="course_page.avail">Курс доступен вам</span>
+            </div>
+            {% if course.modules and course.modules[0].lessons %}
+            <a href="/lessons/{{ course.modules[0].lessons[0].id }}"
+               class="btn btn-primary btn-full" style="margin-top: 8px;" data-i18n="course_page.start_continue">
+               ▶ Начать / Продолжить
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
       </div>
-      {% endif %}
+    </div>
 
       <!-- Материалы курса -->
       {% if course.materials and user and (user.role.value == "teacher" or user.role.value == "student") %}
@@ -302,54 +335,9 @@
       }
       </script>
       {% endif %}
+      </div>
     </div>
 
-    <!-- Боковая карточка -->
-    <aside class="course-detail-sidebar">
-      <div class="course-sidebar-card">
-        <div class="sidebar-card-header">
-          {{ course_cover(course, "course-cover-sidebar") }}
-        </div>
-        <div class="sidebar-card-body">
-          <div class="sidebar-info-item">
-            <span class="info-label" data-i18n="course_page.teacher">Преподаватель</span>
-            <span class="info-value">{{ course.teacher.name }}</span>
-          </div>
-          <div class="sidebar-info-item">
-            <span class="info-label" data-i18n="course_page.modules_count">Модулей</span>
-            <span class="info-value">{{ course.modules|length }}</span>
-          </div>
-          <div class="sidebar-info-item">
-            <span class="info-label" data-i18n="course_page.created">Создан</span>
-            <span class="info-value">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
-          </div>
-          {% if course.rating > 0 %}
-          <div class="sidebar-info-item">
-            <span class="info-label" data-i18n="course_page.rating">Рейтинг</span>
-            <span class="info-value">⭐ {{ "%.1f"|format(course.rating) }}</span>
-          </div>
-          {% endif %}
-        </div>
-        <div class="sidebar-card-footer">
-          {% if not user %}
-            <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать обучение</a>
-            <a href="/login" class="btn btn-outline btn-full" style="margin-top:8px" data-i18n="course_page.login_btn">Войти</a>
-          {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
-            <a href="/courses/{{ course.id }}/manage" class="btn btn-primary btn-full" data-i18n="course_page.gear_manage">⚙️ Управление</a>
-          {% else %}
-            <div class="enrolled-badge">
-              <span>✅</span><span data-i18n="course_page.avail">Курс доступен вам</span>
-            </div>
-            {% if course.modules and course.modules[0].lessons %}
-            <a href="/lessons/{{ course.modules[0].lessons[0].id }}"
-               class="btn btn-primary btn-full" style="margin-top:8px" data-i18n="course_page.start_continue">
-               ▶ Начать / Продолжить
-            </a>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-    </aside>
   </div>
 </div>
 {% endblock %}
