@@ -81,6 +81,46 @@ def _save_uploaded_files(files, lesson_id, db):
     db.commit()
 
 
+# ── Создать урок ───────────────────────────────────────────────
+@router.post("/create")
+async def create_lesson(
+    request: Request,
+    module_id: int = Form(...),
+    title: str = Form(...),
+    video_url: str = Form(""),
+    description: str = Form(""),
+    files: list[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+):
+    teacher = require_teacher(request, db)
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название урока")
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404)
+    course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
+    if not course:
+        raise HTTPException(status_code=403)
+
+    max_order = db.query(Lesson).filter(Lesson.module_id == module_id).count()
+    lesson = Lesson(
+        module_id=module_id,
+        title=title,
+        video_url=video_url or None,
+        description=description or None,
+        order_index=max_order,
+    )
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+
+    # Сохраняем загруженные файлы
+    _save_uploaded_files(files, lesson.id, db)
+
+    return RedirectResponse(f"/courses/{module.course_id}/manage", status_code=302)
+
+
 # ── Страница урока ─────────────────────────────────────────────
 @router.get("/{lesson_id}", response_class=HTMLResponse)
 def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db)):
@@ -150,46 +190,6 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "course": course,
         "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
     })
-
-
-# ── Создать урок ───────────────────────────────────────────────
-@router.post("/create")
-async def create_lesson(
-    request: Request,
-    module_id: int = Form(...),
-    title: str = Form(...),
-    video_url: str = Form(""),
-    description: str = Form(""),
-    files: list[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-):
-    teacher = require_teacher(request, db)
-    title = title.strip()
-    if not title:
-        raise HTTPException(status_code=400, detail="Введите название урока")
-    module = db.query(Module).filter(Module.id == module_id).first()
-    if not module:
-        raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
-    if not course:
-        raise HTTPException(status_code=403)
-
-    max_order = db.query(Lesson).filter(Lesson.module_id == module_id).count()
-    lesson = Lesson(
-        module_id=module_id,
-        title=title,
-        video_url=video_url or None,
-        description=description or None,
-        order_index=max_order,
-    )
-    db.add(lesson)
-    db.commit()
-    db.refresh(lesson)
-
-    # Сохраняем загруженные файлы
-    _save_uploaded_files(files, lesson.id, db)
-
-    return RedirectResponse(f"/courses/{module.course_id}/manage", status_code=302)
 
 
 # ── Редактировать урок ─────────────────────────────────────────

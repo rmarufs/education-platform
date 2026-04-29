@@ -202,6 +202,36 @@ def _teacher_owned_quizzes(db: Session, teacher_id: int) -> list[Quiz]:
     return quizzes
 
 
+# ── Создать квиз (teacher) ──────────────────────────────────────
+@router.post("/create")
+def create_quiz(
+    request: Request,
+    lesson_id: int | None = Form(None),
+    module_id: int | None = Form(None),
+    course_id: int | None = Form(None),
+    title: str = Form(...),
+    save_results: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    teacher = require_teacher(request, db)
+    quiz_scope, course = _resolve_quiz_scope(
+        db,
+        teacher,
+        lesson_id=lesson_id,
+        module_id=module_id,
+        course_id=course_id,
+    )
+
+    title = title.strip()
+    if not title:
+        return _redirect_with_error(f"/courses/{course.id}/manage", "Название квиза обязательно")
+
+    quiz = Quiz(title=title, save_results=save_results, **quiz_scope)
+    db.add(quiz)
+    db.commit()
+    return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
+
+
 # ── Страница квиза для студента ─────────────────────────────────
 @router.get("/{quiz_id}", response_class=HTMLResponse)
 def quiz_page(quiz_id: int, request: Request, db: Session = Depends(get_db)):
@@ -317,36 +347,6 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
         "passed_before": bool(existing_checkpoint or passed),
         "retry_mode": False,
     })
-
-
-# ── Создать квиз (teacher) ──────────────────────────────────────
-@router.post("/create")
-def create_quiz(
-    request: Request,
-    lesson_id: int | None = Form(None),
-    module_id: int | None = Form(None),
-    course_id: int | None = Form(None),
-    title: str = Form(...),
-    save_results: bool = Form(False),
-    db: Session = Depends(get_db),
-):
-    teacher = require_teacher(request, db)
-    quiz_scope, course = _resolve_quiz_scope(
-        db,
-        teacher,
-        lesson_id=lesson_id,
-        module_id=module_id,
-        course_id=course_id,
-    )
-
-    title = title.strip()
-    if not title:
-        return _redirect_with_error(f"/courses/{course.id}/manage", "Название квиза обязательно")
-
-    quiz = Quiz(title=title, save_results=save_results, **quiz_scope)
-    db.add(quiz)
-    db.commit()
-    return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
 
 
 @router.post("/{quiz_id}/settings")

@@ -296,6 +296,199 @@ def recommended_courses(request: Request, db: Session = Depends(get_db)):
     })
 
 
+# ── Создание курса ───────────────────────────────────────────────────────────
+
+@router.post("/create")
+def create_course(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    category_id: int = Form(0),
+    level: str = Form("Beginner"),
+    image: UploadFile | None = File(None),
+    files: list[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+):
+    user = get_user(request, db)
+    if not user or user.role.value not in ("teacher", "admin"):
+        if user and user.role.value == "teacher_pending":
+            raise HTTPException(status_code=403, detail="Ваш аккаунт ещё не подтверждён")
+        raise HTTPException(status_code=403, detail="Только преподаватели могут создавать курсы")
+
+    title = title.strip()
+    description = description.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Введите название курса")
+    if files:
+        for file in files:
+            if file and file.filename:
+                _validate_course_material_upload(file)
+
+    course = Course(
+        title=title,
+        description=description or None,
+        image=_save_course_image(image),
+        level=level,
+        teacher_id=user.id,
+        category_id=category_id or None,
+    )
+    db.add(course)
+    db.commit()
+    db.refresh(course)
+
+    _save_course_materials(files, course.id, db)
+
+    from main import invalidate_courses_cache
+    invalidate_courses_cache()
+    return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
+
+
+# ── NEW API: Google Forms Quiz URL Management ──────────────────────────────────
+
+@router.post("/api/quiz-url")
+async def save_quiz_url(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Save Google Forms URL for course/module/lesson"""
+    user = get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Parse form data
+    form_data = await request.form()
+    scope_name = form_data.get('scope_name', '').strip()
+    try:
+        scope_id = int(form_data.get('scope_id', 0))
+    except:
+        raise HTTPException(status_code=400, detail="Invalid scope_id")
+    quiz_url = form_data.get('quiz_url', '').strip()
+    
+    if not quiz_url:
+        raise HTTPException(status_code=400, detail="URL cannot be empty")
+    
+    # Validate it's a valid URL
+    try:
+        from urllib.parse import urlparse
+        result = urlparse(quiz_url)
+        if not all([result.scheme, result.netloc]):
+            raise ValueError()
+    except:
+        raise HTTPException(status_code=400, detail="Invalid URL format")
+    
+    # Handle different scopes
+    if scope_name == "course":
+        course = db.query(Course).filter(
+            Course.id == scope_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+        course.quiz_url = quiz_url
+    
+    elif scope_name == "module":
+        module = db.query(Module).filter(Module.id == scope_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        # Check teacher ownership
+        course = db.query(Course).filter(
+            Course.id == module.course_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        
+        module.quiz_url = quiz_url
+    
+    elif scope_name == "lesson":
+        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        
+        # Check teacher ownership
+        module = db.query(Module).filter(Module.id == lesson.module_id).first()
+        course = db.query(Course).filter(
+            Course.id == module.course_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        
+        lesson.quiz_url = quiz_url
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+    
+    db.commit()
+    return JSONResponse({"success": True})
+
+
+@router.delete("/api/quiz-url")
+async def delete_quiz_url(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Delete Google Forms URL from course/module/lesson"""
+    user = get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Parse form data
+    form_data = await request.form()
+    scope_name = form_data.get('scope_name', '').strip()
+    try:
+        scope_id = int(form_data.get('scope_id', 0))
+    except:
+        raise HTTPException(status_code=400, detail="Invalid scope_id")
+    
+    # Handle different scopes
+    if scope_name == "course":
+        course = db.query(Course).filter(
+            Course.id == scope_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+        course.quiz_url = None
+    
+    elif scope_name == "module":
+        module = db.query(Module).filter(Module.id == scope_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        # Check teacher ownership
+        course = db.query(Course).filter(
+            Course.id == module.course_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        
+        module.quiz_url = None
+    
+    elif scope_name == "lesson":
+        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        
+        # Check teacher ownership
+        module = db.query(Module).filter(Module.id == lesson.module_id).first()
+        course = db.query(Course).filter(
+            Course.id == module.course_id,
+            Course.teacher_id == user.id
+        ).first()
+        if not course:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        
+        lesson.quiz_url = None
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+    
+    db.commit()
+    return JSONResponse({"success": True})
+
 
 # ── Страница курса ───────────────────────────────────────────────────────────
 
@@ -442,53 +635,6 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
         "categories": categories,
         "student_activity": student_activity
     })
-
-
-# ── Создание курса ───────────────────────────────────────────────────────────
-
-@router.post("/create")
-def create_course(
-    request: Request,
-    title: str = Form(...),
-    description: str = Form(""),
-    category_id: int = Form(0),
-    level: str = Form("Beginner"),
-    image: UploadFile | None = File(None),
-    files: list[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-):
-    user = get_user(request, db)
-    if not user or user.role.value not in ("teacher", "admin"):
-        if user and user.role.value == "teacher_pending":
-            raise HTTPException(status_code=403, detail="Ваш аккаунт ещё не подтверждён")
-        raise HTTPException(status_code=403, detail="Только преподаватели могут создавать курсы")
-
-    title = title.strip()
-    description = description.strip()
-    if not title:
-        raise HTTPException(status_code=400, detail="Введите название курса")
-    if files:
-        for file in files:
-            if file and file.filename:
-                _validate_course_material_upload(file)
-
-    course = Course(
-        title=title,
-        description=description or None,
-        image=_save_course_image(image),
-        level=level,
-        teacher_id=user.id,
-        category_id=category_id or None,
-    )
-    db.add(course)
-    db.commit()
-    db.refresh(course)
-
-    _save_course_materials(files, course.id, db)
-
-    from main import invalidate_courses_cache
-    invalidate_courses_cache()
-    return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
 
 
 # ── Редактирование курса ─────────────────────────────────────────────────────
@@ -664,150 +810,3 @@ def get_course_api(course_id: int, request: Request, db: Session = Depends(get_d
     if not course:
         raise HTTPException(status_code=404)
     return {"id": course.id, "title": course.title, "description": course.description, "level": course.level}
-
-
-# ── NEW API: Google Forms Quiz URL Management ──────────────────────────────────
-
-@router.post("/api/quiz-url")
-async def save_quiz_url(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """Save Google Forms URL for course/module/lesson"""
-    user = get_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Parse form data
-    form_data = await request.form()
-    scope_name = form_data.get('scope_name', '').strip()
-    try:
-        scope_id = int(form_data.get('scope_id', 0))
-    except:
-        raise HTTPException(status_code=400, detail="Invalid scope_id")
-    quiz_url = form_data.get('quiz_url', '').strip()
-    
-    if not quiz_url:
-        raise HTTPException(status_code=400, detail="URL cannot be empty")
-    
-    # Validate it's a valid URL
-    try:
-        from urllib.parse import urlparse
-        result = urlparse(quiz_url)
-        if not all([result.scheme, result.netloc]):
-            raise ValueError()
-    except:
-        raise HTTPException(status_code=400, detail="Invalid URL format")
-    
-    # Handle different scopes
-    if scope_name == "course":
-        course = db.query(Course).filter(
-            Course.id == scope_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=404, detail="Course not found")
-        course.quiz_url = quiz_url
-    
-    elif scope_name == "module":
-        module = db.query(Module).filter(Module.id == scope_id).first()
-        if not module:
-            raise HTTPException(status_code=404, detail="Module not found")
-        
-        # Check teacher ownership
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=403, detail="Unauthorized")
-        
-        module.quiz_url = quiz_url
-    
-    elif scope_name == "lesson":
-        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
-        if not lesson:
-            raise HTTPException(status_code=404, detail="Lesson not found")
-        
-        # Check teacher ownership
-        module = db.query(Module).filter(Module.id == lesson.module_id).first()
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=403, detail="Unauthorized")
-        
-        lesson.quiz_url = quiz_url
-    
-    else:
-        raise HTTPException(status_code=400, detail="Invalid scope")
-    
-    db.commit()
-    return JSONResponse({"success": True})
-
-
-@router.delete("/api/quiz-url")
-async def delete_quiz_url(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """Delete Google Forms URL from course/module/lesson"""
-    user = get_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Parse form data
-    form_data = await request.form()
-    scope_name = form_data.get('scope_name', '').strip()
-    try:
-        scope_id = int(form_data.get('scope_id', 0))
-    except:
-        raise HTTPException(status_code=400, detail="Invalid scope_id")
-    
-    # Handle different scopes
-    if scope_name == "course":
-        course = db.query(Course).filter(
-            Course.id == scope_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=404, detail="Course not found")
-        course.quiz_url = None
-    
-    elif scope_name == "module":
-        module = db.query(Module).filter(Module.id == scope_id).first()
-        if not module:
-            raise HTTPException(status_code=404, detail="Module not found")
-        
-        # Check teacher ownership
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=403, detail="Unauthorized")
-        
-        module.quiz_url = None
-    
-    elif scope_name == "lesson":
-        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
-        if not lesson:
-            raise HTTPException(status_code=404, detail="Lesson not found")
-        
-        # Check teacher ownership
-        module = db.query(Module).filter(Module.id == lesson.module_id).first()
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
-            raise HTTPException(status_code=403, detail="Unauthorized")
-        
-        lesson.quiz_url = None
-    
-    else:
-        raise HTTPException(status_code=400, detail="Invalid scope")
-    
-    db.commit()
-    return JSONResponse({"success": True})
