@@ -184,8 +184,8 @@
 </div>
 
 <!-- MODAL: Добавить модуль -->
-<div class="modal-overlay" id="add-module-modal" onclick="closeModal('add-module-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="add-module-modal" onclick="if(event.target===this) closeModal('add-module-modal')">
+  <div class="modal">
     <div class="modal-header">
       <h2 data-i18n="manage.new_module">Новый модуль</h2>
       <button class="modal-close" onclick="closeModal('add-module-modal')">✕</button>
@@ -219,8 +219,8 @@
 </div>
 
 <!-- MODAL: Редактировать модуль -->
-<div class="modal-overlay" id="edit-module-modal" onclick="closeModal('edit-module-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="edit-module-modal" onclick="if(event.target===this) closeModal('edit-module-modal')">
+  <div class="modal">
     <div class="modal-header">
       <h2 data-i18n="manage.edit_module">Редактировать модуль</h2>
       <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
@@ -253,8 +253,8 @@
 </div>
 
 <!-- MODAL: Редактировать курс -->
-<div class="modal-overlay" id="edit-course-modal" onclick="closeModal('edit-course-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="edit-course-modal" onclick="if(event.target===this) closeModal('edit-course-modal')">
+  <div class="modal">
     <div class="modal-header">
       <h2 data-i18n="manage.edit">Редактировать курс</h2>
       <button class="modal-close" onclick="closeModal('edit-course-modal')">✕</button>
@@ -338,8 +338,8 @@
 </div>
 
 <!-- MODAL: Добавить урок -->
-<div class="modal-overlay" id="add-lesson-modal" onclick="closeModal('add-lesson-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="add-lesson-modal" onclick="if(event.target===this) closeModal('add-lesson-modal')">
+  <div class="modal">
     <div class="modal-header">
       <h2 data-i18n="manage.new_lesson">Новый урок</h2>
       <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
@@ -383,8 +383,8 @@
 </div>
 
 <!-- MODAL: Редактировать урок -->
-<div class="modal-overlay" id="edit-lesson-modal" onclick="closeModal('edit-lesson-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="edit-lesson-modal" onclick="if(event.target===this) closeModal('edit-lesson-modal')">
+  <div class="modal">
     <div class="modal-header">
       <h2 data-i18n="manage.edit_lesson">Редактировать урок</h2>
       <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>

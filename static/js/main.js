@@ -119,6 +119,27 @@ function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
   form.dataset.scopeName = scopeName;
   form.dataset.scopeId = scopeId;
   
+  // Переустанавливаем обработчики для полей ввода после обновления
+  const inputs = form.querySelectorAll('input, textarea');
+  inputs.forEach((inp) => {
+    if (inp.dataset.handlersSet !== '1') {
+      inp.dataset.handlersSet = '1';
+      ['mouseup', 'mousedown', 'click', 'dblclick'].forEach((eventName) => {
+        inp.addEventListener(eventName, (e) => {
+          e.stopPropagation();
+        }, true);
+      });
+      inp.addEventListener('select', (e) => {
+        e.stopPropagation();
+      });
+      ['copy', 'cut', 'paste'].forEach((eventName) => {
+        inp.addEventListener(eventName, (e) => {
+          e.stopPropagation();
+        });
+      });
+    }
+  });
+  
   existing.classList.add('active');
   input.focus();
 }
@@ -131,7 +152,7 @@ function createGoogleFormsModal() {
   const modal = document.createElement('div');
   modal.id = 'google-forms-modal';
   modal.innerHTML = `
-    <div class="google-forms-modal-content" onclick="event.stopPropagation()">
+    <div class="google-forms-modal-content">
       <div class="google-forms-modal-header">
         <h2>Добавить ссылку на Google Forms</h2>
         <button type="button" onclick="closeGoogleFormsModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);">✕</button>
@@ -151,12 +172,40 @@ function createGoogleFormsModal() {
     </div>
   `;
   
+  // Обработчик закрытия при клике на backdrop
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeGoogleFormsModal();
   });
-  
+
+  // Предотвращаем закрытие при клике на само содержимое модального окна
+  const content = modal.querySelector('.google-forms-modal-content');
+  if (content) {
+    content.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Устанавливаем обработчики для полей ввода
   const form = modal.querySelector('#google-forms-form');
-  form.addEventListener('submit', handleGoogleFormsSubmit);
+  if (form) {
+    const inputs = form.querySelectorAll('input, textarea');
+    inputs.forEach((input) => {
+      ['mouseup', 'mousedown', 'click', 'dblclick'].forEach((eventName) => {
+        input.addEventListener(eventName, (e) => {
+          e.stopPropagation();
+        }, true);
+      });
+      input.addEventListener('select', (e) => {
+        e.stopPropagation();
+      });
+      ['copy', 'cut', 'paste'].forEach((eventName) => {
+        input.addEventListener(eventName, (e) => {
+          e.stopPropagation();
+        });
+      });
+    });
+    form.addEventListener('submit', handleGoogleFormsSubmit);
+  }
   
   document.body.appendChild(modal);
   return modal;

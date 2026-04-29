@@ -275,6 +275,54 @@ function _openModalOverlay(modalId) {
   if (modal) {
     document.body.classList.add('modal-open');
     modal.classList.add('open');
+    // Устанавливаем обработчики для предотвращения закрытия при взаимодействии с полями ввода
+    _setupModalInputHandlers(modalId);
+  }
+}
+
+/**
+ * Устанавливает обработчики событий для полей ввода внутри модального окна
+ * для предотвращения закрытия модального окна при выделении/копировании текста
+ * @param {string} modalId
+ */
+function _setupModalInputHandlers(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  // Находим все поля ввода, текстовые области и contenteditable элементы
+  const inputElements = modal.querySelectorAll('input, textarea, [contenteditable="true"]');
+  
+  inputElements.forEach((element) => {
+    // Если уже установлены обработчики, пропускаем
+    if (element.dataset.modalHandlersSet === '1') return;
+    element.dataset.modalHandlersSet = '1';
+
+    // Предотвращаем закрытие модального окна при mouseup/mousedown на input полях
+    ['mouseup', 'mousedown', 'click', 'dblclick'].forEach((eventName) => {
+      element.addEventListener(eventName, (e) => {
+        e.stopPropagation();
+      }, true); // Используем capture phase для большей надежности
+    });
+
+    // Предотвращаем закрытие при выделении текста
+    element.addEventListener('select', (e) => {
+      e.stopPropagation();
+    });
+
+    // Предотвращаем закрытие при copy/cut/paste
+    ['copy', 'cut', 'paste'].forEach((eventName) => {
+      element.addEventListener(eventName, (e) => {
+        e.stopPropagation();
+      });
+    });
+  });
+
+  // Дополнительно: предотвращаем закрытие при клике на сам modal контейнер (не overlay)
+  const modalContent = modal.querySelector('.modal');
+  if (modalContent) {
+    modalContent.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
   }
 }
 
@@ -388,6 +436,32 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // ── Инициализация обработчиков для всех модальных окон ──
+  // Устанавливаем обработчики для предотвращения закрытия модалов при работе с полями ввода
+  const modalIds = [
+    'create-modal', 'edit-modal', 
+    'add-module-modal', 'edit-module-modal',
+    'add-lesson-modal', 'edit-lesson-modal',
+    'edit-course-modal'
+  ];
+  
+  modalIds.forEach(modalId => {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Инициализируем обработчики для полей ввода
+    _setupModalInputHandlers(modalId);
+    
+    // Также обработчик для overlay - закрытие при клике именно на overlay, не на modal
+    const overlay = modal;
+    overlay.addEventListener('click', (e) => {
+      // Закрываем только если кликнули на сам overlay, а не на modal содержимое
+      if (e.target === overlay) {
+        closeModal(modalId);
+      }
+    }, { once: false });
+  });
 });
 
 window.addEventListener('pagehide', () => {
