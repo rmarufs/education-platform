@@ -433,7 +433,7 @@ html[data-theme="light"] .admin-back-link:hover {
 
 .admin-btn-warning {
   background: var(--admin-warning);
-  color: #000;
+  color: #1f2937;
 }
 .admin-btn-warning:hover { background: #d97706; }
 
