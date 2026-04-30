@@ -48,8 +48,8 @@
           <div class="cta-guest">
             <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.95rem;" data-i18n="course_page.guest_description">Чтобы начать обучение, создайте или войдите в аккаунт</p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
-              <a href="/register" class="btn btn-primary" data-i18n="course_page.start_learning">📝 Зарегистрироваться</a>
-              <a href="/login" class="btn btn-outline" data-i18n="course_page.login_btn">🔑 Войти</a>
+              <a href="/register" class="btn btn-primary" data-i18n="course_page.register_btn">Зарегистрироваться</a>
+              <a href="/login" class="btn btn-outline" data-i18n="course_page.login_btn">Войти</a>
             </div>
           </div>
           {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
