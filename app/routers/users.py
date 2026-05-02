@@ -97,7 +97,7 @@ def process_assessment(
     user.assessment_completed = True
     db.commit()
     
-    return RedirectResponse("/catalog", status_code=302)
+    return RedirectResponse("/courses/catalog", status_code=302)
 
 
 @router.get("/dashboard/student", response_class=HTMLResponse)
