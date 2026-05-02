@@ -20,7 +20,7 @@
         <div class="course-card fade-in">
             <div class="course-card-header">
                 {{ course_cover(course) }}
-                <span class="course-badge" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;" data-level="{{ course.level }}">{{ course.level }}</span>
+                <span class="course-badge" style="position: absolute; top: 12px; right: 12px; background: var(--overlay); color: var(--white); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;" data-level="{{ course.level }}">{{ course.level }}</span>
             </div>
             <div class="course-card-body">
                 <h3 class="course-title">{{ course.title }}</h3>

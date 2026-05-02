@@ -18,7 +18,7 @@
       {"num":"2","icon":"📚","title_key":"how.student2.title","title":"Выбери курс","desc_key":"how.student2.desc","desc":"Просмотри каталог курсов, используй фильтры и выбери подходящий курс."},
       {"num":"3","icon":"🚀","title_key":"how.student3.title","title":"Начни учиться","desc_key":"how.student3.desc","desc":"Смотри видеоуроки, проходи тесты и отслеживай свой прогресс."}
     ] %}
-    <div class="reveal" style="text-align:center;padding:32px 24px;background:var(--white);border-radius:16px;border:1px solid var(--border);position:relative;">
+    <div class="reveal" style="text-align:center;padding:32px 24px;background:var(--bg-card);border-radius:16px;border:1px solid var(--border);position:relative;">
       <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;margin:0 auto 16px;">{{ step.num }}</div>
       <div style="font-size:2.5rem;margin-bottom:12px;">{{ step.icon }}</div>
       <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;" data-i18n="{{ step.title_key }}">{{ step.title }}</h3>
@@ -29,7 +29,7 @@
 </section>
 
 <!-- Для преподавателей -->
-<section style="background:var(--white);padding:64px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+<section style="background:var(--bg-card);padding:64px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div style="max-width:900px;margin:0 auto;">
     <h2 style="text-align:center;font-size:1.75rem;font-weight:700;margin-bottom:40px;" class="reveal" data-i18n="how.teachers_title">👨‍🏫 Для преподавателей</h2>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;">
@@ -60,7 +60,7 @@
       {"q_key":"how.faq4.q","q":"Можно ли проходить курс с телефона?","a_key":"how.faq4.a","a":"Да, наш сайт адаптирован для мобильных устройств. Вы можете учиться с любого устройства — смартфона, планшета или компьютера."},
       {"q_key":"how.faq5.q","q":"Как отслеживать свой прогресс?","a_key":"how.faq5.a","a":"В вашем личном кабинете отображается прогресс по каждому курсу — сколько уроков пройдено и сколько осталось."}
     ] %}
-    <div class="faq-item reveal" style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div class="faq-item reveal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
       <button onclick="toggleFaq(this)" style="width:100%;padding:18px 20px;background:none;border:none;text-align:left;cursor:pointer;font-family:var(--font);font-size:.95rem;font-weight:600;color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <span data-i18n="{{ faq.q_key }}">{{ faq.q }}</span>
         <span class="faq-arrow" style="transition:transform .3s;font-size:1.2rem;flex-shrink:0;">▸</span>

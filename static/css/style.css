@@ -835,13 +835,69 @@ body.dark .logo-copy::after {
 }
 
 .rich-text-content {
-  color: var(--text);
+  color: var(--text) !important;
   line-height: 1.75;
+}
+
+.rich-editor-surface {
+  color: var(--text) !important;
+}
+
+.rich-editor-surface :where(h1, h2, h3, h4, h5, h6, p, div, span, li, ul, ol, strong, em, s, u, blockquote, figcaption, td, th, code, pre),
+.rich-text-content :where(h1, h2, h3, h4, h5, h6, p, div, span, li, ul, ol, strong, em, s, u, blockquote, figcaption, td, th, code, pre) {
+  color: inherit;
+}
+
+.rich-editor-surface [style*="color:"],
+.rich-text-content [style*="color:"],
+.rich-editor-surface [color],
+.rich-text-content [color] {
+  color: inherit !important;
 }
 
 .rich-text-content strong { font-weight: 700; }
 .rich-text-content em { font-style: italic; }
 .rich-text-content s { text-decoration: line-through; }
+
+.rich-editor-surface blockquote,
+.rich-text-content blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+.rich-editor-surface code,
+.rich-text-content code {
+  color: var(--text);
+  background: var(--surface-soft);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+}
+
+.rich-editor-surface pre,
+.rich-text-content pre {
+  color: var(--text);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+}
+
+.rich-editor-surface table,
+.rich-text-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rich-editor-surface th,
+.rich-editor-surface td,
+.rich-text-content th,
+.rich-text-content td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+}
 
 .form-error { font-size: .78rem; color: var(--danger); min-height: 16px; }
 .form-hint {
@@ -1012,7 +1068,7 @@ body.dark .logo-copy::after {
 }
 
 .sidebar {
-  background: var(--white);
+  background: var(--bg-card);
   border-right: 1px solid var(--border);
   padding: 28px 0;
   display: flex;
@@ -2636,7 +2692,7 @@ body { transition: background-color .3s ease, color .3s ease; }
   bottom: 0;
   width: 280px;
   max-width: 80%;
-  background: var(--white);
+  background: var(--bg-card);
   z-index: 199;
   flex-direction: column;
   padding: 80px 24px 24px;
@@ -3705,7 +3761,11 @@ body.dark .error-page-status {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 14%, var(--bg-card)) 0%,
+    color-mix(in srgb, var(--surface-soft) 78%, var(--bg-card)) 100%
+  );
   border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: var(--transition);
@@ -3713,7 +3773,7 @@ body.dark .error-page-status {
 
 .google-forms-banner.google-forms-locked {
   opacity: 0.7;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: linear-gradient(135deg, var(--surface-soft) 0%, var(--surface-muted) 100%);
 }
 
 .google-forms-banner:not(.google-forms-locked) {
@@ -3752,7 +3812,11 @@ body.dark .error-page-status {
 }
 
 .course-forms-banner {
-  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gradient-end) 14%, var(--bg-card)) 0%,
+    color-mix(in srgb, var(--surface-soft) 82%, var(--bg-card)) 100%
+  );
 }
 
 /* Google Forms Modal */
@@ -3900,63 +3964,25 @@ body.dark .error-page-status {
   border: none;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .google-forms-banner {
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+html[data-theme="dark"] .google-forms-banner,
+body.dark .google-forms-banner {
+  border-color: rgba(255, 255, 255, 0.08);
+}
 
-  .google-forms-banner h3 {
-    color: #f1f5f9;
-  }
+html[data-theme="dark"] .google-forms-banner.google-forms-locked,
+body.dark .google-forms-banner.google-forms-locked {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
 
-  .google-forms-banner p {
-    color: #cbd5e1;
-  }
+html[data-theme="dark"] .course-forms-banner,
+body.dark .course-forms-banner {
+  background: linear-gradient(135deg, #312e81 0%, #1f2937 100%);
+}
 
-  .google-forms-modal-content {
-    background: #1f2937;
-  }
-
-  .google-forms-modal-header {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .google-forms-modal-header h2 {
-    color: #f1f5f9;
-  }
-
-  .google-forms-modal-body {
-    background: #1f2937;
-  }
-
-  .google-forms-modal-form label {
-    color: #e5e7eb;
-  }
-
-  .google-forms-modal-form input {
-    background: #374151;
-    color: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .google-forms-modal-form input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-  }
-
-  .google-forms-modal-footer {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: #1f2937;
-  }
-
-  .google-forms-iframe-header {
-    background: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .google-forms-iframe-header h3 {
-    color: #f1f5f9;
-  }
+html[data-theme="dark"] .rich-editor-surface :where(p, div, span, li, strong, em, s, u, blockquote, code)[style*="background"],
+html[data-theme="dark"] .rich-text-content :where(p, div, span, li, strong, em, s, u, blockquote, code)[style*="background"],
+body.dark .rich-editor-surface :where(p, div, span, li, strong, em, s, u, blockquote, code)[style*="background"],
+body.dark .rich-text-content :where(p, div, span, li, strong, em, s, u, blockquote, code)[style*="background"] {
+  background: transparent !important;
+  background-color: transparent !important;
 }
