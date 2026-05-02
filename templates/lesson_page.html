@@ -77,15 +77,21 @@
         {% set vid_id = vid.split("v=")[1].split("&")[0] %}
       {% elif "youtu.be/" in vid %}
         {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
+      {% elif "youtube.com/embed/" in vid %}
+        {% set vid_id = vid.split("youtube.com/embed/")[1].split("?")[0].split("&")[0] %}
+      {% elif "youtube.com/shorts/" in vid %}
+        {% set vid_id = vid.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0] %}
       {% endif %}
 
       {% if vid_id %}
         <!-- Кастомный YouTube плеер -->
         <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
         
-        <!-- Невидимый слой для перехвата кликов (блокирует переход на YT) -->
+        <!-- Слой перехватывает клики и держит пользовательский интерфейс поверх iframe. -->
         <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
-            <div class="big-play-btn" id="big-play-btn">▶</div>
+            <div class="big-play-btn" id="big-play-btn" aria-hidden="true">
+              <span class="big-play-icon"></span>
+            </div>
         </div>
         
         <!-- Кастомные элементы управления -->
@@ -453,14 +459,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     player = new YT.Player('yt-player', {
       videoId: videoId,
+      host: 'https://www.youtube-nocookie.com',
       playerVars: {
-        'controls': 0,        // Скрыть контролы ютуба
-        'rel': 0,             // Не показывать похожие видео
-        'modestbranding': 1,  // Минимизировать брендинг
-        'disablekb': 1,       // Отключить управление клавиатурой
-        'fs': 0,              // Отключить кнопку фуллскрина ютуба
-        'playsinline': 1,     // Для мобильных
-        'iv_load_policy': 3   // Скрыть аннотации
+        'autoplay': 0,
+        'controls': 0,
+        'rel': 0,
+        'modestbranding': 1,
+        'disablekb': 1,
+        'fs': 0,
+        'playsinline': 1,
+        'iv_load_policy': 3,
+        'cc_load_policy': 0,
+        'showinfo': 0,
+        'origin': window.location.origin,
+        'widget_referrer': window.location.origin
       },
       events: {
         'onReady': onPlayerReady,
@@ -470,6 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function onPlayerReady(event) {
+    var container = document.getElementById('custom-video-container');
+    if (container) container.classList.add('player-ready');
+
     // Привязываем события к нашим кнопкам
     var playBtn = document.getElementById('play-pause-btn');
     var overlay = document.getElementById('video-click-overlay');
