@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
   // --- ЗАЩИТА ОТ ИЗВЛЕЧЕНИЯ ССЫЛКИ ---
-  // 1. Блокировка горячих клавиш (F12, Ctrl+Shift+I, Ctrl+U)
+  // 1. Блокировка горячих клавиш (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+A, Ctrl+P)
   document.addEventListener('keydown', function(e) {
     if (
       e.key === 'F12' || 
@@ -423,20 +423,25 @@ document.addEventListener('DOMContentLoaded', () => {
       (e.ctrlKey && e.shiftKey && e.key === 'C') || 
       (e.ctrlKey && e.shiftKey && e.key === 'J') || 
       (e.ctrlKey && e.key === 'U') ||
-      (e.metaKey && e.altKey && e.key === 'I') // Mac: Cmd+Option+I
+      (e.metaKey && e.altKey && e.key === 'I') || // Mac: Cmd+Option+I
+      (e.ctrlKey && e.key.toLowerCase() === 's') ||
+      (e.metaKey && e.key.toLowerCase() === 's') ||
+      (e.ctrlKey && e.key.toLowerCase() === 'a') ||
+      (e.metaKey && e.key.toLowerCase() === 'a') ||
+      (e.ctrlKey && e.key.toLowerCase() === 'p') ||
+      (e.metaKey && e.key.toLowerCase() === 'p')
     ) {
       e.preventDefault();
       return false;
     }
   });
 
-  // Отключаем правый клик по всей области контента урока (если нужно)
-  var lessonContent = document.querySelector('.lesson-content');
-  if (lessonContent) {
-    lessonContent.addEventListener('contextmenu', function(e) {
-      if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-      }
+  // Отключаем правый клик только на области плеера
+  var playerContainer = document.getElementById('custom-video-container');
+  if (playerContainer) {
+    playerContainer.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
     });
   }
 
@@ -449,6 +454,45 @@ document.addEventListener('DOMContentLoaded', () => {
   var videoId = '';        // глобальная — нужна iOS фоллбэку
   var controlsTimer = null; // таймер автоскрытия контролов
   
+  function decodeYt(token) {
+    var decoded = atob(token);
+    var shifted = "";
+    for (var i = 0; i < decoded.length; i++) {
+      shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
+    }
+    return shifted.split('').reverse().join('');
+  }
+
+  // Перехват postMessage (защита от утечки meta-данных в DevTools)
+  var originalAddEventListener = window.addEventListener;
+  window.addEventListener = function(type, listener, options) {
+    if (type === 'message') {
+      var wrappedListener = function(e) {
+        if (e.data && typeof e.data === 'string' && e.data.includes('infoDelivery')) {
+          try {
+            var dataObj = JSON.parse(e.data);
+            if (dataObj.event === 'infoDelivery' && dataObj.info && dataObj.info.videoData) {
+              // Удаляем video_id и videoURL чтобы не светить в консоли
+              delete dataObj.info.videoData.video_id;
+              delete dataObj.info.videoData.videoURL;
+              // Создаем фейковое событие с очищенными данными
+              var newEvent = new MessageEvent('message', {
+                data: JSON.stringify(dataObj),
+                origin: e.origin,
+                source: e.source,
+                ports: e.ports
+              });
+              return listener.call(this, newEvent);
+            }
+          } catch (err) { }
+        }
+        return listener.apply(this, arguments);
+      };
+      return originalAddEventListener.call(this, type, wrappedListener, options);
+    }
+    return originalAddEventListener.apply(this, arguments);
+  };
+  
   function onYouTubeIframeAPIReady() {
     var ytPlayerEl = document.getElementById('yt-player');
     if (!ytPlayerEl) return;
@@ -457,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var videoToken = ytPlayerEl.getAttribute('data-video-token');
     videoId = ""; // присваиваем глобальной переменной
     try {
-      videoId = atob(videoToken);
+      videoId = decodeYt(videoToken);
     } catch(e) {
       console.error("Invalid video token");
       return;
@@ -491,6 +535,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var container = document.getElementById('custom-video-container');
     if (container) container.classList.add('player-ready');
     prepareIframeForFullscreen();
+
+    // Блокируем методы объекта player от возврата данных в консоли
+    if (player.getVideoData) {
+      player.getVideoData = function() { return {}; };
+    }
+
+    // Ограничиваем iframe
+    var iframe = player.getIframe();
+    if (iframe) {
+      iframe.setAttribute('referrerpolicy', 'no-referrer');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+    }
 
     // Привязываем события к нашим кнопкам
     var playBtn = document.getElementById('play-pause-btn');
@@ -811,11 +867,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // —— iOS Safari: requestFullscreen для cross-origin iframe заблокирован Системой
+    // —— iOS Safari: скрываем нативные контролы через CSS псевдо-фуллскрин
     if (isIosSafari()) {
-      var t = (player && player.getCurrentTime) ? Math.floor(player.getCurrentTime()) : 0;
-      var url = 'https://www.youtube.com/watch?v=' + videoId + (t > 0 ? '&t=' + t : '');
-      window.open(url, '_blank', 'noopener,noreferrer');
+      enterPseudoFullscreen();
       return;
     }
 

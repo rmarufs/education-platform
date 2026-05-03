@@ -3514,7 +3514,7 @@ body.video-pseudo-fullscreen {
 .video-click-overlay {
   position: absolute;
   inset: 0;
-  z-index: 18;
+  z-index: 999;
   cursor: pointer;
   background:
     radial-gradient(circle at center, rgba(0, 0, 0, 0.18), transparent 36%),
@@ -3595,7 +3595,7 @@ body.video-pseudo-fullscreen {
   align-items: center;
   padding: 10px 14px;
   gap: 14px;
-  z-index: 30;
+  z-index: 1000;
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 0.24s ease, transform 0.24s ease;

@@ -21,7 +21,14 @@ from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
 templates = Jinja2Templates(directory="templates")
-templates.env.filters["b64encode"] = lambda s: base64.b64encode(s.encode("utf-8")).decode("utf-8") if s else ""
+def obfuscate_yt(s: str) -> str:
+    if not s:
+        return ""
+    # Reverse string + Caesar shift + Base64
+    shifted = "".join(chr(ord(c) + 3) for c in s[::-1])
+    return base64.b64encode(shifted.encode("utf-8")).decode("utf-8")
+
+templates.env.filters["b64encode"] = obfuscate_yt
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}
