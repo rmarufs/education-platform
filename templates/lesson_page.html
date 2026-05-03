@@ -87,8 +87,6 @@
         <!-- Кастомный YouTube плеер -->
         <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
 
-        <!-- Верхний блокер физически перекрывает YouTube title/channel overlay и забирает клики. -->
-        <div class="youtube-top-blocker" id="youtube-top-blocker" aria-hidden="true"></div>
         
         <!-- Слой перехватывает клики и держит пользовательский интерфейс поверх iframe. -->
         <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
@@ -448,17 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
   var isPlaying = false;
   var isSeeking = false;
   var activeSeekPercent = 0;
-  var topBlockerTimer;
-
-  function showTopBlocker() {
-    var blocker = document.getElementById('youtube-top-blocker');
-    if (!blocker) return;
-    blocker.classList.add('is-visible');
-    if (topBlockerTimer) clearTimeout(topBlockerTimer);
-    topBlockerTimer = setTimeout(function() {
-      blocker.classList.remove('is-visible');
-    }, 1500);
-  }
   
   function onYouTubeIframeAPIReady() {
     var ytPlayerEl = document.getElementById('yt-player');
@@ -509,20 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
     var muteBtn = document.getElementById('mute-btn');
     var fsBtn = document.getElementById('fullscreen-btn');
     var progressContainer = document.getElementById('progress-container');
-    var topBlocker = document.getElementById('youtube-top-blocker');
 
     if(playBtn) playBtn.addEventListener('click', togglePlay);
     if(overlay) overlay.addEventListener('click', togglePlay);
     if(muteBtn) muteBtn.addEventListener('click', toggleMute);
     if(fsBtn) fsBtn.addEventListener('click', toggleFullScreen);
-    if(topBlocker) {
-      ['click', 'dblclick', 'mousedown', 'touchstart', 'pointerdown'].forEach(function(eventName) {
-        topBlocker.addEventListener(eventName, function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }, { passive: false });
-      });
-    }
     
     if(progressContainer) {
       progressContainer.addEventListener('mousedown', startSeek);
@@ -567,7 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = true;
       if(playBtn) playBtn.innerText = '⏸';
       if(container) container.classList.add('playing');
-      showTopBlocker();
       clearInterval(progressInterval);
       progressInterval = setInterval(updateProgressBar, 500);
     } else if (
@@ -589,7 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
       player.pauseVideo();
     } else {
       player.playVideo();
-      showTopBlocker();
     }
   }
 
