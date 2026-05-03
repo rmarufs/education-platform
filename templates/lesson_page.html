@@ -804,23 +804,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
-  function requestIframeFullscreenFallback() {
-    if (!player || !player.getIframe) return false;
-    var iframe = player.getIframe();
-    if (!iframe) return false;
-
-    if (iframe.requestFullscreen || iframe.webkitRequestFullscreen || iframe.webkitRequestFullScreen || iframe.mozRequestFullScreen || iframe.msRequestFullscreen) {
-      requestNativeFullscreen(iframe);
-      return true;
-    }
-
-    if (iframe.webkitEnterFullscreen) {
-      iframe.webkitEnterFullscreen();
-      return true;
-    }
-
-    return false;
-  }
 
   function enterPseudoFullscreen() {
     var container = document.getElementById('custom-video-container');
@@ -886,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
         syncFullscreenState();
         _lockLandscape(); // блокировка ориентации ПОСЛЕ входа в fullscreen
       }).catch(function() {
-        if (!requestIframeFullscreenFallback()) enterPseudoFullscreen();
+        enterPseudoFullscreen();
       });
     } else {
       // Синхронный фоллбэк (старые браузеры)
@@ -894,7 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (getFullscreenElement()) {
           syncFullscreenState();
           _lockLandscape();
-        } else if (!requestIframeFullscreenFallback()) {
+        } else {
           enterPseudoFullscreen();
         }
         syncFullscreenState();
