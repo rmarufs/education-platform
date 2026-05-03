@@ -42,15 +42,11 @@
         </div>
         {% endif %}
         
-        <!-- CTA кнопки для гостей и студентов (видны всегда) -->
+        <!-- CTA кнопки для всех пользователей -->
         <div class="course-detail-cta-section">
           {% if not user %}
           <div class="cta-guest">
-            <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.95rem;" data-i18n="course_page.guest_description">Чтобы начать обучение, создайте или войдите в аккаунт</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
-              <a href="/register" class="btn btn-primary" data-i18n="course_page.register_btn">Зарегистрироваться</a>
-              <a href="/login" class="btn btn-outline" data-i18n="course_page.login_btn">Войти</a>
-            </div>
+            <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать изучение</a>
           </div>
           {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
           <div class="cta-teacher">
@@ -73,79 +69,6 @@
       </div>
     </div>
 
-      <!-- Материалы курса -->
-      {% if course.materials and user and (user.role.value == "teacher" or user.role.value == "student") %}
-      <div class="course-detail-materials course-materials" style="margin-top:20px;">
-        <h3 style="margin-top:0;margin-bottom:15px;font-size:1.1rem;" data-i18n="course_page.materials">📎 Материалы курса</h3>
-        <ul class="course-materials-list">
-          {% for mat in course.materials %}
-          <li class="course-materials-item">
-            <span style="font-size: 1.2rem;">{{ "📄" if mat.file_type in ["pdf", "doc", "docx"] else "📊" if mat.file_type in ["ppt", "pptx"] else "📎" }}</span>
-            <a href="{{ mat.file_url }}" target="_blank">{{ mat.title }}</a>
-            <span class="text-muted" style="font-size:0.85rem;text-transform:uppercase;">{{ mat.file_type }}</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      <!-- Прогресс студента -->
-      {% if user and user.role.value == "student" and course.modules %}
-      <div class="course-progress-bar-wrap">
-        <div class="progress-label" data-i18n="course_page.progress" data-i18n-params='{"pct":{{ completion_pct }}}'>Прогресс: {{ completion_pct }}%</div>
-        <div class="progress-bar-outer">
-          <div class="progress-bar-inner" style="width:{{ completion_pct }}%"></div>
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- Google Forms финальный тест -->
-      {% if course.quiz_url %}
-      <section class="lesson-google-forms-promo">
-        <div class="google-forms-banner course-forms-banner">
-          <span class="banner-icon">🏁</span>
-          <div>
-            <h3>Финальный тест курса</h3>
-            {% if user and user.role.value == "student" and not course_quiz_unlocked %}
-            <p>Финальный тест откроется после завершения всех модулей курса.</p>
-            {% else %}
-            <p class="text-muted">Проверьте свои знания с помощью финального теста</p>
-            {% endif %}
-          </div>
-          {% if not (user and user.role.value == "student" and not course_quiz_unlocked) %}
-          <button type="button" 
-                  class="btn btn-primary"
-                  onclick="openGoogleFormsIframe('{{ course.quiz_url }}', 'Финальный тест курса: {{ course.title }}')">
-            Пройти тест →
-          </button>
-          {% else %}
-          <span class="btn btn-outline disabled" aria-disabled="true">Недоступно</span>
-          {% endif %}
-        </div>
-      </section>
-      {% endif %}
-
-      <!-- Старая система квизов (DISABLED) -->
-      {% if false and course.quiz %}
-      <section class="lesson-quiz-promo">
-        <div class="quiz-card quiz-card-course {{ 'quiz-card-locked' if user and user.role.value == 'student' and not course_quiz_unlocked and not course_quiz_passed else '' }}">
-          <span class="quiz-icon">🏁</span>
-          <div>
-            <h3>{{ course.quiz.title }}</h3>
-            {% if user and user.role.value == "student" and not course_quiz_unlocked and not course_quiz_passed %}
-            <p data-i18n="quiz.course_locked">Итоговый квиз откроется после завершения всех модулей курса.</p>
-            {% else %}
-            <p data-i18n="quiz.course_card" data-i18n-params='{"count": {{ course.quiz.questions|length }}}'>Итоговый квиз курса · {{ course.quiz.questions|length }} вопрос(ов)</p>
-            {% endif %}
-          </div>
-          {% if user and user.role.value == "student" and not course_quiz_unlocked and not course_quiz_passed %}
-          <span class="btn btn-outline disabled" aria-disabled="true" data-i18n="quiz.locked">Пока недоступно</span>
-          {% else %}
-          <a href="/quiz/{{ course.quiz.id }}" class="btn btn-primary" data-i18n="quiz.open_course">Пройти квиз курса</a>
-          {% endif %}
-        </div>
-      </section>
-      {% endif %}
 
       <!-- Структура курса -->
       {% if course.modules %}
@@ -192,151 +115,6 @@
         </div>
       </section>
       {% endif %}
-
-      <!-- ═══════════════ Отзывы ═══════════════ -->
-      <section class="course-reviews" style="margin-top:32px;">
-        <h2 data-i18n="course_page.reviews">⭐ Отзывы</h2>
-
-        <!-- Список существующих отзывов — красивые карточки -->
-        <div class="reviews-list" style="margin-top:16px;">
-          {% for review in course.reviews %}
-          <div class="review-card">
-            <div class="review-header" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-              <span class="review-avatar-sm">
-                {{ review.student.name[0].upper() }}
-              </span>
-              <div style="flex:1;min-width:0;">
-                <strong style="display:block;font-size:1rem;">{{ review.student.name }}</strong>
-                <span class="text-muted" style="font-size:0.82rem;">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
-              </div>
-              <div style="display:flex;gap:2px;font-size:1.2rem;">
-                {% for i in range(1,6) %}
-                  <span class="{{ 'rating-star' if i <= review.rating else 'rating-star-muted' }}">★</span>
-                {% endfor %}
-              </div>
-            </div>
-            {% if review.text %}
-            <p style="margin:0;color:var(--text);line-height:1.6;">{{ review.text }}</p>
-            {% endif %}
-          </div>
-          {% endfor %}
-
-          {% if not course.reviews %}
-          <div class="text-muted" style="text-align:center;padding:32px;">
-            <span style="font-size:2rem;">💬</span>
-            <p data-i18n="course_page.reviews_empty">Пока нет отзывов. Будьте первым!</p>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Форма / отображение отзыва студента -->
-        {% if user and user.role.value == "student" %}
-        <div class="review-form-card">
-
-          {% if user_review %}
-          <!-- Студент уже оставил отзыв — показываем его -->
-          <div id="existing-review">
-            <h3 style="margin-top:0;margin-bottom:16px;font-size:1.05rem;" data-i18n="course_page.your_review">Ваш отзыв</h3>
-            <div style="display:flex;gap:2px;font-size:1.3rem;margin-bottom:8px;">
-              {% for i in range(1,6) %}
-                <span class="{{ 'rating-star' if i <= user_review.rating else 'rating-star-muted' }}">★</span>
-              {% endfor %}
-            </div>
-            {% if user_review.text %}
-            <p style="color:var(--text);line-height:1.6;margin:0 0 16px 0;">{{ user_review.text }}</p>
-            {% endif %}
-            <button type="button" onclick="toggleEditReview()" class="btn btn-secondary btn-sm" data-i18n="course_page.edit_review">✏️ Редактировать</button>
-          </div>
-          {% endif %}
-
-          <!-- Форма (скрыта если уже есть отзыв) -->
-          <div id="review-form-wrap" style="{{ 'display:none;' if user_review else '' }}">
-            <h3 style="margin-top:0;margin-bottom:16px;font-size:1.05rem;" data-i18n="{{ 'course_page.edit_review' if user_review else 'course_page.leave_review' }}">
-              {{ "Изменить отзыв" if user_review else "Оставить отзыв" }}
-            </h3>
-            <form action="/courses/{{ course.id }}/review" method="POST" id="review-form">
-              <div id="star-selector" class="star-selector" style="direction:ltr;">
-                {% for i in range(1,6) %}
-                <span class="star-pick {{ 'active' if user_review and i <= user_review.rating else '' }}" data-value="{{ i }}">★</span>
-                {% endfor %}
-              </div>
-              <input type="hidden" name="rating" id="rating-input" value="{{ user_review.rating if user_review else '' }}" required />
-
-              <textarea name="text" rows="3"
-                        placeholder="Напишите ваш отзыв..."
-                        class="form-input form-textarea"
-                        data-i18n="course_page.review_ph"
-                        data-i18n-prop="placeholder">{{ user_review.text if user_review else '' }}</textarea>
-
-              <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
-                <button type="submit" id="review-submit-btn" class="btn btn-primary btn-sm" data-i18n="course_page.send_review">Отправить отзыв</button>
-                {% if user_review %}
-                <button type="button" onclick="toggleEditReview()" class="btn btn-outline btn-sm" data-i18n="action.cancel">Отмена</button>
-                {% endif %}
-              </div>
-            </form>
-          </div>
-        </div>
-        {% elif not user %}
-        <div class="review-panel" style="margin-top:20px;text-align:center;">
-          <p style="margin:0;color:var(--text-muted);"><a href="/login" style="font-weight:600;" data-i18n="nav.login">Войдите</a>, <span data-i18n="course_page.login_to_review">чтобы оставить отзыв</span></p>
-        </div>
-        {% endif %}
-      </section>
-
-      {% if user and user.role.value == "student" %}
-      <script>
-      (function(){
-        const stars = document.querySelectorAll('.star-pick');
-        const ratingInput = document.getElementById('rating-input');
-        let currentRating = parseInt(ratingInput.value) || 0;
-
-        function highlightStars(upTo) {
-          stars.forEach(s => {
-            s.classList.toggle('active', parseInt(s.dataset.value) <= upTo);
-          });
-        }
-
-        stars.forEach(star => {
-          star.addEventListener('mouseenter', () => highlightStars(parseInt(star.dataset.value)));
-          star.addEventListener('mouseleave', () => highlightStars(currentRating));
-          star.addEventListener('click', () => {
-            currentRating = parseInt(star.dataset.value);
-            ratingInput.value = currentRating;
-            highlightStars(currentRating);
-          });
-        });
-
-        // Visual feedback на кнопку отправки
-        const form = document.getElementById('review-form');
-        const btn = document.getElementById('review-submit-btn');
-        form.addEventListener('submit', function(e) {
-          if (!ratingInput.value) {
-            e.preventDefault();
-            alert(t('validation.rating_required'));
-            return;
-          }
-          btn.textContent = t('course_page.send_review') + ' ✓';
-          btn.disabled = true;
-          btn.style.opacity = '0.7';
-        });
-      })();
-
-      function toggleEditReview() {
-        const existing = document.getElementById('existing-review');
-        const formWrap = document.getElementById('review-form-wrap');
-        if (formWrap.style.display === 'none') {
-          formWrap.style.display = 'block';
-          if (existing) existing.style.display = 'none';
-        } else {
-          formWrap.style.display = 'none';
-          if (existing) existing.style.display = 'block';
-        }
-      }
-      </script>
-      {% endif %}
-      </div>
-    </div>
 
   </div>
 </div>

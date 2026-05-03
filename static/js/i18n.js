@@ -255,7 +255,7 @@ const translations = {
     "course_page.created": "Создан",
     "course_page.rating": "Рейтинг",
     "course_page.guest_description": "Чтобы начать обучение, создайте или войдите в аккаунт",
-    "course_page.start_learning": "Начать обучение",
+    "course_page.start_learning": "Начать изучение",
     "course_page.register_btn": "Зарегистрироваться",
     "course_page.login_btn": "Войти",
     "course_page.gear_manage": "Управление",
