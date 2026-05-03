@@ -446,6 +446,8 @@ document.addEventListener('DOMContentLoaded', () => {
   var isPlaying = false;
   var isSeeking = false;
   var activeSeekPercent = 0;
+  var videoId = '';        // глобальная — нужна iOS фоллбэку
+  var controlsTimer = null; // таймер автоскрытия контролов
   
   function onYouTubeIframeAPIReady() {
     var ytPlayerEl = document.getElementById('yt-player');
@@ -453,9 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 2. Расшифровка ID видео
     var videoToken = ytPlayerEl.getAttribute('data-video-token');
-    var videoId = "";
+    videoId = ""; // присваиваем глобальной переменной
     try {
-      videoId = atob(videoToken); // Расшифровка из Base64
+      videoId = atob(videoToken);
     } catch(e) {
       console.error("Invalid video token");
       return;
@@ -533,7 +535,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') exitPseudoFullscreen();
     });
-    
+
+    initMobileControls(); // инициализация мобильных жестов
     updateTimeDisplay();
   }
 
@@ -547,6 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(container) container.classList.add('playing');
       clearInterval(progressInterval);
       progressInterval = setInterval(updateProgressBar, 500);
+      resetControlsTimer(); // запустить таймер скрытия при воспроизведении
     } else if (
       event.data == YT.PlayerState.PAUSED ||
       event.data == YT.PlayerState.ENDED ||
@@ -556,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(playBtn) playBtn.innerText = '▶';
       if(container) container.classList.remove('playing');
       clearInterval(progressInterval);
+      resetControlsTimer(); // показать контролы при паузе
     }
     updateTimeDisplay();
   }
@@ -784,46 +789,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     var isFullscreen = Boolean(getFullscreenElement()) || container.classList.contains('is-pseudo-fullscreen');
     container.classList.toggle('is-fullscreen', isFullscreen);
-    if (fsBtn) fsBtn.innerText = isFullscreen ? '×' : '⛶';
+    if (fsBtn) fsBtn.innerText = isFullscreen ? '✕' : '⛶';
+
+    // Разблокировать ориентацию при выходе из fullscreen
+    if (!isFullscreen && screen.orientation && screen.orientation.unlock) {
+      try { screen.orientation.unlock(); } catch (e) {}
+    }
   }
 
   function toggleFullScreen() {
     var container = document.getElementById('custom-video-container');
     if (!container) return;
 
+    // Выход из fullscreen
     if (getFullscreenElement()) {
       exitNativeFullscreen();
       return;
     }
-
     if (container.classList.contains('is-pseudo-fullscreen')) {
       exitPseudoFullscreen();
       return;
     }
 
-    var result = requestNativeFullscreen(container);
-    if (result && result.catch) {
-      if (result.then) result.then(syncFullscreenState);
-      result.catch(function() {
-        if (!requestIframeFullscreenFallback()) {
-          enterPseudoFullscreen();
-        }
+    // —— iOS Safari: requestFullscreen для cross-origin iframe заблокирован Системой
+    if (isIosSafari()) {
+      var t = (player && player.getCurrentTime) ? Math.floor(player.getCurrentTime()) : 0;
+      var url = 'https://www.youtube.com/watch?v=' + videoId + (t > 0 ? '&t=' + t : '');
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // —— Остальные браузеры: requestFullscreen на весь контейнер плеера
+    function _lockLandscape() {
+      if (screen.orientation && screen.orientation.lock) {
+        try { screen.orientation.lock('landscape').catch(function() {}); } catch (e) {}
+      }
+    }
+
+    var promise = requestNativeFullscreen(container);
+    if (promise && promise.then) {
+      promise.then(function() {
+        syncFullscreenState();
+        _lockLandscape(); // блокировка ориентации ПОСЛЕ входа в fullscreen
+      }).catch(function() {
+        if (!requestIframeFullscreenFallback()) enterPseudoFullscreen();
       });
     } else {
+      // Синхронный фоллбэк (старые браузеры)
       setTimeout(function() {
-        if (!getFullscreenElement() && !requestIframeFullscreenFallback()) {
+        if (getFullscreenElement()) {
+          syncFullscreenState();
+          _lockLandscape();
+        } else if (!requestIframeFullscreenFallback()) {
           enterPseudoFullscreen();
         }
         syncFullscreenState();
       }, 80);
-    }
-
-    if (screen.orientation && screen.orientation.lock) {
-      try {
-        screen.orientation.lock('landscape').catch(function() {});
-      } catch (e) {
-        // Некоторые браузеры разрешают orientation lock только после входа в fullscreen.
-      }
     }
   }
 
@@ -851,6 +872,138 @@ document.addEventListener('DOMContentLoaded', () => {
     
     var menu = document.getElementById('speed-menu');
     if (menu) menu.classList.remove('show');
+  }
+
+  // ── Определение iOS Safari ──────────────────────────────────
+  function isIosSafari() {
+    var ua = navigator.userAgent;
+    // Chrome/Firefox/Opera/Edge на iOS имеют CriOS/FxiOS/OPiOS/EdgiOS в UA
+    return /iPad|iPhone|iPod/.test(ua) && !window.MSStream &&
+           !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+  }
+
+  // ── Таймер автоскрытия контролов ───────────────────────────
+  function resetControlsTimer() {
+    var container = document.getElementById('custom-video-container');
+    if (!container) return;
+    container.classList.remove('controls-hidden');
+    clearTimeout(controlsTimer);
+    if (isPlaying) {
+      controlsTimer = setTimeout(function() {
+        container.classList.add('controls-hidden');
+      }, 3000);
+    }
+  }
+
+  // ── Ripple-анимация при двойном тапе ───────────────────────
+  function showSeekRipple(isRight, seconds) {
+    var container = document.getElementById('custom-video-container');
+    if (!container) return;
+    var old = container.querySelector('.seek-ripple');
+    if (old) old.remove();
+
+    var ripple = document.createElement('div');
+    ripple.className = 'seek-ripple';
+    ripple.style[isRight ? 'right' : 'left'] = '12%';
+    ripple.innerHTML = (isRight ? '+' : '\u2212') + seconds +
+      '<br><span class="seek-ripple-label">\u0441\u0435\u043a</span>';
+    container.appendChild(ripple);
+    setTimeout(function() { if (ripple.parentNode) ripple.remove(); }, 750);
+  }
+
+  // ── Мобильные жесты (только touch-устройства) ──────────────
+  function initMobileControls() {
+    if (!('ontouchstart' in window)) return;
+
+    var container = document.getElementById('custom-video-container');
+    var overlay   = document.getElementById('video-click-overlay');
+    if (!container || !overlay) return;
+
+    var touchStartX   = 0;
+    var touchStartY   = 0;
+    var touchStartTime = 0;
+    var lastTapTime   = 0;
+    var lastTapClientX = 0;
+    var SWIPE_THRESHOLD = 50;  // px
+    var DOUBLE_TAP_MS   = 280; // мс
+
+    overlay.addEventListener('touchstart', function(e) {
+      touchStartX    = e.touches[0].clientX;
+      touchStartY    = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }, { passive: true });
+
+    overlay.addEventListener('touchend', function(e) {
+      var touch = e.changedTouches[0];
+      var dx = touch.clientX - touchStartX;
+      var dy = touch.clientY - touchStartY;
+      var dt = Date.now() - touchStartTime;
+
+      // Игнорируем преимущественно вертикальные жесты (скролл страницы)
+      if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) {
+        resetControlsTimer();
+        return;
+      }
+
+      // ── Свайп: быстрая перемотка ±10 сек ──
+      if (Math.abs(dx) > SWIPE_THRESHOLD && dt < 400 && Math.abs(dy) < 40) {
+        if (!player || !player.seekTo || !player.getCurrentTime) return;
+        var isRight = dx > 0;
+        var newTime = Math.max(0, player.getCurrentTime() + (isRight ? 10 : -10));
+        player.seekTo(newTime, true);
+        showSeekRipple(isRight, 10);
+        resetControlsTimer();
+        return;
+      }
+
+      // ── Тап / Двойной тап ──
+      if (Math.abs(dx) < 16 && Math.abs(dy) < 16 && dt < 250) {
+        var now   = Date.now();
+        var rect  = container.getBoundingClientRect();
+        var relX  = (touch.clientX - rect.left) / rect.width;
+        var isDouble = (now - lastTapTime < DOUBLE_TAP_MS) &&
+                       (Math.abs(touch.clientX - lastTapClientX) < 64);
+
+        if (isDouble) {
+          if (!player || !player.seekTo || !player.getCurrentTime) return;
+          if (relX < 0.3) {
+            // Левая зона: −10 сек
+            player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
+            showSeekRipple(false, 10);
+          } else if (relX > 0.7) {
+            // Правая зона: +10 сек
+            var dur = player.getDuration ? (player.getDuration() || 0) : 0;
+            player.seekTo(Math.min(dur || Infinity, player.getCurrentTime() + 10), true);
+            showSeekRipple(true, 10);
+          } else {
+            // Центр: пауза / плей
+            togglePlay();
+          }
+          lastTapTime = 0; // сброс, чтобы тройной тап не срабатывал
+          resetControlsTimer();
+          return;
+        }
+
+        lastTapTime    = now;
+        lastTapClientX = touch.clientX;
+
+        // Одиночный тап: показать контролы или переключить пауза/плей
+        if (container.classList.contains('controls-hidden')) {
+          resetControlsTimer(); // просто показываем контролы
+        } else {
+          togglePlay();
+          resetControlsTimer();
+        }
+      }
+    }, { passive: true });
+
+    // Любое касание панели контролов — сбросить таймер скрытия
+    var controls = document.getElementById('custom-controls');
+    if (controls) {
+      controls.addEventListener('touchstart', resetControlsTimer, { passive: true });
+    }
+
+    resetControlsTimer();
   }
 </script>
 {% endblock %}
