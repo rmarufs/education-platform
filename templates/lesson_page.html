@@ -448,6 +448,17 @@ document.addEventListener('DOMContentLoaded', () => {
   var isPlaying = false;
   var isSeeking = false;
   var activeSeekPercent = 0;
+  var topBlockerTimer;
+
+  function showTopBlocker() {
+    var blocker = document.getElementById('youtube-top-blocker');
+    if (!blocker) return;
+    blocker.classList.add('is-visible');
+    if (topBlockerTimer) clearTimeout(topBlockerTimer);
+    topBlockerTimer = setTimeout(function() {
+      blocker.classList.remove('is-visible');
+    }, 1500);
+  }
   
   function onYouTubeIframeAPIReady() {
     var ytPlayerEl = document.getElementById('yt-player');
@@ -556,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = true;
       if(playBtn) playBtn.innerText = '⏸';
       if(container) container.classList.add('playing');
+      showTopBlocker();
       clearInterval(progressInterval);
       progressInterval = setInterval(updateProgressBar, 500);
     } else if (
@@ -577,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
       player.pauseVideo();
     } else {
       player.playVideo();
+      showTopBlocker();
     }
   }
 

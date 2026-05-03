@@ -3488,9 +3488,7 @@ body.video-pseudo-fullscreen {
 }
 
 #custom-video-container::before {
-  top: 0;
-  height: clamp(74px, 16%, 118px);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0.42) 48%, transparent);
+  display: none;
 }
 
 #custom-video-container::after {
@@ -3504,13 +3502,19 @@ body.video-pseudo-fullscreen {
   top: 0;
   left: 0;
   right: 0;
-  height: clamp(82px, 18%, 132px);
+  height: 52px; /* ~1.2cm */
   z-index: 26;
-  pointer-events: auto;
+  pointer-events: none;
   cursor: default;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.92) 62%, rgba(0, 0, 0, 0));
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: none;
+}
+
+.youtube-top-blocker.is-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #yt-player {
@@ -3767,7 +3771,7 @@ body.video-pseudo-fullscreen {
   }
 
   .youtube-top-blocker {
-    height: 88px;
+    height: 52px;
   }
 
   #custom-video-container::after {
