@@ -453,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   var activeSeekPercent = 0;
   var videoId = '';        // глобальная — нужна iOS фоллбэку
   var controlsTimer = null; // таймер автоскрытия контролов
+  var overlayHideTimeout = null; // таймер исчезновения оверлея
   
   function decodeYt(token) {
     var decoded = atob(token);
@@ -604,6 +605,12 @@ document.addEventListener('DOMContentLoaded', () => {
       isPlaying = true;
       if(playBtn) playBtn.innerText = '⏸';
       if(container) container.classList.add('playing');
+      
+      clearTimeout(overlayHideTimeout);
+      overlayHideTimeout = setTimeout(function() {
+        if (container) container.classList.add('overlay-hidden');
+      }, 1500);
+
       clearInterval(progressInterval);
       progressInterval = setInterval(updateProgressBar, 500);
       resetControlsTimer(); // запустить таймер скрытия при воспроизведении
@@ -614,7 +621,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ) {
       isPlaying = false;
       if(playBtn) playBtn.innerText = '▶';
-      if(container) container.classList.remove('playing');
+      if(container) {
+        container.classList.remove('playing');
+        container.classList.remove('overlay-hidden');
+      }
+      clearTimeout(overlayHideTimeout);
+      
       clearInterval(progressInterval);
       resetControlsTimer(); // показать контролы при паузе
     }

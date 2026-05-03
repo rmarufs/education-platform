@@ -3522,7 +3522,7 @@ body.video-pseudo-fullscreen {
   transition: background 0.25s ease, opacity 0.25s ease;
 }
 
-#custom-video-container.playing .video-click-overlay {
+#custom-video-container.overlay-hidden .video-click-overlay {
   background: transparent;
 }
 
