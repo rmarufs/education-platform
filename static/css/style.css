@@ -3519,13 +3519,11 @@ body.video-pseudo-fullscreen {
   background:
     radial-gradient(circle at center, rgba(0, 0, 0, 0.18), transparent 36%),
     linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 32%, rgba(0, 0, 0, 0.18));
-  transition: opacity 0.8s ease;
-  opacity: 1;
+  transition: background 0.25s ease, opacity 0.25s ease;
 }
 
 #custom-video-container.overlay-hidden .video-click-overlay {
-  opacity: 0;
-  pointer-events: none;
+  background: transparent;
 }
 
 .big-play-btn {

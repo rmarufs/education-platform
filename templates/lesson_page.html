@@ -609,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearTimeout(overlayHideTimeout);
       overlayHideTimeout = setTimeout(function() {
         if (container) container.classList.add('overlay-hidden');
-      }, 4000);
+      }, 1500);
 
       clearInterval(progressInterval);
       progressInterval = setInterval(updateProgressBar, 500);
