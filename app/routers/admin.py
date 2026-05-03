@@ -37,12 +37,18 @@ def get_admin(request: Request, db: Session) -> User:
 def admin_index(request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
+    # 1 запрос вместо 4: получаем счётчики по ролям через GROUP BY
+    role_counts: dict[str, int] = {
+        row.role.value: row.cnt
+        for row in db.query(User.role, func.count(User.id).label("cnt")).group_by(User.role).all()
+    }
+
     stats = {
-        "total_users": db.query(func.count(User.id)).scalar(),
-        "students": db.query(func.count(User.id)).filter(User.role == UserRole.student).scalar(),
-        "teachers": db.query(func.count(User.id)).filter(User.role == UserRole.teacher).scalar(),
-        "pending": db.query(func.count(User.id)).filter(User.role == UserRole.teacher_pending).scalar(),
-        "courses": db.query(func.count(Course.id)).scalar(),
+        "total_users": sum(role_counts.values()),
+        "students":    role_counts.get("student", 0),
+        "teachers":    role_counts.get("teacher", 0),
+        "pending":     role_counts.get("teacher_pending", 0),
+        "courses":     db.query(func.count(Course.id)).scalar(),
     }
 
     return templates.TemplateResponse("admin/index.html", {

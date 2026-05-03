@@ -45,6 +45,8 @@ def require_teacher(request: Request, db: Session):
 
 
 def _validate_material_upload(file: UploadFile) -> str:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Файл не выбран")
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in MATERIAL_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Недопустимый тип файла")

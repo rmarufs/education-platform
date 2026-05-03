@@ -232,6 +232,10 @@ async function handleGoogleFormsSubmit(e) {
     showToast('Введите корректную ссылку', 'error');
     return;
   }
+
+  // Защита от двойной отправки
+  const submitBtn = form.querySelector('[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
   
   try {
     const formData = new FormData();
@@ -247,6 +251,7 @@ async function handleGoogleFormsSubmit(e) {
     if (!response.ok) {
       const data = await response.json();
       showToast(data.detail || 'Ошибка при сохранении', 'error');
+      if (submitBtn) submitBtn.disabled = false;
       return;
     }
     
@@ -258,6 +263,7 @@ async function handleGoogleFormsSubmit(e) {
   } catch (error) {
     console.error('Error:', error);
     showToast('Ошибка при сохранении ссылки', 'error');
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 

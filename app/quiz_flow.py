@@ -114,6 +114,12 @@ def course_progress_state(db: Session, student_id: int, course_id: int) -> tuple
     return course, completed_lesson_ids, passed_quiz_ids
 
 
+def course_progress_state_from_obj(db: Session, student_id: int, course: Course) -> tuple[set[int], set[int]]:
+    """Как course_progress_state, но принимает уже загруженный объект курса.
+    Используйте, когда курс уже получен из БД, чтобы избежать повторного запроса."""
+    return _state_sets(db, student_id, course)
+
+
 def _lesson_quizzes_passed(lessons: Iterable[Lesson], passed_quiz_ids: set[int]) -> bool:
     return all(not lesson.quiz or lesson.quiz.id in passed_quiz_ids for lesson in lessons)
 

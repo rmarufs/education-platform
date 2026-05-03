@@ -6,14 +6,7 @@
 const COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 const COURSE_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
-function escapeHtml(value = '') {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+
 
 function getCourseCoverLetter(title) {
   return (title || '?').trim().charAt(0).toUpperCase() || '?';
@@ -409,7 +402,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         setUploaderError(document.getElementById('create-course-cover-uploader'), imageError);
         showToast(imageError, 'error');
+        return;
       }
+
+      // Защита от двойной отправки
+      const submitBtn = createForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
     });
   }
 
@@ -433,7 +431,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         setUploaderError(uploader, imageError);
         showToast(imageError, 'error');
+        return;
       }
+
+      // Защита от двойной отправки
+      const submitBtn = editForm.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
     });
   }
 

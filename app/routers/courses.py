@@ -21,7 +21,7 @@ from app.models.material import Material
 from app.models.review import Review
 from app.models.quiz import Quiz, Question
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-from app.quiz_flow import course_progress_state, is_course_ready_for_quiz, is_module_ready_for_quiz
+from app.quiz_flow import course_progress_state, course_progress_state_from_obj, is_course_ready_for_quiz, is_module_ready_for_quiz
 
 try:
     import cloudinary
@@ -408,6 +408,8 @@ async def save_quiz_url(
         
         # Check teacher ownership
         module = db.query(Module).filter(Module.id == lesson.module_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
         course = db.query(Course).filter(
             Course.id == module.course_id,
             Course.teacher_id == user.id
@@ -474,6 +476,8 @@ async def delete_quiz_url(
         
         # Check teacher ownership
         module = db.query(Module).filter(Module.id == lesson.module_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
         course = db.query(Course).filter(
             Course.id == module.course_id,
             Course.teacher_id == user.id
@@ -537,18 +541,18 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         )
         completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
 
-        state_course, completed_lesson_ids, passed_quiz_ids = course_progress_state(db, user.id, course.id)
-        if state_course:
-            module_quiz_states = {
-                module.id: {
-                    "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
-                    "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
-                }
-                for module in state_course.modules
-                if module.quiz
+        # Переиспользуем уже загруженный course, избегая второго запроса к БД
+        completed_lesson_ids, passed_quiz_ids = course_progress_state_from_obj(db, user.id, course)
+        module_quiz_states = {
+            module.id: {
+                "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
+                "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
             }
-            course_quiz_unlocked = bool(state_course.quiz and is_course_ready_for_quiz(state_course, completed_lesson_ids, passed_quiz_ids))
-            course_quiz_passed = bool(state_course.quiz and state_course.quiz.id in passed_quiz_ids)
+            for module in course.modules
+            if module.quiz
+        }
+        course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
+        course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
 
     # Уже оставлял отзыв?
     user_review = None
