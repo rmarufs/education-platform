@@ -579,8 +579,13 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
                 Course.teacher_id == course.teacher_id,
             )
             .scalar()
-        )
-        show_review_prompt = (completed_teacher_lessons or 0) >= 2
+        ) or 0
+        # Условие 1: 2+ уроков у этого преподавателя
+        enough_lessons = completed_teacher_lessons >= 2
+        # Условие 2: курс пройден полностью (даже если урок всего один)
+        total_course_lessons = sum(len(m.lessons) for m in course.modules)
+        course_fully_done = total_course_lessons > 0 and completion_pct == 100
+        show_review_prompt = enough_lessons or course_fully_done
 
     return templates.TemplateResponse("course_page.html", {
         "request": request,
@@ -766,11 +771,19 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
     if not course_finished and state_course.modules:
         return RedirectResponse(f"/courses/{course.id}", status_code=302)
 
+    # Оставлял отзыв этому преподавателю?
+    user_review = db.query(Review).filter(
+        Review.student_id == user.id,
+        Review.teacher_id == course.teacher_id,
+    ).first()
+    show_review_on_completion = user_review is None
+
     return templates.TemplateResponse("course_completed.html", {
         "request": request,
         "user": user,
         "course": course,
         "completion_pct": completion_pct,
+        "show_review_on_completion": show_review_on_completion,
     })
 
 

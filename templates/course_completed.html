@@ -20,10 +20,128 @@
       </div>
     </div>
 
+    {% if show_review_on_completion %}
+    <!-- Блок отзыва — приоритетное место, впечатления свежие -->
+    <div class="completion-review-block" id="completion-review-block">
+      <div class="review-form-panel" style="max-width: 420px; margin: 0 auto;">
+        <div class="review-form-header">
+          <span class="review-form-icon">⭐</span>
+          <h3 class="review-form-title">Как вы оцениваете курс?</h3>
+        </div>
+
+        <div class="star-picker" id="completion-star-picker">
+          <span class="star-pick-item" data-value="1" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="2" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="3" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="4" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="5" tabindex="0">★</span>
+        </div>
+        <input type="hidden" id="completion-rating-value" value="">
+
+        <textarea id="completion-review-comment" class="review-comment-input"
+          placeholder="Добавить комментарий..." rows="2"></textarea>
+
+        <button type="button" id="completion-review-btn" class="btn-review-submit"
+          onclick="submitCompletionReview({{ course.teacher_id }}, {{ course.id }})">
+          Отправить отзыв
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="quiz-result-actions">
       <a href="/courses/{{ course.id }}" class="btn btn-primary" data-i18n="course.view">Просмотр</a>
       <a href="/dashboard/student" class="btn btn-outline" data-i18n="nav.dashboard">Кабинет</a>
     </div>
   </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  // ── Star picker для страницы завершения ─────────────────────
+  (function () {
+    const picker = document.getElementById('completion-star-picker');
+    if (!picker) return;
+
+    const stars  = Array.from(picker.querySelectorAll('.star-pick-item'));
+    const hidden = document.getElementById('completion-rating-value');
+    let selected = 0;
+
+    function highlight(upTo) {
+      stars.forEach((s, i) => {
+        s.classList.toggle('star-pick-item--lit', i < upTo);
+        s.classList.toggle('star-pick-item--selected', i < selected);
+      });
+    }
+
+    function commit(value) {
+      selected = value;
+      hidden.value = value;
+      stars.forEach((s, i) => {
+        s.classList.toggle('star-pick-item--selected', i < value);
+        s.classList.remove('star-pick-item--lit');
+        s.setAttribute('aria-checked', i < value ? 'true' : 'false');
+      });
+    }
+
+    stars.forEach((star, idx) => {
+      star.addEventListener('mouseenter', () => highlight(idx + 1));
+      star.addEventListener('click',      () => commit(idx + 1));
+      star.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commit(idx + 1); }
+      });
+    });
+    picker.addEventListener('mouseleave', () => highlight(selected));
+  })();
+
+  async function submitCompletionReview(teacherId, courseId) {
+    const rating  = document.getElementById('completion-rating-value')?.value;
+    if (!rating) {
+      const picker = document.getElementById('completion-star-picker');
+      if (picker) {
+        picker.classList.add('star-picker--shake');
+        setTimeout(() => picker.classList.remove('star-picker--shake'), 600);
+      }
+      return;
+    }
+    const comment = document.getElementById('completion-review-comment')?.value || '';
+    const btn     = document.getElementById('completion-review-btn');
+
+    const fd = new FormData();
+    fd.append('teacher_id', teacherId);
+    fd.append('course_id',  courseId);
+    fd.append('rating',     rating);
+    fd.append('comment',    comment);
+
+    try {
+      if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+      const res = await fetch('/reviews/submit', { method: 'POST', body: fd });
+      if (res.ok) {
+        const block = document.getElementById('completion-review-block');
+        if (block) {
+          block.style.transition = 'opacity 0.4s ease';
+          block.style.opacity = '0';
+          setTimeout(() => {
+            block.innerHTML = `
+              <div class="review-thankyou" style="max-width:420px;margin:0 auto;">
+                <span class="review-thankyou-icon">⭐</span>
+                <h3 class="review-thankyou-title">Спасибо за ваш отзыв!</h3>
+                <p>Ваша оценка помогает нам стать лучше.</p>
+              </div>`;
+            block.style.opacity = '1';
+          }, 400);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Ошибка: ' + (err.detail || 'Не удалось отправить'));
+        if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+      }
+    } catch {
+      alert('Ошибка сети');
+      if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+    }
+  }
+</script>
 {% endblock %}
