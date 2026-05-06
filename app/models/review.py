@@ -20,4 +20,5 @@ class Review(Base):
     text       = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    student = relationship("User")
+    student = relationship("User", foreign_keys=[student_id])
+    teacher = relationship("User", foreign_keys=[teacher_id])
