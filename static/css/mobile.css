@@ -303,6 +303,28 @@
   .review-card { padding: 16px !important; }
   .star-selector { font-size: 2rem; }
 
+  /* Новый блок отзыва */
+  .review-form-panel {
+    padding: 22px 18px;
+    gap: 16px;
+  }
+  .review-form-title {
+    font-size: 1.05rem;
+  }
+  .star-pick-item {
+    font-size: 2.75rem;  /* крупнее на мобайле */
+    min-width: 48px;
+  }
+  .review-comment-input {
+    max-width: 100%;
+    font-size: 16px;  /* prevents iOS zoom */
+  }
+  .btn-review-submit {
+    max-width: 100%;
+    min-height: 52px;
+    font-size: 1.05rem;
+  }
+
   /* Google Forms Banner */
   .google-forms-banner,
   .course-forms-banner {

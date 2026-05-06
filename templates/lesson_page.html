@@ -235,18 +235,26 @@
     <!-- Форма отзыва о преподавателе -->
     {% if show_review_form %}
     <section class="lesson-review-promo" id="review-promo-block">
-      <div class="review-card">
-        <h3>Оставьте отзыв о преподавателе</h3>
-        <p class="text-muted">Как вы оцениваете качество преподавания?</p>
-        <div class="star-rating" id="review-star-rating">
-          <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 звезд">★</label>
-          <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 звезды">★</label>
-          <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 звезды">★</label>
-          <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 звезды">★</label>
-          <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 звезда">★</label>
+      <div class="review-form-panel">
+        <div class="review-form-header">
+          <span class="review-form-icon">⭐</span>
+          <h3 class="review-form-title" data-i18n="review.title">Как вы оцениваете качество преподавания?</h3>
         </div>
-        <textarea id="review-comment" class="form-input" placeholder="Добавить комментарий (необязательно)" rows="2"></textarea>
-        <button type="button" class="btn btn-primary" onclick="submitReview({{ course.teacher_id }}, {{ course.id }})">Отправить отзыв</button>
+
+        <div class="star-picker" id="review-star-picker" role="radiogroup" aria-label="Выберите оценку">
+          <span class="star-pick-item" data-value="1" role="radio" aria-label="1 звезда" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="2" role="radio" aria-label="2 звезды" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="3" role="radio" aria-label="3 звезды" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="4" role="radio" aria-label="4 звезды" tabindex="0">★</span>
+          <span class="star-pick-item" data-value="5" role="radio" aria-label="5 звёзд" tabindex="0">★</span>
+        </div>
+        <input type="hidden" id="review-rating-value" value="" />
+
+        <textarea id="review-comment" class="review-comment-input" placeholder="Добавить комментарий..." rows="2"></textarea>
+
+        <button type="button" id="review-submit-btn" class="btn-review-submit" onclick="submitReview({{ course.teacher_id }}, {{ course.id }})">
+          Отправить отзыв
+        </button>
       </div>
     </section>
     {% endif %}
@@ -425,12 +433,55 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   syncSidebarLabel();
+  initStarPicker();
 });
 
+// ── \u0417\u0432\u0451\u0437\u0434\u044b \u043e\u0442\u0437\u044b\u0432\u0430 ───────────────────────────────────────────────────────
+function initStarPicker() {
+  const picker = document.getElementById('review-star-picker');
+  if (!picker) return;
+
+  const stars = Array.from(picker.querySelectorAll('.star-pick-item'));
+  const hidden = document.getElementById('review-rating-value');
+  let selected = 0;
+
+  function highlight(upTo) {
+    stars.forEach((s, i) => {
+      s.classList.toggle('star-pick-item--lit', i < upTo);
+      s.classList.toggle('star-pick-item--selected', i < selected);
+    });
+  }
+
+  function commit(value) {
+    selected = value;
+    hidden.value = value;
+    stars.forEach((s, i) => {
+      s.classList.toggle('star-pick-item--selected', i < value);
+      s.classList.toggle('star-pick-item--lit', false);
+      s.setAttribute('aria-checked', i < value ? 'true' : 'false');
+    });
+  }
+
+  stars.forEach((star, idx) => {
+    star.addEventListener('mouseenter', () => highlight(idx + 1));
+    star.addEventListener('click',      () => commit(idx + 1));
+    star.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commit(idx + 1); }
+    });
+  });
+
+  picker.addEventListener('mouseleave', () => highlight(selected));
+}
+
 async function submitReview(teacherId, courseId) {
-  const ratingInput = document.querySelector('input[name="rating"]:checked');
-  if (!ratingInput) {
-    alert("Пожалуйста, выберите оценку (звезды)");
+  const ratingInput = document.getElementById('review-rating-value');
+  if (!ratingInput || !ratingInput.value) {
+    // Мягко подсветим звёзды вместо alert
+    const picker = document.getElementById('review-star-picker');
+    if (picker) {
+      picker.classList.add('star-picker--shake');
+      setTimeout(() => picker.classList.remove('star-picker--shake'), 600);
+    }
     return;
   }
   const rating = ratingInput.value;
@@ -442,30 +493,31 @@ async function submitReview(teacherId, courseId) {
   formData.append('rating', rating);
   formData.append('comment', comment);
 
+  const btn = document.getElementById('review-submit-btn');
   try {
-    const btn = document.querySelector('#review-promo-block button');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = 'Отправка...';
-    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
     const response = await fetch('/reviews/submit', {
       method: 'POST',
       body: formData
     });
     if (response.ok) {
-      document.getElementById('review-promo-block').innerHTML = `
-        <div class="review-card">
-          <h3>Спасибо за ваш отзыв!</h3>
-          <p class="text-muted">Ваша оценка помогает нам стать лучше.</p>
-        </div>
-      `;
+      const block = document.getElementById('review-promo-block');
+      block.style.transition = 'opacity 0.4s ease';
+      block.style.opacity = '0';
+      setTimeout(() => {
+        block.innerHTML = `
+          <div class="review-thankyou">
+            <span class="review-thankyou-icon">⭐</span>
+            <h3 class="review-thankyou-title">Спасибо за ваш отзыв!</h3>
+            <p>Ваша оценка помогает нам стать лучше.</p>
+          </div>
+        `;
+        block.style.opacity = '1';
+      }, 400);
     } else {
-      const errorData = await response.json();
-      alert("Ошибка: " + (errorData.detail || "Не удалось отправить отзыв"));
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = 'Отправить отзыв';
-      }
+      const errorData = await response.json().catch(() => ({}));
+      alert('Ошибка: ' + (errorData.detail || 'Не удалось отправить отзыв'));
+      if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
     }
   } catch (err) {
     alert("Ошибка сети");
