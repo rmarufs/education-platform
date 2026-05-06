@@ -10,3 +10,4 @@ python-dotenv==1.0.1
 psycopg2-binary==2.9.9
 gunicorn==21.2.0
 cloudinary==1.41.0
+alembic==1.13.1

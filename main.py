@@ -13,7 +13,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
 
 from app.config import SECRET_KEY, PLATFORM_NAME
-from app.database import init_db, SessionLocal, get_db
+from app.database import SessionLocal, get_db
 from app.models.course import Course
 from app.models.user import User
 from app.models.category import Category
@@ -171,8 +171,7 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
 
 @app.on_event("startup")
 def on_startup():
-    init_db()
-    print(f"✅ {PLATFORM_NAME} запущен. База данных инициализирована.")
+    print(f"✅ {PLATFORM_NAME} запущен.")
 
 
 @app.exception_handler(StarletteHTTPException)
