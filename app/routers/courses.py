@@ -548,15 +548,39 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
         course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
 
-    # Уже оставлял отзыв?
+    # \u0423\u0436\u0435 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u043b \u043e\u0442\u0437\u044b\u0432?
     user_review = None
     if user:
         user_review = db.query(Review).filter(
-            Review.course_id == course_id, Review.student_id == user.id
+            Review.student_id == user.id,
+            Review.teacher_id == course.teacher_id,
         ).first()
 
-    # Топ 4 отзыва курса
-    top_reviews = db.query(Review).filter(Review.course_id == course_id).order_by(Review.rating.desc(), Review.created_at.desc()).limit(4).all()
+    # \u0422\u043e\u043f-4 \u043e\u0442\u0437\u044b\u0432\u0430 \u043a\u0443\u0440\u0441\u0430 (\u0432\u0438\u0434\u043d\u044b \u0432\u0441\u0435\u043c)
+    top_reviews = (
+        db.query(Review)
+        .filter(Review.course_id == course_id)
+        .order_by(Review.rating.desc(), Review.created_at.desc())
+        .limit(4)
+        .all()
+    )
+
+    # \u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435 \u043e\u0442\u0437\u044b\u0432\u0430 \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u0443\u0440\u0441\u0430?
+    show_review_prompt = False
+    if is_student(user) and not user_review:
+        completed_teacher_lessons = (
+            db.query(func.count(Progress.id))
+            .join(Lesson, Progress.lesson_id == Lesson.id)
+            .join(Module, Lesson.module_id == Module.id)
+            .join(Course, Module.course_id == Course.id)
+            .filter(
+                Progress.student_id == user.id,
+                Progress.completed == True,  # noqa: E712
+                Course.teacher_id == course.teacher_id,
+            )
+            .scalar()
+        )
+        show_review_prompt = (completed_teacher_lessons or 0) >= 2
 
     return templates.TemplateResponse("course_page.html", {
         "request": request,
@@ -569,6 +593,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "course_quiz_passed": course_quiz_passed,
         "user_review": user_review,
         "top_reviews": top_reviews,
+        "show_review_prompt": show_review_prompt,
     })
 
 

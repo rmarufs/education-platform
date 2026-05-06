@@ -13,7 +13,7 @@
 
   <div class="course-detail-layout">
 
-    <!-- Основная информация в единой карточке -->
+    <!-- Основная информация -->
     <div class="course-detail-main">
       <div class="course-detail-card">
         <!-- Заголовок + изображение -->
@@ -41,8 +41,8 @@
           <div class="rich-text-content">{{ course.description | safe }}</div>
         </div>
         {% endif %}
-        
-        <!-- CTA кнопки для всех пользователей -->
+
+        <!-- CTA кнопки -->
         <div class="course-detail-cta-section">
           {% if not user %}
           <div class="cta-guest">
@@ -63,81 +63,118 @@
                ▶ Начать / Продолжить
             </a>
             {% endif %}
+
+            {% if show_review_prompt %}
+            <div class="course-review-prompt" id="course-review-prompt">
+              <span class="course-review-prompt-label">Оцените курс</span>
+              <div class="star-picker star-picker--sm" id="course-star-picker">
+                <span class="star-pick-item" data-value="1" tabindex="0">★</span>
+                <span class="star-pick-item" data-value="2" tabindex="0">★</span>
+                <span class="star-pick-item" data-value="3" tabindex="0">★</span>
+                <span class="star-pick-item" data-value="4" tabindex="0">★</span>
+                <span class="star-pick-item" data-value="5" tabindex="0">★</span>
+              </div>
+              <input type="hidden" id="course-rating-value" value="">
+              <div class="course-review-expand" id="course-review-expand" hidden>
+                <textarea id="course-review-comment" class="review-comment-input" placeholder="Добавить комментарий..." rows="2"></textarea>
+                <button type="button" class="btn-review-submit" id="course-review-submit-btn"
+                  onclick="submitCourseReview({{ course.teacher_id }}, {{ course.id }})">
+                  Отправить отзыв
+                </button>
+              </div>
+            </div>
+            {% endif %}
           </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-
-      <!-- Структура курса -->
-      {% if course.modules %}
-      <section class="course-curriculum" id="course-curriculum">
-        <div class="course-curriculum-header">
-          <h2 data-i18n="course_page.content">Содержание курса</h2>
-          <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
-        </div>
-        <div class="course-curriculum-body" id="course-curriculum-body">
-          {% for module in course.modules %}
-          <div class="curriculum-module" id="module-curriculum-{{ module.id }}">
-            <div class="curriculum-module-header">
-              <div class="curriculum-module-main">
-                <span class="module-index">{{ loop.index }}</span>
-                <strong>{{ module.title }}</strong>
-                <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
-              </div>
-              {% if module.quiz and (not user or user.role.value != "student" or module_quiz_states.get(module.id, {}).get("unlocked") or module_quiz_states.get(module.id, {}).get("passed")) %}
-              <a href="/quiz/{{ module.quiz.id }}" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="quiz.open_module">Квиз модуля</a>
-              {% elif module.quiz %}
-              <span class="btn btn-outline btn-xs curriculum-module-quiz-link disabled" aria-disabled="true" data-i18n="quiz.module_locked">Сначала завершите уроки</span>
+    <!-- Структура курса -->
+    {% if course.modules %}
+    <section class="course-curriculum" id="course-curriculum">
+      <div class="course-curriculum-header">
+        <h2 data-i18n="course_page.content">Содержание курса</h2>
+        <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
+      </div>
+      <div class="course-curriculum-body" id="course-curriculum-body">
+        {% for module in course.modules %}
+        <div class="curriculum-module" id="module-curriculum-{{ module.id }}">
+          <div class="curriculum-module-header">
+            <div class="curriculum-module-main">
+              <span class="module-index">{{ loop.index }}</span>
+              <strong>{{ module.title }}</strong>
+              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
+            </div>
+            {% if module.quiz and (not user or user.role.value != "student" or module_quiz_states.get(module.id, {}).get("unlocked") or module_quiz_states.get(module.id, {}).get("passed")) %}
+            <a href="/quiz/{{ module.quiz.id }}" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="quiz.open_module">Квиз модуля</a>
+            {% elif module.quiz %}
+            <span class="btn btn-outline btn-xs curriculum-module-quiz-link disabled" aria-disabled="true" data-i18n="quiz.module_locked">Сначала завершите уроки</span>
+            {% endif %}
+          </div>
+          {% if module.description %}
+          <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
+          {% endif %}
+          <ul class="curriculum-lessons">
+            {% for lesson in module.lessons %}
+            <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
+              <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
+              {% if user %}
+              <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
+              {% else %}
+              <span>{{ lesson.title }}</span>
               {% endif %}
-            </div>
-            {% if module.description %}
-            <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
-            {% endif %}
-            <ul class="curriculum-lessons">
-              {% for lesson in module.lessons %}
-              <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
-                <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
-                {% if user %}
-                <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
-                {% else %}
-                <span>{{ lesson.title }}</span>
-                {% endif %}
-                {% if lesson.quiz %}
-                <span class="badge badge-quiz">Квиз</span>
-                {% endif %}
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
-          {% endfor %}
+              {% if lesson.quiz %}
+              <span class="badge badge-quiz">Квиз</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
         </div>
-      </section>
-      {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
-      <!-- Отзывы -->
-      {% if top_reviews %}
-      <section class="course-reviews" id="course-reviews" style="margin-top: 32px;">
-        <h2 style="margin-bottom: 16px;">Отзывы студентов</h2>
-        <div class="reviews-grid" style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-          {% for review in top_reviews %}
-          <div class="review-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: left; box-shadow: none;">
-            <div class="review-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong class="review-author">{{ review.student.name }}</strong>
-              <span class="review-date text-muted" style="font-size: 0.85em;">{{ review.created_at.strftime('%d.%m.%Y') }}</span>
-            </div>
-            <div class="review-rating" style="color: #fbbf24; margin-bottom: 8px; font-size: 1.2em;">
-              {% for i in range(review.rating) %}★{% endfor %}{% for i in range(5 - review.rating) %}☆{% endfor %}
-            </div>
-            {% if review.text %}
-            <p class="review-text" style="font-size: 0.95em; line-height: 1.4; color: var(--text-color); margin: 0;">{{ review.text }}</p>
-            {% endif %}
+    <!-- Отзывы студентов -->
+    {% if top_reviews %}
+    <section class="course-reviews-section" id="course-reviews">
+      <div class="course-reviews-header">
+        <h2>Отзывы студентов</h2>
+        {% if course.rating > 0 %}
+        <div class="course-avg-rating">
+          <span class="course-avg-score">{{ "%.1f"|format(course.rating) }}</span>
+          <div class="course-avg-stars">
+            {% set r = course.rating | round | int %}
+            {% for i in range(r) %}<span class="star-filled">★</span>{% endfor %}
+            {% for i in range(5 - r) %}<span class="star-empty">☆</span>{% endfor %}
           </div>
-          {% endfor %}
+          <span class="course-reviews-count">{{ course.reviews|length }} отзыв(ов)</span>
         </div>
-      </section>
-      {% endif %}
+        {% endif %}
+      </div>
+      <div class="reviews-grid-cards">
+        {% for review in top_reviews %}
+        <div class="review-card-item">
+          <div class="rci-head">
+            <div class="rci-avatar">{{ review.student.name[0].upper() }}</div>
+            <div class="rci-meta">
+              <strong class="rci-name">{{ review.student.name }}</strong>
+              <span class="rci-date">{{ review.created_at.strftime("%d.%m.%Y") }}</span>
+            </div>
+            <div class="rci-stars">
+              {% for i in range(review.rating) %}<span>★</span>{% endfor %}
+              {% for i in range(5 - review.rating) %}<span class="rci-star-empty">☆</span>{% endfor %}
+            </div>
+          </div>
+          {% if review.text %}
+          <p class="rci-text">{{ review.text }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
   </div>
 </div>
@@ -146,9 +183,10 @@
 {% block scripts %}
 {{ super() }}
 <script>
+  // ── Curriculum toggle ────────────────────────────────────────
   (function () {
     const section = document.getElementById('course-curriculum');
-    const toggle = document.getElementById('curriculum-toggle');
+    const toggle  = document.getElementById('curriculum-toggle');
     if (!section || !toggle) return;
 
     const updateState = () => {
@@ -161,26 +199,93 @@
         : t('course_page.content');
     };
 
-    if (window.innerWidth > 768) {
-      section.classList.add('is-open');
-    }
+    if (window.innerWidth > 768) section.classList.add('is-open');
 
     toggle.addEventListener('click', () => {
       section.classList.toggle('is-open');
       updateState();
     });
-
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 768) {
-        section.classList.add('is-open');
-      } else if (!section.classList.contains('is-open')) {
-        section.classList.remove('is-open');
-      }
+      if (window.innerWidth > 768) section.classList.add('is-open');
+      else if (!section.classList.contains('is-open')) section.classList.remove('is-open');
       updateState();
     });
-
     document.addEventListener('languageChanged', updateState);
     updateState();
   })();
+
+  // ── Course-page star picker ──────────────────────────────────
+  (function () {
+    const picker = document.getElementById('course-star-picker');
+    if (!picker) return;
+
+    const stars  = Array.from(picker.querySelectorAll('.star-pick-item'));
+    const hidden = document.getElementById('course-rating-value');
+    const expand = document.getElementById('course-review-expand');
+    let selected = 0;
+
+    function highlight(upTo) {
+      stars.forEach((s, i) => {
+        s.classList.toggle('star-pick-item--lit', i < upTo);
+        s.classList.toggle('star-pick-item--selected', i < selected);
+      });
+    }
+
+    function commit(value) {
+      selected = value;
+      hidden.value = value;
+      stars.forEach((s, i) => {
+        s.classList.toggle('star-pick-item--selected', i < value);
+        s.classList.remove('star-pick-item--lit');
+        s.setAttribute('aria-checked', i < value ? 'true' : 'false');
+      });
+      if (expand) expand.hidden = false;
+    }
+
+    stars.forEach((star, idx) => {
+      star.addEventListener('mouseenter', () => highlight(idx + 1));
+      star.addEventListener('click',      () => commit(idx + 1));
+      star.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commit(idx + 1); }
+      });
+    });
+    picker.addEventListener('mouseleave', () => highlight(selected));
+  })();
+
+  async function submitCourseReview(teacherId, courseId) {
+    const rating  = document.getElementById('course-rating-value')?.value;
+    if (!rating) return;
+    const comment = document.getElementById('course-review-comment')?.value || '';
+    const btn     = document.getElementById('course-review-submit-btn');
+
+    const fd = new FormData();
+    fd.append('teacher_id', teacherId);
+    fd.append('course_id',  courseId);
+    fd.append('rating',     rating);
+    fd.append('comment',    comment);
+
+    try {
+      if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+      const res = await fetch('/reviews/submit', { method: 'POST', body: fd });
+      if (res.ok) {
+        const block = document.getElementById('course-review-prompt');
+        if (block) {
+          block.style.transition = 'opacity 0.4s ease';
+          block.style.opacity = '0';
+          setTimeout(() => {
+            block.innerHTML = '<span style="font-size:1.4rem;">⭐</span> <span style="font-weight:600;color:var(--text)">Спасибо за отзыв!</span>';
+            block.style.opacity = '1';
+          }, 400);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Ошибка: ' + (err.detail || 'Не удалось отправить'));
+        if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+      }
+    } catch {
+      alert('Ошибка сети');
+      if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+    }
+  }
 </script>
 {% endblock %}

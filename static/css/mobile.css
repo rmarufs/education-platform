@@ -303,7 +303,7 @@
   .review-card { padding: 16px !important; }
   .star-selector { font-size: 2rem; }
 
-  /* Новый блок отзыва */
+  /* \u041d\u043e\u0432\u044b\u0439 \u0431\u043b\u043e\u043a \u043e\u0442\u0437\u044b\u0432\u0430 */
   .review-form-panel {
     padding: 22px 18px;
     gap: 16px;
@@ -323,6 +323,23 @@
     max-width: 100%;
     min-height: 52px;
     font-size: 1.05rem;
+  }
+
+  /* Course page review prompt */
+  .course-review-prompt {
+    padding: 14px 16px;
+  }
+  .star-picker--sm .star-pick-item {
+    font-size: 2.25rem;
+    min-width: 44px;
+  }
+  .reviews-grid-cards {
+    grid-template-columns: 1fr;
+  }
+  .course-reviews-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   /* Google Forms Banner */
