@@ -246,6 +246,18 @@ def _migrate_enum_and_columns():
         except Exception:
             conn.rollback()
 
+        # 10. Добавляем teacher_id для отзывов, если его нет
+        if "reviews" in table_names:
+            review_columns = {column["name"] for column in inspector.get_columns("reviews")}
+            if "teacher_id" not in review_columns:
+                try:
+                    conn.execute(text(
+                        "ALTER TABLE reviews ADD COLUMN teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
+                    ))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+
 
 def _create_performance_indexes():
     """Создаёт индексы для оптимизации поиска и фильтрации."""

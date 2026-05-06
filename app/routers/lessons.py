@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import func
 
 from app.database import get_db
 from app.models.user import User
@@ -17,6 +18,7 @@ from app.models.material import Material
 from app.models.progress import Progress
 from app.models.comment import Comment
 from app.models.course import Course
+from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
@@ -187,6 +189,28 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         lesson_quiz_visible = bool(lesson.quiz and lesson_quiz_unlocked(db, user.id, lesson))
         if progress and progress.completed:
             continue_url = next_after_lesson(db, user.id, lesson.id)
+            
+        teacher_id = course.teacher_id
+        has_reviewed = db.query(Review).filter(
+            Review.student_id == user.id,
+            Review.teacher_id == teacher_id
+        ).first() is not None
+
+        if not has_reviewed:
+            completed_teacher_lessons = (
+                db.query(func.count(Progress.id))
+                .join(Lesson, Progress.lesson_id == Lesson.id)
+                .join(Module, Lesson.module_id == Module.id)
+                .join(Course, Module.course_id == Course.id)
+                .filter(
+                    Progress.student_id == user.id,
+                    Progress.completed == True,
+                    Course.teacher_id == teacher_id
+                )
+                .scalar()
+            )
+            if completed_teacher_lessons >= 2:
+                show_review_form = True
 
     return templates.TemplateResponse("lesson_page.html", {
         "request": request,
@@ -196,6 +220,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "progress_data": progress_data,
         "lesson_quiz_visible": lesson_quiz_visible,
         "continue_url": continue_url,
+        "show_review_form": locals().get('show_review_form', False),
         "course": course,
         "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
     })

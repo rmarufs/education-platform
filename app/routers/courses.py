@@ -561,6 +561,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
             Review.course_id == course_id, Review.student_id == user.id
         ).first()
 
+    # Топ 4 отзыва курса
+    top_reviews = db.query(Review).filter(Review.course_id == course_id).order_by(Review.rating.desc(), Review.created_at.desc()).limit(4).all()
+
     return templates.TemplateResponse("course_page.html", {
         "request": request,
         "course": course,
@@ -571,6 +574,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "course_quiz_unlocked": course_quiz_unlocked,
         "course_quiz_passed": course_quiz_passed,
         "user_review": user_review,
+        "top_reviews": top_reviews,
     })
 
 

@@ -116,6 +116,29 @@
       </section>
       {% endif %}
 
+      <!-- Отзывы -->
+      {% if top_reviews %}
+      <section class="course-reviews" id="course-reviews" style="margin-top: 32px;">
+        <h2 style="margin-bottom: 16px;">Отзывы студентов</h2>
+        <div class="reviews-grid" style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+          {% for review in top_reviews %}
+          <div class="review-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; text-align: left; box-shadow: none;">
+            <div class="review-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong class="review-author">{{ review.student.name }}</strong>
+              <span class="review-date text-muted" style="font-size: 0.85em;">{{ review.created_at.strftime('%d.%m.%Y') }}</span>
+            </div>
+            <div class="review-rating" style="color: #fbbf24; margin-bottom: 8px; font-size: 1.2em;">
+              {% for i in range(review.rating) %}★{% endfor %}{% for i in range(5 - review.rating) %}☆{% endfor %}
+            </div>
+            {% if review.text %}
+            <p class="review-text" style="font-size: 0.95em; line-height: 1.4; color: var(--text-color); margin: 0;">{{ review.text }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
   </div>
 </div>
 {% endblock %}
