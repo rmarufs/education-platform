@@ -45,10 +45,37 @@ def submit_review(
             Course.teacher_id == teacher_id
         )
         .scalar()
-    )
+    ) or 0
 
-    if completed_teacher_lessons < 2:
-        raise HTTPException(status_code=403, detail="Необходимо завершить минимум 2 урока у этого преподавателя")
+    # \u0423\u0441\u043b\u043e\u0432\u0438\u0435 1: \u0441\u0442\u0443\u0434\u0435\u043d\u0442 \u043f\u0440\u043e\u0448\u0451\u043b 2+ \u0443\u0440\u043e\u043a\u043e\u0432 \u0443 \u044d\u0442\u043e\u0433\u043e \u043f\u0440\u0435\u043f\u043e\u0434\u0430\u0432\u0430\u0442\u0435\u043b\u044f
+    enough_lessons = completed_teacher_lessons >= 2
+
+    # \u0423\u0441\u043b\u043e\u0432\u0438\u0435 2: \u0441\u0442\u0443\u0434\u0435\u043d\u0442 \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043b \u043a\u0443\u0440\u0441 (\u0434\u0430\u0436\u0435 \u0435\u0441\u043b\u0438 \u0443\u0440\u043e\u043a \u043e\u0434\u0438\u043d)
+    course_obj = db.query(Course).filter(Course.id == course_id).first()
+    if course_obj:
+        total_lessons = (
+            db.query(func.count(Lesson.id))
+            .join(Module, Lesson.module_id == Module.id)
+            .filter(Module.course_id == course_id)
+            .scalar()
+        ) or 0
+        done_in_course = (
+            db.query(func.count(Progress.id))
+            .join(Lesson, Progress.lesson_id == Lesson.id)
+            .join(Module, Lesson.module_id == Module.id)
+            .filter(
+                Progress.student_id == user.id,
+                Progress.completed == True,
+                Module.course_id == course_id,
+            )
+            .scalar()
+        ) or 0
+        course_fully_done = total_lessons > 0 and done_in_course >= total_lessons
+    else:
+        course_fully_done = False
+
+    if not enough_lessons and not course_fully_done:
+        raise HTTPException(status_code=403, detail="Необходимо завершить минимум 2 урока или пройти курс полностью")
 
     review = db.query(Review).filter(
         Review.student_id == uid,
