@@ -11,8 +11,8 @@
     <div class="profile-avatar">{{ user.name[0].upper() }}</div>
     <div class="profile-info">
       <h1>{{ user.name }}</h1>
-      <span class="role-badge {{ 'role-teacher' if user.role.value == 'teacher' else 'role-student' }}">
-        {% if user.role.value == "teacher" %}
+      <span class="role-badge {{ 'role-teacher' if user.is_teacher else 'role-student' }}">
+        {% if user.is_teacher %}
           <span data-i18n="profile.teacher">👨‍🏫 Преподаватель</span>
         {% else %}
           <span data-i18n="profile.student">👩‍🎓 Студент</span>
@@ -20,12 +20,12 @@
       </span>
       <p class="text-muted">{{ user.email }}</p>
     </div>
-    <a href="{{ '/dashboard/teacher' if user.role.value == 'teacher' else '/dashboard/student' }}"
+    <a href="{{ '/dashboard/teacher' if user.is_teacher else '/dashboard/student' }}"
        class="btn btn-outline" data-i18n="profile.my_cab">Мой кабинет</a>
   </div>
 
   <!-- TEACHER: Мои курсы -->
-  {% if user.role.value == "teacher" %}
+  {% if user.is_teacher %}
   <section class="profile-section">
     <div class="section-label" data-i18n="profile.my_courses" data-i18n-params='{"count": {{ courses | length }}}'>📚 Мои курсы ({{ courses | length }})</div>
     {% if courses %}
@@ -63,7 +63,7 @@
   </section>
 
   <!-- STUDENT: Прогресс -->
-  {% elif user.role.value == "student" %}
+  {% elif user.is_student %}
   <section class="profile-section">
     <div class="section-label" data-i18n="profile.my_progress">📈 Мой прогресс</div>
     {% if courses_with_progress %}

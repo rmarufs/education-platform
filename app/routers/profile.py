@@ -29,7 +29,7 @@ def profile(request: Request, db: Session = Depends(get_db)):
 
     context = {"request": request, "user": user}
 
-    if user.role.value == "teacher":
+    if user.is_teacher:
         # Курсы преподавателя с количеством студентов (упрощённо — без записи)
         courses = (
             db.query(Course)
@@ -39,7 +39,7 @@ def profile(request: Request, db: Session = Depends(get_db)):
         )
         context["courses"] = courses
 
-    elif user.role.value == "student":
+    elif user.is_student:
         # Пройденные уроки
         completed = (
             db.query(Progress)

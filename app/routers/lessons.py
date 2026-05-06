@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
+from app.dependencies import get_user, is_student, is_teacher, is_admin
 from app.models.user import User
 from app.models.module import Module
 from app.models.lesson import Lesson
@@ -36,19 +37,11 @@ MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}
 
 
-def get_user(request: Request, db: Session):
-    uid = request.session.get("user_id")
-    if not uid:
-        return None
-    return db.query(User).filter(User.id == uid).first()
-
-
 def require_teacher(request: Request, db: Session):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if not user:
         raise HTTPException(status_code=401)
-    user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value not in ("teacher", "admin"):
+    if not (is_teacher(user) or is_admin(user)):
         raise HTTPException(status_code=403)
     return user
 
@@ -172,7 +165,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     progress_data = {}
     lesson_quiz_visible = False
     continue_url = None
-    if user and user.role.value == "student":
+    if is_student(user):
         progress = db.query(Progress).filter(
             Progress.student_id == user.id,
             Progress.lesson_id == lesson_id
@@ -327,7 +320,7 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     if not uid:
         raise HTTPException(status_code=401)
     user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value != "student":
+    if not is_student(user):
         raise HTTPException(status_code=403)
 
     lesson_exists = db.query(Lesson.id).filter(Lesson.id == lesson_id).first()
@@ -355,7 +348,7 @@ def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
         return RedirectResponse("/login", status_code=302)
 
     user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value != "student":
+    if not is_student(user):
         raise HTTPException(status_code=403)
 
     progress = db.query(Progress).filter(

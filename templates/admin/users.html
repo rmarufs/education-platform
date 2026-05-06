@@ -47,9 +47,9 @@
                 </td>
                 <td>{{ u.email }}</td>
                 <td>
-                    {% if u.role.value == 'admin' %}
+                    {% if u.is_admin %}
                         <span class="admin-badge admin-badge-admin">🔑 <span data-i18n="admin.roles.admin">Админ</span></span>
-                    {% elif u.role.value == 'teacher' %}
+                    {% elif u.is_teacher %}
                         <span class="admin-badge admin-badge-teacher">👨‍🏫 <span data-i18n="admin.roles.teacher">Преподаватель</span></span>
                     {% elif u.role.value == 'teacher_pending' %}
                         <span class="admin-badge admin-badge-pending">⏳ <span data-i18n="admin.roles.pending">На рассмотрении</span></span>

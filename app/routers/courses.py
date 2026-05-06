@@ -11,6 +11,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
+from app.dependencies import get_user, is_teacher, is_student, is_admin, can
 from app.models.user import User
 from app.models.course import Course
 from app.models.progress import Progress
@@ -52,13 +53,6 @@ def _plain_text(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"<[^>]+>", "", value).strip()
-
-
-def get_user(request: Request, db: Session) -> User | None:
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return None
-    return db.query(User).filter(User.id == user_id).first()
 
 
 def _course_image_fs_path(image_url: str | None) -> str | None:
@@ -523,7 +517,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     module_quiz_states = {}
     course_quiz_unlocked = False
     course_quiz_passed = False
-    if user and user.role.value == "student":
+    if is_student(user):
         course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
         progress_rows = (
             db.query(Progress)

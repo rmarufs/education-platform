@@ -62,7 +62,7 @@
                 <div class="nav-auth-links">
                     <span class="nav-divider"></span>
                     {% if user %}
-                        {% if user.role.value == 'admin' %}
+                        {% if user.is_admin %}
                         <a href="/admin" class="btn btn-outline btn-sm" data-i18n="nav.admin">Панели мудир</a>
                         {% endif %}
                         <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
@@ -97,7 +97,7 @@
         <a href="/about" class="mobile-menu-link">ℹ️ <span data-i18n="nav.about">Дар бораи мо</span></a>
         <a href="/contact" class="mobile-menu-link">📬 <span data-i18n="nav.contact">Тамос</span></a>
         {% if user %}
-        {% if user.role.value == 'admin' %}
+        {% if user.is_admin %}
         <a href="/admin" class="mobile-menu-link">🔧 <span data-i18n="nav.admin">Панели мудир</span></a>
         {% endif %}
         <a href="/dashboard" class="mobile-menu-link">📊 <span data-i18n="nav.dashboard">Кабинет</span></a>

@@ -180,7 +180,7 @@
         </button>
       </div>
     </section>
-    {% elif lesson.quiz_url and user and user.role.value == "student" %}
+    {% elif lesson.quiz_url and user and user.is_student %}
     <section class="lesson-google-forms-promo">
       <div class="google-forms-banner google-forms-locked">
         <span class="banner-icon">🔒</span>
@@ -204,7 +204,7 @@
         <a href="/quiz/{{ lesson.quiz.id }}" class="btn btn-primary" data-i18n="lesson.quiz">Пройти квиз →</a>
       </div>
     </section>
-    {% elif false and lesson.quiz and user and user.role.value == "student" %}
+    {% elif false and lesson.quiz and user and user.is_student %}
     <section class="lesson-quiz-promo">
       <div class="quiz-card quiz-card-locked">
         <span class="quiz-icon">🔒</span>
@@ -217,7 +217,7 @@
     {% endif %}
 
     <!-- Прогресс студента -->
-    {% if user and user.role.value == "student" %}
+    {% if user and user.is_student %}
     <div class="lesson-complete-bar">
       {% if progress and progress.completed %}
         <div class="lesson-complete-actions">
@@ -252,7 +252,7 @@
     {% endif %}
 
     <!-- Учитель: добавить материал / квиз -->
-    {% if user and user.role.value == "teacher" %}
+    {% if user and user.is_teacher %}
     <section class="teacher-tools">
       <h3 data-i18n="lesson.tools">⚙️ Инструменты преподавателя</h3>
       <div class="teacher-tools-grid">

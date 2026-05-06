@@ -141,7 +141,7 @@ async def register(
         return RedirectResponse("/register/pending", status_code=302)
 
     # Студент → ассессмент или дашборд
-    if user.role == UserRole.student and not user.assessment_completed:
+    if user.is_student and not user.assessment_completed:
         return RedirectResponse("/assessment", status_code=302)
 
     return RedirectResponse("/dashboard", status_code=302)
@@ -198,7 +198,7 @@ def login(
     if user.role == UserRole.teacher_pending:
         return RedirectResponse("/register/pending", status_code=302)
 
-    if user.role == UserRole.student and not user.assessment_completed:
+    if user.is_student and not user.assessment_completed:
         return RedirectResponse("/assessment", status_code=302)
 
     return RedirectResponse("/dashboard", status_code=302)

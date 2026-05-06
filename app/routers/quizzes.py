@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
+from app.dependencies import get_user, is_student, is_teacher, is_admin
 from app.models.course import Course
 from app.models.lesson import Lesson
 from app.models.module import Module
@@ -28,19 +29,11 @@ dashboard_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-def get_user(request, db):
-    uid = request.session.get("user_id")
-    if not uid:
-        return None
-    return db.query(User).filter(User.id == uid).first()
-
-
 def require_teacher(request, db):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if not user:
         raise HTTPException(status_code=401)
-    user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value not in ("teacher", "admin"):
+    if not (is_teacher(user) or is_admin(user)):
         raise HTTPException(status_code=403)
     return user
 
@@ -242,11 +235,11 @@ def quiz_page(quiz_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     back_url, back_i18n = quiz_back_target(quiz)
 
-    if user and user.role.value == "student" and not quiz_is_unlocked(db, user.id, quiz):
+    if is_student(user) and not quiz_is_unlocked(db, user.id, quiz):
         return RedirectResponse(back_url, status_code=302)
 
     passed_before = False
-    if user and user.role.value == "student":
+    if is_student(user):
         passed_before = (
             db.query(QuizAttempt.id)
             .filter(QuizAttempt.quiz_id == quiz.id, QuizAttempt.student_id == user.id)
@@ -273,7 +266,7 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
         return RedirectResponse("/login", status_code=302)
 
     user = get_user(request, db)
-    if not user or user.role.value != "student":
+    if not is_student(user):
         raise HTTPException(status_code=403)
 
     quiz = _load_quiz(db, quiz_id)

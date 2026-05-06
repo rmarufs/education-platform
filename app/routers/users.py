@@ -32,11 +32,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     if redirect:
         return redirect
 
-    if user.role.value == "teacher":
+    if user.is_teacher:
         return RedirectResponse("/dashboard/teacher", status_code=302)
     if user.role.value == "teacher_pending":
         return RedirectResponse("/register/pending", status_code=302)
-    if user.role.value == "admin":
+    if user.is_admin:
         return RedirectResponse("/admin", status_code=302)
     return RedirectResponse("/dashboard/student", status_code=302)
 

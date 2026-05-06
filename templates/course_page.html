@@ -48,7 +48,7 @@
           <div class="cta-guest">
             <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать изучение</a>
           </div>
-          {% elif user.role.value == "teacher" and user.id == course.teacher_id %}
+          {% elif user.is_teacher and user.id == course.teacher_id %}
           <div class="cta-teacher">
             <a href="/courses/{{ course.id }}/manage" class="btn btn-primary btn-full" data-i18n="course_page.gear_manage">⚙️ Управление курсом</a>
           </div>

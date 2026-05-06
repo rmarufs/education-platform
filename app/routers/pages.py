@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
+from app.dependencies import get_user
 from app.models.user import User
 from app.models.course import Course
 from app.models.category import Category
@@ -22,15 +23,6 @@ def _plain_text(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"<[^>]+>", "", value).strip()
-
-
-def get_user(request: Request, db: Session):
-    uid = request.session.get("user_id")
-    if not uid:
-        return None
-    return db.query(User).filter(User.id == uid).first()
-
-
 # ── Страница "О нас" ────────────────────────────────────────────────────────
 
 @router.get("/about", response_class=HTMLResponse)

@@ -26,3 +26,19 @@ class User(Base):
     bio = Column(Text, nullable=True)                 # рассказ о себе (для преподавателей)
     is_active = Column(Boolean, default=True)         # для блокировки пользователей
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    @property
+    def is_teacher(self) -> bool:
+        return self.role.value == "teacher"
+
+    @property
+    def is_student(self) -> bool:
+        return self.role.value == "student"
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role.value == "admin"
+
+    @property
+    def is_org(self) -> bool:
+        return self.role.value == "organization"
