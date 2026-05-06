@@ -129,55 +129,25 @@ app.include_router(admin.router)
 
 # ── Главная страница ─────────────────────────────────────────────────────────
 
-# Кэш для популярных курсов (TTL 15 минут)
-_popular_courses_cache = {"data": None, "timestamp": 0}
-
+# Кэш удален из-за ошибки DetachedInstanceError. 
+# Запрос 10 курсов отрабатывает за доли миллисекунд.
 def _get_popular_courses_cached(db):
-    """Получить популярные курсы с кэшированием на 15 минут."""
-    import time
-    now = time.time()
-    # Проверяем кэш (15 минут = 900 секунд)
-    if _popular_courses_cache["data"] is not None and (now - _popular_courses_cache["timestamp"]) < 900:
-        return _popular_courses_cache["data"]
-    
-    # Запрашиваем из БД если кэш истёк
-    courses = (
+    """Получить популярные курсы из БД."""
+    return (
         db.query(Course)
         .options(joinedload(Course.teacher), joinedload(Course.category))
         .order_by(Course.rating.desc())
         .limit(10)
         .all()
     )
-    _popular_courses_cache["data"] = courses
-    _popular_courses_cache["timestamp"] = now
-    return courses
-
 
 def invalidate_courses_cache():
-    """Сбрасывает кэш популярных курсов и категорий (вызывается при создании/удалении/редактировании)."""
-    _popular_courses_cache["data"] = None
-    _popular_courses_cache["timestamp"] = 0
-    if hasattr(_get_categories_cached, "_cache"):
-        _get_categories_cached._cache["data"] = None
-        _get_categories_cached._cache["timestamp"] = 0
-
+    """Заглушка для обратной совместимости."""
+    pass
 
 def _get_categories_cached(db):
-    """Получить категории с кэшированием на 1 час."""
-    import time
-    if not hasattr(_get_categories_cached, "_cache"):
-        _get_categories_cached._cache = {"data": None, "timestamp": 0}
-    
-    now = time.time()
-    cache = _get_categories_cached._cache
-    # 1 час = 3600 секунд
-    if cache["data"] is not None and (now - cache["timestamp"]) < 3600:
-        return cache["data"]
-    
-    categories = db.query(Category).order_by(Category.name).all()
-    cache["data"] = categories
-    cache["timestamp"] = now
-    return categories
+    """Получить категории из БД."""
+    return db.query(Category).order_by(Category.name).all()
 
 
 @app.get("/", response_class=HTMLResponse)
