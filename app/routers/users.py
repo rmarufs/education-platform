@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from collections import defaultdict
 
@@ -10,7 +9,7 @@ from app.models.course import Course
 from app.models.module import Module
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 def require_login(request: Request, db: Session):

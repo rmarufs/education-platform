@@ -4,7 +4,6 @@ import uuid
 import shutil
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import bcrypt
 from typing import Optional
@@ -15,7 +14,7 @@ from app.models.organization import Organization, OrganizationTeacher
 from app.utils.rate_limit import limiter
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 

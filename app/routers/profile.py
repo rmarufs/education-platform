@@ -1,7 +1,6 @@
 # Роутер профиля пользователя
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -13,7 +12,7 @@ from app.models.lesson import Lesson
 from app.models.module import Module
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 @router.get("/profile", response_class=HTMLResponse)

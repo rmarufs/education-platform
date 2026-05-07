@@ -7,7 +7,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from app.templating import templates  # единственный экземпляр Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
@@ -67,12 +67,8 @@ app.add_middleware(
 # Статические файлы (CSS, JS, изображения)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
-
-# Регистрация безопасного фильтра для очистки HTML
-from app.utils.security import sanitize_html
-templates.env.filters["clean_html"] = sanitize_html
+# фильтр clean_html уже зарегистрирован в app/templating.py
 
 
 # ── Middleware для кэширования пользователя в контексте запроса ────────────────

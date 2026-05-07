@@ -4,7 +4,6 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
@@ -26,7 +25,7 @@ from app.quiz_flow import (
 
 router = APIRouter(prefix="/quiz")
 dashboard_router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 def require_teacher(request, db):

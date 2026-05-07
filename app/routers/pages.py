@@ -2,7 +2,6 @@
 import re
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
@@ -17,7 +16,7 @@ from app.models.contact import ContactMessage
 from app.models.organization import Organization, OrganizationTeacher
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 def _plain_text(value: str | None) -> str:

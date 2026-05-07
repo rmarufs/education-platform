@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 
@@ -10,7 +9,7 @@ from app.models.organization import Organization, OrganizationTeacher
 from app.models.course import Course
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 def require_org(request: Request, db: Session):

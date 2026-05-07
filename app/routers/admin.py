@@ -2,7 +2,6 @@
 import os
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import csv
@@ -17,7 +16,7 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 
 router = APIRouter(prefix="/admin")
-templates = Jinja2Templates(directory="templates")
+from app.templating import templates
 
 
 def get_admin(request: Request, db: Session) -> User:
