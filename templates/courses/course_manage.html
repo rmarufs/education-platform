@@ -57,7 +57,7 @@
       </div>
 
       {% if module.description %}
-      <div class="module-description rich-text-content">{{ module.description | safe }}</div>
+      <div class="module-description rich-text-content">{{ module.description | clean_html }}</div>
       {% endif %}
 
       <!-- Уроки модуля -->

@@ -145,7 +145,7 @@
     <div class="lesson-header">
       <h1>{{ lesson.title }}</h1>
       {% if lesson.description %}
-      <div class="lesson-description rich-text-content">{{ lesson.description | safe }}</div>
+      <div class="lesson-description rich-text-content">{{ lesson.description | clean_html }}</div>
       {% endif %}
     </div>
 

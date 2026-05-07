@@ -154,6 +154,25 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
+    # Проверка прав доступа (IDOR Protection)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+    
+    if user.is_admin:
+        pass # Администратор имеет полный доступ
+    elif user.is_teacher:
+        if course.teacher_id != user.id:
+            raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не являетесь преподавателем этого курса.")
+    elif user.is_student:
+        # TODO: Здесь должна быть логика проверки записи (Enrollment) на курс.
+        # Поскольку таблица Enrollment пока не создана, мы используем заглушку is_enrolled = True.
+        # После создания таблицы: is_enrolled = db.query(Enrollment).filter(...).first()
+        is_enrolled = True 
+        if not is_enrolled:
+            raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не записаны на этот курс. Перейдите к оплате.")
+    else:
+        raise HTTPException(status_code=403, detail="Доступ запрещён.")
+
     course_lesson_ids = [
         course_lesson.id
         for module in course.modules

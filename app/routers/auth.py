@@ -12,6 +12,7 @@ from typing import Optional
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.organization import Organization, OrganizationTeacher
+from app.utils.rate_limit import limiter
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -63,6 +64,7 @@ def register_page(request: Request):
 
 
 @router.post("/register")
+@limiter.limit("5/minute")
 async def register(
     request: Request,
     name: str = Form(...),
@@ -239,6 +241,7 @@ def login_page(request: Request):
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 def login(
     request: Request,
     email: str = Form(...),

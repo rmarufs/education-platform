@@ -38,7 +38,7 @@
         {% if course.description %}
         <div class="course-detail-body">
           <h2 data-i18n="course_page.about">О курсе</h2>
-          <div class="rich-text-content">{{ course.description | safe }}</div>
+          <div class="rich-text-content">{{ course.description | clean_html }}</div>
         </div>
         {% endif %}
 
@@ -113,7 +113,7 @@
             {% endif %}
           </div>
           {% if module.description %}
-          <div class="curriculum-module-description rich-text-content">{{ module.description | safe }}</div>
+          <div class="curriculum-module-description rich-text-content">{{ module.description | clean_html }}</div>
           {% endif %}
           <ul class="curriculum-lessons">
             {% for lesson in module.lessons %}

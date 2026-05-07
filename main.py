@@ -28,19 +28,51 @@ os.makedirs("data", exist_ok=True)
 
 app = FastAPI(title=PLATFORM_NAME, docs_url="/api/docs")
 
+# ── Rate Limiting (SlowAPI) ───────────────────────────────────────────────────
+from slowapi.errors import RateLimitExceeded
+from app.utils.rate_limit import limiter
+from fastapi.responses import JSONResponse
+
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Слишком много попыток. Пожалуйста, подождите. / Кӯшишҳои аз ҳад зиёд. Лутфан, интизор шавед."},
+    )
+
 # ── Middleware ──────────────────────────────────────────────────────────────
 
 # Сжатие ответов (gzip) для CSS, JS, HTML - улучшает скорость загрузки на 3-5×
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Middleware для сессий на основе куков (подписаны SECRET_KEY)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=60 * 60 * 24 * 7)
+# Защита от Clickjacking (X-Frame-Options: DENY)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
+
+# Middleware для сессий на основе куков (укрепленные настройки безопасности)
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=SECRET_KEY, 
+    max_age=60 * 60 * 24 * 7,
+    https_only=True,
+    same_site="lax"
+    # httponly=True # В Starlette SessionMiddleware куки по умолчанию HttpOnly.
+)
 
 # Статические файлы (CSS, JS, изображения)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
+
+# Регистрация безопасного фильтра для очистки HTML
+from app.utils.security import sanitize_html
+templates.env.filters["clean_html"] = sanitize_html
 
 
 # ── Middleware для кэширования пользователя в контексте запроса ────────────────
