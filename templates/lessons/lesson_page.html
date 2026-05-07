@@ -85,7 +85,12 @@
 
       {% if vid_id %}
         <!-- Кастомный YouTube плеер -->
-        <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
+        <div id="yt-player" data-video-token="{{ vid_id | reverse | join | b64encode }}"></div>
+
+        <!-- Динамический водяной знак -->
+        <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">
+          {{ user.username if user else 'Student' }}
+        </div>
 
         
         <!-- Слой перехватывает клики и держит пользовательский интерфейс поверх iframe. -->
@@ -531,35 +536,46 @@ async function submitReview(teacherId, courseId) {
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
   // --- ЗАЩИТА ОТ ИЗВЛЕЧЕНИЯ ССЫЛКИ ---
-  // 1. Блокировка горячих клавиш (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+A, Ctrl+P)
+  // 1. Блокировка горячих клавиш (F12, Win/Linux, Mac OS)
   document.addEventListener('keydown', function(e) {
+    var key = e.key ? e.key.toLowerCase() : '';
     if (
-      e.key === 'F12' || 
-      (e.ctrlKey && e.shiftKey && e.key === 'I') || 
-      (e.ctrlKey && e.shiftKey && e.key === 'C') || 
-      (e.ctrlKey && e.shiftKey && e.key === 'J') || 
-      (e.ctrlKey && e.key === 'U') ||
-      (e.metaKey && e.altKey && e.key === 'I') || // Mac: Cmd+Option+I
-      (e.ctrlKey && e.key.toLowerCase() === 's') ||
-      (e.metaKey && e.key.toLowerCase() === 's') ||
-      (e.ctrlKey && e.key.toLowerCase() === 'a') ||
-      (e.metaKey && e.key.toLowerCase() === 'a') ||
-      (e.ctrlKey && e.key.toLowerCase() === 'p') ||
-      (e.metaKey && e.key.toLowerCase() === 'p')
+      key === 'f12' || 
+      (e.ctrlKey && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) || 
+      (e.ctrlKey && key === 'u') || // Win/Linux: View Source
+      (e.metaKey && e.altKey && (key === 'i' || key === 'j' || key === 'u')) || // Mac: DevTools, Console, View Source
+      (e.metaKey && e.shiftKey && key === 'c') || // Mac: Inspector
+      (e.ctrlKey && (key === 's' || key === 'p')) || // Win/Linux: Save, Print
+      (e.metaKey && (key === 's' || key === 'p')) // Mac: Save, Print
     ) {
       e.preventDefault();
       return false;
     }
   });
 
-  // Отключаем правый клик только на области плеера
-  var playerContainer = document.getElementById('custom-video-container');
-  if (playerContainer) {
-    playerContainer.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-      return false;
-    });
-  }
+  // Глобальная блокировка правого клика (contextmenu) на всей странице
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+
+  // Детектор DevTools (остановка видео и размытие плеера)
+  setInterval(function() {
+    var threshold = 160;
+    var devtoolsOpen = (window.outerWidth - window.innerWidth > threshold) || 
+                       (window.outerHeight - window.innerHeight > threshold);
+    var container = document.getElementById('custom-video-container');
+    if (devtoolsOpen) {
+      if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
+        player.pauseVideo();
+      }
+      if (container) container.style.filter = 'blur(15px)';
+    } else {
+      if (container && container.style.filter === 'blur(15px)') {
+        container.style.filter = '';
+      }
+    }
+  }, 1000);
 
   // --- ЛОГИКА ПЛЕЕРА ---
   var player;
@@ -572,12 +588,12 @@ async function submitReview(teacherId, courseId) {
   var overlayHideTimeout = null; // таймер исчезновения оверлея
   
   function decodeYt(token) {
-    var decoded = atob(token);
-    var shifted = "";
-    for (var i = 0; i < decoded.length; i++) {
-      shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
+    try {
+      var decoded = atob(token);
+      return decoded.split('').reverse().join('');
+    } catch(e) {
+      return '';
     }
-    return shifted.split('').reverse().join('');
   }
 
   // Перехват postMessage (защита от утечки meta-данных в DevTools)
@@ -646,6 +662,24 @@ async function submitReview(teacherId, courseId) {
         'onStateChange': onPlayerStateChange
       }
     });
+    startWatermark(); // Запуск водяного знака при загрузке плеера
+  }
+
+  function startWatermark() {
+    var wm = document.getElementById('dynamic-watermark');
+    var container = document.getElementById('custom-video-container');
+    if (!wm || !container) return;
+    function moveWM() {
+      var maxX = container.clientWidth - wm.clientWidth;
+      var maxY = container.clientHeight - wm.clientHeight;
+      if (maxX <= 0) maxX = 50;
+      if (maxY <= 0) maxY = 50;
+      var randomX = Math.floor(Math.random() * maxX);
+      var randomY = Math.floor(Math.random() * maxY);
+      wm.style.transform = 'translate(' + randomX + 'px, ' + randomY + 'px)';
+    }
+    moveWM();
+    setInterval(moveWM, 30000); // Каждые 30 секунд
   }
 
   function onPlayerReady(event) {
