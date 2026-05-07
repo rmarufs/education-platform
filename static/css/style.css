@@ -859,6 +859,27 @@ body.dark .logo-copy::after {
 .rich-text-content em { font-style: italic; }
 .rich-text-content s { text-decoration: line-through; }
 
+/* Заголовки внутри описания курса/урока */
+.rich-text-content h1,
+.rich-text-content h2,
+.rich-text-content h3 {
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.4rem 0 0.6rem;
+  color: var(--text);
+}
+.rich-text-content h1 { font-size: 1.5rem; }
+.rich-text-content h2 { font-size: 1.25rem; }
+.rich-text-content h3 { font-size: 1.05rem; }
+.rich-text-content li { margin-bottom: 0.3rem; }
+
+/* Урок без доступа для гостя */
+.lesson-locked-title {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
 .rich-editor-surface blockquote,
 .rich-text-content blockquote {
   margin: 1rem 0;
