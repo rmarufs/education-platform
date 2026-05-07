@@ -14,7 +14,7 @@ from app.models.organization import Organization, OrganizationTeacher
 from app.utils.rate_limit import limiter
 
 router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 

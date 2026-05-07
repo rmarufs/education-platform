@@ -25,7 +25,7 @@ from app.quiz_flow import (
 
 router = APIRouter(prefix="/quiz")
 dashboard_router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 
 
 def require_teacher(request, db):

@@ -9,7 +9,7 @@ from app.models.organization import Organization, OrganizationTeacher
 from app.models.course import Course
 
 router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 
 
 def require_org(request: Request, db: Session):

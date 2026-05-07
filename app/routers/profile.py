@@ -12,7 +12,7 @@ from app.models.lesson import Lesson
 from app.models.module import Module
 
 router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 
 
 @router.get("/profile", response_class=HTMLResponse)

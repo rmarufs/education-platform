@@ -859,19 +859,31 @@ body.dark .logo-copy::after {
 .rich-text-content em { font-style: italic; }
 .rich-text-content s { text-decoration: line-through; }
 
-/* Заголовки внутри описания курса/урока */
-.rich-text-content h1,
-.rich-text-content h2,
-.rich-text-content h3 {
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 1.4rem 0 0.6rem;
+/* Markdown-style rendering class */
+.content-area {
+  line-height: 1.6;
   color: var(--text);
 }
-.rich-text-content h1 { font-size: 1.5rem; }
-.rich-text-content h2 { font-size: 1.25rem; }
-.rich-text-content h3 { font-size: 1.05rem; }
-.rich-text-content li { margin-bottom: 0.3rem; }
+.content-area p {
+  margin-bottom: 1rem;
+}
+.content-area ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.content-area li {
+  margin-bottom: 0.5rem;
+}
+.content-area h1, .content-area h2, .content-area h3 {
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+.content-area h1 { font-size: 1.8rem; }
+.content-area h2 { font-size: 1.5rem; }
+.content-area h3 { font-size: 1.2rem; }
 
 /* Урок без доступа для гостя */
 .lesson-locked-title {

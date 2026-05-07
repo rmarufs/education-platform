@@ -31,7 +31,7 @@ except ModuleNotFoundError:
     cloudinary = None
 
 router = APIRouter(prefix="/courses")
-from app.templating import templates
+from app.ui import templates
 
 COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}

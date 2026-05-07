@@ -7,7 +7,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
-from app.templating import templates  # единственный экземпляр Jinja2Templates
+from app.ui import templates  # единственный экземпляр Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload

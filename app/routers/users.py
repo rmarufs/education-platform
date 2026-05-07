@@ -9,7 +9,7 @@ from app.models.course import Course
 from app.models.module import Module
 
 router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 
 
 def require_login(request: Request, db: Session):

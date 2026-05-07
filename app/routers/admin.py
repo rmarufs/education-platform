@@ -16,7 +16,7 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 
 router = APIRouter(prefix="/admin")
-from app.templating import templates
+from app.ui import templates
 
 
 def get_admin(request: Request, db: Session) -> User:

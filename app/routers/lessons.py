@@ -21,7 +21,7 @@ from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
-from app.templating import templates
+from app.ui import templates
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}

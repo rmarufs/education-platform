@@ -16,7 +16,7 @@ from app.models.contact import ContactMessage
 from app.models.organization import Organization, OrganizationTeacher
 
 router = APIRouter()
-from app.templating import templates
+from app.ui import templates
 
 
 def _plain_text(value: str | None) -> str:
