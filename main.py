@@ -174,7 +174,16 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
 @app.on_event("startup")
 def on_startup():
     print(f"✅ {PLATFORM_NAME} запущен.")
-
+    
+    # Автоматическое применение миграций БД (полезно для Render и других PaaS)
+    try:
+        from alembic import command
+        from alembic.config import Config
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        print("✅ Миграции БД успешно применены.")
+    except Exception as e:
+        logger.error(f"❌ Ошибка при автоматическом выполнении миграций: {e}")
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
