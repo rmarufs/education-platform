@@ -70,7 +70,7 @@
 
     <!-- Видео: внешние ссылки (YouTube) -->
     {% if lesson.video_url %}
-    <div class="video-container" id="custom-video-container">
+    <div class="video-container" id="custom-video-container" oncontextmenu="return false;">
       {% set vid = lesson.video_url %}
       {% set vid_id = None %}
       {% if "youtube.com/watch?v=" in vid %}
@@ -84,52 +84,24 @@
       {% endif %}
 
       {% if vid_id %}
-        <!-- Кастомный YouTube плеер -->
-        <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
+        <!-- Plyr YouTube плеер -->
+        <div id="plyr-wrapper">
+          <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="placeholder" data-video-token="{{ vid_id | b64encode }}"></div>
+        </div>
 
         <!-- Динамический водяной знак -->
         <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">
-          {{ user.username if user else 'Student' }}
+          {{ user.name if user else 'Student' }}
         </div>
 
-        
-        <!-- Слой перехватывает клики и держит пользовательский интерфейс поверх iframe. -->
-        <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
-            <div class="big-play-btn" id="big-play-btn" aria-hidden="true">
-              <span class="big-play-icon"></span>
-            </div>
-        </div>
-        
-        <!-- Кастомные элементы управления -->
-        <div class="custom-video-controls" id="custom-controls" oncontextmenu="return false;" onclick="event.stopPropagation()">
-           <button type="button" id="play-pause-btn" class="ctrl-btn" aria-label="Play/Pause">▶</button>
-           <div class="progress-container" id="progress-container">
-               <div class="progress-bar" id="progress-bar"></div>
-               <span class="progress-handle" id="progress-handle" aria-hidden="true"></span>
-           </div>
-           <span class="time-display" id="time-display">0:00 / 0:00</span>
-           
-           <!-- Выбор скорости -->
-           <div class="speed-control-wrapper">
-             <button type="button" id="speed-btn" class="ctrl-btn text-btn" aria-label="Playback Speed">1x</button>
-             <div class="speed-menu" id="speed-menu">
-               <button type="button" class="speed-option" data-speed="0.5">0.5x</button>
-               <button type="button" class="speed-option" data-speed="0.75">0.75x</button>
-               <button type="button" class="speed-option active" data-speed="1">Обычная (1x)</button>
-               <button type="button" class="speed-option" data-speed="1.25">1.25x</button>
-               <button type="button" class="speed-option" data-speed="1.5">1.5x</button>
-               <button type="button" class="speed-option" data-speed="2">2x</button>
-             </div>
-           </div>
+        <!-- Защитный оверлей от правого клика -->
+        <div class="video-protect-overlay" id="video-protect-overlay" oncontextmenu="return false;"></div>
 
-           <button type="button" id="mute-btn" class="ctrl-btn" aria-label="Mute/Unmute">🔊</button>
-           <button type="button" id="fullscreen-btn" class="ctrl-btn" aria-label="Fullscreen">⛶</button>
-        </div>
       {% else %}
         <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
       {% endif %}
     </div>
-    
+
     <!-- Нет видео -->
     {% else %}
     <div class="video-placeholder">
@@ -140,6 +112,7 @@
       </div>
     </div>
     {% endif %}
+
 
     <!-- Заголовок и описание -->
     <div class="lesson-header">
@@ -533,680 +506,121 @@ async function submitReview(teacherId, courseId) {
 {% endblock %}
 
 {% block scripts %}
-<script src="https://www.youtube.com/iframe_api"></script>
+<!-- Plyr.io CSS -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+
+<!-- Plyr.io JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+
 <script>
-  // --- ЗАЩИТА ОТ ИЗВЛЕЧЕНИЯ ССЫЛКИ ---
-  // 1. Блокировка горячих клавиш (F12, Win/Linux, Mac OS)
-  document.addEventListener('keydown', function(e) {
+(function () {
+  'use strict';
+
+  // ── Decode token → real YouTube ID ─────────────────────────────────────────
+  function decodeYt(token) {
+    try {
+      var decoded = atob(token);
+      var shifted = '';
+      for (var i = 0; i < decoded.length; i++) {
+        shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
+      }
+      return shifted.split('').reverse().join('');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // ── Security: block keyboard shortcuts ─────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
     var key = e.key ? e.key.toLowerCase() : '';
     if (
-      key === 'f12' || 
-      (e.ctrlKey && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) || 
-      (e.ctrlKey && key === 'u') || // Win/Linux: View Source
-      (e.metaKey && e.altKey && (key === 'i' || key === 'j' || key === 'u')) || // Mac: DevTools, Console, View Source
-      (e.metaKey && e.shiftKey && key === 'c') || // Mac: Inspector
-      (e.ctrlKey && (key === 's' || key === 'p')) || // Win/Linux: Save, Print
-      (e.metaKey && (key === 's' || key === 'p')) // Mac: Save, Print
+      key === 'f12' ||
+      (e.ctrlKey && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) ||
+      (e.ctrlKey && key === 'u') ||
+      (e.metaKey && e.altKey && (key === 'i' || key === 'j' || key === 'u')) ||
+      (e.metaKey && e.shiftKey && key === 'c') ||
+      (e.ctrlKey && (key === 's' || key === 'p')) ||
+      (e.metaKey && (key === 's' || key === 'p'))
     ) {
       e.preventDefault();
       return false;
     }
   });
 
-  // Глобальная блокировка правого клика (contextmenu) на всей странице
-  document.addEventListener('contextmenu', function(e) {
+  // ── Security: block right-click globally ───────────────────────────────────
+  document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
     return false;
   });
 
-  // Детектор DevTools (остановка видео и размытие плеера)
-  setInterval(function() {
-    var threshold = 160;
-    var devtoolsOpen = (window.outerWidth - window.innerWidth > threshold) || 
-                       (window.outerHeight - window.innerHeight > threshold);
-    var container = document.getElementById('custom-video-container');
-    if (devtoolsOpen) {
-      if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
-        player.pauseVideo();
-      }
-      if (container) container.style.filter = 'blur(15px)';
-    } else {
-      if (container && container.style.filter === 'blur(15px)') {
-        container.style.filter = '';
-      }
-    }
-  }, 1000);
-
-  // --- ЛОГИКА ПЛЕЕРА ---
-  var player;
-  var progressInterval;
-  var isPlaying = false;
-  var isSeeking = false;
-  var activeSeekPercent = 0;
-  var videoId = '';        // глобальная — нужна iOS фоллбэку
-  var controlsTimer = null; // таймер автоскрытия контролов
-  var overlayHideTimeout = null; // таймер исчезновения оверлея
-  
-  function decodeYt(token) {
-    try {
-      var decoded = atob(token);
-      var shifted = "";
-      for (var i = 0; i < decoded.length; i++) {
-        shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
-      }
-      return shifted.split('').reverse().join('');
-    } catch(e) {
-      return '';
-    }
-  }
-
-  // Перехват postMessage (защита от утечки meta-данных в DevTools)
-  var originalAddEventListener = window.addEventListener;
-  window.addEventListener = function(type, listener, options) {
-    if (type === 'message') {
-      var wrappedListener = function(e) {
-        if (e.data && typeof e.data === 'string' && e.data.includes('infoDelivery')) {
-          try {
-            var dataObj = JSON.parse(e.data);
-            if (dataObj.event === 'infoDelivery' && dataObj.info && dataObj.info.videoData) {
-              // Удаляем video_id и videoURL чтобы не светить в консоли
-              delete dataObj.info.videoData.video_id;
-              delete dataObj.info.videoData.videoURL;
-              // Создаем фейковое событие с очищенными данными
-              var newEvent = new MessageEvent('message', {
-                data: JSON.stringify(dataObj),
-                origin: e.origin,
-                source: e.source,
-                ports: e.ports
-              });
-              return listener.call(this, newEvent);
-            }
-          } catch (err) { }
-        }
-        return listener.apply(this, arguments);
-      };
-      return originalAddEventListener.call(this, type, wrappedListener, options);
-    }
-    return originalAddEventListener.apply(this, arguments);
-  };
-  
-  function onYouTubeIframeAPIReady() {
-    var ytPlayerEl = document.getElementById('yt-player');
-    if (!ytPlayerEl) return;
-    
-    // 2. Расшифровка ID видео
-    var videoToken = ytPlayerEl.getAttribute('data-video-token');
-    videoId = ""; // присваиваем глобальной переменной
-    try {
-      videoId = decodeYt(videoToken);
-    } catch(e) {
-      console.error("Invalid video token");
-      return;
-    }
-    
-    player = new YT.Player('yt-player', {
-      videoId: videoId,
-      host: 'https://www.youtube-nocookie.com',
-      playerVars: {
-        'autoplay': 0,
-        'controls': 0,
-        'rel': 0,
-        'modestbranding': 1,
-        'disablekb': 1,
-        'fs': 0,
-        'playsinline': 1,
-        'iv_load_policy': 3,
-        'cc_load_policy': 0,
-        'showinfo': 0,
-        'origin': window.location.origin,
-        'widget_referrer': window.location.origin
-      },
-      events: {
-        'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
-      }
-    });
-    startWatermark(); // Запуск водяного знака при загрузке плеера
-  }
-
+  // ── Watermark: random position every 30s ───────────────────────────────────
   function startWatermark() {
     var wm = document.getElementById('dynamic-watermark');
     var container = document.getElementById('custom-video-container');
     if (!wm || !container) return;
+
     function moveWM() {
-      var maxX = container.clientWidth - wm.clientWidth;
-      var maxY = container.clientHeight - wm.clientHeight;
-      if (maxX <= 0) maxX = 50;
-      if (maxY <= 0) maxY = 50;
-      var randomX = Math.floor(Math.random() * maxX);
-      var randomY = Math.floor(Math.random() * maxY);
-      wm.style.transform = 'translate(' + randomX + 'px, ' + randomY + 'px)';
+      var maxX = container.clientWidth - wm.offsetWidth - 16;
+      var maxY = container.clientHeight - wm.offsetHeight - 16;
+      maxX = maxX > 0 ? maxX : 50;
+      maxY = maxY > 0 ? maxY : 30;
+      wm.style.left = Math.floor(Math.random() * maxX) + 'px';
+      wm.style.top  = Math.floor(Math.random() * maxY) + 'px';
     }
     moveWM();
-    setInterval(moveWM, 30000); // Каждые 30 секунд
+    setInterval(moveWM, 30000);
   }
 
-  function onPlayerReady(event) {
+  // ── Main Plyr init ─────────────────────────────────────────────────────────
+  var playerEl = document.getElementById('player');
+  if (!playerEl) return;
+
+  var token = playerEl.getAttribute('data-video-token');
+  var videoId = decodeYt(token);
+  if (!videoId) { console.warn('Bad video token'); return; }
+
+  // Set real embed ID before Plyr reads it
+  playerEl.setAttribute('data-plyr-embed-id', videoId);
+
+  var plyrPlayer = new Plyr('#player', {
+    provider: 'youtube',
+    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+    settings: ['speed', 'quality'],
+    speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+    youtube: {
+      noCookie: true,         // youtube-nocookie.com domain
+      rel: 0,
+      showinfo: 0,
+      iv_load_policy: 3,
+      modestbranding: 1,
+      playsinline: 1,
+      controls: 0             // hide native YouTube controls completely
+    },
+    tooltips: { controls: true, seek: true },
+    ratio: '16:9',
+    fullscreen: { enabled: true, fallback: true, iosNative: false },
+    keyboard: { focused: false, global: false }  // disable default keyboard shortcuts
+  });
+
+  // ── DevTools detector (blur + pause via Plyr API) ─────────────────────────
+  setInterval(function () {
+    var threshold = 160;
+    var devOpen = (window.outerWidth - window.innerWidth > threshold) ||
+                  (window.outerHeight - window.innerHeight > threshold);
     var container = document.getElementById('custom-video-container');
-    if (container) container.classList.add('player-ready');
-    prepareIframeForFullscreen();
-
-    // Блокируем методы объекта player от возврата данных в консоли
-    if (player.getVideoData) {
-      player.getVideoData = function() { return {}; };
-    }
-
-    // Ограничиваем iframe
-    var iframe = player.getIframe();
-    if (iframe) {
-      iframe.setAttribute('referrerpolicy', 'no-referrer');
-      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
-    }
-
-    // Привязываем события к нашим кнопкам
-    var playBtn = document.getElementById('play-pause-btn');
-    var overlay = document.getElementById('video-click-overlay');
-    var muteBtn = document.getElementById('mute-btn');
-    var fsBtn = document.getElementById('fullscreen-btn');
-    var progressContainer = document.getElementById('progress-container');
-
-    if(playBtn) playBtn.addEventListener('click', togglePlay);
-    if(overlay) overlay.addEventListener('click', togglePlay);
-    if(muteBtn) muteBtn.addEventListener('click', toggleMute);
-    if(fsBtn) fsBtn.addEventListener('click', toggleFullScreen);
-    
-    if(progressContainer) {
-      progressContainer.addEventListener('mousedown', startSeek);
-      progressContainer.addEventListener('touchstart', startSeek, { passive: false });
-    }
-
-    var speedBtn = document.getElementById('speed-btn');
-    if (speedBtn) speedBtn.addEventListener('click', toggleSpeedMenu);
-    
-    var speedOptions = document.querySelectorAll('.speed-option');
-    speedOptions.forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        var rate = parseFloat(e.target.getAttribute('data-speed'));
-        setSpeed(rate);
-      });
-    });
-
-    document.addEventListener('click', function(e) {
-      var wrapper = document.querySelector('.speed-control-wrapper');
-      if (wrapper && !wrapper.contains(e.target)) {
-        var menu = document.getElementById('speed-menu');
-        if (menu) menu.classList.remove('show');
-      }
-    });
-
-    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(function(eventName) {
-      document.addEventListener(eventName, syncFullscreenState);
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') exitPseudoFullscreen();
-    });
-
-    initMobileControls(); // инициализация мобильных жестов
-    updateTimeDisplay();
-  }
-
-  function onPlayerStateChange(event) {
-    var playBtn = document.getElementById('play-pause-btn');
-    var container = document.getElementById('custom-video-container');
-    
-    if (event.data == YT.PlayerState.PLAYING) {
-      isPlaying = true;
-      if(playBtn) playBtn.innerText = '⏸';
-      if(container) container.classList.add('playing');
-      
-      clearTimeout(overlayHideTimeout);
-      overlayHideTimeout = setTimeout(function() {
-        if (container) container.classList.add('overlay-hidden');
-      }, 1500);
-
-      clearInterval(progressInterval);
-      progressInterval = setInterval(updateProgressBar, 500);
-      resetControlsTimer(); // запустить таймер скрытия при воспроизведении
-    } else if (
-      event.data == YT.PlayerState.PAUSED ||
-      event.data == YT.PlayerState.ENDED ||
-      event.data == YT.PlayerState.CUED
-    ) {
-      isPlaying = false;
-      if(playBtn) playBtn.innerText = '▶';
-      if(container) {
-        container.classList.remove('playing');
-        container.classList.remove('overlay-hidden');
-      }
-      clearTimeout(overlayHideTimeout);
-      
-      clearInterval(progressInterval);
-      resetControlsTimer(); // показать контролы при паузе
-    }
-    updateTimeDisplay();
-  }
-
-  function togglePlay() {
-    if (!player || !player.playVideo) return;
-    if (isPlaying) {
-      player.pauseVideo();
+    if (devOpen) {
+      if (plyrPlayer && !plyrPlayer.paused) plyrPlayer.pause();
+      if (container) container.style.filter = 'blur(15px)';
     } else {
-      player.playVideo();
+      if (container && container.style.filter) container.style.filter = '';
     }
-  }
+  }, 1000);
 
-  function toggleMute() {
-    if (!player || !player.isMuted) return;
-    var muteBtn = document.getElementById('mute-btn');
-    if (player.isMuted()) {
-      player.unMute();
-      if(muteBtn) muteBtn.innerText = '🔊';
-    } else {
-      player.mute();
-      if(muteBtn) muteBtn.innerText = '🔇';
-    }
-  }
+  // ── Start watermark when Plyr is ready ────────────────────────────────────
+  plyrPlayer.on('ready', function () {
+    startWatermark();
+  });
 
-  function updateProgressBar() {
-    if (isSeeking || !player || !player.getDuration) return;
-    var duration = player.getDuration();
-    var currentTime = player.getCurrentTime();
-    if (duration > 0) {
-      var percent = (currentTime / duration) * 100;
-      setProgressVisual(percent, currentTime, duration);
-      updateTimeDisplay();
-    }
-  }
-
-  function setProgressVisual(percent, currentTime, duration) {
-    percent = Math.max(0, Math.min(100, percent || 0));
-    var bar = document.getElementById('progress-bar');
-    var progressContainer = document.getElementById('progress-container');
-    if(bar) bar.style.width = percent + '%';
-    if(progressContainer) progressContainer.style.setProperty('--progress-percent', percent + '%');
-
-    if (typeof currentTime === 'number' && typeof duration === 'number') {
-      var display = document.getElementById('time-display');
-      if(display) display.innerText = formatTime(currentTime) + ' / ' + formatTime(duration);
-    }
-  }
-
-  function getSeekPercentFromEvent(e) {
-    var progressContainer = document.getElementById('progress-container');
-    if (!progressContainer) return 0;
-
-    var point = e;
-    if (e.touches && e.touches.length) {
-      point = e.touches[0];
-    } else if (e.changedTouches && e.changedTouches.length) {
-      point = e.changedTouches[0];
-    }
-
-    var rect = progressContainer.getBoundingClientRect();
-    if (!rect.width) return 0;
-    return Math.max(0, Math.min(1, (point.clientX - rect.left) / rect.width));
-  }
-
-  function previewSeek(e) {
-    if (!player || !player.getDuration) return;
-    var duration = player.getDuration() || 0;
-    activeSeekPercent = getSeekPercentFromEvent(e);
-    setProgressVisual(activeSeekPercent * 100, activeSeekPercent * duration, duration);
-  }
-
-  function startSeek(e) {
-    if (e.type === 'mousedown' && e.button !== 0) return;
-    if (!player || !player.getDuration) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    isSeeking = true;
-    var container = document.getElementById('custom-video-container');
-    if (container) container.classList.add('seeking');
-
-    previewSeek(e);
-
-    document.addEventListener('mousemove', moveSeek);
-    document.addEventListener('mouseup', endSeek);
-    document.addEventListener('touchmove', moveSeek, { passive: false });
-    document.addEventListener('touchend', endSeek);
-    document.addEventListener('touchcancel', cancelSeek);
-  }
-
-  function moveSeek(e) {
-    if (!isSeeking) return;
-    e.preventDefault();
-    previewSeek(e);
-  }
-
-  function endSeek(e) {
-    if (!isSeeking || !player || !player.getDuration) return;
-    e.preventDefault();
-    previewSeek(e);
-
-    var duration = player.getDuration() || 0;
-    if (duration > 0 && player.seekTo) {
-      player.seekTo(activeSeekPercent * duration, true);
-    }
-    finishSeek();
-  }
-
-  function cancelSeek() {
-    finishSeek();
-    updateProgressBar();
-  }
-
-  function finishSeek() {
-    isSeeking = false;
-    var container = document.getElementById('custom-video-container');
-    if (container) container.classList.remove('seeking');
-
-    document.removeEventListener('mousemove', moveSeek);
-    document.removeEventListener('mouseup', endSeek);
-    document.removeEventListener('touchmove', moveSeek);
-    document.removeEventListener('touchend', endSeek);
-    document.removeEventListener('touchcancel', cancelSeek);
-  }
-
-  function formatTime(time) {
-    if(isNaN(time)) time = 0;
-    time = Math.round(time);
-    var minutes = Math.floor(time / 60);
-    var seconds = time - minutes * 60;
-    seconds = seconds < 10 ? '0' + seconds : seconds;
-    return minutes + ":" + seconds;
-  }
-
-  function updateTimeDisplay() {
-    if (!player || !player.getDuration) return;
-    var duration = player.getDuration() || 0;
-    var currentTime = player.getCurrentTime() || 0;
-    var display = document.getElementById('time-display');
-    if(display) display.innerText = formatTime(currentTime) + ' / ' + formatTime(duration);
-  }
-
-  function prepareIframeForFullscreen() {
-    if (!player || !player.getIframe) return;
-    var iframe = player.getIframe();
-    if (!iframe) return;
-
-    iframe.setAttribute('allowfullscreen', 'true');
-    iframe.setAttribute('webkitallowfullscreen', 'true');
-    iframe.setAttribute('mozallowfullscreen', 'true');
-    iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-  }
-
-  function getFullscreenElement() {
-    return document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      (document.webkitIsFullScreen ? document.documentElement : null) ||
-      document.mozFullScreenElement ||
-      document.msFullscreenElement ||
-      null;
-  }
-
-  function requestNativeFullscreen(element) {
-    if (element.requestFullscreen) {
-      try {
-        return element.requestFullscreen({ navigationUI: 'hide' });
-      } catch (e) {
-        return element.requestFullscreen();
-      }
-    }
-    if (element.webkitRequestFullscreen) return element.webkitRequestFullscreen();
-    if (element.webkitRequestFullScreen) return element.webkitRequestFullScreen();
-    if (element.mozRequestFullScreen) return element.mozRequestFullScreen();
-    if (element.msRequestFullscreen) return element.msRequestFullscreen();
-    return null;
-  }
-
-  function exitNativeFullscreen() {
-    if (document.exitFullscreen) return document.exitFullscreen();
-    if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
-    if (document.webkitCancelFullScreen) return document.webkitCancelFullScreen();
-    if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
-    if (document.msExitFullscreen) return document.msExitFullscreen();
-    return null;
-  }
-
-
-  function enterPseudoFullscreen() {
-    var container = document.getElementById('custom-video-container');
-    if (!container) return;
-    container.classList.add('is-pseudo-fullscreen');
-    document.body.classList.add('video-pseudo-fullscreen');
-    syncFullscreenState();
-  }
-
-  function exitPseudoFullscreen() {
-    var container = document.getElementById('custom-video-container');
-    if (!container || !container.classList.contains('is-pseudo-fullscreen')) return;
-    container.classList.remove('is-pseudo-fullscreen');
-    document.body.classList.remove('video-pseudo-fullscreen');
-    syncFullscreenState();
-  }
-
-  function syncFullscreenState() {
-    var container = document.getElementById('custom-video-container');
-    var fsBtn = document.getElementById('fullscreen-btn');
-    if (!container) return;
-
-    var isFullscreen = Boolean(getFullscreenElement()) || container.classList.contains('is-pseudo-fullscreen');
-    container.classList.toggle('is-fullscreen', isFullscreen);
-    if (fsBtn) fsBtn.innerText = isFullscreen ? '✕' : '⛶';
-
-    // Разблокировать ориентацию при выходе из fullscreen
-    if (!isFullscreen && screen.orientation && screen.orientation.unlock) {
-      try { screen.orientation.unlock(); } catch (e) {}
-    }
-  }
-
-  function toggleFullScreen() {
-    var container = document.getElementById('custom-video-container');
-    if (!container) return;
-
-    // Выход из fullscreen
-    if (getFullscreenElement()) {
-      exitNativeFullscreen();
-      return;
-    }
-    if (container.classList.contains('is-pseudo-fullscreen')) {
-      exitPseudoFullscreen();
-      return;
-    }
-
-    // —— iOS Safari: скрываем нативные контролы через CSS псевдо-фуллскрин
-    if (isIosSafari()) {
-      enterPseudoFullscreen();
-      return;
-    }
-
-    // —— Остальные браузеры: requestFullscreen на весь контейнер плеера
-    function _lockLandscape() {
-      if (screen.orientation && screen.orientation.lock) {
-        try { screen.orientation.lock('landscape').catch(function() {}); } catch (e) {}
-      }
-    }
-
-    var promise = requestNativeFullscreen(container);
-    if (promise && promise.then) {
-      promise.then(function() {
-        syncFullscreenState();
-        _lockLandscape(); // блокировка ориентации ПОСЛЕ входа в fullscreen
-      }).catch(function() {
-        enterPseudoFullscreen();
-      });
-    } else {
-      // Синхронный фоллбэк (старые браузеры)
-      setTimeout(function() {
-        if (getFullscreenElement()) {
-          syncFullscreenState();
-          _lockLandscape();
-        } else {
-          enterPseudoFullscreen();
-        }
-        syncFullscreenState();
-      }, 80);
-    }
-  }
-
-  function toggleSpeedMenu(e) {
-    e.stopPropagation();
-    var menu = document.getElementById('speed-menu');
-    if (menu) menu.classList.toggle('show');
-  }
-
-  function setSpeed(rate) {
-    if (!player || !player.setPlaybackRate) return;
-    player.setPlaybackRate(rate);
-    
-    var speedBtn = document.getElementById('speed-btn');
-    if (speedBtn) speedBtn.innerText = rate === 1 ? '1x' : rate + 'x';
-    
-    var options = document.querySelectorAll('.speed-option');
-    options.forEach(function(btn) {
-      if (parseFloat(btn.getAttribute('data-speed')) === rate) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
-    
-    var menu = document.getElementById('speed-menu');
-    if (menu) menu.classList.remove('show');
-  }
-
-  // ── Определение iOS Safari ──────────────────────────────────
-  function isIosSafari() {
-    var ua = navigator.userAgent;
-    // Chrome/Firefox/Opera/Edge на iOS имеют CriOS/FxiOS/OPiOS/EdgiOS в UA
-    return /iPad|iPhone|iPod/.test(ua) && !window.MSStream &&
-           !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
-  }
-
-  // ── Таймер автоскрытия контролов ───────────────────────────
-  function resetControlsTimer() {
-    var container = document.getElementById('custom-video-container');
-    if (!container) return;
-    container.classList.remove('controls-hidden');
-    clearTimeout(controlsTimer);
-    if (isPlaying) {
-      controlsTimer = setTimeout(function() {
-        container.classList.add('controls-hidden');
-      }, 3000);
-    }
-  }
-
-  // ── Ripple-анимация при двойном тапе ───────────────────────
-  function showSeekRipple(isRight, seconds) {
-    var container = document.getElementById('custom-video-container');
-    if (!container) return;
-    var old = container.querySelector('.seek-ripple');
-    if (old) old.remove();
-
-    var ripple = document.createElement('div');
-    ripple.className = 'seek-ripple';
-    ripple.style[isRight ? 'right' : 'left'] = '12%';
-    ripple.innerHTML = (isRight ? '+' : '\u2212') + seconds +
-      '<br><span class="seek-ripple-label">\u0441\u0435\u043a</span>';
-    container.appendChild(ripple);
-    setTimeout(function() { if (ripple.parentNode) ripple.remove(); }, 750);
-  }
-
-  // ── Мобильные жесты (только touch-устройства) ──────────────
-  function initMobileControls() {
-    if (!('ontouchstart' in window)) return;
-
-    var container = document.getElementById('custom-video-container');
-    var overlay   = document.getElementById('video-click-overlay');
-    if (!container || !overlay) return;
-
-    var touchStartX   = 0;
-    var touchStartY   = 0;
-    var touchStartTime = 0;
-    var lastTapTime   = 0;
-    var lastTapClientX = 0;
-    var SWIPE_THRESHOLD = 50;  // px
-    var DOUBLE_TAP_MS   = 280; // мс
-
-    overlay.addEventListener('touchstart', function(e) {
-      touchStartX    = e.touches[0].clientX;
-      touchStartY    = e.touches[0].clientY;
-      touchStartTime = Date.now();
-    }, { passive: true });
-
-    overlay.addEventListener('touchend', function(e) {
-      var touch = e.changedTouches[0];
-      var dx = touch.clientX - touchStartX;
-      var dy = touch.clientY - touchStartY;
-      var dt = Date.now() - touchStartTime;
-
-      // Игнорируем преимущественно вертикальные жесты (скролл страницы)
-      if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) {
-        resetControlsTimer();
-        return;
-      }
-
-      // ── Свайп: быстрая перемотка ±10 сек ──
-      if (Math.abs(dx) > SWIPE_THRESHOLD && dt < 400 && Math.abs(dy) < 40) {
-        if (!player || !player.seekTo || !player.getCurrentTime) return;
-        var isRight = dx > 0;
-        var newTime = Math.max(0, player.getCurrentTime() + (isRight ? 10 : -10));
-        player.seekTo(newTime, true);
-        showSeekRipple(isRight, 10);
-        resetControlsTimer();
-        return;
-      }
-
-      // ── Тап / Двойной тап ──
-      if (Math.abs(dx) < 16 && Math.abs(dy) < 16 && dt < 250) {
-        var now   = Date.now();
-        var rect  = container.getBoundingClientRect();
-        var relX  = (touch.clientX - rect.left) / rect.width;
-        var isDouble = (now - lastTapTime < DOUBLE_TAP_MS) &&
-                       (Math.abs(touch.clientX - lastTapClientX) < 64);
-
-        if (isDouble) {
-          if (!player || !player.seekTo || !player.getCurrentTime) return;
-          if (relX < 0.3) {
-            // Левая зона: −10 сек
-            player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
-            showSeekRipple(false, 10);
-          } else if (relX > 0.7) {
-            // Правая зона: +10 сек
-            var dur = player.getDuration ? (player.getDuration() || 0) : 0;
-            player.seekTo(Math.min(dur || Infinity, player.getCurrentTime() + 10), true);
-            showSeekRipple(true, 10);
-          } else {
-            // Центр: пауза / плей
-            togglePlay();
-          }
-          lastTapTime = 0; // сброс, чтобы тройной тап не срабатывал
-          resetControlsTimer();
-          return;
-        }
-
-        lastTapTime    = now;
-        lastTapClientX = touch.clientX;
-
-        // Одиночный тап: показать контролы или переключить пауза/плей
-        if (container.classList.contains('controls-hidden')) {
-          resetControlsTimer(); // просто показываем контролы
-        } else {
-          togglePlay();
-          resetControlsTimer();
-        }
-      }
-    }, { passive: true });
-
-    // Любое касание панели контролов — сбросить таймер скрытия
-    var controls = document.getElementById('custom-controls');
-    if (controls) {
-      controls.addEventListener('touchstart', resetControlsTimer, { passive: true });
-    }
-
-    resetControlsTimer();
-  }
+})();
 </script>
 {% endblock %}
