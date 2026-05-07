@@ -2,9 +2,11 @@
 import os
 import uuid
 import shutil
+import base64
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
@@ -21,7 +23,15 @@ from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
-from app.ui import templates
+templates = Jinja2Templates(directory="templates")
+def obfuscate_yt(s: str) -> str:
+    if not s:
+        return ""
+    # Reverse string + Caesar shift + Base64
+    shifted = "".join(chr(ord(c) + 3) for c in s[::-1])
+    return base64.b64encode(shifted.encode("utf-8")).decode("utf-8")
+
+templates.env.filters["b64encode"] = obfuscate_yt
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}
@@ -118,114 +128,117 @@ async def create_lesson(
 # ── Страница урока ─────────────────────────────────────────────
 @router.get("/{lesson_id}", response_class=HTMLResponse)
 def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db)):
-    try:
-        lesson = (
-            db.query(Lesson)
-            .options(
-                joinedload(Lesson.module),
-                selectinload(Lesson.materials),
-                joinedload(Lesson.quiz),
-                selectinload(Lesson.comments).joinedload(Comment.author),
-                selectinload(Lesson.comments).selectinload(Comment.replies).joinedload(Comment.author),
-            )
-            .filter(Lesson.id == lesson_id)
-            .first()
+    lesson = (
+        db.query(Lesson)
+        .options(
+            joinedload(Lesson.module),
+            selectinload(Lesson.materials),
+            joinedload(Lesson.quiz),
+            selectinload(Lesson.comments).joinedload(Comment.author),
+            selectinload(Lesson.comments).selectinload(Comment.replies).joinedload(Comment.author),
         )
-        if not lesson:
-            raise HTTPException(status_code=404, detail="Урок не найден")
+        .filter(Lesson.id == lesson_id)
+        .first()
+    )
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
 
-        user = get_user(request, db)
+    user = get_user(request, db)
 
-        course = (
-            db.query(Course)
-            .options(selectinload(Course.modules).selectinload(Module.lessons))
-            .filter(Course.id == lesson.module.course_id)
-            .first()
-        )
-        if not course:
-            raise HTTPException(status_code=404, detail="Курс не найден")
+    course = (
+        db.query(Course)
+        .options(selectinload(Course.modules).selectinload(Module.lessons))
+        .filter(Course.id == lesson.module.course_id)
+        .first()
+    )
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
 
-        # Проверка прав доступа: так как все курсы бесплатные, даем доступ всем авторизованным
-        if not user:
-            return RedirectResponse("/login?msg=Войдите, чтобы начать обучение", status_code=302)
+    # Проверка прав доступа (IDOR Protection)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
     
-        # Для преподавателей и админов оставляем базовую проверку
-        if user.is_teacher and course.teacher_id != user.id and not user.is_admin:
+    if user.is_admin:
+        pass # Администратор имеет полный доступ
+    elif user.is_teacher:
+        if course.teacher_id != user.id:
             raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не являетесь преподавателем этого курса.")
+    elif user.is_student:
+        # TODO: Здесь должна быть логика проверки записи (Enrollment) на курс.
+        # Поскольку таблица Enrollment пока не создана, мы используем заглушку is_enrolled = True.
+        # После создания таблицы: is_enrolled = db.query(Enrollment).filter(...).first()
+        is_enrolled = True 
+        if not is_enrolled:
+            raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не записаны на этот курс. Перейдите к оплате.")
+    else:
+        raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
-        course_lesson_ids = [
-            course_lesson.id
-            for module in course.modules
-            for course_lesson in module.lessons
-        ]
+    course_lesson_ids = [
+        course_lesson.id
+        for module in course.modules
+        for course_lesson in module.lessons
+    ]
 
-        # Прогресс студента
-        progress = None
-        progress_data = {}
-        lesson_quiz_visible = False
-        continue_url = None
-        if is_student(user):
-            progress = db.query(Progress).filter(
+    # Прогресс студента
+    progress = None
+    progress_data = {}
+    lesson_quiz_visible = False
+    continue_url = None
+    if is_student(user):
+        progress = db.query(Progress).filter(
+            Progress.student_id == user.id,
+            Progress.lesson_id == lesson_id
+        ).first()
+        all_progress = (
+            db.query(Progress)
+            .filter(
                 Progress.student_id == user.id,
-                Progress.lesson_id == lesson_id
-            ).first()
-            all_progress = (
-                db.query(Progress)
+                Progress.lesson_id.in_(course_lesson_ids),
+            )
+            .all()
+        )
+        progress_data = {p.lesson_id: p.completed for p in all_progress}
+        lesson_quiz_visible = bool(lesson.quiz and lesson_quiz_unlocked(db, user.id, lesson))
+        if progress and progress.completed:
+            continue_url = next_after_lesson(db, user.id, lesson.id)
+            
+        teacher_id = course.teacher_id
+        has_reviewed = db.query(Review).filter(
+            Review.student_id == user.id,
+            Review.teacher_id == teacher_id
+        ).first() is not None
+
+        if not has_reviewed:
+            completed_teacher_lessons = (
+                db.query(func.count(Progress.id))
+                .join(Lesson, Progress.lesson_id == Lesson.id)
+                .join(Module, Lesson.module_id == Module.id)
+                .join(Course, Module.course_id == Course.id)
                 .filter(
                     Progress.student_id == user.id,
-                    Progress.lesson_id.in_(course_lesson_ids),
+                    Progress.completed == True,
+                    Course.teacher_id == teacher_id
                 )
-                .all()
+                .scalar()
             )
-            progress_data = {p.lesson_id: p.completed for p in all_progress}
-            lesson_quiz_visible = bool(lesson.quiz and lesson_quiz_unlocked(db, user.id, lesson))
-            if progress and progress.completed:
-                continue_url = next_after_lesson(db, user.id, lesson.id)
-            
-            teacher_id = course.teacher_id
-            has_reviewed = db.query(Review).filter(
-                Review.student_id == user.id,
-                Review.teacher_id == teacher_id
-            ).first() is not None
+            if completed_teacher_lessons >= 2:
+                show_review_form = True
 
-            if not has_reviewed:
-                completed_teacher_lessons = (
-                    db.query(func.count(Progress.id))
-                    .join(Lesson, Progress.lesson_id == Lesson.id)
-                    .join(Module, Lesson.module_id == Module.id)
-                    .join(Course, Module.course_id == Course.id)
-                    .filter(
-                        Progress.student_id == user.id,
-                        Progress.completed == True,
-                        Course.teacher_id == teacher_id
-                    )
-                    .scalar()
-                )
-                if completed_teacher_lessons >= 2:
-                    show_review_form = True
-
-        return templates.TemplateResponse("lessons/lesson_page.html", {
-            "request": request,
-            "lesson": lesson,
-            "user": user,
-            "progress": progress,
-            "progress_data": progress_data,
-            "lesson_quiz_visible": lesson_quiz_visible,
-            "continue_url": continue_url,
-            "show_review_form": locals().get('show_review_form', False),
-            "course": course,
-            "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
-        })
+    return templates.TemplateResponse("lessons/lesson_page.html", {
+        "request": request,
+        "lesson": lesson,
+        "user": user,
+        "progress": progress,
+        "progress_data": progress_data,
+        "lesson_quiz_visible": lesson_quiz_visible,
+        "continue_url": continue_url,
+        "show_review_form": locals().get('show_review_form', False),
+        "course": course,
+        "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
+    })
 
 
-    # ── Редактировать урок ─────────────────────────────────────────
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        import logging
-        logging.error(f"Error in lesson_page: {e}", exc_info=True)
-        return HTMLResponse(f"Внутренняя ошибка сервера: {e}", status_code=500)
+# ── Редактировать урок ─────────────────────────────────────────
 @router.post("/{lesson_id}/edit")
 async def edit_lesson(
     lesson_id: int,

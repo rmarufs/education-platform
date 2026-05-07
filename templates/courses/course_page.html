@@ -13,10 +13,10 @@
 
   <div class="course-detail-layout">
 
-    <!-- ① ОПИСАНИЕ КУРСА (первым) -->
+    <!-- Основная информация -->
     <div class="course-detail-main">
       <div class="course-detail-card">
-        <!-- Заголовок + обложка -->
+        <!-- Заголовок + изображение -->
         <div class="course-detail-hero">
           {{ course_cover(course, "course-cover-hero") }}
           <div class="course-hero-meta">
@@ -34,11 +34,11 @@
           </div>
         </div>
 
-        <!-- Описание курса -->
+        <!-- Описание -->
         {% if course.description %}
         <div class="course-detail-body">
           <h2 data-i18n="course_page.about">О курсе</h2>
-          <div class="content-area">{{ course.description | clean_html }}</div>
+          <div class="rich-text-content">{{ course.description | clean_html }}</div>
         </div>
         {% endif %}
 
@@ -46,8 +46,7 @@
         <div class="course-detail-cta-section">
           {% if not user %}
           <div class="cta-guest">
-            <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Зарегистрироваться, чтобы начать</a>
-            <a href="/login" class="btn btn-outline btn-full" style="margin-top:8px;" data-i18n="nav.login">Уже есть аккаунт? Войти</a>
+            <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать изучение</a>
           </div>
           {% elif user.is_teacher and user.id == course.teacher_id %}
           <div class="cta-teacher">
@@ -91,7 +90,53 @@
       </div>
     </div>
 
-    <!-- ② ОТЗЫВЫ СТУДЕНТОВ (вторым) -->
+    <!-- Структура курса -->
+    {% if course.modules %}
+    <section class="course-curriculum" id="course-curriculum">
+      <div class="course-curriculum-header">
+        <h2 data-i18n="course_page.content">Содержание курса</h2>
+        <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
+      </div>
+      <div class="course-curriculum-body" id="course-curriculum-body">
+        {% for module in course.modules %}
+        <div class="curriculum-module" id="module-curriculum-{{ module.id }}">
+          <div class="curriculum-module-header">
+            <div class="curriculum-module-main">
+              <span class="module-index">{{ loop.index }}</span>
+              <strong>{{ module.title }}</strong>
+              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
+            </div>
+            {% if module.quiz and (not user or user.role.value != "student" or module_quiz_states.get(module.id, {}).get("unlocked") or module_quiz_states.get(module.id, {}).get("passed")) %}
+            <a href="/quiz/{{ module.quiz.id }}" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="quiz.open_module">Квиз модуля</a>
+            {% elif module.quiz %}
+            <span class="btn btn-outline btn-xs curriculum-module-quiz-link disabled" aria-disabled="true" data-i18n="quiz.module_locked">Сначала завершите уроки</span>
+            {% endif %}
+          </div>
+          {% if module.description %}
+          <div class="curriculum-module-description rich-text-content">{{ module.description | clean_html }}</div>
+          {% endif %}
+          <ul class="curriculum-lessons">
+            {% for lesson in module.lessons %}
+            <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
+              <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
+              {% if user %}
+              <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
+              {% else %}
+              <span>{{ lesson.title }}</span>
+              {% endif %}
+              {% if lesson.quiz %}
+              <span class="badge badge-quiz">Квиз</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Отзывы студентов -->
     {% if top_reviews %}
     <section class="course-reviews-section" id="course-reviews">
       <div class="course-reviews-header">
@@ -125,52 +170,6 @@
           {% if review.text %}
           <p class="rci-text">{{ review.text }}</p>
           {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
-
-    <!-- ③ СОДЕРЖАНИЕ КУРСА (третьим) -->
-    {% if course.modules %}
-    <section class="course-curriculum" id="course-curriculum">
-      <div class="course-curriculum-header">
-        <h2 data-i18n="course_page.content">Содержание курса</h2>
-        <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
-      </div>
-      <div class="course-curriculum-body" id="course-curriculum-body">
-        {% for module in course.modules %}
-        <div class="curriculum-module" id="module-curriculum-{{ module.id }}">
-          <div class="curriculum-module-header">
-            <div class="curriculum-module-main">
-              <span class="module-index">{{ loop.index }}</span>
-              <strong>{{ module.title }}</strong>
-              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
-            </div>
-            {% if module.quiz and (not user or user.role.value != "student" or module_quiz_states.get(module.id, {}).get("unlocked") or module_quiz_states.get(module.id, {}).get("passed")) %}
-            <a href="/quiz/{{ module.quiz.id }}" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="quiz.open_module">Квиз модуля</a>
-            {% elif module.quiz %}
-            <span class="btn btn-outline btn-xs curriculum-module-quiz-link disabled" aria-disabled="true" data-i18n="quiz.module_locked">Сначала завершите уроки</span>
-            {% endif %}
-          </div>
-          {% if module.description %}
-          <div class="curriculum-module-description content-area">{{ module.description | clean_html }}</div>
-          {% endif %}
-          <ul class="curriculum-lessons">
-            {% for lesson in module.lessons %}
-            <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
-              <span>{{ "✅" if progress_data.get(lesson.id) else ("🎬" if lesson.video_url else "📄") }}</span>
-              {% if user %}
-              <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
-              {% else %}
-              <span class="lesson-locked-title">🔒 {{ lesson.title }}</span>
-              {% endif %}
-              {% if lesson.quiz %}
-              <span class="badge badge-quiz">Квиз</span>
-              {% endif %}
-            </li>
-            {% endfor %}
-          </ul>
         </div>
         {% endfor %}
       </div>

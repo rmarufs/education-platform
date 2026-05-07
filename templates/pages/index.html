@@ -26,14 +26,49 @@
 <!-- Hero секция -->
 <section class="hero">
     <div class="hero-content">
-        <h1 class="hero-title" data-i18n="hero.title">Таджикская образовательная платформа</h1>
+        <h1 class="hero-title" data-i18n="hero.title">Таджикская платформа для студентов и преподавателей</h1>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">
+            Открой доступ к знаниям прямо сейчас
+        </p>
         <div class="hero-actions">
-            {% if user %}
-            <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
-            {% else %}
             <a href="/register" class="btn btn-primary btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
+            {% if user %}
+            <a href="/dashboard" class="btn btn-outline btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
+            {% else %}
             <a href="/login" class="btn btn-outline btn-lg" data-i18n="hero.cta_login">Войти в аккаунт</a>
             {% endif %}
+        </div>
+    </div>
+    <div class="hero-illustration">
+        <div class="hero-card floating">
+            <span class="hero-card-icon">📚</span>
+            <span data-i18n="hero.card1">Качественные курсы</span>
+        </div>
+        <div class="hero-card floating delay-1">
+            <span class="hero-card-icon">🏆</span>
+            <span data-i18n="hero.card2">Достижения</span>
+        </div>
+        <div class="hero-card floating delay-2">
+            <span class="hero-card-icon">👩‍🏫</span>
+            <span data-i18n="hero.card3">Лучшие преподаватели</span>
+        </div>
+    </div>
+</section>
+
+<!-- Статистика платформы -->
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-number">500+</span>
+            <span class="stat-label" data-i18n="stats.students">Студентов</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">50+</span>
+            <span class="stat-label" data-i18n="stats.courses">Курсов</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">30+</span>
+            <span class="stat-label" data-i18n="stats.teachers">Преподавателей</span>
         </div>
     </div>
 </section>
@@ -42,6 +77,7 @@
 <section class="courses-section">
     <div class="section-header">
         <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
+        <p data-i18n="home.popular_courses_sub">Начни обучение с лучших программ нашей платформы</p>
     </div>
 
     <div class="courses-grid" id="courses-grid">
@@ -79,6 +115,30 @@
                 <p data-i18n="home.no_courses">Курсы пока не добавлены. Зарегистрируйся как преподаватель и создай первый!</p>
             </div>
         {% endif %}
+    </div>
+</section>
+
+<!-- О платформе -->
+<section class="features-section">
+    <div class="section-header">
+        <h2 data-i18n="home.why_us">Почему Фурузон?</h2>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3 data-i18n="feature.fast">Быстрый старт</h3>
+            <p data-i18n="feature.fast_desc">Зарегистрируйся за пару минут и сразу начинай обучение</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3 data-i18n="feature.focused">Целевое обучение</h3>
+            <p data-i18n="feature.focused_desc">Чёткие курсы от опытных преподавателей без лишней воды</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💡</div>
+            <h3 data-i18n="feature.simple">Простой интерфейс</h3>
+            <p data-i18n="feature.simple_desc">Удобная платформа без лишней сложности</p>
+        </div>
     </div>
 </section>
 {% endblock %}
