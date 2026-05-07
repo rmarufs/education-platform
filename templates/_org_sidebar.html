@@ -1,23 +1,28 @@
-<aside class="dashboard-sidebar">
-    <div class="sidebar-header">
-        <h2 data-i18n="nav.dashboard">Кабинет</h2>
+<aside class="sidebar">
+    <div class="sidebar-profile">
+        <div class="avatar" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+            {% if org and org.name %}{{ org.name[0].upper() }}{% else %}{{ user.name[0].upper() }}{% endif %}
+        </div>
+        <div class="profile-info">
+            <h3>{{ org.name if org else user.name }}</h3>
+            <span class="role-badge" style="background:#ede9fe;color:#6d28d9;">Организация</span>
+        </div>
     </div>
     <nav class="sidebar-nav">
-        <a href="/dashboard/organization" class="sidebar-link {% if active_page == 'dashboard' %}active{% endif %}">
-            <span class="sidebar-icon">📊</span>
+        <a href="/dashboard/organization" class="sidebar-link {{ 'active' if active_page == 'dashboard' else '' }}">
+            <span class="link-icon">📊</span>
             <span data-i18n="nav.overview">Обзор</span>
         </a>
-        <a href="/organization/teachers" class="sidebar-link {% if active_page == 'teachers' %}active{% endif %}">
-            <span class="sidebar-icon">👨‍🏫</span>
+        <a href="/organization/teachers" class="sidebar-link {{ 'active' if active_page == 'teachers' else '' }}">
+            <span class="link-icon">👨‍🏫</span>
             <span data-i18n="org.stats_teachers">Преподаватели</span>
         </a>
-        <a href="/organization/profile" class="sidebar-link {% if active_page == 'profile' %}active{% endif %}">
-            <span class="sidebar-icon">⚙️</span>
+        <a href="/organization/profile" class="sidebar-link {{ 'active' if active_page == 'profile' else '' }}">
+            <span class="link-icon">⚙️</span>
             <span data-i18n="nav.profile">Профиль</span>
         </a>
-        <div class="sidebar-divider"></div>
-        <a href="/logout" class="sidebar-link text-danger">
-            <span class="sidebar-icon">🚪</span>
+        <a href="/logout" class="sidebar-link" data-logout-link>
+            <span class="link-icon">🚪</span>
             <span data-i18n="nav.logout">Выйти</span>
         </a>
     </nav>

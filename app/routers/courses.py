@@ -623,7 +623,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
 @router.get("/{course_id}/manage", response_class=HTMLResponse)
 def manage_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    if not user or user.role.value not in ("teacher", "admin"):
+    if not user or user.role.value not in ("teacher", "admin", "organization"):
         if user and user.role.value == "teacher_pending":
             return RedirectResponse("/register/pending", status_code=302)
         return RedirectResponse("/login", status_code=302)
@@ -636,11 +636,26 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
             selectinload(Course.modules).selectinload(Module.lessons).selectinload(Lesson.materials),
             selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
         )
-        .filter(Course.id == course_id, Course.teacher_id == user.id)
+        .filter(Course.id == course_id)
         .first()
     )
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
+
+    if user.role.value == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    if user.role.value == "organization":
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if not org:
+            raise HTTPException(status_code=403, detail="Организация не найдена")
+        link = db.query(OrganizationTeacher).filter(
+            OrganizationTeacher.organization_id == org.id,
+            OrganizationTeacher.teacher_id == course.teacher_id,
+            OrganizationTeacher.status == "accepted"
+        ).first()
+        if not link:
+            raise HTTPException(status_code=403, detail="Этот курс не принадлежит преподавателю из вашей организации")
 
     categories = db.query(Category).order_by(Category.name).all()
 
@@ -701,7 +716,7 @@ def edit_course(
     db: Session = Depends(get_db),
 ):
     user = get_user(request, db)
-    if not user or user.role.value not in ("teacher", "admin"):
+    if not user or user.role.value not in ("teacher", "admin", "organization"):
         raise HTTPException(status_code=403)
 
     title = title.strip()
@@ -713,9 +728,24 @@ def edit_course(
             if file and file.filename:
                 _validate_course_material_upload(file)
 
-    course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
+    course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404)
+
+    if user.role.value == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    if user.role.value == "organization":
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if not org:
+            raise HTTPException(status_code=403)
+        link = db.query(OrganizationTeacher).filter(
+            OrganizationTeacher.organization_id == org.id,
+            OrganizationTeacher.teacher_id == course.teacher_id,
+            OrganizationTeacher.status == "accepted"
+        ).first()
+        if not link:
+            raise HTTPException(status_code=403, detail="Курс не принадлежит вашей организации")
 
     course.title = title
     course.description = description or None
@@ -743,12 +773,27 @@ def edit_course(
 @router.post("/{course_id}/delete")
 def delete_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    if not user or user.role.value not in ("teacher", "admin"):
+    if not user or user.role.value not in ("teacher", "admin", "organization"):
         raise HTTPException(status_code=403)
 
-    course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
+    course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404)
+
+    if user.role.value == "teacher" and course.teacher_id != user.id:
+        raise HTTPException(status_code=403)
+
+    if user.role.value == "organization":
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if not org:
+            raise HTTPException(status_code=403)
+        link = db.query(OrganizationTeacher).filter(
+            OrganizationTeacher.organization_id == org.id,
+            OrganizationTeacher.teacher_id == course.teacher_id,
+            OrganizationTeacher.status == "accepted"
+        ).first()
+        if not link:
+            raise HTTPException(status_code=403)
 
     _delete_course_image(course.image)
     db.delete(course)

@@ -340,6 +340,49 @@ def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_
     return RedirectResponse("/organization/teachers", status_code=302)
 
 
+# ── Курсы преподавателя (для кабинета организации) ────────────────────────────
+
+@router.get("/organization/teacher/{teacher_id}/courses", response_class=HTMLResponse)
+def org_teacher_courses(teacher_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Организация не найдена")
+
+    # Проверяем, что преподаватель является членом этой организации
+    membership = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.organization_id == org.id,
+        OrganizationTeacher.teacher_id == teacher_id,
+        OrganizationTeacher.status == "accepted"
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Этот преподаватель не является членом вашей организации")
+
+    teacher = db.query(User).filter(User.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Преподаватель не найден")
+
+    from app.models.course import Course
+    from sqlalchemy.orm import joinedload
+    courses = db.query(Course).options(
+        joinedload(Course.category)
+    ).filter(Course.teacher_id == teacher_id).order_by(Course.created_at.desc()).all()
+
+    return templates.TemplateResponse(
+        "organization/teacher_courses.html",
+        {
+            "request": request,
+            "user": user,
+            "org": org,
+            "teacher": teacher,
+            "courses": courses,
+        }
+    )
+
+
 # ── Профиль организации ────────────────────────────────────────────────────
 
 @router.get("/organization/profile", response_class=HTMLResponse)
