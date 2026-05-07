@@ -3821,10 +3821,15 @@ body { transition: background-color .3s ease, color .3s ease; }
   border-radius: 0;
   aspect-ratio: auto;
   box-shadow: none;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 body.video-pseudo-fullscreen {
   overflow: hidden;
+}
+
+body.video-pseudo-fullscreen .navbar {
+  display: none !important;
 }
 
 #custom-video-container::after {
@@ -3936,7 +3941,7 @@ body.video-pseudo-fullscreen {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   min-height: 58px;
   background: rgba(7, 10, 18, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
