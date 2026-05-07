@@ -23,6 +23,69 @@
             </button>
         </div>
 
+        {% if pending_invites %}
+        <section class="mb-4">
+            <div class="alert alert-info" style="display: flex; flex-direction: column; gap: 10px;">
+                {% for invite in pending_invites %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; margin-bottom: 5px;">
+                    <div>
+                        <strong data-i18n="org.label">Организация</strong> <strong>{{ invite.organization.name }}</strong> приглашает вас присоединиться к своему составу преподавателей.
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <form action="/organization/invite/{{ invite.id }}/accept" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn btn-primary btn-sm" data-i18n="admin.teachers.approve">Принять</button>
+                        </form>
+                        <form action="/organization/invite/{{ invite.id }}/reject" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn btn-outline btn-sm" data-i18n="admin.teachers.reject">Отклонить</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if teacher_applications %}
+        <section class="mb-4">
+            <div class="section-label" data-i18n="org.my_applications">🏢 Мои заявки в организации</div>
+            <div style="background: var(--bg-card, white); border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); padding: 4px 16px;">
+                {% for app in teacher_applications %}
+                {% if app.status == 'accepted' %}
+                <div class="alert alert-success org-accept-notice" data-org-id="{{ app.organization_id }}" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        🎉 <span data-i18n="org.congrats">Поздравляем!</span> 
+                        <span data-i18n="org.accepted_into">Вы приняты в состав организации</span> 
+                        <strong>{{ app.organization.name }}</strong>.
+                    </div>
+                    <button type="button" class="notice-close" style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:0 5px; color:inherit; line-height:1;">×</button>
+                </div>
+                {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; {% if not loop.last %}border-bottom: 1px solid rgba(0,0,0,0.05);{% endif %}">
+                    <div>
+                        {% if app.status == 'accepted' %}
+                            <a href="/organization/{{ app.organization_id }}" style="font-size: 1.05rem; font-weight: 600; color: var(--accent, #6366f1); text-decoration: none;">
+                                🏢 {{ app.organization.name }}
+                            </a>
+                        {% else %}
+                            <strong style="font-size: 1.05rem;">🏢 {{ app.organization.name }}</strong>
+                        {% endif %}
+                        <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--text-muted);">Отправлена: {{ app.created_at.strftime("%d.%m.%Y") }}</p>
+                    </div>
+                    <div>
+                        {% if app.status == 'pending' %}
+                            <span style="background: #FFF3CD; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">⏳ Ожидает рассмотрения</span>
+                        {% elif app.status == 'accepted' %}
+                            <span style="background: #D4EDDA; color: #155724; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">✅ Принят в состав</span>
+                        {% elif app.status == 'rejected' %}
+                            <span style="background: #F8D7DA; color: #721C24; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">❌ Отклонена</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
         <!-- Список курсов преподавателя -->
         <section>
             <div class="section-label" data-i18n="teacher.my_courses">Мои курсы</div>
@@ -244,4 +307,30 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.org-accept-notice').forEach(notice => {
+    const orgId = notice.dataset.orgId;
+    const key = `dismissed_org_invite_${orgId}`;
+
+    // Скрываем если уже закрывали
+    if (localStorage.getItem(key)) {
+        notice.style.display = 'none';
+        return;
+    }
+
+    // Обработчик кнопки закрытия
+    const closeBtn = notice.querySelector('.notice-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            notice.style.transition = 'opacity 0.3s';
+            notice.style.opacity = '0';
+            setTimeout(() => notice.style.display = 'none', 300);
+            localStorage.setItem(key, '1');
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -205,7 +205,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
             if completed_teacher_lessons >= 2:
                 show_review_form = True
 
-    return templates.TemplateResponse("lesson_page.html", {
+    return templates.TemplateResponse("lessons/lesson_page.html", {
         "request": request,
         "lesson": lesson,
         "user": user,

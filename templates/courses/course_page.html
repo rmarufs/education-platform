@@ -25,7 +25,7 @@
             {% endif %}
             <h1 class="course-detail-title">{{ course.title }}</h1>
             <div class="course-detail-info">
-              <span>👨‍🏫 {{ course.teacher.name }}</span>
+              <span>👨‍🏫 {{ course.teacher.name }}{% if teacher_org %} &middot; {{ teacher_org.name }}{% endif %}</span>
               <span>📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
               {% if course.rating > 0 %}
               <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ course.reviews|length }}}'>({{ course.reviews|length }} отзыв(ов))</span></span>

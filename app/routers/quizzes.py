@@ -247,7 +247,7 @@ def quiz_page(quiz_id: int, request: Request, db: Session = Depends(get_db)):
             is not None
         )
 
-    return templates.TemplateResponse("quiz_page.html", {
+    return templates.TemplateResponse("quiz/quiz_page.html", {
         "request": request,
         "quiz": quiz,
         "user": user,
@@ -328,7 +328,7 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
     db.commit()
 
     back_url, back_i18n = quiz_back_target(quiz)
-    return templates.TemplateResponse("quiz_page.html", {
+    return templates.TemplateResponse("quiz/quiz_page.html", {
         "request": request,
         "quiz": quiz,
         "user": user,
@@ -466,7 +466,7 @@ def teacher_quiz_results(request: Request, db: Session = Depends(get_db)):
 
     quiz_cards.sort(key=lambda item: item["quiz"].title.lower())
 
-    return templates.TemplateResponse("teacher_quiz_results.html", {
+    return templates.TemplateResponse("quiz/teacher_quiz_results.html", {
         "request": request,
         "user": teacher,
         "quiz_cards": quiz_cards,
@@ -498,7 +498,7 @@ def teacher_quiz_results_detail(quiz_id: int, request: Request, db: Session = De
 
     latest_results = _latest_results(list(quiz.results))
 
-    return templates.TemplateResponse("teacher_quiz_results_detail.html", {
+    return templates.TemplateResponse("quiz/teacher_quiz_results_detail.html", {
         "request": request,
         "user": teacher,
         "quiz": quiz,

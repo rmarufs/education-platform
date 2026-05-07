@@ -85,4 +85,4 @@ def profile(request: Request, db: Session = Depends(get_db)):
         context["courses_with_progress"] = courses_with_progress
         context["reviews"] = reviews
 
-    return templates.TemplateResponse("profile.html", context)
+    return templates.TemplateResponse("profile/profile.html", context)

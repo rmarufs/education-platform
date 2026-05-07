@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Кабинет организации — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "dashboard" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main" style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+        <div class="dashboard-header">
+            <div>
+                <h1><span data-i18n="org.welcome">Добро пожаловать,</span> {{ org.name if org else user.name }}!</h1>
+                <p data-i18n="org.subtitle">Управляйте своими преподавателями и отслеживайте статистику</p>
+            </div>
+            <a href="/organization/{{ org.id }}" class="btn btn-outline" style="white-space: nowrap;">
+                👁 <span data-i18n="org.public_profile">Публичный профиль</span>
+            </a>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card fade-in">
+                <div class="stat-icon">👨‍🏫</div>
+                <div class="stat-info">
+                    <h3>{{ teachers_count }}</h3>
+                    <p data-i18n="org.stats_teachers">Преподавателей</p>
+                </div>
+            </div>
+            <div class="stat-card fade-in" style="animation-delay: 0.05s;">
+                <div class="stat-icon">📚</div>
+                <div class="stat-info">
+                    <h3>{{ courses_count }}</h3>
+                    <p data-i18n="org.stats_courses">Курсов</p>
+                </div>
+            </div>
+            <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+                <div class="stat-icon">📥</div>
+                <div class="stat-info">
+                    <h3>{{ incoming_count }}</h3>
+                    <p data-i18n="org.stats_incoming">Входящих заявок</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомление о входящих заявках -->
+        {% if incoming_count > 0 %}
+        <div class="alert" style="background: linear-gradient(135deg, #e0e7ff, #f0fdf4); border: 1px solid #c7d2fe; border-radius: 12px; padding: 16px 20px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <strong data-i18n="org.incoming_alert" data-i18n-count="{{ incoming_count }}">📥 У вас {{ incoming_count }} новых заявок от преподавателей!</strong>
+                <p style="margin: 4px 0 0; font-size: 0.9rem; color: var(--text-muted);" data-i18n="org.incoming_desc">Преподаватели указали вашу организацию при регистрации и ждут одобрения.</p>
+            </div>
+            <a href="/organization/teachers" class="btn btn-primary btn-sm" data-i18n="org.incoming_review">Рассмотреть →</a>
+        </div>
+        {% endif %}
+
+        <!-- Быстрые действия -->
+        <section style="margin-top: 28px;">
+            <div class="section-label" data-i18n="org.quick_actions">Быстрые действия</div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 12px;">
+                <a href="/organization/teachers" class="btn btn-primary" data-i18n="org.manage_teachers">👨‍🏫 Управление преподавателями</a>
+                <a href="/organization/profile" class="btn btn-outline" data-i18n="org.settings">⚙️ Настройки профиля</a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

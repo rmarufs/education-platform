@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}Преподаватели — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "teachers" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main" style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+        <div class="dashboard-header">
+            <div>
+                <h1 data-i18n="org.manage_teachers">Преподаватели</h1>
+                <p data-i18n="org.subtitle">Управление составом преподавателей вашей организации</p>
+            </div>
+        </div>
+
+        {% if request.query_params.get('error') == 'teacher_not_found' %}
+        <div class="alert alert-error">Пользователь с таким email не найден или он не является преподавателем.</div>
+        {% elif request.query_params.get('error') == 'already_invited' %}
+        <div class="alert alert-error">Этот преподаватель уже состоит в вашей организации или был приглашён.</div>
+        {% elif request.query_params.get('error') == 'in_other_org' %}
+        <div class="alert alert-error">Этот преподаватель уже состоит в другой организации.</div>
+        {% elif request.query_params.get('success') == 'invited' %}
+        <div class="alert alert-success">Приглашение успешно отправлено!</div>
+        {% endif %}
+
+        <!-- ══════════════════════════════════════════════════════
+             ПОИСК ПРЕПОДАВАТЕЛЕЙ
+        ═════════════════════════════════════════════════════════ -->
+        <section style="background: var(--bg-card, white); border-radius: 16px; border: 1px solid rgba(0,0,0,0.08); padding: 24px; margin-bottom: 28px;">
+            <h2 style="margin: 0 0 16px; font-size: 1.05rem; font-weight: 600;" data-i18n="org.search_teacher">🔍 Найти и пригласить преподавателя</h2>
+
+            <div style="position: relative;">
+                <input
+                    type="text"
+                    id="teacher-search-input"
+                    class="form-input"
+                    placeholder="Введите имя преподавателя..."
+                    data-i18n="org.search_placeholder"
+                    data-i18n-prop="placeholder"
+                    autocomplete="off"
+                    style="padding-right: 44px;"
+                />
+                <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;">🔍</span>
+            </div>
+
+            <div id="teacher-search-results" style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;"></div>
+            <div id="teacher-search-empty" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;">Преподаватели не найдены.</div>
+            <div id="teacher-search-loading" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;">🔄 Поиск...</div>
+
+            <div style="border-top: 1px solid rgba(0,0,0,0.07); margin-top: 20px; padding-top: 16px;">
+                <details>
+                    <summary style="cursor:pointer; font-size:0.9rem; color:var(--text-muted);" data-i18n="org.invite_by_email">📧 Или пригласить по email</summary>
+                    <form action="/organization/invite" method="POST" style="display: flex; gap: 10px; margin-top: 12px;">
+                        <input type="email" name="email" class="form-input" placeholder="email@example.com" required style="flex-grow: 1;">
+                        <button type="submit" class="btn btn-primary" data-i18n="org.invite_send" style="padding: 6px 16px;">Отправить</button>
+                    </form>
+                </details>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+             ВХОДЯЩИЕ ЗАЯВКИ
+        ═════════════════════════════════════════════════════════ -->
+        {% if pending_teachers %}
+        <section style="margin-bottom: 32px;">
+            <div class="section-label" style="display: flex; align-items: center; gap: 8px;" data-i18n="org.incoming_requests">
+                📥 Входящие заявки
+                <span id="pending-count-badge" style="background: var(--accent, #6366f1); color: white; border-radius: 20px; padding: 2px 10px; font-size: 0.8rem;">{{ pending_teachers|length }}</span>
+            </div>
+
+            <div id="pending-requests-list" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                {% for ot in pending_teachers %}
+                <div id="pending-card-{{ ot.id }}" style="background: var(--bg-card, white); border: 1px solid rgba(99,102,241,0.15); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; transition: opacity 0.3s, transform 0.3s;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            {# Аватар #}
+                            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;flex-shrink:0;">
+                                {{ ot.teacher.name[0] | upper }}
+                            </div>
+                            <div>
+                                <a href="/teachers/{{ ot.teacher_id }}" style="font-size: 1rem; font-weight: 700; color: var(--text); text-decoration: none;">{{ ot.teacher.name }}</a>
+                                <p style="margin: 1px 0 0; color: var(--text-muted); font-size: 0.85rem;">{{ ot.teacher.email }}</p>
+                            </div>
+                        </div>
+                        {% if ot.teacher.bio %}
+                        <p style="margin: 0 0 6px; font-size: 0.85rem; color: var(--text-muted);">{{ ot.teacher.bio | truncate(120) }}</p>
+                        {% endif %}
+                        {% if ot.cover_letter %}
+                        <div style="background: var(--surface-soft, #f8fafc); border-left: 3px solid var(--primary); border-radius: 4px; padding: 8px 12px; margin: 6px 0; font-size: 0.85rem; color: var(--text);">
+                            <div style="font-size:0.75rem; font-weight:600; color: var(--text-muted); margin-bottom:4px;">✉️ Сопроводительное письмо</div>
+                            {{ ot.cover_letter }}
+                        </div>
+                        {% endif %}
+                        {% if ot.attachment %}
+                        <a href="{{ ot.attachment }}" target="_blank" style="display:inline-flex; align-items:center; gap:5px; font-size:0.82rem; color: var(--primary); margin-top:4px;">
+                            📎 Прикреплённый файл
+                        </a>
+                        {% endif %}
+                        <p style="margin: 6px 0 0; font-size: 0.78rem; color: var(--text-muted);">Подал заявку: {{ ot.created_at.strftime("%d.%m.%Y") }}</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-self: center;">
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            style="padding: 6px 16px;"
+                            onclick="handleApplication({{ ot.id }}, 'accept', this)"
+                        >✅ Принять</button>
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            style="padding: 6px 16px;"
+                            onclick="handleApplication({{ ot.id }}, 'reject', this)"
+                        >❌ Отклонить</button>
+                    </div>
+                </div>
+                {% endfor %}
+
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ══════════════════════════════════════════════════════
+             АКТИВНЫЕ ПРЕПОДАВАТЕЛИ
+        ═════════════════════════════════════════════════════════ -->
+        <section>
+            <div class="section-label" data-i18n="org.active_teachers" data-i18n-count="{{ org_teachers|length }}">👨‍🏫 Преподаватели организации ({{ org_teachers|length }})</div>
+
+            {% if org_teachers %}
+            <div class="courses-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-top: 12px;">
+                {% for ot in org_teachers %}
+                <div class="course-card fade-in" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="course-card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <h3 class="course-title">{{ ot.teacher.name }}</h3>
+                            <span style="background: #D4EDDA; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">В составе</span>
+                        </div>
+                        <p class="course-desc">{{ ot.teacher.email }}</p>
+                        <p class="course-desc" style="font-size: 0.85rem; color: var(--text-muted);">
+                            С {{ ot.created_at.strftime("%d.%m.%Y") }}
+                        </p>
+                    </div>
+                    <div class="course-card-footer" style="padding: 12px 16px; border-top: 1px solid rgba(0,0,0,0.05); text-align: right;">
+                        <form action="/organization/teacher/{{ ot.teacher_id }}/remove" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Удалить преподавателя из организации?');">
+                            <button type="submit" class="btn btn-danger btn-sm" data-i18n="org.remove_teacher" style="padding: 6px 16px;">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="margin-top: 12px;">
+                <span class="empty-icon">👨‍🏫</span>
+                <p data-i18n="org.no_teachers">В вашей организации пока нет принятых преподавателей.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Обработка заявок без перезагрузки ──────────────────────────────────────────────
+window.handleApplication = function(linkId, action, btn) {
+    const card = document.getElementById('pending-card-' + linkId);
+    const badge = document.getElementById('pending-count-badge');
+    const url = `/organization/teacher/${linkId}/${action === 'accept' ? 'accept-incoming' : 'reject-incoming'}`;
+
+    // Блокируем обе кнопки
+    card.querySelectorAll('button').forEach(b => b.disabled = true);
+    btn.textContent = '⏳';
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => {
+        if (r.ok || r.redirected) {
+            // Анимация исчезновения
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                card.remove();
+                // Обновляем счётчик
+                if (badge) {
+                    const cur = parseInt(badge.textContent, 10);
+                    const next = cur - 1;
+                    badge.textContent = next;
+                    if (next <= 0) badge.style.display = 'none';
+                }
+                // Если карточек не осталось — перезагружаем для обновления активных
+                const list = document.getElementById('pending-requests-list');
+                if (list && list.children.length === 0) location.reload();
+            }, 300);
+        } else {
+            card.querySelectorAll('button').forEach(b => b.disabled = false);
+            btn.textContent = action === 'accept' ? '✅ Принять' : '❌ Отклонить';
+            alert('Ошибка. Попробуйте ещё раз.');
+        }
+    })
+    .catch(() => {
+        card.querySelectorAll('button').forEach(b => b.disabled = false);
+        btn.textContent = action === 'accept' ? '✅ Принять' : '❌ Отклонить';
+    });
+};
+
+// ── Поиск преподавателей ─────────────────────────────────────────────
+(function() {
+    const input = document.getElementById('teacher-search-input');
+    const resultsBox = document.getElementById('teacher-search-results');
+    const emptyBox = document.getElementById('teacher-search-empty');
+    const loadingBox = document.getElementById('teacher-search-loading');
+    let timer;
+
+    // Состояние приглашений — хранит teacher_id которых уже пригласили
+    const invitedInSession = new Set();
+
+    function renderTeachers(teachers) {
+        resultsBox.innerHTML = '';
+        emptyBox.style.display = 'none';
+
+        if (teachers.length === 0) {
+            emptyBox.style.display = 'block';
+            return;
+        }
+
+        teachers.forEach(t => {
+            const isInvited = t.already_invited || invitedInSession.has(t.id);
+            const inOtherOrg = !!t.org_name && !isInvited;
+
+            const avatarHtml = t.avatar
+                ? `<img src="${t.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" alt="${t.name}">`
+                : `<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;flex-shrink:0;">${t.name[0].toUpperCase()}</div>`;
+
+            let orgBadge = '';
+            if (t.org_name) {
+                orgBadge = `<span style="font-size:0.78rem;background:#f1f3f5;padding:2px 8px;border-radius:10px;color:#495057;">🏢 ${t.org_name}</span>`;
+            } else {
+                orgBadge = `<span style="font-size:0.78rem;color:var(--text-muted);">Независимый</span>`;
+            }
+
+            let btnHtml;
+            if (isInvited) {
+                btnHtml = `<button class="btn btn-sm" disabled style="opacity:.55;cursor:default;">✉️ Приглашён</button>`;
+            } else if (inOtherOrg) {
+                btnHtml = `<button class="btn btn-sm" disabled style="opacity:.55;cursor:default;" title="Преподаватель уже в организации">В организации</button>`;
+            } else {
+                btnHtml = `<button class="btn btn-primary btn-sm" onclick="inviteTeacher(${t.id}, this)">➕ Пригласить</button>`;
+            }
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:14px;background:var(--bg-secondary,#f8f9fa);border-radius:12px;padding:12px 16px;flex-wrap:wrap;';
+            row.dataset.teacherId = t.id;
+            row.innerHTML = `
+                ${avatarHtml}
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.95rem;">${t.name}</div>
+                    ${t.bio ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.bio}</div>` : ''}
+                    <div style="margin-top:4px;">${orgBadge}</div>
+                </div>
+                <div>${btnHtml}</div>
+            `;
+            resultsBox.appendChild(row);
+        });
+    }
+
+    function doSearch(q) {
+        loadingBox.style.display = 'block';
+        emptyBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+
+        fetch(`/api/teachers/search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                loadingBox.style.display = 'none';
+                renderTeachers(data.teachers || []);
+            })
+            .catch(() => { loadingBox.style.display = 'none'; });
+    }
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const q = input.value.trim();
+        if (!q) {
+            resultsBox.innerHTML = '';
+            emptyBox.style.display = 'none';
+            loadingBox.style.display = 'none';
+            return;
+        }
+        timer = setTimeout(() => doSearch(q), 400);
+    });
+
+    window.inviteTeacher = function(teacherId, btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳';
+
+        const formData = new FormData();
+        formData.append('teacher_id', teacherId);
+
+        fetch('/organization/invite', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(r => {
+            if (r.ok || r.status === 409) {
+                invitedInSession.add(teacherId);
+                btn.textContent = '✉️ Приглашён';
+                btn.className = 'btn btn-sm';
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'default';
+            } else if (r.status === 400) {
+                btn.disabled = false;
+                btn.textContent = '➕ Пригласить';
+                alert('Преподаватель уже состоит в другой организации.');
+            } else {
+                btn.disabled = false;
+                btn.textContent = '➕ Пригласить';
+                alert('Ошибка. Попробуйте ещё раз.');
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '➕ Пригласить';
+        });
+    };
+})();
+</script>
+{% endblock %}

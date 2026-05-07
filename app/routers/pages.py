@@ -8,12 +8,13 @@ from sqlalchemy import func
 
 from app.database import get_db
 from app.dependencies import get_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.category import Category
 from app.models.review import Review
 from app.models.progress import Progress
 from app.models.contact import ContactMessage
+from app.models.organization import Organization, OrganizationTeacher
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -28,7 +29,7 @@ def _plain_text(value: str | None) -> str:
 @router.get("/about", response_class=HTMLResponse)
 def about_page(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    return templates.TemplateResponse("about.html", {"request": request, "user": user})
+    return templates.TemplateResponse("pages/about.html", {"request": request, "user": user})
 
 
 # ── Страница "Как это работает" ──────────────────────────────────────────────
@@ -36,7 +37,7 @@ def about_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/how-it-works", response_class=HTMLResponse)
 def how_it_works_page(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    return templates.TemplateResponse("how_it_works.html", {"request": request, "user": user})
+    return templates.TemplateResponse("pages/how_it_works.html", {"request": request, "user": user})
 
 
 # ── Страница "Контакты" ─────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ def how_it_works_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/contact", response_class=HTMLResponse)
 def contact_page(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
-    return templates.TemplateResponse("contact.html", {"request": request, "user": user})
+    return templates.TemplateResponse("pages/contact.html", {"request": request, "user": user})
 
 
 @router.post("/contact")
@@ -76,7 +77,7 @@ def contact_submit(
 def search_page(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     categories = db.query(Category).order_by(Category.name).all()
-    return templates.TemplateResponse("search.html", {
+    return templates.TemplateResponse("pages/search.html", {
         "request": request, "user": user, "categories": categories
     })
 
@@ -117,6 +118,58 @@ def search_api(
     total = query.count()
     courses = query.offset((page - 1) * per_page).limit(per_page).all()
 
+    from app.models.organization import Organization
+    organizations = []
+    if q:
+        orgs = db.query(Organization).filter(Organization.name.ilike(f"%{q}%")).limit(5).all()
+        organizations = [
+            {
+                "id": o.id,
+                "name": o.name,
+                "description": _plain_text(o.description)[:120] if o.description else "Организация",
+                "logo_url": o.logo_url
+            }
+            for o in orgs
+        ]
+
+    # Поиск преподавателей
+    teachers_result = []
+    if q:
+        found_teachers = (
+            db.query(User)
+            .filter(
+                User.role == UserRole.teacher,
+                User.is_active == True,
+                User.name.ilike(f"%{q}%"),
+            )
+            .limit(8)
+            .all()
+        )
+        teacher_ids = [t.id for t in found_teachers]
+        org_map = {}
+        if teacher_ids:
+            links = (
+                db.query(OrganizationTeacher)
+                .options(joinedload(OrganizationTeacher.organization))
+                .filter(
+                    OrganizationTeacher.teacher_id.in_(teacher_ids),
+                    OrganizationTeacher.status == "accepted",
+                )
+                .all()
+            )
+            for link in links:
+                org_map[link.teacher_id] = link
+        for t in found_teachers:
+            org_link = org_map.get(t.id)
+            teachers_result.append({
+                "id": t.id,
+                "name": t.name,
+                "bio": (t.bio[:100] if t.bio else None),
+                "avatar": getattr(t, "avatar_url", None),
+                "org_name": org_link.organization.name if org_link else None,
+                "org_id": org_link.organization_id if org_link else None,
+            })
+
     return {
         "total": total,
         "page": page,
@@ -133,9 +186,12 @@ def search_api(
                 "category": c.category.name if c.category else None,
                 "created_at": c.created_at.strftime("%d.%m.%Y"),
                 "modules_count": len(c.modules) if c.modules else 0,
+                "teacher_orgs": [{"id": ot.organization_id, "name": ot.organization.name} for ot in c.teacher.employer_organizations if ot.status == 'accepted'] if hasattr(c.teacher, 'employer_organizations') else []
             }
             for c in courses
         ],
+        "organizations": organizations,
+        "teachers": teachers_result,
     }
 
 
@@ -174,7 +230,7 @@ def teacher_profile(teacher_id: int, request: Request, db: Session = Depends(get
     else:
         total_students = 0
 
-    return templates.TemplateResponse("teacher_profile.html", {
+    return templates.TemplateResponse("profile/teacher_profile.html", {
         "request": request,
         "user": user,
         "teacher": teacher,

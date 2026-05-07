@@ -21,6 +21,7 @@ from app.routers import auth, users, courses
 from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import quizzes  # QUIZ SYSTEM - RESTORED
 from app.routers import admin
+from app.routers import organization
 
 # Создаём папку data если её нет
 os.makedirs("data", exist_ok=True)
@@ -125,6 +126,7 @@ app.include_router(comments.router)
 app.include_router(profile.router)
 app.include_router(pages.router)
 app.include_router(admin.router)
+app.include_router(organization.router)
 
 
 # ── Главная страница ─────────────────────────────────────────────────────────
@@ -157,7 +159,7 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
     categories = _get_categories_cached(db)
     
     return templates.TemplateResponse(
-        "index.html",
+        "pages/index.html",
         {
             "request": request,
             "courses": popular_courses,

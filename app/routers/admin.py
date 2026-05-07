@@ -64,6 +64,9 @@ def admin_index(request: Request, db: Session = Depends(get_db)):
 def admin_teachers(request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
+    from app.models.organization import Organization, OrganizationTeacher
+
+    # Все заявки (teacher_pending)
     pending_teachers = (
         db.query(User)
         .filter(User.role == UserRole.teacher_pending)
@@ -71,10 +74,33 @@ def admin_teachers(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Все активные преподаватели
+    active_teachers = (
+        db.query(User)
+        .filter(User.role == UserRole.teacher)
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
+    # Маппинг teacher_id → организация
+    all_teacher_ids = [t.id for t in pending_teachers + active_teachers]
+    org_map = {}
+    if all_teacher_ids:
+        links = (
+            db.query(OrganizationTeacher)
+            .options(joinedload(OrganizationTeacher.organization))
+            .filter(OrganizationTeacher.teacher_id.in_(all_teacher_ids))
+            .all()
+        )
+        for link in links:
+            org_map[link.teacher_id] = link
+
     return templates.TemplateResponse("admin/teachers.html", {
         "request": request,
         "user": admin,
-        "teachers": pending_teachers,
+        "pending_teachers": pending_teachers,
+        "active_teachers": active_teachers,
+        "org_map": org_map,
     })
 
 
@@ -87,6 +113,7 @@ def approve_teacher(user_id: int, request: Request, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Заявка не найдена")
 
     teacher.role = UserRole.teacher
+    teacher.is_active = True
     db.commit()
 
     return RedirectResponse("/admin/teachers", status_code=302)
@@ -111,6 +138,98 @@ def reject_teacher(user_id: int, request: Request, db: Session = Depends(get_db)
     db.commit()
 
     return RedirectResponse("/admin/teachers", status_code=302)
+
+
+@router.post("/teachers/{user_id}/remove-from-org")
+def admin_remove_from_org(user_id: int, request: Request, db: Session = Depends(get_db)):
+    admin = get_admin(request, db)
+    from app.models.organization import OrganizationTeacher
+    links = db.query(OrganizationTeacher).filter(OrganizationTeacher.teacher_id == user_id).all()
+    for link in links:
+        db.delete(link)
+    db.commit()
+    return RedirectResponse("/admin/teachers", status_code=302)
+
+
+# ── Управление организациями ─────────────────────────────────────────────────
+
+@router.get("/organizations", response_class=HTMLResponse)
+def admin_organizations(request: Request, db: Session = Depends(get_db)):
+    admin = get_admin(request, db)
+    from app.models.organization import Organization
+
+    all_orgs = (
+        db.query(Organization)
+        .options(joinedload(Organization.user))
+        .order_by(Organization.created_at.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse("admin/organizations.html", {
+        "request": request,
+        "user": admin,
+        "orgs": all_orgs,
+    })
+
+
+@router.post("/organizations/{org_id}/approve")
+def admin_approve_org(org_id: int, request: Request, db: Session = Depends(get_db)):
+    admin = get_admin(request, db)
+    from app.models.organization import Organization
+
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404)
+
+    org.status = "approved"
+    # Активируем пользователя организации
+    owner = db.query(User).filter(User.id == org.user_id).first()
+    if owner:
+        owner.is_active = True
+        owner.role = UserRole.organization
+    db.commit()
+
+    return RedirectResponse("/admin/organizations", status_code=302)
+
+
+@router.post("/organizations/{org_id}/reject")
+def admin_reject_org(org_id: int, request: Request, db: Session = Depends(get_db)):
+    admin = get_admin(request, db)
+    from app.models.organization import Organization
+
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404)
+
+    org.status = "rejected"
+    owner = db.query(User).filter(User.id == org.user_id).first()
+    if owner:
+        owner.is_active = False
+    db.commit()
+
+    return RedirectResponse("/admin/organizations", status_code=302)
+
+
+@router.post("/organizations/{org_id}/delete")
+def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db)):
+    admin = get_admin(request, db)
+    from app.models.organization import Organization
+
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404)
+
+    owner = db.query(User).filter(User.id == org.user_id).first()
+    if owner:
+        owner.role = UserRole.guest
+        owner.is_active = False
+
+    db.delete(org)
+    db.commit()
+
+    return RedirectResponse("/admin/organizations", status_code=302)
+
+
 
 
 # ── Управление пользователями ────────────────────────────────────────────────

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% from "_course_macros.html" import course_cover %}
+{% block title %}{{ org.name }} — Фурузон{% endblock %}
+
+{% block content %}
+
+{# ── Вычисляем флаги для кнопки вступления ── #}
+<div class="org-pub-shell">
+
+    {# ══════════════════ HERO ══════════════════ #}
+    <section class="org-pub-hero reveal">
+        <div class="org-pub-hero-inner">
+
+            {# Логотип / заглушка #}
+            <div class="org-pub-logo">
+                {% if org.logo_url %}
+                    <img src="{{ org.logo_url }}" alt="{{ org.name }}" class="org-pub-logo-img">
+                {% else %}
+                    <span class="org-pub-logo-placeholder">🏢</span>
+                {% endif %}
+            </div>
+
+            {# Текст #}
+            <div class="org-pub-hero-text">
+                <h1 class="org-pub-name">{{ org.name }}</h1>
+                {% if org.description %}
+                <p class="org-pub-desc">{{ org.description | striptags | truncate(220) }}</p>
+                {% endif %}
+
+                {# Метрики #}
+                <div class="org-pub-metrics">
+                    <div class="org-pub-metric">
+                        <span class="org-pub-metric-val">{{ org_teachers | length }}</span>
+                        <span class="org-pub-metric-lbl">Преподавателей</span>
+                    </div>
+                    <div class="org-pub-metric-sep"></div>
+                    <div class="org-pub-metric">
+                        <span class="org-pub-metric-val">{{ courses | length }}</span>
+                        <span class="org-pub-metric-lbl">Курсов</span>
+                    </div>
+                    <div class="org-pub-metric-sep"></div>
+                    <div class="org-pub-metric">
+                        <span class="org-pub-metric-val rating-text">
+                            {% if avg_rating > 0 %}⭐ {{ avg_rating }}{% else %}—{% endif %}
+                        </span>
+                        <span class="org-pub-metric-lbl">Средний рейтинг</span>
+                    </div>
+                </div>
+
+                {# Блок вступления — показывается только преподавателям #}
+                {% if user and user.is_teacher %}
+                <div style="margin-top: 24px;">
+                    {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
+                            Вы уже состоите в организации
+                        </button>
+                    {% elif user_application and user_application.status == 'accepted' %}
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.accepted_into">
+                            ✅ Вы в этой организации
+                        </button>
+                    {% elif user_application and user_application.status == 'pending' %}
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.pending_review">
+                            ⏳ Заявка отправлена
+                        </button>
+                    {% elif user_application and user_application.status == 'rejected' %}
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.rejected_from">
+                            ❌ Заявка отклонена
+                        </button>
+                    {% else %}
+                        <button id="join-org-btn" class="btn btn-primary btn-lg" onclick="showJoinForm()">
+                            ➕ Вступить в организацию
+                        </button>
+                        {# Форма заявки #}
+                        <div id="join-form-block" style="display:none; margin-top:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:540px;">
+                            <div class="form-group" style="margin-bottom:14px;">
+                                <label for="cover-letter-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Сопроводительное письмо <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
+                                <textarea id="cover-letter-input" class="form-input form-textarea" maxlength="500" rows="4" placeholder="Расскажите о себе, своём опыте и почему хотите вступить в организацию..."></textarea>
+                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;"><span id="letter-counter">0</span>/500</div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:18px;">
+                                <label for="attach-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Резюме / сертификат <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
+                                <input type="file" id="attach-input" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
+                            </div>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <button id="submit-join-btn" class="btn btn-primary" onclick="submitJoin({{ org.id }})">Отправить заявку</button>
+                                <button class="btn btn-outline" onclick="hideJoinForm()">Отмена</button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {# ══════════════════ ПРЕПОДАВАТЕЛИ ══════════════════ #}
+    <section class="org-pub-section">
+        <div class="org-pub-section-head">
+            <h2 class="org-pub-section-title">👨‍🏫 Наши преподаватели
+                <span class="org-pub-count">{{ org_teachers | length }}</span>
+            </h2>
+        </div>
+
+        {% if org_teachers %}
+        <div class="org-pub-teachers-grid">
+            {% for teacher in org_teachers %}
+            {# Считаем кол-во курсов преподавателя #}
+            {% set teacher_courses_count = courses | selectattr('teacher_id', 'equalto', teacher.id) | list | length %}
+            <a href="/teachers/{{ teacher.id }}" class="org-pub-teacher-card reveal" style="animation-delay: {{ loop.index0 * 0.06 }}s;">
+                <div class="org-pub-teacher-avatar">
+                    {% if teacher.avatar_url %}
+                        <img src="{{ teacher.avatar_url }}" alt="{{ teacher.name }}">
+                    {% else %}
+                        {{ teacher.name[0] | upper }}
+                    {% endif %}
+                </div>
+                <div class="org-pub-teacher-info">
+                    <div class="org-pub-teacher-name">{{ teacher.name }}</div>
+                    {% if teacher.bio %}
+                    <div class="org-pub-teacher-bio">{{ teacher.bio | striptags | truncate(80) }}</div>
+                    {% endif %}
+                    <div class="org-pub-teacher-meta">
+                        <span>📚 {{ teacher_courses_count }} курс{% if teacher_courses_count % 10 == 1 and teacher_courses_count % 100 != 11 %}{% elif teacher_courses_count % 10 in [2,3,4] and teacher_courses_count % 100 not in [12,13,14] %}а{% else %}ов{% endif %}</span>
+                    </div>
+                </div>
+                <span class="org-pub-teacher-arrow">→</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">👨‍🏫</span>
+            <p>В организации пока нет преподавателей.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    {# ══════════════════ КУРСЫ ══════════════════ #}
+    <section class="org-pub-section">
+        <div class="org-pub-section-head">
+            <h2 class="org-pub-section-title">📚 Курсы организации
+                <span class="org-pub-count">{{ courses | length }}</span>
+            </h2>
+        </div>
+
+        {% if courses %}
+        <div class="courses-grid org-pub-courses-grid">
+            {% for course in courses %}
+            <div class="course-card reveal" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+                <div class="course-card-header">
+                    {{ course_cover(course) }}
+                </div>
+                <div class="course-card-body">
+                    <h3 class="course-title">{{ course.title }}</h3>
+                    <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span>Нет описания</span>{% endif %}</p>
+                    <div class="course-meta">
+                        <span class="course-teacher">{{ course.teacher.name }}</span>
+                        <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f" | format(course.rating) }}{% endif %}</span>
+                    </div>
+                </div>
+                <div class="course-card-footer">
+                    <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full">Открыть курс →</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">📭</span>
+            <p>Организация пока не добавила курсы.</p>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showJoinForm() {
+    document.getElementById('join-org-btn').style.display = 'none';
+    document.getElementById('join-form-block').style.display = 'block';
+}
+
+function hideJoinForm() {
+    document.getElementById('join-form-block').style.display = 'none';
+    document.getElementById('join-org-btn').style.display = 'inline-flex';
+}
+
+// Счётчик символов в textarea
+const letterInput = document.getElementById('cover-letter-input');
+const letterCounter = document.getElementById('letter-counter');
+if (letterInput && letterCounter) {
+    letterInput.addEventListener('input', () => {
+        letterCounter.textContent = letterInput.value.length;
+    });
+}
+
+async function submitJoin(orgId) {
+    const submitBtn = document.getElementById('submit-join-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Отправка...';
+
+    const formData = new FormData();
+    const coverLetter = document.getElementById('cover-letter-input').value;
+    const attachFile = document.getElementById('attach-input').files[0];
+
+    if (coverLetter.trim()) formData.append('cover_letter', coverLetter.trim());
+    if (attachFile) formData.append('attachment', attachFile);
+
+    try {
+        const r = await fetch(`/organization/${orgId}/join`, { method: 'POST', body: formData });
+        const data = await r.json();
+
+        if (r.ok && data.success) {
+            document.getElementById('join-form-block').style.display = 'none';
+            // Заменяем кнопку на статус
+            const wrap = document.getElementById('join-org-btn').parentElement;
+            wrap.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ Заявка отправлена</button>';
+        } else if (r.status === 400) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить заявку';
+            alert(data.detail || 'Ошибка');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить заявку';
+            alert('Произошла ошибка. Попробуйте ещё раз.');
+        }
+    } catch {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Отправить заявку';
+        alert('Сетевая ошибка. Проверьте подключение.');
+    }
+}
+</script>
+{% endblock %}
+

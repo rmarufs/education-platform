@@ -7,9 +7,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import bcrypt
+from typing import Optional
 
 from app.database import get_db
 from app.models.user import User, UserRole
+from app.models.organization import Organization, OrganizationTeacher
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -57,7 +59,7 @@ def register_page(request: Request):
     user = request.session.get("user_id")
     if user:
         return RedirectResponse("/dashboard", status_code=302)
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse("auth/register.html", {"request": request})
 
 
 @router.post("/register")
@@ -68,6 +70,10 @@ async def register(
     password: str = Form(...),
     role: str = Form(...),
     bio: str = Form(""),
+    org_name: str = Form(""),
+    org_phone: str = Form(""),
+    org_description: str = Form(""),
+    org_id: Optional[int] = Form(None),   # ID организации при регистрации учителя
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
@@ -86,22 +92,45 @@ async def register(
     existing = db.query(User).filter(User.email == email).first()
     if existing:
         return templates.TemplateResponse(
-            "register.html",
+            "auth/register.html",
             {"request": request, "error": "Пользователь с таким email уже существует"},
             status_code=400,
         )
 
     # Валидация роли
-    if role not in ("student", "teacher"):
+    if role not in ("student", "teacher", "organization"):
         raise HTTPException(status_code=400, detail="Неверная роль")
+
+    if role == "organization" and not org_name.strip():
+        return templates.TemplateResponse(
+            "auth/register.html",
+            {"request": request, "error": "Введите название организации"},
+            status_code=400,
+        )
+
+    if role == "organization" and not org_phone.strip():
+        return templates.TemplateResponse(
+            "auth/register.html",
+            {"request": request, "error": "Введите номер телефона"},
+            status_code=400,
+        )
+
+    if role == "organization" and not org_description.strip():
+        return templates.TemplateResponse(
+            "auth/register.html",
+            {"request": request, "error": "Добавьте краткое описание организации"},
+            status_code=400,
+        )
 
     # Определяем реальную роль и сохраняем документ
     actual_role = UserRole.student
+    is_active = True
     doc_path = None
     user_bio = None
 
     if role == "teacher":
         actual_role = UserRole.teacher_pending
+        is_active = False
         user_bio = bio.strip() if bio else None
 
         # Документ необязателен — сохраняем если есть
@@ -114,9 +143,15 @@ async def register(
                 shutil.copyfileobj(document.file, buffer)
             doc_path = "/" + save_path
 
+    elif role == "organization":
+        # Организации ждут одобрения — создаём неактивными
+        actual_role = UserRole.organization
+        is_active = False
+
     # Если это первый пользователь в базе данных, делаем его админом
     if db.query(User).count() == 0:
         actual_role = UserRole.admin
+        is_active = True
 
     user = User(
         name=name,
@@ -125,10 +160,41 @@ async def register(
         role=actual_role,
         documents=doc_path,
         bio=user_bio,
+        is_active=is_active,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Создаём запись организации со статусом pending
+    if actual_role == UserRole.organization:
+        org = Organization(
+            user_id=user.id,
+            name=org_name.strip(),
+            phone=org_phone.strip(),
+            description=org_description.strip(),
+            status="pending",
+        )
+        db.add(org)
+        db.commit()
+
+        # Сессию НЕ сохраняем — организация ждёт одобрения
+        return RedirectResponse("/register/pending-org", status_code=302)
+
+    # Если учитель выбрал организацию при регистрации — создаём pending связь
+    if actual_role == UserRole.teacher_pending and org_id:
+        target_org = db.query(Organization).filter(
+            Organization.id == org_id,
+            Organization.status == "approved"
+        ).first()
+        if target_org:
+            org_link = OrganizationTeacher(
+                organization_id=target_org.id,
+                teacher_id=user.id,
+                status="pending"
+            )
+            db.add(org_link)
+            db.commit()
 
     # Сохраняем сессию
     request.session.clear()
@@ -153,7 +219,14 @@ async def register(
 def register_pending(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
-    return templates.TemplateResponse("register_pending.html", {"request": request, "user": user})
+    return templates.TemplateResponse("auth/register_pending.html", {"request": request, "user": user})
+
+
+# ── Страница ожидания для организаций ────────────────────────────────────────
+
+@router.get("/register/pending-org", response_class=HTMLResponse)
+def register_pending_org(request: Request):
+    return templates.TemplateResponse("auth/register_pending_org.html", {"request": request})
 
 
 # ── Страница входа ──────────────────────────────────────────────────────────
@@ -162,7 +235,7 @@ def register_pending(request: Request, db: Session = Depends(get_db)):
 def login_page(request: Request):
     if request.session.get("user_id"):
         return RedirectResponse("/dashboard", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("auth/login.html", {"request": request})
 
 
 @router.post("/login")
@@ -176,16 +249,31 @@ def login(
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
-            "login.html",
+            "auth/login.html",
             {"request": request, "error": "Неверный email или пароль"},
             status_code=401,
         )
 
-    # Проверяем, заблокирован ли пользователь
-    if not user.is_active:
+    # Организации, ждущие одобрения, не могут войти
+    if user.is_org and not user.is_active:
         return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Ваш аккаунт заблокирован. Обратитесь к администратору."},
+            "auth/login.html",
+            {"request": request, "error": "Ваша организация ещё не одобрена администратором."},
+            status_code=403,
+        )
+
+    # Проверяем, заблокирован ли пользователь или ждёт одобрения
+    if not user.is_active:
+        if user.role == UserRole.teacher_pending:
+            error_msg = "Ваша заявка преподавателя всё ещё находится на рассмотрении."
+        elif user.is_org:
+            error_msg = "Ваша организация всё ещё находится на рассмотрении."
+        else:
+            error_msg = "Ваш аккаунт заблокирован. Обратитесь к администратору."
+            
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": error_msg},
             status_code=403,
         )
 

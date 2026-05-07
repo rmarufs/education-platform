@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Профиль организации — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "profile" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main" style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+        <div class="dashboard-header">
+            <div>
+                <h1 data-i18n="org.settings">Профиль организации</h1>
+                <p data-i18n="org.public_profile">Публичная информация и настройки</p>
+            </div>
+        </div>
+
+        {% if request.query_params.get('success') == '1' %}
+        <div class="alert alert-success">✅ Профиль успешно обновлён!</div>
+        {% endif %}
+
+        <div class="auth-card" style="max-width: 620px; margin: 0; box-shadow: none; border: 1px solid rgba(0,0,0,0.1);">
+            <form action="/organization/profile/update" method="POST">
+                <div class="form-group">
+                    <label for="name">🏢 <span data-i18n="org.name_label">Название организации</span> <span style="color: var(--error)">*</span></label>
+                    <input type="text" id="name" name="name" class="form-input"
+                           value="{{ org.name if org else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">📞 <span data-i18n="org.phone_label">Номер телефона</span></label>
+                    <input type="tel" id="phone" name="phone" class="form-input"
+                           value="{{ org.phone if org else '' }}" placeholder="+992 XX XXX XXXX">
+                </div>
+
+                <div class="form-group">
+                    <label for="website">🌐 <span data-i18n="footer.platform">Сайт</span></label>
+                    <input type="url" id="website" name="website" class="form-input"
+                           value="{{ org.website if org else '' }}" placeholder="https://example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">📝 <span data-i18n="org.description_label">Описание организации</span></label>
+                    <textarea id="description" name="description" class="form-input form-textarea"
+                               rows="5" style="resize: vertical;">{{ org.description if org else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-i18n="action.save">Сохранить изменения</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

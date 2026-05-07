@@ -69,19 +69,24 @@
                 <label data-i18n="form.role">Я являюсь</label>
                 <div class="role-selector">
                     <label class="role-option" id="role-student-label">
-                        <input type="radio" name="role" value="student" id="role-student" checked onchange="toggleTeacherFields()" />
+                        <input type="radio" name="role" value="student" id="role-student" checked onchange="toggleRoleFields()" />
                         <span class="role-icon">👨‍🎓</span>
                         <span data-i18n="role.student">Студент</span>
                     </label>
                     <label class="role-option" id="role-teacher-label">
-                        <input type="radio" name="role" value="teacher" id="role-teacher" onchange="toggleTeacherFields()" />
+                        <input type="radio" name="role" value="teacher" id="role-teacher" onchange="toggleRoleFields()" />
                         <span class="role-icon">👨‍🏫</span>
                         <span data-i18n="role.teacher">Преподаватель</span>
+                    </label>
+                    <label class="role-option" id="role-organization-label">
+                        <input type="radio" name="role" value="organization" id="role-organization" onchange="toggleRoleFields()" />
+                        <span class="role-icon">🏢</span>
+                        <span data-i18n="role.organization">Организация</span>
                     </label>
                 </div>
             </div>
 
-            <!-- Дополнительные поля для преподавателей (необязательные) -->
+            <!-- Дополнительные поля для преподавателей -->
             <div id="teacher-extra-fields" style="display:none;">
                 <div class="form-group">
                     <label for="document" data-i18n="register.teacher_docs">📎 Прикрепите ваши сертификаты или дипломы (необязательно)</label>
@@ -112,6 +117,57 @@
                         Расскажите о себе и почему хотите стать преподавателем (необязательно)
                     </p>
                 </div>
+
+                <!-- Выбор организации при регистрации -->
+                <div class="form-group">
+                    <label for="org_id">🏢 <span data-i18n="org.label">Организация</span> <span data-i18n="org.optional">(необязательно)</span></label>
+                    <select id="org_id" name="org_id" class="form-input">
+                        <option value="" data-i18n="org.independent">— Без организации (независимый преподаватель) —</option>
+                    </select>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="org.join_hint">
+                        Если вы преподаватель образовательного центра, выберите его из списка. Ваша заявка поступит к организации.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Дополнительные поля для организаций -->
+            <div id="organization-extra-fields" style="display:none;">
+                <div class="form-group">
+                    <label data-i18n="org.name_label">Название организации</label>
+                    <input
+                        type="text"
+                        id="org_name"
+                        name="org_name"
+                        class="form-input"
+                        placeholder="Например, IT Академия"
+                    />
+                    <span class="form-error" id="org-name-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="org.phone_label">Номер телефона</label>
+                    <input
+                        type="tel"
+                        id="org_phone"
+                        name="org_phone"
+                        class="form-input"
+                        placeholder="+992 XX XXX XXXX"
+                    />
+                    <span class="form-error" id="org-phone-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="org.description_label">Описание организации</label>
+                    <textarea
+                        id="org_description"
+                        name="org_description"
+                        class="form-input form-textarea"
+                        rows="3"
+                        placeholder="Опишите вашу организацию, направление деятельности..."
+                        style="resize:vertical;"
+                    ></textarea>
+                    <span class="form-error" id="org-desc-error"></span>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" data-i18n="register.submit">
@@ -129,15 +185,53 @@
 </div>
 
 <script>
-function toggleTeacherFields() {
+function toggleRoleFields() {
     const teacherRadio = document.getElementById('role-teacher');
-    const extraFields = document.getElementById('teacher-extra-fields');
+    const orgRadio = document.getElementById('role-organization');
+    const teacherFields = document.getElementById('teacher-extra-fields');
+    const orgFields = document.getElementById('organization-extra-fields');
 
     if (teacherRadio.checked) {
-        extraFields.style.display = 'block';
+        teacherFields.style.display = 'block';
+        // Загружаем список организаций при первом открытии
+        loadOrganizations();
     } else {
-        extraFields.style.display = 'none';
+        teacherFields.style.display = 'none';
     }
+
+    if (orgRadio.checked) {
+        orgFields.style.display = 'block';
+        orgFields.querySelectorAll('[data-i18n]').forEach(el => applyTranslationToElement(el, currentLang));
+        document.getElementById('org_name').setAttribute('required', 'required');
+        document.getElementById('org_phone').setAttribute('required', 'required');
+        document.getElementById('org_description').setAttribute('required', 'required');
+    } else {
+        orgFields.style.display = 'none';
+        document.getElementById('org_name').removeAttribute('required');
+        document.getElementById('org_phone').removeAttribute('required');
+        document.getElementById('org_description').removeAttribute('required');
+    }
+}
+
+let orgsLoaded = false;
+function loadOrganizations() {
+    if (orgsLoaded) return;
+    orgsLoaded = true;
+
+    const select = document.getElementById('org_id');
+    fetch('/api/organizations/list')
+        .then(r => r.json())
+        .then(data => {
+            if (data.organizations && data.organizations.length > 0) {
+                data.organizations.forEach(org => {
+                    const opt = document.createElement('option');
+                    opt.value = org.id;
+                    opt.textContent = org.name;
+                    select.appendChild(opt);
+                });
+            }
+        })
+        .catch(() => {/* тихо игнорируем ошибки */});
 }
 </script>
 {% endblock %}

@@ -38,6 +38,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/register/pending", status_code=302)
     if user.is_admin:
         return RedirectResponse("/admin", status_code=302)
+    if user.is_org:
+        return RedirectResponse("/dashboard/organization", status_code=302)
     return RedirectResponse("/dashboard/student", status_code=302)
 
 
@@ -52,7 +54,7 @@ def assessment_page(request: Request, db: Session = Depends(get_db)):
     if user.assessment_completed:
         return RedirectResponse("/dashboard", status_code=302)
         
-    return templates.TemplateResponse("assessment.html", {"request": request, "user": user})
+    return templates.TemplateResponse("pages/assessment.html", {"request": request, "user": user})
 
 
 @router.post("/assessment")
@@ -168,7 +170,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             })
 
     return templates.TemplateResponse(
-        "dashboard_student.html",
+        "dashboard/student.html",
         {
             "request": request, 
             "user": user, 
@@ -194,7 +196,27 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
     from app.models.category import Category
     categories = db.query(Category).order_by(Category.name).all()
     
+    # Заявки и приглашения от организаций
+    from app.models.organization import OrganizationTeacher
+    pending_invites = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.organization)).filter(
+        OrganizationTeacher.teacher_id == user.id,
+        OrganizationTeacher.status == "pending"
+    ).all()
+    
+    # Все заявки этого преподавателя в организации (все статусы) — для секции "Мои заявки"
+    teacher_applications = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.organization)).filter(
+        OrganizationTeacher.teacher_id == user.id
+    ).order_by(OrganizationTeacher.created_at.desc()).all()
+
     return templates.TemplateResponse(
-        "dashboard_teacher.html",
-        {"request": request, "user": user, "courses": courses, "categories": categories},
+        "dashboard/teacher.html",
+        {
+            "request": request,
+            "user": user,
+            "courses": courses,
+            "categories": categories,
+            "pending_invites": pending_invites,
+            "my_org_applications": teacher_applications,  # backward compat
+            "teacher_applications": teacher_applications,
+        },
     )

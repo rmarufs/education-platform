@@ -14,6 +14,7 @@ from app.database import get_db
 from app.dependencies import get_user, is_teacher, is_student, is_admin, can
 from app.models.user import User
 from app.models.course import Course
+from app.models.organization import Organization, OrganizationTeacher
 from app.models.progress import Progress
 from app.models.category import Category
 from app.models.module import Module
@@ -53,6 +54,18 @@ def _plain_text(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"<[^>]+>", "", value).strip()
+
+
+def get_teacher_org(teacher_id, db):
+    org_teacher = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.teacher_id == teacher_id,
+        OrganizationTeacher.status == "accepted"
+    ).first()
+    if org_teacher:
+        return db.query(Organization).filter(
+            Organization.id == org_teacher.organization_id
+        ).first()
+    return None
 
 
 def _course_image_fs_path(image_url: str | None) -> str | None:
@@ -227,7 +240,7 @@ def courses_catalog(
     
     total_pages = (total + per_page - 1) // per_page
 
-    return templates.TemplateResponse("courses_list.html", {
+    return templates.TemplateResponse("courses/courses_list.html", {
         "request": request,
         "courses": courses,
         "categories": categories,
@@ -283,7 +296,7 @@ def recommended_courses(request: Request, db: Session = Depends(get_db)):
     
     recommended = query.order_by(Course.rating.desc()).all()
     
-    return templates.TemplateResponse("recommended_courses.html", {
+    return templates.TemplateResponse("pages/recommended_courses.html", {
         "request": request,
         "courses": recommended,
         "user": user
@@ -587,7 +600,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         course_fully_done = total_course_lessons > 0 and completion_pct == 100
         show_review_prompt = enough_lessons or course_fully_done
 
-    return templates.TemplateResponse("course_page.html", {
+    teacher_org = get_teacher_org(course.teacher_id, db)
+
+    return templates.TemplateResponse("courses/course_page.html", {
         "request": request,
         "course": course,
         "user": user,
@@ -599,6 +614,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "user_review": user_review,
         "top_reviews": top_reviews,
         "show_review_prompt": show_review_prompt,
+        "teacher_org": teacher_org,
     })
 
 
@@ -660,7 +676,7 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
                 "last_active": last_activity,
             })
 
-    return templates.TemplateResponse("course_manage.html", {
+    return templates.TemplateResponse("courses/course_manage.html", {
         "request": request,
         "course": course,
         "user": user,
@@ -778,7 +794,7 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
     ).first()
     show_review_on_completion = user_review is None
 
-    return templates.TemplateResponse("course_completed.html", {
+    return templates.TemplateResponse("courses/course_completed.html", {
         "request": request,
         "user": user,
         "course": course,

@@ -1,0 +1,95 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Организации{% endblock %}
+{% block title_key %}admin.nav.organizations{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div>
+        <h1 data-i18n="admin.org.title">🏢 Управление организациями</h1>
+        <p data-i18n="admin.org.subtitle">Всего: {{ orgs|length }} организаций</p>
+    </div>
+</div>
+
+{% if orgs %}
+<div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th data-i18n="admin.org.name">Организация</th>
+                <th data-i18n="admin.org.contact">Контактное лицо</th>
+                <th data-i18n="admin.org.status">Статус</th>
+                <th data-i18n="admin.org.date">Дата регистрации</th>
+                <th data-i18n="admin.org.actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for org in orgs %}
+            <tr>
+                <td>
+                    <div class="admin-flex">
+                        <span class="admin-avatar admin-avatar-lg">
+                            {{ org.name[0].upper() }}
+                        </span>
+                        <div style="display:flex; flex-direction:column;">
+                            <strong style="font-size:1rem;">{{ org.name }}</strong>
+                            <span style="font-size:0.8rem; color: var(--text-muted);">{{ org.phone or "—" }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if org.user %}
+                    <div style="font-weight:500;">{{ org.user.name }}</div>
+                    <div style="font-size:0.82rem; color: var(--text-muted);">{{ org.user.email }}</div>
+                    {% else %}
+                    <span style="color:var(--danger); font-size:0.85rem;">Пользователь удален</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if org.status == 'pending' %}
+                        <span class="admin-badge admin-badge-pending">⏳ <span data-i18n="admin.org.status_pending">Ожидает</span></span>
+                    {% elif org.status == 'approved' %}
+                        <span class="admin-badge admin-badge-active">✅ <span data-i18n="admin.org.status_approved">Одобрена</span></span>
+                    {% elif org.status == 'rejected' %}
+                        <span class="admin-badge admin-badge-blocked">❌ <span data-i18n="admin.org.status_rejected">Отклонена</span></span>
+                    {% else %}
+                        <span class="admin-badge">{{ org.status }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:0.85rem;">{{ org.created_at.strftime("%d.%m.%Y") }}</td>
+                <td>
+                    <div class="admin-actions">
+                        {% if org.status != 'approved' %}
+                        <form action="/admin/organizations/{{ org.id }}/approve" method="POST" style="display:inline;">
+                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" title="Одобрить">
+                                ✅
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if org.status != 'rejected' %}
+                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="return confirm('Отклонить заявку организации «{{ org.name }}»?')">
+                            <button type="submit" class="admin-btn admin-btn-outline admin-btn-sm" title="Отклонить">
+                                ❌
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="return confirm('ВНИМАНИЕ! Вы собираетесь ПОЛНОСТЬЮ УДАЛИТЬ организацию «{{ org.name }}». Это действие необратимо. Продолжить?')">
+                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
+                                🗑
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="admin-empty">
+    <div class="admin-empty-icon">🏢</div>
+    <p data-i18n="admin.org.empty">Организации не найдены</p>
+</div>
+{% endif %}
+{% endblock %}
