@@ -505,119 +505,125 @@ async def delete_quiz_url(
 
 @router.get("/{course_id}", response_class=HTMLResponse)
 def course_page(course_id: int, request: Request, db: Session = Depends(get_db)):
-    course = (
-        db.query(Course)
-        .options(
-            joinedload(Course.teacher),
-            joinedload(Course.category),
-            joinedload(Course.quiz).selectinload(Quiz.questions),
-            selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions),
-            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
-            selectinload(Course.reviews).joinedload(Review.student),
-            selectinload(Course.materials),
-        )
-        .filter(Course.id == course_id)
-        .first()
-    )
-    if not course:
-        raise HTTPException(status_code=404, detail="Курс не найден")
-
-    user = get_user(request, db)
-
-    # Прогресс студента по этому курсу
-    progress_data = {}
-    completion_pct = 0
-    module_quiz_states = {}
-    course_quiz_unlocked = False
-    course_quiz_passed = False
-    if is_student(user):
-        course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
-        progress_rows = (
-            db.query(Progress)
-            .filter(
-                Progress.student_id == user.id,
-                Progress.lesson_id.in_(course_lesson_ids),
+    try:
+        course = (
+            db.query(Course)
+            .options(
+                joinedload(Course.teacher),
+                joinedload(Course.category),
+                joinedload(Course.quiz).selectinload(Quiz.questions),
+                selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions),
+                selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
+                selectinload(Course.reviews).joinedload(Review.student),
+                selectinload(Course.materials),
             )
-            .all()
-        ) if course_lesson_ids else []
-        progress_data = {p.lesson_id: p.completed for p in progress_rows}
-
-        total_lessons = sum(len(m.lessons) for m in course.modules)
-        done_lessons = sum(
-            1 for m in course.modules for l in m.lessons if progress_data.get(l.id)
+            .filter(Course.id == course_id)
+            .first()
         )
-        completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
 
-        # Переиспользуем уже загруженный course, избегая второго запроса к БД
-        completed_lesson_ids, passed_quiz_ids = course_progress_state_from_obj(db, user.id, course)
-        module_quiz_states = {
-            module.id: {
-                "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
-                "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
+        user = get_user(request, db)
+
+        # Прогресс студента по этому курсу
+        progress_data = {}
+        completion_pct = 0
+        module_quiz_states = {}
+        course_quiz_unlocked = False
+        course_quiz_passed = False
+        if is_student(user):
+            course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
+            progress_rows = (
+                db.query(Progress)
+                .filter(
+                    Progress.student_id == user.id,
+                    Progress.lesson_id.in_(course_lesson_ids),
+                )
+                .all()
+            ) if course_lesson_ids else []
+            progress_data = {p.lesson_id: p.completed for p in progress_rows}
+
+            total_lessons = sum(len(m.lessons) for m in course.modules)
+            done_lessons = sum(
+                1 for m in course.modules for l in m.lessons if progress_data.get(l.id)
+            )
+            completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
+
+            # Переиспользуем уже загруженный course, избегая второго запроса к БД
+            completed_lesson_ids, passed_quiz_ids = course_progress_state_from_obj(db, user.id, course)
+            module_quiz_states = {
+                module.id: {
+                    "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
+                    "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
+                }
+                for module in course.modules
+                if module.quiz
             }
-            for module in course.modules
-            if module.quiz
-        }
-        course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
-        course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
+            course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
+            course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
 
-    # \u0423\u0436\u0435 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u043b \u043e\u0442\u0437\u044b\u0432?
-    user_review = None
-    if user:
-        user_review = db.query(Review).filter(
-            Review.student_id == user.id,
-            Review.teacher_id == course.teacher_id,
-        ).first()
+        # \u0423\u0436\u0435 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u043b \u043e\u0442\u0437\u044b\u0432?
+        user_review = None
+        if user:
+            user_review = db.query(Review).filter(
+                Review.student_id == user.id,
+                Review.teacher_id == course.teacher_id,
+            ).first()
 
-    # \u0422\u043e\u043f-4 \u043e\u0442\u0437\u044b\u0432\u0430 \u043a\u0443\u0440\u0441\u0430 (\u0432\u0438\u0434\u043d\u044b \u0432\u0441\u0435\u043c)
-    top_reviews = (
-        db.query(Review)
-        .filter(Review.course_id == course_id)
-        .order_by(Review.rating.desc(), Review.created_at.desc())
-        .limit(4)
-        .all()
-    )
+        # \u0422\u043e\u043f-4 \u043e\u0442\u0437\u044b\u0432\u0430 \u043a\u0443\u0440\u0441\u0430 (\u0432\u0438\u0434\u043d\u044b \u0432\u0441\u0435\u043c)
+        top_reviews = (
+            db.query(Review)
+            .filter(Review.course_id == course_id)
+            .order_by(Review.rating.desc(), Review.created_at.desc())
+            .limit(4)
+            .all()
+        )
 
-    # \u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435 \u043e\u0442\u0437\u044b\u0432\u0430 \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u0443\u0440\u0441\u0430?
-    show_review_prompt = False
-    if is_student(user) and not user_review:
-        completed_teacher_lessons = (
-            db.query(func.count(Progress.id))
-            .join(Lesson, Progress.lesson_id == Lesson.id)
-            .join(Module, Lesson.module_id == Module.id)
-            .join(Course, Module.course_id == Course.id)
-            .filter(
-                Progress.student_id == user.id,
-                Progress.completed == True,  # noqa: E712
-                Course.teacher_id == course.teacher_id,
-            )
-            .scalar()
-        ) or 0
-        # Условие 1: 2+ уроков у этого преподавателя
-        enough_lessons = completed_teacher_lessons >= 2
-        # Условие 2: курс пройден полностью (даже если урок всего один)
-        total_course_lessons = sum(len(m.lessons) for m in course.modules)
-        course_fully_done = total_course_lessons > 0 and completion_pct == 100
-        show_review_prompt = enough_lessons or course_fully_done
+        # \u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435 \u043e\u0442\u0437\u044b\u0432\u0430 \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u0443\u0440\u0441\u0430?
+        show_review_prompt = False
+        if is_student(user) and not user_review:
+            completed_teacher_lessons = (
+                db.query(func.count(Progress.id))
+                .join(Lesson, Progress.lesson_id == Lesson.id)
+                .join(Module, Lesson.module_id == Module.id)
+                .join(Course, Module.course_id == Course.id)
+                .filter(
+                    Progress.student_id == user.id,
+                    Progress.completed == True,  # noqa: E712
+                    Course.teacher_id == course.teacher_id,
+                )
+                .scalar()
+            ) or 0
+            # Условие 1: 2+ уроков у этого преподавателя
+            enough_lessons = completed_teacher_lessons >= 2
+            # Условие 2: курс пройден полностью (даже если урок всего один)
+            total_course_lessons = sum(len(m.lessons) for m in course.modules)
+            course_fully_done = total_course_lessons > 0 and completion_pct == 100
+            show_review_prompt = enough_lessons or course_fully_done
 
-    teacher_org = get_teacher_org(course.teacher_id, db)
+        teacher_org = get_teacher_org(course.teacher_id, db)
 
-    return templates.TemplateResponse("courses/course_page.html", {
-        "request": request,
-        "course": course,
-        "user": user,
-        "progress_data": progress_data,
-        "completion_pct": completion_pct,
-        "module_quiz_states": module_quiz_states,
-        "course_quiz_unlocked": course_quiz_unlocked,
-        "course_quiz_passed": course_quiz_passed,
-        "user_review": user_review,
-        "top_reviews": top_reviews,
-        "show_review_prompt": show_review_prompt,
-        "teacher_org": teacher_org,
-    })
+        return templates.TemplateResponse("courses/course_page.html", {
+            "request": request,
+            "course": course,
+            "user": user,
+            "progress_data": progress_data,
+            "completion_pct": completion_pct,
+            "module_quiz_states": module_quiz_states,
+            "course_quiz_unlocked": course_quiz_unlocked,
+            "course_quiz_passed": course_quiz_passed,
+            "user_review": user_review,
+            "top_reviews": top_reviews,
+            "show_review_prompt": show_review_prompt,
+            "teacher_org": teacher_org,
+        })
 
 
+    except Exception as e:
+        import traceback
+        print("Error in course_page:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 # ── Страница управления курсом (teacher) ─────────────────────────────────────
 
 @router.get("/{course_id}/manage", response_class=HTMLResponse)
