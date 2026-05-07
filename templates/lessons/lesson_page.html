@@ -85,7 +85,7 @@
 
       {% if vid_id %}
         <!-- Кастомный YouTube плеер -->
-        <div id="yt-player" data-video-token="{{ vid_id | reverse | join | b64encode }}"></div>
+        <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
 
         <!-- Динамический водяной знак -->
         <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">
@@ -590,7 +590,11 @@ async function submitReview(teacherId, courseId) {
   function decodeYt(token) {
     try {
       var decoded = atob(token);
-      return decoded.split('').reverse().join('');
+      var shifted = "";
+      for (var i = 0; i < decoded.length; i++) {
+        shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
+      }
+      return shifted.split('').reverse().join('');
     } catch(e) {
       return '';
     }
