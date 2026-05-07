@@ -3819,7 +3819,8 @@ body { transition: background-color .3s ease, color .3s ease; }
   overflow: hidden;
   aspect-ratio: 16 / 9;
   box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
-  isolation: isolate;
+  /* НЕ используем isolation:isolate — оно создаёт stacking context,
+     из-за которого в Chrome на iOS внутри появляется «пелена» */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   user-select: none;
@@ -3863,36 +3864,6 @@ body { transition: background-color .3s ease, color .3s ease; }
   --plyr-tooltip-background: rgba(10, 12, 24, 0.92);
   --plyr-tooltip-color: #fff;
   --plyr-tooltip-radius: 8px;
-}
-
-/* Убираем кнопку YouTube (логотип) из iframe */
-.plyr__youtube-logo {
-  display: none !important;
-}
-
-/* Защитный оверлей: блокирует правый клик на iframe, но прозрачен для кликов Plyr */
-.video-protect-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none; /* Plyr controls выше по z-index, этот слой только для contextmenu */
-}
-
-/* ── Динамический водяной знак ──────────────────────── */
-.dynamic-watermark {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 20;   /* Выше Plyr (z-index 10), но ниже fullscreen overlay */
-  pointer-events: none;
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 1rem;
-  font-weight: 600;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
-  user-select: none;
-  transition: left 1.2s ease-in-out, top 1.2s ease-in-out;
-  white-space: nowrap;
-  letter-spacing: 0.04em;
 }
 
 /* Mobile: fullscreen на мобилке */
