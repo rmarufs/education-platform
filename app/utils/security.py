@@ -30,15 +30,19 @@ _cleaner = bleach.Cleaner(
 )
 
 
+from markupsafe import Markup
+
 def sanitize_html(html_content: str) -> str:
     """
     Очищает входящий HTML, разрешая только безопасные теги и атрибуты.
     Совместима с bleach v6+. Защищает от Stored XSS атак.
+    Возвращает Markup-объект для безопасного рендеринга в Jinja2.
     """
     if not html_content:
-        return ""
+        return Markup("")
     try:
-        return _cleaner.clean(html_content)
+        cleaned = _cleaner.clean(html_content)
+        return Markup(cleaned)
     except Exception:
         # В крайнем случае — полное экранирование
-        return bleach.clean(html_content, tags=[], strip=True)
+        return Markup(bleach.clean(html_content, tags=[], strip=True))
