@@ -12,4 +12,5 @@ gunicorn==21.2.0
 cloudinary==1.41.0
 alembic==1.13.1
 bleach==6.1.0
+tinycss2==1.3.0
 slowapi==0.1.9
