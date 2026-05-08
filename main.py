@@ -1,13 +1,11 @@
 # Точка входа в приложение FastAPI
 import os
 import logging
-from functools import lru_cache
 from fastapi import FastAPI, Request, status, Depends
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
@@ -55,15 +53,16 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 # Middleware для сессий на основе куков (укрепленные настройки безопасности)
-env_is_prod = os.environ.get("ENV") != "dev"
+# https_only=True обязателен на проде (HTTPS), на локалке отключаем
+_app_env = os.environ.get("APP_ENV", "production").strip().lower()
+env_is_prod = _app_env not in ("development", "dev", "local")
 
 app.add_middleware(
-    SessionMiddleware, 
-    secret_key=SECRET_KEY, 
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
     max_age=60 * 60 * 24 * 7,
     https_only=env_is_prod,
     same_site="lax"
-    # httponly=True # В Starlette SessionMiddleware куки по умолчанию HttpOnly.
 )
 
 # Статические файлы (CSS, JS, изображения)

@@ -316,3 +316,35 @@ function escapeHtml(text) {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
+
+/* ── Глобальная защита от двойной отправки форм ── */
+(function() {
+  document.addEventListener('submit', function(e) {
+    const form = e.target;
+
+    // Не трогать формы которые имеют свой обработчик в auth.js
+    if (form.id === 'login-form' || form.id === 'register-form') return;
+
+    if (form.dataset.submitted === 'true') {
+      e.preventDefault();
+      return;
+    }
+    
+    form.dataset.submitted = 'true';
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.pointerEvents = 'none';
+
+      /* Восстановить через 5 сек (на случай ошибки валидации в браузере) */
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.pointerEvents = '';
+        form.dataset.submitted = '';
+      }, 5000);
+    }
+  }, true);
+})();
+

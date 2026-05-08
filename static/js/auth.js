@@ -1,5 +1,7 @@
 /**
  * auth.js — Клиентская валидация форм входа и регистрации
+ * Формы отправляются нативным HTML POST (без fetch) для
+ * корректной работы сессионных кук и редиректов сервера.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,23 +13,40 @@ document.addEventListener('DOMContentLoaded', () => {
       clearFormErrors(this);
       let valid = true;
 
-      const email = document.getElementById('email');
+      const email    = document.getElementById('email');
       const password = document.getElementById('password');
 
       if (!email.value.trim()) {
-        showFieldError('email', t('validation.email_required'));
+        showFieldError('email', t('validation.email_required') || 'Введите email');
         valid = false;
       } else if (!isValidEmail(email.value)) {
-        showFieldError('email', t('validation.email_invalid'));
+        showFieldError('email', t('validation.email_invalid') || 'Неверный формат email');
         valid = false;
       }
 
       if (!password.value) {
-        showFieldError('password', t('validation.password_required'));
+        showFieldError('password', t('validation.password_required') || 'Введите пароль');
         valid = false;
       }
 
-      if (!valid) e.preventDefault();
+      // При невалидных данных — не отправляем
+      if (!valid) {
+        e.preventDefault();
+        return;
+      }
+
+      // Блокируем кнопку только при валидной отправке
+      const btn = this.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        // Разблокируем через 6 сек на случай ошибки браузера
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }, 6000);
+      }
+      // Форма отправляется нативным POST
     });
   }
 
@@ -43,27 +62,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = document.getElementById('password');
 
       if (!name.value.trim()) {
-        showFieldError('name', t('validation.name_required'));
+        showFieldError('name', t('validation.name_required') || 'Введите имя');
         valid = false;
       }
 
       if (!email.value.trim()) {
-        showFieldError('email', t('validation.email_required'));
+        showFieldError('email', t('validation.email_required') || 'Введите email');
         valid = false;
       } else if (!isValidEmail(email.value)) {
-        showFieldError('email', t('validation.email_invalid'));
+        showFieldError('email', t('validation.email_invalid') || 'Неверный формат email');
         valid = false;
       }
 
       if (!password.value) {
-        showFieldError('password', t('validation.password_required'));
+        showFieldError('password', t('validation.password_required') || 'Введите пароль');
         valid = false;
       } else if (password.value.length < 6) {
-        showFieldError('password', t('validation.password_short'));
+        showFieldError('password', t('validation.password_short') || 'Минимум 6 символов');
         valid = false;
       }
 
-      if (!valid) e.preventDefault();
+      if (!valid) {
+        e.preventDefault();
+        return;
+      }
+
+      const btn = this.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }, 6000);
+      }
+      // Форма отправляется нативным POST
     });
 
     // Подсвечиваем выбранную роль
@@ -71,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
       radio.addEventListener('change', () => {
         registerForm.querySelectorAll('.role-option').forEach(label => {
           label.style.borderColor = '';
-          label.style.background = '';
-          label.style.color = '';
+          label.style.background  = '';
+          label.style.color       = '';
         });
       });
     });
@@ -82,8 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * Проверяет формат email.
- * @param {string} email
- * @returns {boolean}
  */
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

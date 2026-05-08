@@ -280,31 +280,6 @@
       document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
     })();
     </script>
-    <script>
-    /* ── Глобальная защита от двойной отправки форм ── */
-    (function() {
-      document.addEventListener('submit', function(e) {
-        const form = e.target;
-        if (form.dataset.submitted === 'true') {
-          e.preventDefault();
-          return;
-        }
-        form.dataset.submitted = 'true';
-        const btn = form.querySelector('button[type="submit"]');
-        if (btn) {
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.pointerEvents = 'none';
-          /* Восстановить через 5 сек (на случай ошибки валидации в браузере) */
-          setTimeout(function() {
-            btn.disabled = false;
-            btn.style.opacity = '';
-            btn.style.pointerEvents = '';
-            form.dataset.submitted = '';
-          }, 5000);
-        }
-      }, true);
-    })();
     </script>
     {% block scripts %}{% endblock %}
 </body>
