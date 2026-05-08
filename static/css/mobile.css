@@ -27,13 +27,14 @@
 
   /* ══════ Hero секция ═══════════════════════════════ */
   .hero {
-    padding: 36px 20px 32px;
-    gap: 20px;
+    padding: 28px 20px 24px;
+    gap: 16px;
     flex-direction: column;
     text-align: center;
   }
-  .hero-title { font-size: 1.75rem; line-height: 1.25; }
-  .hero-subtitle { font-size: 1rem; margin-bottom: 20px; }
+  .hero-title { font-size: 1.6rem; line-height: 1.25; }
+  /* Подзаголовок скрыт на мобиле — hero чище */
+  .hero-subtitle { display: none; }
   .hero-content { max-width: 100%; }
   .hero-actions {
     flex-direction: column;
@@ -43,21 +44,8 @@
     width: 100%;
     justify-content: center;
   }
-  /* Компактные hero-карточки вместо скрытия */
-  .hero-illustration {
-    flex-direction: row;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .hero-card {
-    padding: 8px 14px;
-    min-width: auto;
-    font-size: .82rem;
-    gap: 6px;
-    animation: none;
-  }
-  .hero-card-icon { font-size: 1rem; }
+  /* Иллюстрацию с карточками скрываем на мобиле */
+  .hero-illustration { display: none; }
 
   /* ══════ Статистика ════════════════════════════════ */
   .stats-section { padding: 24px 16px; }
@@ -517,10 +505,9 @@
   .logo-text { font-size: 1.15rem; }
 
   /* Hero */
-  .hero { padding: 24px 14px; }
-  .hero-title { font-size: 1.4rem; }
-  .hero-subtitle { font-size: .85rem; }
-  .hero-card { padding: 6px 10px; font-size: .75rem; }
+  .hero { padding: 20px 14px; }
+  .hero-title { font-size: 1.3rem; }
+  .hero-illustration { display: none; }
 
   /* Stats — компактный горизонтальный вид */
   .stats-section { padding: 20px 12px; }

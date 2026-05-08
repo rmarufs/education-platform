@@ -24,7 +24,7 @@ const translations = {
     "footer.company": "Компания",
     "footer.social": "Соцсети",
 
-    "hero.title": "Таджикская платформа для студентов и преподавателей",
+    "hero.title": "Таджикская образовательная платформа",
     "hero.subtitle": "Открой доступ к знаниям прямо сейчас",
     "hero.cta_register": "Начать бесплатно",
     "hero.cta_login": "Войти в аккаунт",
@@ -38,7 +38,7 @@ const translations = {
     "stats.courses": "Курсов",
     "stats.teachers": "Преподавателей",
 
-    "home.popular_courses": "Фурузон  — Образовательная платформа",
+    "home.popular_courses": "Популярные курсы",
     "home.popular_courses_sub": "Начни обучение с лучших программ нашей платформы",
     "home.no_courses": "Курсы пока не добавлены. Зарегистрируйтесь как преподаватель и создайте первый.",
     "home.why_us": "Почему Фурузон?",
@@ -704,7 +704,7 @@ const translations = {
     "stats.courses": "Курс",
     "stats.teachers": "Омӯзгор",
 
-    "home.popular_courses": "Фурузон — Платформаи омӯзишӣ",
+    "home.popular_courses": "Курсҳои машҳур",
     "home.popular_courses_sub": "Омӯзишро аз барномаҳои беҳтарини платформа оғоз кунед.",
     "home.no_courses": "Ҳоло курс илова нашудааст. Ҳамчун омӯзгор сабти ном кунед ва аввалин курсро созед.",
     "home.why_us": "Чаро Фурузон?",
