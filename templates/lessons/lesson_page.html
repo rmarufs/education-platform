@@ -68,39 +68,29 @@
   <!-- Основной контент -->
   <main class="lesson-content">
 
-    <!-- Видео: внешние ссылки (YouTube) -->
+    <!-- Видео: внешние ссылки (YouTube) или HTML5 -->
     {% if lesson.video_url %}
     <div class="video-container" id="custom-video-container">
       {% set vid = lesson.video_url %}
-      {% set vid_id = None %}
-      {% if "youtube.com/watch?v=" in vid %}
-        {% set vid_id = vid.split("v=")[1].split("&")[0] %}
-      {% elif "youtu.be/" in vid %}
-        {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
-      {% elif "youtube.com/embed/" in vid %}
-        {% set vid_id = vid.split("youtube.com/embed/")[1].split("?")[0].split("&")[0] %}
-      {% elif "youtube.com/shorts/" in vid %}
-        {% set vid_id = vid.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0] %}
-      {% endif %}
+      {% if "youtube.com" in vid or "youtu.be" in vid %}
+        {% set vid_id = None %}
+        {% if "youtube.com/watch?v=" in vid %}
+          {% set vid_id = vid.split("v=")[1].split("&")[0] %}
+        {% elif "youtu.be/" in vid %}
+          {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
+        {% elif "youtube.com/embed/" in vid %}
+          {% set vid_id = vid.split("youtube.com/embed/")[1].split("?")[0].split("&")[0] %}
+        {% elif "youtube.com/shorts/" in vid %}
+          {% set vid_id = vid.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0] %}
+        {% endif %}
 
-      {% if vid_id %}
+        {% if vid_id %}
         <!-- Кастомный YouTube плеер -->
         <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
-
-        <!-- Динамический водяной знак -->
-        <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">
-          {{ user.username if user else 'Student' }}
-        </div>
-
-        
-        <!-- Слой перехватывает клики и держит пользовательский интерфейс поверх iframe. -->
+        <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
         <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
-            <div class="big-play-btn" id="big-play-btn" aria-hidden="true">
-              <span class="big-play-icon"></span>
-            </div>
+            <div class="big-play-btn" id="big-play-btn" aria-hidden="true"><span class="big-play-icon"></span></div>
         </div>
-        
-        <!-- Кастомные элементы управления -->
         <div class="custom-video-controls" id="custom-controls" oncontextmenu="return false;" onclick="event.stopPropagation()">
            <button type="button" id="play-pause-btn" class="ctrl-btn" aria-label="Play/Pause">▶</button>
            <div class="progress-container" id="progress-container">
@@ -108,8 +98,6 @@
                <span class="progress-handle" id="progress-handle" aria-hidden="true"></span>
            </div>
            <span class="time-display" id="time-display">0:00 / 0:00</span>
-           
-           <!-- Выбор скорости -->
            <div class="speed-control-wrapper">
              <button type="button" id="speed-btn" class="ctrl-btn text-btn" aria-label="Playback Speed">1x</button>
              <div class="speed-menu" id="speed-menu">
@@ -121,12 +109,48 @@
                <button type="button" class="speed-option" data-speed="2">2x</button>
              </div>
            </div>
-
            <button type="button" id="mute-btn" class="ctrl-btn" aria-label="Mute/Unmute">🔊</button>
            <button type="button" id="fullscreen-btn" class="ctrl-btn" aria-label="Fullscreen">⛶</button>
         </div>
-      {% else %}
+        {% else %}
         <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
+        {% endif %}
+      {% else %}
+        <!-- HTML5 Video Player -->
+        <div class="vp-shell" id="html5-video-shell">
+          <video id="html5-video" class="vp-video" playsinline webkit-playsinline preload="metadata" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture oncontextmenu="return false;">
+            <source src="{{ lesson.video_url }}" type="video/mp4">
+          </video>
+          <div class="vp-spinner" aria-hidden="true"></div>
+          <div class="vp-error" role="alert">
+            <span class="vp-error-icon">⚠️</span>
+            <span>Не удалось загрузить видео</span>
+          </div>
+          <div class="vp-watermark" id="vp-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
+          <div class="vp-overlay" id="vp-overlay" oncontextmenu="return false;"></div>
+          <div class="vp-big-play" id="vp-big-play" aria-hidden="true"><span class="vp-big-play-icon"></span></div>
+          <div class="vp-controls" id="vp-controls" oncontextmenu="return false;">
+            <button type="button" id="vp-play-btn" class="vp-btn" aria-label="Play/Pause">▶</button>
+            <div class="vp-progress" id="vp-progress" role="slider" aria-label="Прогресс видео">
+              <div class="vp-progress-fill" id="vp-progress-fill"></div>
+              <span class="vp-progress-handle" id="vp-progress-handle" aria-hidden="true"></span>
+            </div>
+            <span class="vp-time" id="vp-time">0:00 / 0:00</span>
+            <div class="vp-speed-wrap">
+              <button type="button" id="vp-speed-btn" class="vp-btn vp-text-btn" aria-label="Скорость">1x</button>
+              <div class="vp-speed-menu" id="vp-speed-menu" role="menu">
+                <button class="vp-speed-opt" data-rate="0.5" role="menuitem">0.5x</button>
+                <button class="vp-speed-opt" data-rate="0.75" role="menuitem">0.75x</button>
+                <button class="vp-speed-opt vp-speed-active" data-rate="1" role="menuitem">Обычная (1x)</button>
+                <button class="vp-speed-opt" data-rate="1.25" role="menuitem">1.25x</button>
+                <button class="vp-speed-opt" data-rate="1.5" role="menuitem">1.5x</button>
+                <button class="vp-speed-opt" data-rate="2" role="menuitem">2x</button>
+              </div>
+            </div>
+            <button type="button" id="vp-mute-btn" class="vp-btn" aria-label="Звук">🔊</button>
+            <button type="button" id="vp-fs-btn" class="vp-btn" aria-label="Полный экран">⛶</button>
+          </div>
+        </div>
       {% endif %}
     </div>
     
@@ -1209,4 +1233,6 @@ async function submitReview(teacherId, courseId) {
     resetControlsTimer();
   }
 </script>
+<script src="/static/js/video_player.js?v=1"></script>
 {% endblock %}
+

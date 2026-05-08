@@ -615,14 +615,16 @@
     padding-top: 12px !important;
   }
   .video-container,
-  #custom-video-container {
+  #custom-video-container,
+  #html5-video-shell {
     margin-left: -16px;
     margin-right: -16px;
     width: calc(100% + 32px);
   }
 
   /* Pseudo-fullscreen — без Safe Area в landscape */
-  #custom-video-container.is-pseudo-fullscreen {
+  #custom-video-container.is-pseudo-fullscreen,
+  #html5-video-shell.vp-pseudo-fs {
     padding-bottom: 0;
   }
 

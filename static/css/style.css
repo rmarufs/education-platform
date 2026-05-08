@@ -3798,9 +3798,7 @@ body { transition: background-color .3s ease, color .3s ease; }
   overflow: hidden;
   aspect-ratio: 16 / 9;
   box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
-  isolation: isolate;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  /* iOS fix: НЕТ isolation, НЕТ transform — ломают WebKit fullscreen и вызывают обрезание */
 }
 
 #custom-video-container:fullscreen,
@@ -3858,8 +3856,7 @@ body.video-pseudo-fullscreen .navbar {
   top: 0;
   left: 0;
   pointer-events: none;
-  transform: scale(1.012);
-  transform-origin: center;
+  /* iOS fix: НЕТ transform:scale — вызывает обрезание в landscape на WebKit */
 }
 
 #yt-player iframe {
@@ -3961,8 +3958,9 @@ body.video-pseudo-fullscreen .navbar {
   right: 16px;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   min-height: 58px;
-  background: rgba(7, 10, 18, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* iOS fix: НЕТ backdrop-filter — вызывает прозрачность/артефакты в Chrome iOS */
+  background: rgba(8, 10, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -3973,7 +3971,6 @@ body.video-pseudo-fullscreen .navbar {
   transform: translateY(10px);
   transition: opacity 0.24s ease, transform 0.24s ease;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(18px);
 }
 
 #custom-video-container:hover .custom-video-controls,
@@ -4074,7 +4071,8 @@ body.video-pseudo-fullscreen .navbar {
   bottom: calc(100% + 10px);
   right: 50%;
   transform: translateX(50%);
-  background: rgba(15, 15, 15, 0.95);
+  /* iOS fix: НЕТ backdrop-filter */
+  background: rgba(12, 14, 26, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   padding: 8px 0;
@@ -4085,7 +4083,6 @@ body.video-pseudo-fullscreen .navbar {
   visibility: hidden;
   transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  backdrop-filter: blur(8px);
 }
 .speed-menu.show {
   opacity: 1;
