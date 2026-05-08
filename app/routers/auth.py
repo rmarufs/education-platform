@@ -247,8 +247,16 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    email = email.strip().lower()
-    user = db.query(User).filter(User.email == email).first()
+    try:
+        email = email.strip().lower()
+        user = db.query(User).filter(User.email == email).first()
+    except Exception as e:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {"request": request, "error": "Ошибка базы данных при поиске пользователя."},
+            status_code=500,
+        )
+
     if not user or not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "auth/login.html",
@@ -257,7 +265,10 @@ def login(
         )
 
     # Организации, ждущие одобрения, не могут войти
-    if user.is_org and not user.is_active:
+    is_org = getattr(user, "is_org", False)
+    is_active = getattr(user, "is_active", True)
+    
+    if is_org and not is_active:
         return templates.TemplateResponse(
             "auth/login.html",
             {"request": request, "error": "Ваша организация ещё не одобрена администратором."},
@@ -265,10 +276,11 @@ def login(
         )
 
     # Проверяем, заблокирован ли пользователь или ждёт одобрения
-    if not user.is_active:
-        if user.role == UserRole.teacher_pending:
+    if not is_active:
+        user_role = getattr(user, "role", None)
+        if user_role == UserRole.teacher_pending:
             error_msg = "Ваша заявка преподавателя всё ещё находится на рассмотрении."
-        elif user.is_org:
+        elif is_org:
             error_msg = "Ваша организация всё ещё находится на рассмотрении."
         else:
             error_msg = "Ваш аккаунт заблокирован. Обратитесь к администратору."
@@ -299,4 +311,6 @@ def login(
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
-    return RedirectResponse("/", status_code=302)
+    response = RedirectResponse("/", status_code=302)
+    response.delete_cookie("session")
+    return response

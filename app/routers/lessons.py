@@ -6,7 +6,6 @@ import base64
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
@@ -23,15 +22,7 @@ from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 
 router = APIRouter(prefix="/lessons")
-templates = Jinja2Templates(directory="templates")
-def obfuscate_yt(s: str) -> str:
-    if not s:
-        return ""
-    # Reverse string + Caesar shift + Base64
-    shifted = "".join(chr(ord(c) + 3) for c in s[::-1])
-    return base64.b64encode(shifted.encode("utf-8")).decode("utf-8")
-
-templates.env.filters["b64encode"] = obfuscate_yt
+from app.ui import templates
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}

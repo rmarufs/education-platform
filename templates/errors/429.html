@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}429 — Слишком много попыток{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="error-page-shell">
+    <span class="error-page-status">429</span>
+    <h1 class="error-page-title">{{ error_title or "Слишком много попыток" }}</h1>
+    <p class="error-page-message">{{ error_message or "Слишком много попыток. Пожалуйста, подождите и попробуйте снова." }}</p>
+    <div class="error-page-actions">
+      <a href="/" class="btn btn-primary">На главную</a>
+      <button type="button" class="btn btn-outline" onclick="window.location.reload()">Обновить страницу</button>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -55,11 +55,13 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 # Middleware для сессий на основе куков (укрепленные настройки безопасности)
+env_is_prod = os.environ.get("ENV") != "dev"
+
 app.add_middleware(
     SessionMiddleware, 
     secret_key=SECRET_KEY, 
     max_age=60 * 60 * 24 * 7,
-    https_only=True,
+    https_only=env_is_prod,
     same_site="lax"
     # httponly=True # В Starlette SessionMiddleware куки по умолчанию HttpOnly.
 )
@@ -67,12 +69,9 @@ app.add_middleware(
 # Статические файлы (CSS, JS, изображения)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
+from app.ui import templates
 logger = logging.getLogger(__name__)
 
-# Регистрация безопасного фильтра для очистки HTML
-from app.utils.security import sanitize_html
-templates.env.filters["clean_html"] = sanitize_html
 
 
 # ── Middleware для кэширования пользователя в контексте запроса ────────────────
@@ -238,6 +237,8 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception):
+    import traceback
+    traceback.print_exc()
     logger.exception("Unhandled application error", exc_info=exc)
     return _render_error_page(
         request,

@@ -16,6 +16,12 @@ ALLOWED_STYLES = [
     'text-align', 'margin', 'padding', 'border'
 ]
 
+try:
+    from bleach.css_sanitizer import CSSSanitizer
+    css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_STYLES)
+except ImportError:
+    css_sanitizer = None
+
 def sanitize_html(html_content: str) -> str:
     """
     Очищает входящий HTML, разрешая только безопасные теги и атрибуты.
@@ -24,10 +30,12 @@ def sanitize_html(html_content: str) -> str:
     if not html_content:
         return ""
     
-    return bleach.clean(
-        html_content,
-        tags=ALLOWED_TAGS,
-        attributes=ALLOWED_ATTRIBUTES,
-        styles=ALLOWED_STYLES,
-        strip=True  # Удалять недопустимые теги вместо их эскейпинга
-    )
+    kwargs = {
+        "tags": ALLOWED_TAGS,
+        "attributes": ALLOWED_ATTRIBUTES,
+        "strip": True
+    }
+    if css_sanitizer:
+        kwargs["css_sanitizer"] = css_sanitizer
+        
+    return bleach.clean(html_content, **kwargs)

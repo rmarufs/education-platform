@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -32,7 +31,7 @@ except ModuleNotFoundError:
     cloudinary = None
 
 router = APIRouter(prefix="/courses")
-templates = Jinja2Templates(directory="templates")
+from app.ui import templates
 
 COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
 COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}

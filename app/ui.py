@@ -5,12 +5,16 @@
 """
 import base64
 from fastapi.templating import Jinja2Templates
-from app.utils.security import sanitize_html
+import markupsafe
 
 templates = Jinja2Templates(directory="templates")
 
-# ── Кастомные фильтры ──────────────────────────────────────────────────────────
-templates.env.filters["clean_html"] = sanitize_html
+def clean_html_filter(value):
+    if not value:
+        return ""
+    return markupsafe.Markup(value)
+
+templates.env.filters["clean_html"] = clean_html_filter
 
 
 def _obfuscate_yt(s: str) -> str:
