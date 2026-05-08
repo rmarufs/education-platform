@@ -110,11 +110,13 @@
   }
   .breadcrumb { font-size: .8rem; gap: 6px; flex-wrap: wrap; }
   .course-detail-layout {
-    grid-template-columns: 1fr !important;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
-  .course-detail-sidebar { order: -1; }
-  .course-detail-main { order: 1; min-width: 0; }
+  .course-detail-main { order: 1; min-width: 0; width: 100%; }
+  .course-reviews-section { order: 2; width: 100%; }
+  .course-curriculum { display: none !important; }
   .course-sidebar-card { position: static; top: auto; }
   .course-detail-hero {
     flex-direction: column;
