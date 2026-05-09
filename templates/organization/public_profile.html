@@ -47,7 +47,7 @@
                     </div>
                 </div>
 
-                {# Блок вступления — показывается только преподавателям #}
+                {# Блок вступления — только для авторизованных преподавателей #}
                 {% if user and user.is_teacher %}
                 <div style="margin-top: 24px;">
                     {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
@@ -80,13 +80,28 @@
                             <div class="form-group" style="margin-bottom:18px;">
                                 <label for="attach-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Резюме / сертификат <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
                                 <input type="file" id="attach-input" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
+                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
                             </div>
                             <div style="display:flex;gap:12px;flex-wrap:wrap;">
                                 <button id="submit-join-btn" class="btn btn-primary" onclick="submitJoin({{ org.id }})">Отправить заявку</button>
                                 <button class="btn btn-outline" onclick="hideJoinForm()">Отмена</button>
                             </div>
                         </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {# Блок вступления — только для авторизованных студентов #}
+                {% if user and user.is_student %}
+                <div style="margin-top: 24px;">
+                    {% if user_student_membership %}
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
+                            ✅ Вы студент этой организации
+                        </button>
+                    {% else %}
+                        <button id="student-join-btn" class="btn btn-primary btn-lg" onclick="studentJoinOrg({{ org.id }})">
+                            🎓 Вступить в организацию
+                        </button>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -105,7 +120,6 @@
         {% if org_teachers %}
         <div class="org-pub-teachers-grid">
             {% for teacher in org_teachers %}
-            {# Считаем кол-во курсов преподавателя #}
             {% set teacher_courses_count = courses | selectattr('teacher_id', 'equalto', teacher.id) | list | length %}
             <a href="/teachers/{{ teacher.id }}" class="org-pub-teacher-card reveal" style="animation-delay: {{ loop.index0 * 0.06 }}s;">
                 <div class="org-pub-teacher-avatar">
@@ -188,7 +202,6 @@ function hideJoinForm() {
     document.getElementById('join-org-btn').style.display = 'inline-flex';
 }
 
-// Счётчик символов в textarea
 const letterInput = document.getElementById('cover-letter-input');
 const letterCounter = document.getElementById('letter-counter');
 if (letterInput && letterCounter) {
@@ -215,7 +228,6 @@ async function submitJoin(orgId) {
 
         if (r.ok && data.success) {
             document.getElementById('join-form-block').style.display = 'none';
-            // Заменяем кнопку на статус
             const wrap = document.getElementById('join-org-btn').parentElement;
             wrap.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ Заявка отправлена</button>';
         } else if (r.status === 400) {
@@ -233,6 +245,28 @@ async function submitJoin(orgId) {
         alert('Сетевая ошибка. Проверьте подключение.');
     }
 }
+
+async function studentJoinOrg(orgId) {
+    const btn = document.getElementById('student-join-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Вступаем...';
+
+    try {
+        const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
+        const data = await r.json();
+
+        if (r.ok && data.success) {
+            btn.parentElement.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">✅ Вы студент этой организации</button>';
+        } else {
+            btn.disabled = false;
+            btn.textContent = '🎓 Вступить в организацию';
+            alert(data.detail || 'Произошла ошибка.');
+        }
+    } catch {
+        btn.disabled = false;
+        btn.textContent = '🎓 Вступить в организацию';
+        alert('Сетевая ошибка.');
+    }
+}
 </script>
 {% endblock %}
-

@@ -9,9 +9,21 @@
     <div class="dashboard-main">
         <div class="dashboard-header">
             <div>
-                <h1 data-i18n="org.manage_teachers">👨‍🏫 Преподаватели</h1>
+                <h1 data-i18n="org.manage_teachers">👨‍🏫 Преподаватели и студенты</h1>
                 <p data-i18n="org.subtitle">Управление составом преподавателей вашей организации</p>
             </div>
+        </div>
+
+        <!-- Вкладки Преподаватели / Студенты -->
+        <div class="org-tabs" id="org-tabs" style="display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0;">
+            <button id="tab-teachers" class="org-tab-btn active" onclick="switchTab('teachers')"
+                style="padding:10px 20px;font-weight:600;font-size:.9rem;border:none;background:none;cursor:pointer;color:var(--primary);border-bottom:3px solid var(--primary);margin-bottom:-2px;transition:all .2s;">
+                👨‍🏫 Преподаватели
+            </button>
+            <button id="tab-students" class="org-tab-btn" onclick="switchTab('students')"
+                style="padding:10px 20px;font-weight:600;font-size:.9rem;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;">
+                🎓 Студенты <span id="students-count-badge" style="background:var(--primary-light);color:var(--primary);border-radius:10px;padding:1px 8px;font-size:.8rem;">{{ org_students|length }}</span>
+            </button>
         </div>
 
         <!-- Уведомления -->
@@ -163,6 +175,56 @@
             </div>
             {% endif %}
         </section>
+
+        <!-- ═══════════════════════════════════════════════════════
+             СТУДЕНТЫ
+        ═══════════════════════════════════════════════════════ -->
+        <div id="tab-panel-students" style="display:none;">
+            <section class="org-panel">
+                <h2 class="org-panel-title">
+                    🎓 Студенты организации
+                    <span style="font-weight:400; color: var(--text-muted); font-size: 0.9rem;">({{ org_students|length }})</span>
+                </h2>
+
+                {% if org_students %}
+                <div class="org-staff-grid">
+                    {% for link in org_students %}
+                    <div class="org-staff-card fade-in" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
+                        <div class="org-staff-top">
+                            <div class="org-teacher-avatar org-teacher-avatar-lg">
+                                {% if link.student.avatar_url %}
+                                    <img src="{{ link.student.avatar_url }}" alt="{{ link.student.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                {% else %}
+                                    {{ link.student.name[0] | upper }}
+                                {% endif %}
+                            </div>
+                            <div class="org-staff-info">
+                                <span class="org-staff-name">{{ link.student.name }}</span>
+                                <span class="org-staff-email">{{ link.student.email }}</span>
+                            </div>
+                            <span class="org-staff-badge" style="background:var(--success-soft);color:var(--success);">Student</span>
+                        </div>
+
+                        <div class="org-staff-joined">С организацией с {{ link.created_at.strftime("%d.%m.%Y") }}</div>
+
+                        <div class="org-staff-actions">
+                            <form action="/organization/student/{{ link.student_id }}/remove" method="POST" style="margin: 0;"
+                                  onsubmit="return confirm('Удалить студента из организации?');">
+                                <button type="submit" class="btn btn-sm" style="color:var(--danger);">Удалить</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state" style="margin-top: 12px;">
+                    <span class="empty-icon">🎓</span>
+                    <p>В вашей организации пока нет студентов.</p>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+
     </div>
 </div>
 {% endblock %}

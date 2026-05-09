@@ -10,7 +10,7 @@ from typing import Optional
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.organization import Organization, OrganizationTeacher
+from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.utils.rate_limit import limiter
 
 router = APIRouter()
@@ -74,7 +74,8 @@ async def register(
     org_name: str = Form(""),
     org_phone: str = Form(""),
     org_description: str = Form(""),
-    org_id: Optional[int] = Form(None),   # ID организации при регистрации учителя
+    org_id: Optional[int] = Form(None),          # ID организации при регистрации учителя
+    student_org_id: Optional[int] = Form(None),  # ID организации при регистрации студента
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
@@ -206,6 +207,20 @@ async def register(
     # Если преподаватель — показать страницу ожидания
     if user.role == UserRole.teacher_pending:
         return RedirectResponse("/register/pending", status_code=302)
+
+    # Студент → добавляем в организацию если выбрана
+    if actual_role == UserRole.student and student_org_id:
+        target_org = db.query(Organization).filter(
+            Organization.id == student_org_id,
+            Organization.status == "approved"
+        ).first()
+        if target_org:
+            org_student = OrganizationStudent(
+                organization_id=target_org.id,
+                student_id=user.id,
+            )
+            db.add(org_student)
+            db.commit()
 
     # Студент → ассессмент или дашборд
     if user.is_student and not user.assessment_completed:

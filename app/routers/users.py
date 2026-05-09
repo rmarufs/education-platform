@@ -111,7 +111,14 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
 
     from app.models.progress import Progress
     from app.models.lesson import Lesson
+    from app.models.organization import OrganizationStudent
     from datetime import datetime
+
+    # Получаем организацию студента (если есть)
+    student_org_link = db.query(OrganizationStudent).options(
+        joinedload(OrganizationStudent.organization)
+    ).filter(OrganizationStudent.student_id == user.id).first()
+    student_org = student_org_link.organization if student_org_link else None
 
     user_progress = (
         db.query(Progress)
@@ -173,7 +180,8 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         {
             "request": request, 
             "user": user, 
-            "my_courses": my_courses
+            "my_courses": my_courses,
+            "student_org": student_org
         },
     )
 

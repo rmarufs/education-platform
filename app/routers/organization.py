@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.database import get_db
 from app.models.user import User
-from app.models.organization import Organization, OrganizationTeacher
+from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.course import Course
 
 router = APIRouter()
@@ -132,6 +132,11 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.status == "pending"
     ).count() if org else 0
 
+    # Количество студентов
+    students_count = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org.id
+    ).count() if org else 0
+
     return templates.TemplateResponse(
         "organization/dashboard.html",
         {
@@ -140,7 +145,7 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
             "org": org,
             "teachers_count": accepted_count,
             "courses_count": courses_count,
-            "students_count": 0,
+            "students_count": students_count,
             "incoming_count": incoming_count,
         }
     )
@@ -164,6 +169,13 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
     pending  = [l for l in all_links if l.status == "pending"]
     rejected = [l for l in all_links if l.status == "rejected"]
 
+    # Студенты организации
+    org_students = db.query(OrganizationStudent).options(
+        joinedload(OrganizationStudent.student)
+    ).filter(
+        OrganizationStudent.organization_id == org.id
+    ).order_by(OrganizationStudent.created_at.desc()).all() if org else []
+
     return templates.TemplateResponse(
         "organization/teachers.html",
         {
@@ -173,6 +185,7 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
             "org_teachers": accepted,
             "pending_teachers": pending,
             "rejected_teachers": rejected,
+            "org_students": org_students,
         }
     )
 
@@ -305,8 +318,6 @@ def reject_incoming_teacher(link_id: int, request: Request, db: Session = Depend
 
     try:
         link.status = "rejected"
-        # Преподаватель остаётся неактивным (is_active=False) пока администратор
-        # не одобрит его отдельно — не меняем is_active здесь намеренно
         db.commit()
     except Exception as e:
         db.rollback()
@@ -337,6 +348,74 @@ def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_
         db.commit()
 
     return RedirectResponse("/organization/teachers", status_code=302)
+
+
+# ── Удалить студента из организации ──────────────────────────────────────
+
+@router.post("/organization/student/{student_id}/remove")
+def remove_student(student_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    if not org:
+        raise HTTPException(status_code=404)
+
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.student_id == student_id
+    ).first()
+
+    if link:
+        db.delete(link)
+        db.commit()
+
+    return RedirectResponse("/organization/teachers?tab=students", status_code=302)
+
+
+# ── Студент вступает в организацию ───────────────────────────────────────────
+
+@router.post("/organization/{org_id}/student/join")
+def student_join_organization(org_id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_student:
+        raise HTTPException(status_code=403, detail="Только студенты могут вступать в организации")
+
+    org = db.query(Organization).filter(
+        Organization.id == org_id,
+        Organization.status == "approved"
+    ).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Организация не найдена")
+
+    # Если уже состоит в этой организации
+    existing = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.student_id == user.id
+    ).first()
+    if existing:
+        return JSONResponse({"success": True, "already": True})
+
+    # Если состоит в другой — удаляем старую запись (замена организации)
+    old_link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.student_id == user.id
+    ).first()
+    if old_link:
+        db.delete(old_link)
+
+    org_student = OrganizationStudent(
+        organization_id=org.id,
+        student_id=user.id,
+    )
+    db.add(org_student)
+    db.commit()
+
+    return JSONResponse({"success": True})
 
 
 # ── Курсы преподавателя (для кабинета организации) ────────────────────────────
@@ -489,20 +568,27 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
         avg = db.query(func.avg(Review.rating)).filter(Review.teacher_id.in_(teacher_ids)).scalar()
         avg_rating = round(avg or 0.0, 1)
 
-    # Заявка текущего пользователя в эту организацию (если есть)
+    # Заявка текущего пользователя-преподавателя в эту организацию
     user_application = None
     user_in_any_org = False
-    
+    # Членство текущего студента в этой организации
+    user_student_membership = None
+
     if user and user.is_teacher:
         user_application = db.query(OrganizationTeacher).filter(
             OrganizationTeacher.organization_id == org.id,
             OrganizationTeacher.teacher_id == user.id
         ).first()
-        
         user_in_any_org = db.query(OrganizationTeacher).filter(
             OrganizationTeacher.teacher_id == user.id,
             OrganizationTeacher.status == "accepted"
         ).first() is not None
+
+    if user and user.is_student:
+        user_student_membership = db.query(OrganizationStudent).filter(
+            OrganizationStudent.organization_id == org.id,
+            OrganizationStudent.student_id == user.id
+        ).first()
 
     return templates.TemplateResponse(
         "organization/public_profile.html",
@@ -515,6 +601,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
             "avg_rating": avg_rating,
             "user_application": user_application,
             "user_in_any_org": user_in_any_org,
+            "user_student_membership": user_student_membership,
         }
     )
 
@@ -588,4 +675,3 @@ async def join_organization(
         raise HTTPException(status_code=500, detail="Ошибка при создании заявки")
 
     return JSONResponse({"success": True})
-

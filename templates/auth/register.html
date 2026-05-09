@@ -130,6 +130,19 @@
                 </div>
             </div>
 
+            <!-- Дополнительные поля для студентов -->
+            <div id="student-extra-fields" style="display:none;">
+                <div class="form-group">
+                    <label for="student_org_id">🏢 <span>Вступить в организацию</span> <span style="font-weight:400;color:var(--text-muted);">(необязательно)</span></label>
+                    <select id="student_org_id" name="student_org_id" class="form-input">
+                        <option value="">— Без организации —</option>
+                    </select>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;">
+                        Если вы учитесь в образовательном центре, выберите его из списка и сразу станете его студентом.
+                    </p>
+                </div>
+            </div>
+
             <!-- Дополнительные поля для организаций -->
             <div id="organization-extra-fields" style="display:none;">
                 <div class="form-group">
@@ -188,15 +201,25 @@
 function toggleRoleFields() {
     const teacherRadio = document.getElementById('role-teacher');
     const orgRadio = document.getElementById('role-organization');
+    const studentRadio = document.getElementById('role-student');
     const teacherFields = document.getElementById('teacher-extra-fields');
     const orgFields = document.getElementById('organization-extra-fields');
+    const studentFields = document.getElementById('student-extra-fields');
 
     if (teacherRadio.checked) {
         teacherFields.style.display = 'block';
+        studentFields.style.display = 'none';
         // Загружаем список организаций при первом открытии
-        loadOrganizations();
+        loadOrganizations('org_id');
     } else {
         teacherFields.style.display = 'none';
+    }
+
+    if (studentRadio.checked) {
+        studentFields.style.display = 'block';
+        loadOrganizations('student_org_id');
+    } else {
+        studentFields.style.display = 'none';
     }
 
     if (orgRadio.checked) {
@@ -213,12 +236,12 @@ function toggleRoleFields() {
     }
 }
 
-let orgsLoaded = false;
-function loadOrganizations() {
-    if (orgsLoaded) return;
-    orgsLoaded = true;
+const _orgsLoaded = {};
+function loadOrganizations(selectId) {
+    if (_orgsLoaded[selectId]) return;
+    _orgsLoaded[selectId] = true;
 
-    const select = document.getElementById('org_id');
+    const select = document.getElementById(selectId);
     fetch('/api/organizations/list')
         .then(r => r.json())
         .then(data => {
@@ -234,4 +257,5 @@ function loadOrganizations() {
         .catch(() => {/* тихо игнорируем ошибки */});
 }
 </script>
+
 {% endblock %}

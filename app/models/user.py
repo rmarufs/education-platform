@@ -32,6 +32,7 @@ class User(Base):
 
     organization = relationship("Organization", back_populates="user", uselist=False)
     employer_organizations = relationship("OrganizationTeacher", back_populates="teacher")
+    student_organizations = relationship("OrganizationStudent", back_populates="student")
 
     @property
     def is_teacher(self) -> bool:
