@@ -93,9 +93,9 @@ def search_api(
     db: Session = Depends(get_db),
 ):
     # Данные текущего пользователя
-    from app.dependencies import get_user_optional
+    from app.dependencies import get_user
     from app.models.organization import OrganizationStudent
-    user = get_user_optional(request, db)
+    user = get_user(request, db)
     user_is_student = bool(user and user.is_student)
     user_org_id = None
     if user_is_student:
@@ -187,6 +187,11 @@ def search_api(
                 "org_name": org_link.organization.name if org_link else None,
                 "org_id": org_link.organization_id if org_link else None,
             })
+
+    import logging
+    logger = logging.getLogger("search_api")
+    logger.info(f"Search query: q='{q}', category_id={category_id}, level='{level}', sort='{sort}', user_is_student={user_is_student}")
+    logger.info(f"Results found: courses={total}, organizations={len(organizations)}, teachers={len(teachers_result)}")
 
     return {
         "total": total,

@@ -208,7 +208,7 @@
                 <span class="rating-text" style="font-size:.85rem;">${stars} ${c.rating.toFixed(1)}</span>
               </div>
               <div style="display:flex;gap:8px;margin-top:4px;">
-                <span class="level-badge">${t('level.' + c.level.toLowerCase())}</span>
+                ${c.level ? `<span class="level-badge">${t('level.' + c.level.toLowerCase())}</span>` : ''}
               </div>
             </div>
             <div class="course-card-footer">
