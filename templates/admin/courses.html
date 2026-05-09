@@ -52,7 +52,7 @@
                             ⚙️
                         </a>
                         <form action="/admin/courses/{{ item.course.id }}/delete" method="POST" style="display:inline;"
-                              onsubmit="return confirm(t('admin.courses.delete_confirm', { title: '{{ item.course.title }}' }))">
+                              onsubmit="confirmAndSubmit(event, 'Удалить курс «{{ item.course.title }}»?', 'Это действие нельзя отменить.')">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
                                 🗑
                             </button>

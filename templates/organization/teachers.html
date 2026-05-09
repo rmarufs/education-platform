@@ -161,7 +161,7 @@
                     <div class="org-staff-actions">
                         <a href="/organization/teacher/{{ ot.teacher_id }}/courses" class="btn btn-outline btn-sm">📚 Курсы</a>
                         <form action="/organization/teacher/{{ ot.teacher_id }}/remove" method="POST" style="margin: 0;"
-                              onsubmit="return confirm('Удалить преподавателя из организации?');">
+                              onsubmit="confirmAndSubmit(event, 'Удалить преподавателя из организации?')">
                             <button type="submit" class="btn btn-sm" style="color:var(--danger);" data-i18n="org.remove_teacher">Удалить</button>
                         </form>
                     </div>
@@ -209,7 +209,7 @@
 
                         <div class="org-staff-actions">
                             <form action="/organization/student/{{ link.student_id }}/remove" method="POST" style="margin: 0;"
-                                  onsubmit="return confirm('Удалить студента из организации?');">
+                                  onsubmit="confirmAndSubmit(event, 'Удалить студента из организации?')">
                                 <button type="submit" class="btn btn-sm" style="color:var(--danger);">Удалить</button>
                             </form>
                         </div>
@@ -261,7 +261,7 @@ window.handleApplication = function(linkId, action, btn) {
         } else {
             card.querySelectorAll('button').forEach(b => b.disabled = false);
             btn.textContent = action === 'accept' ? '✅ Принять' : 'Отклонить';
-            alert('Ошибка. Попробуйте ещё раз.');
+            showToast('Ошибка. Попробуйте ещё раз.', 'error');
         }
     })
     .catch(() => {
@@ -349,10 +349,10 @@ window.handleApplication = function(linkId, action, btn) {
                 btn.style.cursor = 'default';
             } else if (r.status === 400) {
                 btn.disabled = false; btn.textContent = '➕ Пригласить';
-                alert('Преподаватель уже состоит в другой организации.');
+                showToast('Преподаватель уже состоит в другой организации.', 'error');
             } else {
                 btn.disabled = false; btn.textContent = '➕ Пригласить';
-                alert('Ошибка. Попробуйте ещё раз.');
+                showToast('Ошибка. Попробуйте ещё раз.', 'error');
             }
         })
         .catch(() => { btn.disabled = false; btn.textContent = '➕ Пригласить'; });

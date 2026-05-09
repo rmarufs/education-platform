@@ -230,19 +230,20 @@ async function submitJoin(orgId) {
             document.getElementById('join-form-block').style.display = 'none';
             const wrap = document.getElementById('join-org-btn').parentElement;
             wrap.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ Заявка отправлена</button>';
+            showToast('Заявка успешно отправлена!', 'success');
         } else if (r.status === 400) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Отправить заявку';
-            alert(data.detail || 'Ошибка');
+            showToast(data.detail || 'Ошибка при отправке заявки.', 'error');
         } else {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Отправить заявку';
-            alert('Произошла ошибка. Попробуйте ещё раз.');
+            showToast('Произошла ошибка. Попробуйте ещё раз.', 'error');
         }
     } catch {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Отправить заявку';
-        alert('Сетевая ошибка. Проверьте подключение.');
+        showToast('Нет связи с сервером.', 'error');
     }
 }
 
@@ -253,19 +254,21 @@ async function studentJoinOrg(orgId) {
 
     try {
         const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
-        const data = await r.json();
+        let data = {};
+        try { data = await r.json(); } catch (_) {}
 
-        if (r.ok && data.success) {
+        if (r.ok) {
             btn.parentElement.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">✅ Вы студент этой организации</button>';
+            showToast('Вы успешно вступили в организацию!', 'success');
         } else {
             btn.disabled = false;
             btn.textContent = '🎓 Вступить в организацию';
-            alert(data.detail || 'Произошла ошибка.');
+            showToast(data.detail || 'Произошла ошибка.', 'error');
         }
     } catch {
         btn.disabled = false;
         btn.textContent = '🎓 Вступить в организацию';
-        alert('Сетевая ошибка.');
+        showToast('Нет связи с сервером.', 'error');
     }
 }
 </script>

@@ -60,7 +60,7 @@
                         <form action="/admin/teachers/{{ t.id }}/approve" method="POST" style="display:inline;">
                             <button type="submit" class="admin-btn admin-btn-success admin-btn-sm">✅ Одобрить</button>
                         </form>
-                        <form action="/admin/teachers/{{ t.id }}/reject" method="POST" style="display:inline;" onsubmit="return confirm('Отклонить заявку {{ t.name }}?')">
+                        <form action="/admin/teachers/{{ t.id }}/reject" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Отклонить заявку {{ t.name }}?')">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">❌ Отклонить</button>
                         </form>
                     </div>
@@ -118,7 +118,7 @@
                 <td>
                     <div class="admin-actions">
                         {% if org_link %}
-                        <form action="/admin/teachers/{{ t.id }}/remove-from-org" method="POST" style="display:inline;" onsubmit="return confirm('Удалить из организации?')">
+                        <form action="/admin/teachers/{{ t.id }}/remove-from-org" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Удалить из организации?')">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Удалить из орг.</button>
                         </form>
                         {% endif %}

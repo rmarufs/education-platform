@@ -84,50 +84,51 @@
         results.innerHTML = '';
         emptyEl.style.display = 'none';
 
-        // ── Организации ────────────────────────────────────────
+        // ── Организации ──────────────────────────────────────────────────────
         const orgsContainer = document.getElementById('search-organizations');
         orgsContainer.innerHTML = '';
         if (data.organizations && data.organizations.length > 0) {
           const h = document.createElement('h2');
-          h.textContent = 'Организации';
           h.setAttribute('data-i18n', 'search.orgs_title');
+          h.textContent = 'Организации';
           h.style.cssText = 'font-size:1.1rem;font-weight:600;margin-bottom:14px;width:100%;grid-column:1/-1;';
           orgsContainer.appendChild(h);
-          
+
           data.organizations.forEach(o => {
             const card = document.createElement('div');
             card.className = 'course-card';
-            
+            card.style.cssText = 'display:flex;flex-direction:column;';
+
+            const isMember = data.user_org_id === o.id;
             let joinBtnHtml = '';
             if (data.user_is_student) {
-                if (data.user_org_id === o.id) {
-                    joinBtnHtml = `<button class="btn btn-outline btn-full" disabled style="opacity:.65;cursor:default;" data-i18n="org.already_member">Вы уже участник</button>`;
-                } else {
-                    joinBtnHtml = `<button class="btn btn-primary btn-full" onclick="studentJoinOrg(${o.id}, ${data.user_org_id ? 'true' : 'false'})" data-i18n="org.join_btn">🎓 Вступить</button>`;
-                }
+              if (isMember) {
+                joinBtnHtml = `<button class="btn btn-outline" disabled style="opacity:.6;cursor:default;width:100%;" data-i18n="org.already_member">&#10004; Вы уже участник</button>`;
+              } else {
+                joinBtnHtml = `<button class="btn btn-primary" onclick="studentJoinOrg(${o.id}, ${data.user_org_id ? 'true' : 'false'})" data-i18n="org.join_btn" style="width:100%;">&#127891; Вступить</button>`;
+              }
             }
 
+            const logoHtml = o.logo_url
+              ? `<img src="${o.logo_url}" alt="${o.name}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;">`
+              : `<div style="width:56px;height:56px;border-radius:12px;background:var(--surface-soft,#f0f2f5);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#127970;</div>`;
+
             card.innerHTML = `
-              <div class="course-card-body" style="text-align:center;">
-                <div class="teacher-avatar" style="width:60px;height:60px;margin:0 auto 10px;">
-                  ${o.logo_url ? `<img src="${o.logo_url}" alt="${o.name}">` : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--surface-soft);border-radius:12px;font-size:1.5rem;color:var(--text-muted);">🏢</span>`}
-                </div>
-                <h3 class="course-title">${o.name}</h3>
-                <p class="course-desc">${o.description}</p>
+              <div class="course-card-body" style="text-align:center;flex:1;">
+                <div style="margin:0 auto 12px;width:56px;height:56px;">${logoHtml}</div>
+                <h3 class="course-title" style="font-size:1rem;margin-bottom:6px;">${o.name}</h3>
+                <p class="course-desc" style="font-size:.85rem;">${o.description}</p>
               </div>
-              <div class="course-card-footer" style="flex-direction: column; gap: 8px;">
-                <a href="/organization/${o.id}" class="btn btn-outline btn-full" data-i18n="org.open_btn">Открыть</a>
+              <div class="course-card-footer" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">
+                <a href="/organization/${o.id}" class="btn btn-outline" data-i18n="org.open_btn" style="width:100%;text-align:center;">Открыть</a>
                 ${joinBtnHtml}
               </div>
             `;
             orgsContainer.appendChild(card);
           });
-          
-          if (typeof translatePage === 'function') {
-            translatePage(); // Обновляем переводы для новых элементов
-          }
-        }
 
+          if (typeof translatePage === 'function') translatePage();
+        }
 
         // ── Преподаватели ────────────────────────────────────────
         const teachersSection = document.getElementById('search-teachers-section');
@@ -251,24 +252,30 @@
 
 async function studentJoinOrg(orgId, hasOtherOrg) {
     if (hasOtherOrg) {
-        const confirmMsg = t('org.confirm_switch') || 'Вы уже состоите в другой организации. Уверены, что хотите сменить её?';
-        if (!confirm(confirmMsg)) {
-            return;
-        }
+        const confirmed = await showConfirmModal(
+            t('org.confirm_switch') || 'Смена организации',
+            t('org.confirm_switch_hint') || 'Вы состоите в другой организации. При смене вы будете отчислены из текущей и зачислены в новую.',
+            t('org.confirm_switch_btn') || 'Да, сменить',
+            t('action.cancel') || 'Отмена',
+            true
+        );
+        if (!confirmed) return;
     }
 
     try {
         const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
-        const data = await r.json();
+        let data = {};
+        try { data = await r.json(); } catch (_) {}
 
-        if (r.ok && data.success) {
-            // Перезагружаем поиск, чтобы обновить кнопки
+        if (r.ok) {
+            showToast(t('org.join_success') || 'Вы успешно вступили в организацию!', 'success');
             doSearch();
         } else {
-            alert(data.detail || 'Произошла ошибка.');
+            showToast(data.detail || t('common.error') || 'Произошла ошибка.', 'error');
         }
-    } catch {
-        alert('Сетевая ошибка.');
+    } catch (e) {
+        console.error(e);
+        showToast(t('common.error_conn') || 'Нет связи с сервером.', 'error');
     }
 }
 </script>

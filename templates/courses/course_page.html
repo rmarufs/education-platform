@@ -277,11 +277,11 @@
         }
       } else {
         const err = await res.json().catch(() => ({}));
-        alert('Ошибка: ' + (err.detail || 'Не удалось отправить'));
+        showToast('Ошибка: ' + (err.detail || 'Не удалось отправить'), 'error');
         if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
       }
     } catch {
-      alert('Ошибка сети');
+      showToast('Ошибка сети', 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
     }
   }

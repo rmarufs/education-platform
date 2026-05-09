@@ -67,14 +67,14 @@
                         {% endif %}
                         
                         {% if org.status != 'rejected' %}
-                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="return confirm('Отклонить заявку организации «{{ org.name }}»?')">
+                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Отклонить заявку организации «{{ org.name }}»?')">
                             <button type="submit" class="admin-btn admin-btn-outline admin-btn-sm" title="Отклонить">
                                 ❌
                             </button>
                         </form>
                         {% endif %}
 
-                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="return confirm('ВНИМАНИЕ! Вы собираетесь ПОЛНОСТЬЮ УДАЛИТЬ организацию «{{ org.name }}». Это действие необратимо. Продолжить?')">
+                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Удалить организацию «{{ org.name }}»?', 'Полное удаление нельзя отменить!')">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
                                 🗑
                             </button>

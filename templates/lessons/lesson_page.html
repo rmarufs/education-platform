@@ -545,11 +545,11 @@ async function submitReview(teacherId, courseId) {
       }, 400);
     } else {
       const errorData = await response.json().catch(() => ({}));
-      alert('Ошибка: ' + (errorData.detail || 'Не удалось отправить отзыв'));
+      showToast('Ошибка: ' + (errorData.detail || 'Не удалось отправить отзыв'), 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
     }
   } catch (err) {
-    alert("Ошибка сети");
+    showToast('Ошибка сети', 'error');
   }
 }
 </script>

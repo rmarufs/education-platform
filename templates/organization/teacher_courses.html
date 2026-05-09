@@ -49,7 +49,7 @@
                     <a href="/courses/{{ course.id }}" class="btn btn-outline btn-sm" data-i18n="course.view">Просмотр</a>
                     <a href="/courses/{{ course.id }}/manage" class="btn btn-primary btn-sm" data-i18n="manage.edit">Редактировать</a>
                     <form action="/courses/{{ course.id }}/delete" method="POST" style="margin:0;"
-                          onsubmit="return confirm('Удалить курс «{{ course.title }}»? Это действие нельзя отменить.');">
+                          onsubmit="confirmAndSubmit(event, 'Удалить курс «{{ course.title }}»?', 'Это действие нельзя отменить.')">
                         <button type="submit" class="btn btn-danger btn-sm" data-i18n="course.delete">Удалить</button>
                     </form>
                 </div>

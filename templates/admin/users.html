@@ -80,7 +80,7 @@
                             {% endif %}
                         </form>
                         <form action="/admin/users/{{ u.id }}/delete" method="POST" style="display:inline;"
-                              onsubmit="return confirm(t('admin.users.delete_confirm', { name: '{{ u.name }}' }))">
+                              onsubmit="confirmAndSubmit(event, 'Удалить пользователя {{ u.name }}?', 'Это действие нельзя отменить.')">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
                                 🗑
                             </button>

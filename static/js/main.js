@@ -22,6 +22,64 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
+/* ── Глобальная кастомная confirm-модалка (заменяет нативный confirm) ── */
+let _confirmResolve = null;
+
+function showConfirmModal(message, hint = '', confirmText = 'Подтвердить', cancelText = 'Отмена', isDanger = true) {
+  return new Promise((resolve) => {
+    _confirmResolve = resolve;
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) { resolve(false); return; }
+    const titleEl = document.getElementById('confirm-modal-title');
+    if (titleEl) titleEl.textContent = message;
+    const hintEl = document.getElementById('confirm-modal-hint');
+    if (hintEl) {
+      hintEl.textContent = hint;
+      hintEl.style.display = hint ? '' : 'none';
+    }
+    const confirmBtn = document.getElementById('confirm-modal-ok');
+    if (confirmBtn) {
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = 'btn ' + (isDanger ? 'btn-danger' : 'btn-primary');
+    }
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    if (cancelBtn) cancelBtn.textContent = cancelText;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    if (confirmBtn) confirmBtn.focus();
+  });
+}
+
+function _resolveConfirmModal(result) {
+  const modal = document.getElementById('confirm-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.classList.remove('modal-open');
+    }
+  }
+  if (_confirmResolve) {
+    _confirmResolve(result);
+    _confirmResolve = null;
+  }
+}
+
+/**
+ * Используется в onsubmit форм вместо return confirm('...')
+ * onsubmit="confirmAndSubmit(event, 'Сообщение');"
+ */
+async function confirmAndSubmit(event, message, hint = '') {
+  event.preventDefault();
+  const form = event.target || event.currentTarget;
+  const confirmed = await showConfirmModal(message, hint);
+  if (confirmed) {
+    form.onsubmit = null;
+    form.submit();
+  }
+}
+
 function showFieldError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (field) field.classList.add('error');
@@ -277,9 +335,14 @@ function closeGoogleFormsModal() {
 
 // Delete Google Forms URL
 async function deleteGoogleFormsUrl(scopeName, scopeId) {
-  if (!confirm('Вы уверены, что хотите удалить ссылку на Google Forms?')) {
-    return;
-  }
+  const confirmed = await showConfirmModal(
+    'Удалить ссылку на Google Forms?',
+    'Это действие нельзя отменить.',
+    'Удалить',
+    'Отмена',
+    true
+  );
+  if (!confirmed) return;
   
   try {
     const formData = new FormData();
