@@ -573,6 +573,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
     user_in_any_org = False
     # Членство текущего студента в этой организации
     user_student_membership = None
+    current_student_org = None
 
     if user and user.is_teacher:
         user_application = db.query(OrganizationTeacher).filter(
@@ -589,6 +590,15 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
             OrganizationStudent.organization_id == org.id,
             OrganizationStudent.student_id == user.id
         ).first()
+        
+        if not user_student_membership:
+            other_membership = db.query(OrganizationStudent).filter(
+                OrganizationStudent.student_id == user.id
+            ).first()
+            if other_membership:
+                current_student_org = db.query(Organization).filter(
+                    Organization.id == other_membership.organization_id
+                ).first()
 
     return templates.TemplateResponse(
         "organization/public_profile.html",
@@ -602,6 +612,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
             "user_application": user_application,
             "user_in_any_org": user_in_any_org,
             "user_student_membership": user_student_membership,
+            "current_student_org": current_student_org,
         }
     )
 

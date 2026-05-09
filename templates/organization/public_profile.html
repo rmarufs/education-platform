@@ -247,7 +247,18 @@ async function submitJoin(orgId) {
     }
 }
 
+const currentStudentOrgName = {{ current_student_org.name|tojson if current_student_org else 'null' }};
+
 async function studentJoinOrg(orgId) {
+    if (currentStudentOrgName) {
+        const confirmed = await showConfirmModal(
+            `Вы уже состоите в организации «${currentStudentOrgName}»`,
+            'Для вступления в новую организацию вам нужно выйти из текущей. Вы хотите продолжить?',
+            'Продолжить', 'Отмена', false
+        );
+        if (!confirmed) return;
+    }
+
     const btn = document.getElementById('student-join-btn');
     btn.disabled = true;
     btn.textContent = '⏳ Вступаем...';

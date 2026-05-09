@@ -99,16 +99,6 @@
             card.className = 'course-card';
             card.style.cssText = 'display:flex;flex-direction:column;';
 
-            const isMember = data.user_org_id === o.id;
-            let joinBtnHtml = '';
-            if (data.user_is_student) {
-              if (isMember) {
-                joinBtnHtml = `<button class="btn btn-outline" disabled style="opacity:.6;cursor:default;width:100%;" data-i18n="org.already_member">&#10004; Вы уже участник</button>`;
-              } else {
-                joinBtnHtml = `<button class="btn btn-primary" onclick="studentJoinOrg(${o.id}, ${data.user_org_id ? 'true' : 'false'})" data-i18n="org.join_btn" style="width:100%;">&#127891; Вступить</button>`;
-              }
-            }
-
             const logoHtml = o.logo_url
               ? `<img src="${o.logo_url}" alt="${o.name}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;">`
               : `<div style="width:56px;height:56px;border-radius:12px;background:var(--surface-soft,#f0f2f5);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#127970;</div>`;
@@ -121,7 +111,6 @@
               </div>
               <div class="course-card-footer" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">
                 <a href="/organization/${o.id}" class="btn btn-outline" data-i18n="org.open_btn" style="width:100%;text-align:center;">Открыть</a>
-                ${joinBtnHtml}
               </div>
             `;
             orgsContainer.appendChild(card);
