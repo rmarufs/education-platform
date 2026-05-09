@@ -83,6 +83,7 @@ def search_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/api/search")
 def search_api(
+    request: Request,
     q: str = "",
     category_id: int = 0,
     level: str = "",
@@ -91,6 +92,17 @@ def search_api(
     per_page: int = 12,
     db: Session = Depends(get_db),
 ):
+    # Данные текущего пользователя
+    from app.dependencies import get_user_optional
+    from app.models.organization import OrganizationStudent
+    user = get_user_optional(request, db)
+    user_is_student = bool(user and user.is_student)
+    user_org_id = None
+    if user_is_student:
+        student_org_link = db.query(OrganizationStudent).filter(OrganizationStudent.student_id == user.id).first()
+        if student_org_link:
+            user_org_id = student_org_link.organization_id
+
     query = db.query(Course).options(
         joinedload(Course.teacher),
         joinedload(Course.category),
@@ -119,17 +131,24 @@ def search_api(
 
     from app.models.organization import Organization
     organizations = []
+    
+    # Поиск организаций: если запрос пуст, показываем популярные (например, первые 3 одобренные)
+    org_query = db.query(Organization).filter(Organization.status == "approved")
     if q:
-        orgs = db.query(Organization).filter(Organization.name.ilike(f"%{q}%")).limit(5).all()
-        organizations = [
-            {
-                "id": o.id,
-                "name": o.name,
-                "description": _plain_text(o.description)[:120] if o.description else "Организация",
-                "logo_url": o.logo_url
-            }
-            for o in orgs
-        ]
+        org_query = org_query.filter(Organization.name.ilike(f"%{q}%"))
+        orgs = org_query.limit(10).all()
+    else:
+        orgs = org_query.limit(3).all()
+
+    organizations = [
+        {
+            "id": o.id,
+            "name": o.name,
+            "description": _plain_text(o.description)[:120] if o.description else "Организация",
+            "logo_url": o.logo_url
+        }
+        for o in orgs
+    ]
 
     # Поиск преподавателей
     teachers_result = []
@@ -191,6 +210,8 @@ def search_api(
         ],
         "organizations": organizations,
         "teachers": teachers_result,
+        "user_is_student": user_is_student,
+        "user_org_id": user_org_id,
     }
 
 

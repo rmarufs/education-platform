@@ -95,6 +95,9 @@ const translations = {
     "org.join_btn": "Вступить в организацию",
     "org.join_sent": "Заявка отправлена",
     "org.my_applications": "Мои заявки в организации",
+    "org.open_btn": "Открыть",
+    "org.already_member": "Вы уже участник",
+    "org.confirm_switch": "Вы уже состоите в другой организации. Уверены, что хотите сменить её?",
 
     "login.title_page": "Вход — Фурузон",
     "login.title": "Вход в аккаунт",
@@ -119,6 +122,11 @@ const translations = {
     "student.my_courses": "Мои курсы",
     "student.no_courses": "Вы пока не записаны ни на один курс.",
     "student.catalog_cta": "Перейти в каталог",
+    "student.find_org": "Найти организацию",
+    "student.my_org": "Моя организация",
+    "student.no_org": "Вы не состоите ни в одной организации",
+    "student.no_org_desc": "Вступите в образовательный центр, чтобы получить доступ к его курсам",
+    "student.org_member_desc": "Вы являетесь студентом этой организации",
 
     "teacher.welcome": "Добро пожаловать,",
     "teacher.subtitle": "Управляйте своими курсами и следите за прогрессом студентов.",
@@ -441,6 +449,8 @@ const translations = {
     "rec.full_cat": "Полный каталог",
 
     "search.title": "Поиск курсов",
+    "search.popular_title": "Популярные курсы и организации",
+    "search.orgs_title": "Организации",
     "search.subtitle": "Найдите программу по теме, уровню и рейтингу.",
     "search.placeholder": "Введите название или ключевое слово...",
     "search.all_levels": "Все уровни",
@@ -761,6 +771,9 @@ const translations = {
     "org.join_btn": "Ба созмон ҳамроҳ шудан",
     "org.join_sent": "Дархост фиристода шуд",
     "org.my_applications": "Дархостҳои ман ба созмонҳо",
+    "org.open_btn": "Кушодан",
+    "org.already_member": "Шумо аллакай иштирокчӣ ҳастед",
+    "org.confirm_switch": "Шумо аллакай дар ташкилоти дигар ҳастед. Оё мутмаин ҳастед, ки мехоҳед онро иваз кунед?",
 
     "login.title_page": "Вуруд — Фурузон",
     "login.title": "Вуруд ба аккаунт",
@@ -785,6 +798,11 @@ const translations = {
     "student.my_courses": "Курсҳои ман",
     "student.no_courses": "Шумо ҳоло ба ягон курс номнавис нашудаед.",
     "student.catalog_cta": "Ба каталог гузаред",
+    "student.find_org": "Пайдо кардани ташкилот",
+    "student.my_org": "Ташкилоти ман",
+    "student.no_org": "Шумо дар ягон ташкилот нестед",
+    "student.no_org_desc": "Ба маркази таълимӣ дохил шавед, то ба курсҳои он дастрасӣ пайдо кунед",
+    "student.org_member_desc": "Шумо донишҷӯи ин ташкилот ҳастед",
 
     "teacher.welcome": "Хуш омадед,",
     "teacher.subtitle": "Курсҳои худро идора кунед ва пешрафти донишҷӯёнро пайгирӣ намоед.",
@@ -1097,6 +1115,8 @@ const translations = {
     "rec.full_cat": "Каталоги пурра",
 
     "search.title": "Ҷустуҷӯи курсҳо",
+    "search.popular_title": "Курсҳо ва ташкилотҳои машҳур",
+    "search.orgs_title": "Ташкилотҳо",
     "search.subtitle": "Барномаро аз рӯи мавзуъ, сатҳ ва рейтинг пайдо кунед.",
     "search.placeholder": "Ном ё калимаи калидиро ворид кунед...",
     "search.all_levels": "Ҳамаи сатҳҳо",

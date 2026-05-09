@@ -46,26 +46,32 @@
 
         <!-- Секция: Моя организация -->
         <section style="margin-bottom: 32px;">
-            <div class="section-label">🏢 Моя организация</div>
+            <div class="section-label" data-i18n="student.my_org">🏢 Моя организация</div>
             {% if student_org %}
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                <div style="font-size:2rem;">🏢</div>
+                <div style="font-size:2rem;">
+                    {% if student_org.logo_url %}
+                        <img src="{{ student_org.logo_url }}" alt="{{ student_org.name }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+                    {% else %}
+                        🏢
+                    {% endif %}
+                </div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-weight:700;font-size:1rem;margin-bottom:2px;">{{ student_org.name }}</div>
                     {% if student_org.description %}
                     <div style="font-size:.85rem;color:var(--text-muted);">{{ student_org.description | striptags | truncate(120) }}</div>
                     {% endif %}
                 </div>
-                <a href="/organization/{{ student_org.id }}" class="btn btn-outline btn-sm">👁 Профиль</a>
+                <a href="/organization/{{ student_org.id }}" class="btn btn-outline btn-sm" data-i18n="org.open_btn">👁 Профиль</a>
             </div>
             {% else %}
             <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <div style="font-size:2rem;">💭</div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;">Вы пока не состоите ни в одной организации</div>
-                    <div style="font-size:.85rem;color:var(--text-muted);">Вступите в образовательный центр, чтобы получить доступ к его курсам</div>
+                    <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;" data-i18n="student.no_org">Вы не состоите ни в одной организации</div>
+                    <div style="font-size:.85rem;color:var(--text-muted);" data-i18n="student.no_org_desc">Вступите в образовательный центр, чтобы получить доступ к его курсам</div>
                 </div>
-                <a href="/courses/catalog" class="btn btn-primary btn-sm">🔍 Найти организацию</a>
+                <a href="/search" class="btn btn-primary btn-sm"><span data-i18n="student.find_org">🔍 Найти организацию</span></a>
             </div>
             {% endif %}
         </section>

@@ -90,26 +90,44 @@
         if (data.organizations && data.organizations.length > 0) {
           const h = document.createElement('h2');
           h.textContent = 'Организации';
+          h.setAttribute('data-i18n', 'search.orgs_title');
           h.style.cssText = 'font-size:1.1rem;font-weight:600;margin-bottom:14px;width:100%;grid-column:1/-1;';
           orgsContainer.appendChild(h);
+          
           data.organizations.forEach(o => {
             const card = document.createElement('div');
             card.className = 'course-card';
+            
+            let joinBtnHtml = '';
+            if (data.user_is_student) {
+                if (data.user_org_id === o.id) {
+                    joinBtnHtml = `<button class="btn btn-outline btn-full" disabled style="opacity:.65;cursor:default;" data-i18n="org.already_member">Вы уже участник</button>`;
+                } else {
+                    joinBtnHtml = `<button class="btn btn-primary btn-full" onclick="studentJoinOrg(${o.id}, ${data.user_org_id ? 'true' : 'false'})" data-i18n="org.join_btn">🎓 Вступить</button>`;
+                }
+            }
+
             card.innerHTML = `
               <div class="course-card-body" style="text-align:center;">
                 <div class="teacher-avatar" style="width:60px;height:60px;margin:0 auto 10px;">
-                  ${o.logo_url ? `<img src="${o.logo_url}" alt="${o.name}">` : `<span>${o.name[0].toUpperCase()}</span>`}
+                  ${o.logo_url ? `<img src="${o.logo_url}" alt="${o.name}">` : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--surface-soft);border-radius:12px;font-size:1.5rem;color:var(--text-muted);">🏢</span>`}
                 </div>
                 <h3 class="course-title">${o.name}</h3>
                 <p class="course-desc">${o.description}</p>
               </div>
-              <div class="course-card-footer">
-                <a href="/organization/${o.id}" class="btn btn-primary btn-full">Профиль</a>
+              <div class="course-card-footer" style="flex-direction: column; gap: 8px;">
+                <a href="/organization/${o.id}" class="btn btn-outline btn-full" data-i18n="org.open_btn">Открыть</a>
+                ${joinBtnHtml}
               </div>
             `;
             orgsContainer.appendChild(card);
           });
+          
+          if (typeof translatePage === 'function') {
+            translatePage(); // Обновляем переводы для новых элементов
+          }
         }
+
 
         // ── Преподаватели ────────────────────────────────────────
         const teachersSection = document.getElementById('search-teachers-section');
@@ -143,6 +161,21 @@
         }
 
         // ── Курсы ────────────────────────────────────────────────
+        const titleEl = document.querySelector('h1[data-i18n="search.title"]');
+        if (!qInput.value) {
+            if (titleEl) {
+                titleEl.setAttribute('data-i18n', 'search.popular_title');
+                titleEl.textContent = 'Популярные курсы и организации';
+                if (typeof translatePage === 'function') translatePage();
+            }
+        } else {
+            if (titleEl) {
+                titleEl.setAttribute('data-i18n', 'search.title');
+                titleEl.textContent = '🔍 Поиск';
+                if (typeof translatePage === 'function') translatePage();
+            }
+        }
+
         if (data.courses.length === 0 && (!data.organizations || data.organizations.length === 0) && (!data.teachers || data.teachers.length === 0)) {
           emptyEl.style.display = 'block';
           infoEl.textContent = '';
@@ -215,5 +248,28 @@
 
   doSearch(1);
 })();
+
+async function studentJoinOrg(orgId, hasOtherOrg) {
+    if (hasOtherOrg) {
+        const confirmMsg = t('org.confirm_switch') || 'Вы уже состоите в другой организации. Уверены, что хотите сменить её?';
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+    }
+
+    try {
+        const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
+        const data = await r.json();
+
+        if (r.ok && data.success) {
+            // Перезагружаем поиск, чтобы обновить кнопки
+            doSearch();
+        } else {
+            alert(data.detail || 'Произошла ошибка.');
+        }
+    } catch {
+        alert('Сетевая ошибка.');
+    }
+}
 </script>
 {% endblock %}
