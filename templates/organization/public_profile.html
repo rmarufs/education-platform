@@ -247,38 +247,52 @@ async function submitJoin(orgId) {
     }
 }
 
-const currentStudentOrgName = {{ current_student_org.name|tojson if current_student_org else 'null' }};
+const hasOtherOrg = {{ 'true' if current_student_org else 'false' }};
 
 async function studentJoinOrg(orgId) {
-    if (currentStudentOrgName) {
+    if (hasOtherOrg) {
         const confirmed = await showConfirmModal(
-            `Вы уже состоите в организации «${currentStudentOrgName}»`,
-            'Для вступления в новую организацию вам нужно выйти из текущей. Вы хотите продолжить?',
-            'Продолжить', 'Отмена', false
+            'Вы уже состоите в другой организации',
+            'Чтобы вступить в новую, необходимо выйти из текущей',
+            'Продолжить', 'Отмена', true
         );
         if (!confirmed) return;
     }
 
     const btn = document.getElementById('student-join-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Вступаем...';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Вступаем...';
+    }
 
     try {
         const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
+        
         let data = {};
         try { data = await r.json(); } catch (_) {}
 
         if (r.ok) {
-            btn.parentElement.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">✅ Вы студент этой организации</button>';
+            if (btn) {
+                btn.parentElement.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">✅ Вы студент этой организации</button>';
+            }
             showToast('Вы успешно вступили в организацию!', 'success');
+            
+            // Invalidate cache and refetch UI
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
         } else {
-            btn.disabled = false;
-            btn.textContent = '🎓 Вступить в организацию';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '🎓 Вступить в организацию';
+            }
             showToast(data.detail || 'Произошла ошибка.', 'error');
         }
-    } catch {
-        btn.disabled = false;
-        btn.textContent = '🎓 Вступить в организацию';
+    } catch (err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🎓 Вступить в организацию';
+        }
         showToast('Нет связи с сервером.', 'error');
     }
 }
