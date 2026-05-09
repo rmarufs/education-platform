@@ -99,7 +99,7 @@
                             ✅ Вы студент этой организации
                         </button>
                     {% else %}
-                        <button id="student-join-btn" class="btn btn-primary btn-lg" onclick="studentJoinOrg({{ org.id }})">
+                        <button id="join-student-btn" class="btn btn-primary btn-lg" onclick="joinOrganization({{ org.id }})">
                             🎓 Вступить в организацию
                         </button>
                     {% endif %}
@@ -247,53 +247,45 @@ async function submitJoin(orgId) {
     }
 }
 
-const hasOtherOrg = {{ 'true' if current_student_org else 'false' }};
-
-async function studentJoinOrg(orgId) {
-    if (hasOtherOrg) {
-        const confirmed = await showConfirmModal(
-            'Вы уже состоите в другой организации',
-            'Чтобы вступить в новую, необходимо выйти из текущей',
-            'Продолжить', 'Отмена', true
-        );
-        if (!confirmed) return;
-    }
-
-    const btn = document.getElementById('student-join-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Вступаем...';
-    }
+async function joinOrganization(orgId) {
+    const btn = document.getElementById('join-student-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Отправка...';
 
     try {
-        const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
-        
-        let data = {};
-        try { data = await r.json(); } catch (_) {}
+        const res = await fetch(`/organization/${orgId}/student/join`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await res.json();
 
-        if (r.ok) {
-            if (btn) {
-                btn.parentElement.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">✅ Вы студент этой организации</button>';
+        if (data.already_in_org) {
+            const confirm = window.confirm(
+                `Вы уже состоите в организации "${data.org_name}".\nХотите покинуть её и вступить в новую?`
+            );
+            if (confirm) {
+                const res2 = await fetch(`/organization/${orgId}/student/join?force=true`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data2 = await res2.json();
+                if (data2.success) {
+                    btn.textContent = '✅ Заявка отправлена';
+                    return;
+                }
             }
-            showToast('Вы успешно вступили в организацию!', 'success');
-            
-            // Invalidate cache and refetch UI
-            setTimeout(() => {
-                window.location.reload();
-            }, 800);
+            btn.disabled = false;
+            btn.textContent = 'Вступить в организацию';
+        } else if (data.success) {
+            btn.textContent = '⏳ Заявка отправлена';
         } else {
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = '🎓 Вступить в организацию';
-            }
-            showToast(data.detail || 'Произошла ошибка.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Вступить в организацию';
         }
     } catch (err) {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = '🎓 Вступить в организацию';
-        }
-        showToast('Нет связи с сервером.', 'error');
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = 'Вступить в организацию';
     }
 }
 </script>

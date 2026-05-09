@@ -377,7 +377,7 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
 # ── Студент вступает в организацию ───────────────────────────────────────────
 
 @router.post("/organization/{org_id}/student/join")
-def student_join_organization(org_id: int, request: Request, db: Session = Depends(get_db)):
+def student_join_organization(org_id: int, request: Request, force: bool = False, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Необходима авторизация")
@@ -401,16 +401,24 @@ def student_join_organization(org_id: int, request: Request, db: Session = Depen
     if existing:
         return JSONResponse({"success": True, "already": True})
 
-    # Если состоит в другой — удаляем старую запись (замена организации)
+    # Если состоит в другой — проверяем force
     old_link = db.query(OrganizationStudent).filter(
         OrganizationStudent.student_id == user.id
     ).first()
     if old_link:
-        db.delete(old_link)
+        if not force:
+            old_org = db.query(Organization).filter(Organization.id == old_link.organization_id).first()
+            return JSONResponse({
+                "already_in_org": True, 
+                "org_name": old_org.name if old_org else "Неизвестно"
+            })
+        else:
+            db.delete(old_link)
 
     org_student = OrganizationStudent(
         organization_id=org.id,
         student_id=user.id,
+        status="pending"
     )
     db.add(org_student)
     db.commit()

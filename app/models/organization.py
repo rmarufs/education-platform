@@ -46,6 +46,7 @@ class OrganizationStudent(Base):
     id = Column(Integer, primary_key=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"))
     student_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(String(20), default="pending")  # pending, accepted, rejected
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
