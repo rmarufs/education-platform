@@ -5533,3 +5533,12 @@ html[data-theme="dark"] .org-staff-badge {
 #avatar-menu button:hover {
     background: var(--surface-soft, #f3f4f6);
 }
+
+/* ── Join Button Fix ──────────────────────────────────────────────────────── */
+#join-student-btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
