@@ -254,7 +254,7 @@ async function submitJoin(orgId) {
 async function joinOrganization(orgId) {
     const btn = document.getElementById('join-student-btn');
     btn.disabled = true;
-    btn.textContent = 'Отправляется...';
+    btn.textContent = '⏳ Отправка...';
 
     try {
         const res = await fetch(`/organization/${orgId}/student/join`, {
@@ -274,29 +274,29 @@ async function joinOrganization(orgId) {
                 const data2 = await res2.json();
                 if (data2.success) {
                     if (data2.auto_accepted) {
-                        btn.textContent = '✅ Вы ученик центра';
+                        btn.textContent = '✅ Принят';
                     } else {
-                        btn.textContent = 'Ожидайте одобрения';
+                        btn.textContent = '⌛ На рассмотрении';
                     }
                     return;
                 }
             }
             btn.disabled = false;
-            btn.textContent = 'Вступить в учебный центр';
+            btn.textContent = 'Вступить';
         } else if (data.success) {
             if (data.auto_accepted) {
-                btn.textContent = '✅ Вы ученик центра';
+                btn.textContent = '✅ Принят';
             } else {
-                btn.textContent = 'Ожидайте одобрения';
+                btn.textContent = '⌛ На рассмотрении';
             }
         } else {
             btn.disabled = false;
-            btn.textContent = 'Вступить в учебный центр';
+            btn.textContent = 'Вступить';
         }
     } catch (err) {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = 'Вступить в учебный центр';
+        btn.textContent = 'Вступить';
     }
 }
 </script>
