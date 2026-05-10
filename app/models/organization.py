@@ -47,10 +47,17 @@ class OrganizationStudent(Base):
     id = Column(Integer, primary_key=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"))
     student_id = Column(Integer, ForeignKey("users.id"))
-    status = Column(String(20), default="pending")  # pending, accepted, rejected, removed
+    # Статусы: 
+    # pending - ожидает решения, 
+    # accepted - участник, 
+    # rejected - отклонен админом, 
+    # left - ушел сам, 
+    # removed - исключен админом (с уведомлением)
+    status = Column(String(20), default="pending")
     was_removed_notification = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)  # Дата самого первого вступления/заявки
-    last_joined_at = Column(DateTime, nullable=True)        # Дата последнего одобренного вступления
+    created_at = Column(DateTime, default=datetime.utcnow)     # Дата самого первого взаимодействия
+    last_joined_at = Column(DateTime, nullable=True)           # Дата последнего одобренного вступления
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
         UniqueConstraint('student_id', 'organization_id', name='uq_student_org'),

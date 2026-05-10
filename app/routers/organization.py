@@ -436,8 +436,8 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
     ).first()
 
     if link:
-        link.status = "removed"
-        link.was_removed_notification = False # Это отказ в заявке, а не удаление действующего участника
+        link.status = "rejected"
+        link.was_removed_notification = False
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -493,7 +493,7 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
     target_status = "accepted" if org.is_open else "pending"
 
     if existing:
-        # Переиспользуем существующую запись (например, со статусом 'removed')
+        # Переиспользуем существующую запись (например, со статусом 'removed', 'left' или 'rejected')
         existing.status = target_status
         existing.was_removed_notification = False
         # Если вступление автоматическое, обновляем дату последнего вступления
@@ -528,8 +528,8 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if link:
-        link.status = "removed"
-        link.was_removed_notification = False # Студент уходит сам, уведомление не нужно
+        link.status = "left"
+        link.was_removed_notification = False
         db.commit()
 
     return RedirectResponse("/dashboard/student", status_code=302)
