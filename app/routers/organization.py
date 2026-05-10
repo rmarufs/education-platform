@@ -416,7 +416,6 @@ def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)
 
     if link:
         link.status = "accepted"
-        link.last_joined_at = datetime.utcnow()
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -436,8 +435,7 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
     ).first()
 
     if link:
-        link.status = "rejected"
-        link.was_removed_notification = False
+        db.delete(link)
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -462,53 +460,50 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    # Ищем существующую запись (любого статуса: accepted, pending, removed)
-    existing = db.query(OrganizationStudent).filter(
+    # ── Upsert: ищем ЛЮБУЮ запись для этой пары (student, org) ──────────────
+    # Это предотвращает создание дублей при повторном вступлении (после removed).
+    existing_this_org = db.query(OrganizationStudent).filter(
         OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == user.id
+        OrganizationStudent.student_id == user.id,
     ).first()
 
-    # Если уже состоит или заявка на рассмотрении
-    if existing and existing.status in ["accepted", "pending"]:
+    # Если уже состоит (активная запись) — ничего не делаем
+    if existing_this_org and existing_this_org.status in ("accepted", "pending"):
         return JSONResponse({"success": True, "already": True})
 
-    # Если состоит в другой организации (активно) — проверяем force
-    old_link = db.query(OrganizationStudent).filter(
+    # Если состоит в ДРУГОЙ организации — проверяем force
+    other_org_link = db.query(OrganizationStudent).filter(
         OrganizationStudent.student_id == user.id,
-        OrganizationStudent.status.in_(["accepted", "pending"]),
-        OrganizationStudent.organization_id != org.id
+        OrganizationStudent.organization_id != org.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).first()
-
-    if old_link:
+    if other_org_link:
         if not force:
-            old_org = db.query(Organization).filter(Organization.id == old_link.organization_id).first()
+            old_org = db.query(Organization).filter(Organization.id == other_org_link.organization_id).first()
             return JSONResponse({
-                "already_in_org": True, 
+                "already_in_org": True,
                 "org_name": old_org.name if old_org else "Неизвестно"
             })
         else:
-            # Если форсируем вступление в новую — удаляем старую активную связь
-            db.delete(old_link)
+            # Мягко удаляем старую связь с другой организацией через статус
+            other_org_link.status = "removed"
+            other_org_link.was_removed_notification = False
 
-    target_status = "accepted" if org.is_open else "pending"
+    new_status = "accepted" if org.is_open else "pending"
 
-    if existing:
-        # Переиспользуем существующую запись (например, со статусом 'removed', 'left' или 'rejected')
-        existing.status = target_status
-        existing.was_removed_notification = False
-        # Если вступление автоматическое, обновляем дату последнего вступления
-        if target_status == "accepted":
-            existing.last_joined_at = datetime.utcnow()
+    if existing_this_org:
+        # Запись уже существует (статус removed) — обновляем её, дублей не создаём
+        existing_this_org.status = new_status
+        existing_this_org.was_removed_notification = False
     else:
-        # Создаем новую только если записи совсем нет
-        org_student = OrganizationStudent(
+        # Записи нет совсем — создаём новую
+        existing_this_org = OrganizationStudent(
             organization_id=org.id,
             student_id=user.id,
-            status=target_status,
+            status=new_status,
             was_removed_notification=False,
-            last_joined_at=datetime.utcnow() if target_status == "accepted" else None
         )
-        db.add(org_student)
+        db.add(existing_this_org)
 
     db.commit()
     return JSONResponse({"success": True, "auto_accepted": org.is_open})
@@ -528,8 +523,7 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if link:
-        link.status = "left"
-        link.was_removed_notification = False
+        db.delete(link)
         db.commit()
 
     return RedirectResponse("/dashboard/student", status_code=302)
