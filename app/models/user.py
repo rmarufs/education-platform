@@ -27,6 +27,7 @@ class User(Base):
     assessment_completed = Column(Boolean, default=False)
     documents = Column(String(500), nullable=True)   # путь к PDF-файлу преподавателя
     bio = Column(Text, nullable=True)                 # рассказ о себе (для преподавателей)
+    avatar_url = Column(String, nullable=True)         # URL фото профиля
     is_active = Column(Boolean, default=True)         # для блокировки пользователей
     created_at = Column(DateTime, default=datetime.utcnow)
 

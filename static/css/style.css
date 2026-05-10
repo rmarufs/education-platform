@@ -5460,3 +5460,39 @@ html[data-theme="dark"] .org-staff-badge {
     flex-wrap: wrap;
   }
 }
+
+/* ── Avatar System ────────────────────────────────────────────────────────── */
+.avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%; object-fit: cover;
+  flex-shrink: 0;
+}
+.avatar-lg { width: 96px; height: 96px; }
+.avatar-xl { width: 128px; height: 128px; }
+.avatar-placeholder {
+  background: var(--primary); color: white;
+  display: flex; align-items: center;
+  justify-content: center;
+  font-weight: 600; font-size: 1.2rem;
+}
+.avatar-lg.avatar-placeholder { font-size: 2rem; }
+.avatar-xl.avatar-placeholder { font-size: 2.8rem; }
+.avatar-upload-wrapper {
+  position: relative; display: inline-block; cursor: pointer;
+}
+.avatar-upload-overlay {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center;
+  justify-content: center; opacity: 0;
+  transition: opacity 0.2s; color: white; font-size: 1.4rem;
+}
+.avatar-upload-wrapper:hover .avatar-upload-overlay { opacity: 1; }
+.avatar-upload-wrapper .avatar-spinner {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: none; align-items: center;
+  justify-content: center; color: white; font-size: 1.4rem;
+}
+.avatar-upload-wrapper.loading .avatar-upload-overlay { display: none; }
+.avatar-upload-wrapper.loading .avatar-spinner { display: flex; }

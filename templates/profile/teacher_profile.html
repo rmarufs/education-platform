@@ -8,9 +8,14 @@
 
   <!-- Профиль -->
   <div class="teacher-profile-header reveal">
-    <div class="teacher-profile-avatar" style="width:96px;height:96px;font-size:2.5rem;">
-      {{ teacher.name[0].upper() }}
-    </div>
+    {% if teacher.avatar_url %}
+      <img src="{{ teacher.avatar_url }}" class="avatar avatar-xl"
+           alt="{{ teacher.name }}" style="flex-shrink:0;">
+    {% else %}
+      <div class="teacher-profile-avatar avatar avatar-xl avatar-placeholder" style="font-size:2.5rem;">
+        {{ teacher.name[0].upper() }}
+      </div>
+    {% endif %}
     <div style="flex:1;min-width:200px;">
       <h1 style="font-size:1.75rem;font-weight:700;margin-bottom:4px;">{{ teacher.name }}</h1>
       <span class="role-badge role-teacher" data-i18n="role.teacher">Преподаватель</span>

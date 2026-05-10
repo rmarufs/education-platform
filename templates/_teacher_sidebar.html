@@ -1,6 +1,10 @@
 <aside class="sidebar">
   <div class="sidebar-profile">
-    <div class="avatar">{{ user.name[0].upper() }}</div>
+    {% if user.avatar_url %}
+      <img src="{{ user.avatar_url }}" class="avatar" alt="{{ user.name }}">
+    {% else %}
+      <div class="avatar avatar-placeholder">{{ user.name[0]|upper }}</div>
+    {% endif %}
     <div class="profile-info">
       <h3>{{ user.name }}</h3>
       <span class="role-badge role-teacher" data-i18n="role.teacher">Преподаватель</span>
