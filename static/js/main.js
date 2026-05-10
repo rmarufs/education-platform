@@ -411,3 +411,34 @@ function escapeHtml(text) {
   }, true);
 })();
 
+/* ── Загрузка аватара из сайдбара ── */
+async function uploadSidebarAvatar(input) {
+    if (!input.files[0]) return;
+    const formData = new FormData();
+    formData.append('file', input.files[0]);
+    
+    const wrapper = input.parentElement.querySelector('.avatar-upload-wrapper');
+    if (wrapper) wrapper.style.opacity = '0.5';
+
+    try {
+        const res = await fetch('/profile/avatar', {method: 'POST', body: formData});
+        const data = await res.json();
+        if (data.success) {
+            const img = document.getElementById('sidebar-avatar-img');
+            const ph = document.getElementById('sidebar-avatar-placeholder');
+            if (img) {
+                img.src = data.url + '?t=' + Date.now();
+            } else if (ph) {
+                ph.outerHTML = `<img src="${data.url}" class="avatar" id="sidebar-avatar-img">`;
+            }
+            showToast('Фото успешно обновлено', 'success');
+        } else {
+            showToast(data.error || 'Ошибка загрузки', 'error');
+        }
+    } catch(e) {
+        showToast('Ошибка загрузки', 'error');
+    } finally {
+        if (wrapper) wrapper.style.opacity = '1';
+        input.value = '';
+    }
+}

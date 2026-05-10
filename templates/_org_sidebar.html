@@ -1,8 +1,14 @@
 <aside class="sidebar">
     <div class="sidebar-profile">
-        <div class="avatar" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-            {% if org and org.name %}{{ org.name[0].upper() }}{% else %}{{ user.name[0].upper() }}{% endif %}
+        <div class="avatar-upload-wrapper" onclick="document.getElementById('sidebar-avatar-input').click()" style="cursor:pointer;">
+            {% if user.avatar_url %}
+                <img src="{{ user.avatar_url }}" class="avatar" id="sidebar-avatar-img" alt="{{ user.name }}">
+            {% else %}
+                <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{% if org and org.name %}{{ org.name[0].upper() }}{% else %}{{ user.name[0].upper() }}{% endif %}</div>
+            {% endif %}
+            <div class="avatar-upload-overlay">📷</div>
         </div>
+        <input type="file" id="sidebar-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadSidebarAvatar(this)">
         <div class="profile-info">
             <h3>{{ org.name if org else user.name }}</h3>
             <span class="role-badge" style="background:#ede9fe;color:#6d28d9;" data-i18n="role.organization">Учебный центр</span>
