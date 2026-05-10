@@ -488,6 +488,45 @@
   }
 
   /* ══════ Organization public ═══════════════════════ */
+  .org-pub-hero {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 16px !important;
+  }
+  .org-pub-hero-inner {
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+  .org-pub-hero-text {
+    width: 100%;
+    min-width: 0;
+  }
+  .org-pub-metrics {
+    flex-direction: column;
+    width: 100%;
+    padding: 16px;
+    gap: 12px;
+  }
+  .org-pub-metric {
+    width: 100%;
+    padding: 0;
+  }
+  .org-pub-metric-sep {
+    display: none;
+  }
+  .org-pub-hero-text .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  #join-form-block {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px !important;
+    box-sizing: border-box;
+  }
   .org-pub-teachers-grid { grid-template-columns: 1fr; }
   .org-pub-courses-grid { grid-template-columns: 1fr !important; }
 
