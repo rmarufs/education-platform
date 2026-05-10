@@ -194,7 +194,8 @@ def organization_students(request: Request, db: Session = Depends(get_db)):
     org_students = db.query(OrganizationStudent).options(
         joinedload(OrganizationStudent.student)
     ).filter(
-        OrganizationStudent.organization_id == org.id
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).order_by(OrganizationStudent.created_at.desc()).all() if org else []
 
     accepted_students = [s for s in org_students if s.status == "accepted"]
@@ -386,11 +387,13 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
 
     link = db.query(OrganizationStudent).filter(
         OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == student_id
+        OrganizationStudent.student_id == student_id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).first()
 
     if link:
-        db.delete(link)
+        link.status = "removed"
+        link.was_removed_notification = True
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -460,14 +463,16 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
     # Если уже состоит в этой организации
     existing = db.query(OrganizationStudent).filter(
         OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == user.id
+        OrganizationStudent.student_id == user.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).first()
     if existing:
         return JSONResponse({"success": True, "already": True})
 
     # Если состоит в другой — проверяем force
     old_link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.student_id == user.id
+        OrganizationStudent.student_id == user.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).first()
     if old_link:
         if not force:
@@ -508,7 +513,8 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=302)
 
     link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.student_id == user_id
+        OrganizationStudent.student_id == user_id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
     ).first()
 
     if link:
@@ -692,12 +698,14 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
     if user and user.is_student:
         user_student_membership = db.query(OrganizationStudent).filter(
             OrganizationStudent.organization_id == org.id,
-            OrganizationStudent.student_id == user.id
+            OrganizationStudent.student_id == user.id,
+            OrganizationStudent.status.in_(["accepted", "pending"])
         ).first()
         
         if not user_student_membership:
             other_membership = db.query(OrganizationStudent).filter(
-                OrganizationStudent.student_id == user.id
+                OrganizationStudent.student_id == user.id,
+                OrganizationStudent.status.in_(["accepted", "pending"])
             ).first()
             if other_membership:
                 current_student_org = db.query(Organization).filter(

@@ -114,10 +114,27 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
     from app.models.organization import OrganizationStudent
     from datetime import datetime
 
-    # Получаем организацию студента (если есть)
+    # Получаем активную организацию студента (если есть)
     student_org_link = db.query(OrganizationStudent).options(
         joinedload(OrganizationStudent.organization)
-    ).filter(OrganizationStudent.student_id == user.id).first()
+    ).filter(
+        OrganizationStudent.student_id == user.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
+    ).first()
+
+    # Проверяем, есть ли уведомления об удалении
+    removed_links = db.query(OrganizationStudent).filter(
+        OrganizationStudent.student_id == user.id,
+        OrganizationStudent.status == "removed",
+        OrganizationStudent.was_removed_notification == True
+    ).all()
+
+    show_removed_notification = False
+    if removed_links:
+        show_removed_notification = True
+        for r_link in removed_links:
+            r_link.was_removed_notification = False
+        db.commit()
 
     user_progress = (
         db.query(Progress)
@@ -180,7 +197,8 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "request": request, 
             "user": user, 
             "my_courses": my_courses,
-            "student_org_link": student_org_link
+            "student_org_link": student_org_link,
+            "show_removed_notification": show_removed_notification
         },
     )
 

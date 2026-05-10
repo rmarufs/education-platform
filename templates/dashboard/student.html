@@ -52,6 +52,12 @@
             </div>
         </div>
 
+        {% if show_removed_notification %}
+        <div class="alert alert-warning" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; background-color: var(--warning-light, #fef3c7); color: var(--warning-dark, #92400e); border: 1px solid var(--warning, #f59e0b);">
+            <span data-i18n="student.removed_notification">Вы были удалены из учебного центра</span>
+        </div>
+        {% endif %}
+
         <!-- Секция: Моя организация -->
         <section style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="student.my_org">🏢 Мой учебный центр</div>
