@@ -414,29 +414,33 @@ function escapeHtml(text) {
 /* ── Загрузка аватара из сайдбара ── */
 async function uploadSidebarAvatar(input) {
     if (!input.files[0]) return;
+    const wrapper = input.closest('.sidebar-profile') || input.parentElement;
     const formData = new FormData();
     formData.append('file', input.files[0]);
     
-    const wrapper = input.parentElement.querySelector('.avatar-upload-wrapper');
     if (wrapper) wrapper.style.opacity = '0.5';
 
     try {
         const res = await fetch('/profile/avatar', {method: 'POST', body: formData});
         const data = await res.json();
-        if (data.success) {
-            const img = document.getElementById('sidebar-avatar-img');
-            const ph = document.getElementById('sidebar-avatar-placeholder');
+        console.log('Avatar response:', data); // для отладки
+        if (data.success && data.url) {
+            // Ищем img или placeholder внутри wrapper
+            let img = wrapper.querySelector('img.avatar');
+            const ph = wrapper.querySelector('.avatar-placeholder');
             if (img) {
                 img.src = data.url + '?t=' + Date.now();
             } else if (ph) {
-                ph.outerHTML = `<img src="${data.url}" class="avatar" id="sidebar-avatar-img">`;
+                ph.outerHTML = `<img src="${data.url}" class="avatar" id="sidebar-avatar-img" style="border-radius:50%;object-fit:cover;">`;
             }
-            showToast('Фото успешно обновлено', 'success');
+            if (typeof showToast === 'function') showToast('Фото обновлено', 'success');
         } else {
-            showToast(data.error || 'Ошибка загрузки', 'error');
+            console.error('Upload failed:', data);
+            if (typeof showToast === 'function') showToast(data.error || 'Ошибка загрузки', 'error');
         }
     } catch(e) {
-        showToast('Ошибка загрузки', 'error');
+        console.error('Upload error:', e);
+        if (typeof showToast === 'function') showToast('Ошибка соединения', 'error');
     } finally {
         if (wrapper) wrapper.style.opacity = '1';
         input.value = '';

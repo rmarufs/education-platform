@@ -6,7 +6,7 @@
         {% else %}
             <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{{ user.name[0]|upper }}</div>
         {% endif %}
-        <div class="avatar-upload-overlay">📷</div>
+        <div class="avatar-upload-overlay" style="display:none">📷</div>
     </div>
     <input type="file" id="sidebar-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadSidebarAvatar(this)">
     <div class="profile-info">

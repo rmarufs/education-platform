@@ -1,5 +1,8 @@
 # Роутер профиля пользователя
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 import cloudinary
 from fastapi import APIRouter, Depends, Request, UploadFile, File
@@ -45,10 +48,13 @@ async def upload_avatar(
     if not user:
         return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
 
+    logger.info(f"Avatar upload started for user {user.id}")
+
     # Проверка типа файла
     ext = os.path.splitext(file.filename or "")[1].lower()
     content_type = (file.content_type or "").lower()
     if ext not in AVATAR_ALLOWED_EXTS and content_type not in AVATAR_ALLOWED_TYPES:
+        logger.warning(f"Invalid avatar type: {ext}, {content_type}")
         return JSONResponse(
             {"success": False, "error": "Разрешены только JPG, JPEG, PNG и WEBP"},
             status_code=400,
@@ -58,6 +64,7 @@ async def upload_avatar(
 
     # Проверка размера
     if len(file_bytes) > AVATAR_MAX_BYTES:
+        logger.warning("Avatar file too large")
         return JSONResponse(
             {"success": False, "error": "Файл не должен превышать 10 МБ"},
             status_code=400,
@@ -65,7 +72,9 @@ async def upload_avatar(
 
     try:
         avatar_url = compress_and_upload_avatar(file_bytes, uid)
+        logger.info(f"Cloudinary result: {avatar_url}")
     except Exception as exc:
+        logger.error(f"Avatar upload failed: {exc}")
         return JSONResponse(
             {"success": False, "error": f"Ошибка загрузки: {exc}"},
             status_code=500,
@@ -73,6 +82,8 @@ async def upload_avatar(
 
     user.avatar_url = avatar_url
     db.commit()
+    
+    logger.info(f"Avatar saved: {user.avatar_url}")
 
     return JSONResponse({"success": True, "url": avatar_url})
 
