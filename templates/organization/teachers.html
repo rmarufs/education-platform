@@ -9,32 +9,22 @@
     <div class="dashboard-main">
         <div class="dashboard-header">
             <div>
-                <h1 data-i18n="org.manage_teachers">👨‍🏫 Преподаватели и студенты</h1>
-                <p data-i18n="org.subtitle">Управление составом преподавателей вашей организации</p>
+                <h1><span style="font-size:1.5rem;margin-right:8px;">👨‍🏫</span><span data-i18n="org.manage_teachers">Преподаватели</span></h1>
+                <p data-i18n="org.teachers_subtitle">Управление составом преподавателей вашего учебного центра</p>
             </div>
         </div>
 
-        <!-- Вкладки Преподаватели / Студенты -->
-        <div class="org-tabs" id="org-tabs" style="display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0;">
-            <button id="tab-teachers" class="org-tab-btn active" onclick="switchTab('teachers')"
-                style="padding:10px 20px;font-weight:600;font-size:.9rem;border:none;background:none;cursor:pointer;color:var(--primary);border-bottom:3px solid var(--primary);margin-bottom:-2px;transition:all .2s;">
-                👨‍🏫 Преподаватели
-            </button>
-            <button id="tab-students" class="org-tab-btn" onclick="switchTab('students')"
-                style="padding:10px 20px;font-weight:600;font-size:.9rem;border:none;background:none;cursor:pointer;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;">
-                🎓 Студенты <span id="students-count-badge" style="background:var(--primary-light);color:var(--primary);border-radius:10px;padding:1px 8px;font-size:.8rem;">{{ org_students|length }}</span>
-            </button>
-        </div>
+
 
         <!-- Уведомления -->
         {% if request.query_params.get('error') == 'teacher_not_found' %}
-        <div class="alert alert-error">Пользователь с таким email не найден или он не является преподавателем.</div>
+        <div class="alert alert-error" data-i18n="org.teacher_not_found">Пользователь с таким email не найден или он не является преподавателем.</div>
         {% elif request.query_params.get('error') == 'already_invited' %}
-        <div class="alert alert-error">Этот преподаватель уже состоит в вашей организации или был приглашён.</div>
+        <div class="alert alert-error" data-i18n="org.teacher_already_member">Этот преподаватель уже состоит в вашем учебном центре или был приглашён.</div>
         {% elif request.query_params.get('error') == 'in_other_org' %}
-        <div class="alert alert-error">Этот преподаватель уже состоит в другой организации.</div>
+        <div class="alert alert-error" data-i18n="org.teacher_in_other_org">Этот преподаватель уже состоит в другом учебном центре.</div>
         {% elif request.query_params.get('success') == 'invited' %}
-        <div class="alert alert-success">✅ Приглашение успешно отправлено!</div>
+        <div class="alert alert-success" data-i18n="org.invite_success">✅ Приглашение успешно отправлено!</div>
         {% endif %}
 
         <!-- ══════════════════════════════════════════════════
@@ -52,8 +42,8 @@
             </div>
 
             <div id="teacher-search-results" style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;"></div>
-            <div id="teacher-search-empty" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;">Преподаватели не найдены.</div>
-            <div id="teacher-search-loading" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;">🔄 Поиск...</div>
+            <div id="teacher-search-empty" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;" data-i18n="org.search_empty">Преподаватели не найдены.</div>
+            <div id="teacher-search-loading" style="display:none; color:var(--text-muted); font-size:0.9rem; margin-top:12px;" data-i18n="org.search_loading">🔄 Поиск...</div>
 
             <div style="border-top: 1px solid var(--border); margin-top: 20px; padding-top: 16px;">
                 <details>
@@ -109,11 +99,11 @@
                         <a href="{{ ot.attachment }}" target="_blank" class="org-attachment-link">📎 Прикреплённый файл</a>
                         {% endif %}
 
-                        <p class="org-pending-date">Подал заявку: {{ ot.created_at.strftime("%d.%m.%Y") }}</p>
+                        <p class="org-pending-date" data-i18n="org.request_date" data-i18n-params='{"date": "{{ ot.created_at.strftime("%d.%m.%Y") }}"}'>Подал заявку: {{ ot.created_at.strftime("%d.%m.%Y") }}</p>
                     </div>
                     <div class="org-pending-actions">
-                        <button type="button" class="btn btn-primary btn-sm" onclick="handleApplication({{ ot.id }}, 'accept', this)">✅ Принять</button>
-                        <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="handleApplication({{ ot.id }}, 'reject', this)">Отклонить</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="handleApplication({{ ot.id }}, 'accept', this)" data-i18n="org.accept_btn">✅ Принять</button>
+                        <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="handleApplication({{ ot.id }}, 'reject', this)" data-i18n="org.reject_btn">Отклонить</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -126,7 +116,7 @@
         ═══════════════════════════════════════════════════ -->
         <section class="org-panel">
             <h2 class="org-panel-title" data-i18n="org.active_teachers">
-                👨‍🏫 Преподаватели организации
+                👨‍🏫 Преподаватели учебного центра
                 <span style="font-weight:400; color: var(--text-muted); font-size: 0.9rem;">({{ org_teachers|length }})</span>
             </h2>
 
@@ -147,7 +137,7 @@
                             <a href="/teachers/{{ ot.teacher_id }}" class="org-staff-name">{{ ot.teacher.name }}</a>
                             <span class="org-staff-email">{{ ot.teacher.email }}</span>
                         </div>
-                        <span class="org-staff-badge">В составе</span>
+                        <span class="org-staff-badge" data-i18n="org.in_staff_badge">В составе</span>
                     </div>
 
                     <!-- Bio -->
@@ -155,13 +145,13 @@
                     <p class="org-staff-bio">{{ ot.teacher.bio | striptags | truncate(120) }}</p>
                     {% endif %}
 
-                    <div class="org-staff-joined">В организации с {{ ot.created_at.strftime("%d.%m.%Y") }}</div>
+                    <div class="org-staff-joined" data-i18n="org.joined_date" data-i18n-params='{"date": "{{ ot.created_at.strftime("%d.%m.%Y") }}"}'>В учебном центре с {{ ot.created_at.strftime("%d.%m.%Y") }}</div>
 
                     <!-- Действия -->
                     <div class="org-staff-actions">
-                        <a href="/organization/teacher/{{ ot.teacher_id }}/courses" class="btn btn-outline btn-sm">📚 Курсы</a>
+                        <a href="/organization/teacher/{{ ot.teacher_id }}/courses" class="btn btn-outline btn-sm" data-i18n="org.courses_btn">📚 Курсы</a>
                         <form action="/organization/teacher/{{ ot.teacher_id }}/remove" method="POST" style="margin: 0;"
-                              onsubmit="confirmAndSubmit(event, 'Удалить преподавателя из организации?')">
+                              onsubmit="confirmAndSubmit(event, 'Удалить преподавателя из учебного центра?')">
                             <button type="submit" class="btn btn-sm" style="color:var(--danger);" data-i18n="org.remove_teacher">Удалить</button>
                         </form>
                     </div>
@@ -171,59 +161,12 @@
             {% else %}
             <div class="empty-state" style="margin-top: 12px;">
                 <span class="empty-icon">👨‍🏫</span>
-                <p data-i18n="org.no_teachers">В вашей организации пока нет принятых преподавателей.</p>
+                <p data-i18n="org.no_teachers">В вашем учебном центре пока нет принятых преподавателей.</p>
             </div>
             {% endif %}
         </section>
 
-        <!-- ═══════════════════════════════════════════════════════
-             СТУДЕНТЫ
-        ═══════════════════════════════════════════════════════ -->
-        <div id="tab-panel-students" style="display:none;">
-            <section class="org-panel">
-                <h2 class="org-panel-title">
-                    🎓 Студенты организации
-                    <span style="font-weight:400; color: var(--text-muted); font-size: 0.9rem;">({{ org_students|length }})</span>
-                </h2>
 
-                {% if org_students %}
-                <div class="org-staff-grid">
-                    {% for link in org_students %}
-                    <div class="org-staff-card fade-in" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
-                        <div class="org-staff-top">
-                            <div class="org-teacher-avatar org-teacher-avatar-lg">
-                                {% if link.student.avatar_url %}
-                                    <img src="{{ link.student.avatar_url }}" alt="{{ link.student.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-                                {% else %}
-                                    {{ link.student.name[0] | upper }}
-                                {% endif %}
-                            </div>
-                            <div class="org-staff-info">
-                                <span class="org-staff-name">{{ link.student.name }}</span>
-                                <span class="org-staff-email">{{ link.student.email }}</span>
-                            </div>
-                            <span class="org-staff-badge" style="background:var(--success-soft);color:var(--success);">Student</span>
-                        </div>
-
-                        <div class="org-staff-joined">С организацией с {{ link.created_at.strftime("%d.%m.%Y") }}</div>
-
-                        <div class="org-staff-actions">
-                            <form action="/organization/student/{{ link.student_id }}/remove" method="POST" style="margin: 0;"
-                                  onsubmit="confirmAndSubmit(event, 'Удалить студента из организации?')">
-                                <button type="submit" class="btn btn-sm" style="color:var(--danger);">Удалить</button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state" style="margin-top: 12px;">
-                    <span class="empty-icon">🎓</span>
-                    <p>В вашей организации пока нет студентов.</p>
-                </div>
-                {% endif %}
-            </section>
-        </div>
 
     </div>
 </div>
@@ -297,7 +240,7 @@ window.handleApplication = function(linkId, action, btn) {
             if (isInvited) {
                 btnHtml = `<button class="btn btn-sm" disabled style="opacity:.55;">✉️ Приглашён</button>`;
             } else if (inOtherOrg) {
-                btnHtml = `<button class="btn btn-sm" disabled style="opacity:.55;" title="В организации">В организации</button>`;
+                btnHtml = `<button class="btn btn-sm" disabled style="opacity:.55;" title="В учебном центре">В учебном центре</button>`;
             } else {
                 btnHtml = `<button class="btn btn-primary btn-sm" onclick="inviteTeacher(${t.id}, this)">➕ Пригласить</button>`;
             }
@@ -349,7 +292,7 @@ window.handleApplication = function(linkId, action, btn) {
                 btn.style.cursor = 'default';
             } else if (r.status === 400) {
                 btn.disabled = false; btn.textContent = '➕ Пригласить';
-                showToast('Преподаватель уже состоит в другой организации.', 'error');
+                showToast('Преподаватель уже состоит в другом учебном центре.', 'error');
             } else {
                 btn.disabled = false; btn.textContent = '➕ Пригласить';
                 showToast('Ошибка. Попробуйте ещё раз.', 'error');

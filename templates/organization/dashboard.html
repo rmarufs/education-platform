@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Кабинет организации — Фурузон{% endblock %}
+{% block title %}Кабинет учебного центра — Фурузон{% endblock %}
 {% block title_key %}nav.dashboard{% endblock %}
 
 {% block content %}
@@ -15,7 +15,7 @@
                     <span data-i18n="org.welcome">Добро пожаловать,</span>
                     {{ org.name if org else user.name }}!
                 </h1>
-                <p data-i18n="org.subtitle">Управляйте преподавателями и отслеживайте статистику организации</p>
+                <p data-i18n="org.subtitle">Управляйте преподавателями и отслеживайте статистику учебного центра</p>
             </div>
             <a href="/organization/{{ org.id }}" class="btn btn-outline" style="white-space: nowrap;">
                 👁 <span data-i18n="org.public_profile">Публичный профиль</span>
@@ -59,38 +59,15 @@
                     <div class="org-metric-label" data-i18n="org.stats_incoming">Входящих заявок</div>
                 </div>
             </div>
+            <div class="org-metric-card fade-in" style="animation-delay: 0.15s;">
+                <div class="org-metric-icon" style="background: var(--info-soft, #e0f2fe); color: var(--info, #0284c7);">🎓</div>
+                <div class="org-metric-data">
+                    <div class="org-metric-value">{{ students_count }}</div>
+                    <div class="org-metric-label" data-i18n="org.stats_students">Учеников</div>
+                </div>
+            </div>
         </div>
 
-        <!-- Быстрые действия -->
-        <section>
-            <div class="section-label" data-i18n="org.quick_actions">Быстрые действия</div>
-            <div class="org-quick-actions">
-                <a href="/organization/teachers" class="org-action-card">
-                    <div class="org-action-icon">👨‍🏫</div>
-                    <div class="org-action-body">
-                        <div class="org-action-title" data-i18n="org.manage_teachers">Управление преподавателями</div>
-                        <div class="org-action-desc">Принять или отклонить заявки, управлять составом</div>
-                    </div>
-                    <span class="org-action-arrow">→</span>
-                </a>
-                <a href="/organization/profile" class="org-action-card">
-                    <div class="org-action-icon">⚙️</div>
-                    <div class="org-action-body">
-                        <div class="org-action-title" data-i18n="org.settings">Настройки профиля</div>
-                        <div class="org-action-desc">Название, описание и контактные данные</div>
-                    </div>
-                    <span class="org-action-arrow">→</span>
-                </a>
-                <a href="/organization/{{ org.id }}" class="org-action-card">
-                    <div class="org-action-icon">🌐</div>
-                    <div class="org-action-body">
-                        <div class="org-action-title" data-i18n="org.public_profile">Публичный профиль</div>
-                        <div class="org-action-desc">Как видят вашу организацию другие пользователи</div>
-                    </div>
-                    <span class="org-action-arrow">→</span>
-                </a>
-            </div>
-        </section>
     </div>
 </div>
 {% endblock %}

@@ -169,13 +169,6 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
     pending  = [l for l in all_links if l.status == "pending"]
     rejected = [l for l in all_links if l.status == "rejected"]
 
-    # Студенты организации
-    org_students = db.query(OrganizationStudent).options(
-        joinedload(OrganizationStudent.student)
-    ).filter(
-        OrganizationStudent.organization_id == org.id
-    ).order_by(OrganizationStudent.created_at.desc()).all() if org else []
-
     return templates.TemplateResponse(
         "organization/teachers.html",
         {
@@ -185,7 +178,36 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
             "org_teachers": accepted,
             "pending_teachers": pending,
             "rejected_teachers": rejected,
-            "org_students": org_students,
+        }
+    )
+
+# ── Список учеников + входящие заявки ────────────────────────────────
+
+@router.get("/organization/students", response_class=HTMLResponse)
+def organization_students(request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+
+    org_students = db.query(OrganizationStudent).options(
+        joinedload(OrganizationStudent.student)
+    ).filter(
+        OrganizationStudent.organization_id == org.id
+    ).order_by(OrganizationStudent.created_at.desc()).all() if org else []
+
+    accepted_students = [s for s in org_students if s.status == "accepted"]
+    pending_students = [s for s in org_students if s.status == "pending"]
+
+    return templates.TemplateResponse(
+        "organization/students.html",
+        {
+            "request": request,
+            "user": user,
+            "org": org,
+            "org_students": accepted_students,
+            "pending_students": pending_students,
         }
     )
 
@@ -371,7 +393,49 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
         db.delete(link)
         db.commit()
 
-    return RedirectResponse("/organization/teachers?tab=students", status_code=302)
+    return RedirectResponse("/organization/students", status_code=302)
+
+
+# ── Обработка заявок от студентов ──────────────────────────────────────────
+
+@router.post("/organization/student/{link_id}/accept")
+def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.id == link_id,
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status == "pending"
+    ).first()
+
+    if link:
+        link.status = "accepted"
+        db.commit()
+
+    return RedirectResponse("/organization/students", status_code=302)
+
+
+@router.post("/organization/student/{link_id}/reject")
+def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.id == link_id,
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status == "pending"
+    ).first()
+
+    if link:
+        db.delete(link)
+        db.commit()
+
+    return RedirectResponse("/organization/students", status_code=302)
 
 
 # ── Студент вступает в организацию ───────────────────────────────────────────
@@ -384,7 +448,7 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_student:
-        raise HTTPException(status_code=403, detail="Только студенты могут вступать в организации")
+        raise HTTPException(status_code=403, detail="Только студенты могут вступать в учебные центры")
 
     org = db.query(Organization).filter(
         Organization.id == org_id,
@@ -415,15 +479,43 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
         else:
             db.delete(old_link)
 
-    org_student = OrganizationStudent(
-        organization_id=org.id,
-        student_id=user.id,
-        status="pending"
-    )
-    db.add(org_student)
-    db.commit()
+    if org.is_open:
+        org_student = OrganizationStudent(
+            organization_id=org.id,
+            student_id=user.id,
+            status="accepted"
+        )
+        db.add(org_student)
+        db.commit()
+        return JSONResponse({"success": True, "auto_accepted": True})
+    else:
+        org_student = OrganizationStudent(
+            organization_id=org.id,
+            student_id=user.id,
+            status="pending"
+        )
+        db.add(org_student)
+        db.commit()
+        return JSONResponse({"success": True, "auto_accepted": False})
 
-    return JSONResponse({"success": True})
+
+# ── Студент покидает организацию ─────────────────────────────────────────────
+
+@router.post("/organization/student/leave")
+def student_leave_organization(request: Request, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse("/login", status_code=302)
+
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.student_id == user_id
+    ).first()
+
+    if link:
+        db.delete(link)
+        db.commit()
+
+    return RedirectResponse("/dashboard/student", status_code=302)
 
 
 # ── Курсы преподавателя (для кабинета организации) ────────────────────────────
@@ -445,7 +537,7 @@ def org_teacher_courses(teacher_id: int, request: Request, db: Session = Depends
         OrganizationTeacher.status == "accepted"
     ).first()
     if not membership:
-        raise HTTPException(status_code=403, detail="Этот преподаватель не является членом вашей организации")
+        raise HTTPException(status_code=403, detail="Этот преподаватель не является членом вашего учебного центра")
 
     teacher = db.query(User).filter(User.id == teacher_id).first()
     if not teacher:
@@ -491,6 +583,8 @@ def organization_profile_update(
     name: str = Form(...),
     description: str = Form(""),
     phone: str = Form(""),
+    website: Optional[str] = Form(None),
+    is_open: str = Form("true"),
     db: Session = Depends(get_db)
 ):
     user, redirect = require_org(request, db)
@@ -501,6 +595,8 @@ def organization_profile_update(
     org.name = name
     org.description = description
     org.phone = phone
+    org.website = website
+    org.is_open = is_open.lower() == "true"
     db.commit()
 
     return RedirectResponse("/organization/profile?success=1", status_code=302)
@@ -656,7 +752,7 @@ async def join_organization(
         OrganizationTeacher.organization_id != org.id
     ).first()
     if in_other_org:
-        raise HTTPException(status_code=400, detail="Вы уже состоите в другой организации")
+        raise HTTPException(status_code=400, detail="Вы уже состоите в другом учебном центре")
 
     # Проверка на уже существующую заявку
     existing = db.query(OrganizationTeacher).filter(

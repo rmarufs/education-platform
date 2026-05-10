@@ -106,7 +106,7 @@ async def register(
     if role == "organization" and not org_name.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Введите название организации"},
+            {"request": request, "error": "Введите название учебного центра"},
             status_code=400,
         )
 
@@ -120,7 +120,7 @@ async def register(
     if role == "organization" and not org_description.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Добавьте краткое описание организации"},
+            {"request": request, "error": "Добавьте краткое описание учебного центра"},
             status_code=400,
         )
 
@@ -286,7 +286,7 @@ def login(
     if is_org and not is_active:
         return templates.TemplateResponse(
             "auth/login.html",
-            {"request": request, "error": "Ваша организация ещё не одобрена администратором."},
+            {"request": request, "error": "Ваш учебный центр ещё не одобрен администратором."},
             status_code=403,
         )
 
@@ -296,7 +296,7 @@ def login(
         if user_role == UserRole.teacher_pending:
             error_msg = "Ваша заявка преподавателя всё ещё находится на рассмотрении."
         elif is_org:
-            error_msg = "Ваша организация всё ещё находится на рассмотрении."
+            error_msg = "Ваш учебный центр всё ещё находится на рассмотрении."
         else:
             error_msg = "Ваш аккаунт заблокирован. Обратитесь к администратору."
             

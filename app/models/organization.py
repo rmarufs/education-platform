@@ -1,6 +1,6 @@
 # Модель организации
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -16,6 +16,7 @@ class Organization(Base):
     website = Column(String, nullable=True)
     phone = Column(String(50), nullable=True)
     status = Column(String(20), default="pending")   # pending, approved, rejected
+    is_open = Column(Boolean, default=True)  # True = открытый, False = закрытый
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

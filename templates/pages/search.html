@@ -6,7 +6,7 @@
 <div class="page-shell">
   <div class="reveal" style="margin-bottom:32px;">
     <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px;" data-i18n="search.title">🔍 Поиск</h1>
-    <p class="text-muted" style="margin-bottom:20px;" data-i18n="search.subtitle">Найдите программу, преподавателя или организацию.</p>
+    <p class="text-muted" style="margin-bottom:20px;" data-i18n="search.subtitle">Найдите программу, преподавателя или учебный центр.</p>
     <div class="search-toolbar">
       <input type="text" id="search-q" class="form-input" style="flex:2;min-width:200px;" placeholder="Введите название или имя..." data-i18n="search.placeholder" data-i18n-prop="placeholder" />
       <select id="search-category" class="form-input" style="max-width:200px;">
@@ -31,7 +31,7 @@
 
   <p id="search-info" class="search-summary"></p>
 
-  <!-- Организации -->
+  <!-- Учебные центры -->
   <div id="search-organizations" class="courses-grid" style="margin-bottom:30px;"></div>
 
   <!-- Преподаватели -->
@@ -90,7 +90,7 @@
         if (data.organizations && data.organizations.length > 0) {
           const h = document.createElement('h2');
           h.setAttribute('data-i18n', 'search.orgs_title');
-          h.textContent = 'Организации';
+          h.textContent = t('search.orgs_title') || 'Учебные центры';
           h.style.cssText = 'font-size:1.1rem;font-weight:600;margin-bottom:14px;width:100%;grid-column:1/-1;';
           orgsContainer.appendChild(h);
 
@@ -155,7 +155,7 @@
         if (!qInput.value) {
             if (titleEl) {
                 titleEl.setAttribute('data-i18n', 'search.popular_title');
-                titleEl.textContent = 'Популярные курсы и организации';
+                titleEl.textContent = t('search.popular_title') || 'Популярные курсы и учебные центры';
                 if (typeof translatePage === 'function') translatePage();
             }
         } else {
@@ -242,8 +242,8 @@
 async function studentJoinOrg(orgId, hasOtherOrg) {
     if (hasOtherOrg) {
         const confirmed = await showConfirmModal(
-            t('org.confirm_switch') || 'Смена организации',
-            t('org.confirm_switch_hint') || 'Вы состоите в другой организации. При смене вы будете отчислены из текущей и зачислены в новую.',
+            t('org.confirm_switch') || 'Смена учебного центра',
+            t('org.confirm_switch_hint') || 'Вы состоите в другом учебном центре. При смене вы будете отчислены из текущего и зачислены в новый.',
             t('org.confirm_switch_btn') || 'Да, сменить',
             t('action.cancel') || 'Отмена',
             true
@@ -257,7 +257,7 @@ async function studentJoinOrg(orgId, hasOtherOrg) {
         try { data = await r.json(); } catch (_) {}
 
         if (r.ok) {
-            showToast(t('org.join_success') || 'Вы успешно вступили в организацию!', 'success');
+            showToast(t('org.join_success') || 'Вы успешно отправили заявку в учебный центр!', 'success');
             doSearch();
         } else {
             showToast(data.detail || t('common.error') || 'Произошла ошибка.', 'error');

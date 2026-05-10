@@ -5,7 +5,7 @@
         </div>
         <div class="profile-info">
             <h3>{{ org.name if org else user.name }}</h3>
-            <span class="role-badge" style="background:#ede9fe;color:#6d28d9;">Организация</span>
+            <span class="role-badge" style="background:#ede9fe;color:#6d28d9;" data-i18n="role.organization">Учебный центр</span>
         </div>
     </div>
     <nav class="sidebar-nav">
@@ -15,7 +15,11 @@
         </a>
         <a href="/organization/teachers" class="sidebar-link {{ 'active' if active_page == 'teachers' else '' }}">
             <span class="link-icon">👨‍🏫</span>
-            <span data-i18n="org.stats_teachers">Преподаватели</span>
+            <span data-i18n="org.nav_teachers">Преподаватели</span>
+        </a>
+        <a href="/organization/students" class="sidebar-link {{ 'active' if active_page == 'students' else '' }}">
+            <span class="link-icon">🎓</span>
+            <span data-i18n="org.nav_students">Ученики</span>
         </a>
         <a href="/organization/profile" class="sidebar-link {{ 'active' if active_page == 'profile' else '' }}">
             <span class="link-icon">⚙️</span>

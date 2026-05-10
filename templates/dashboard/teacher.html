@@ -28,8 +28,8 @@
             <div class="alert alert-info" style="display: flex; flex-direction: column; gap: 10px;">
                 {% for invite in pending_invites %}
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; margin-bottom: 5px;">
-                    <div>
-                        <strong data-i18n="org.label">Организация</strong> <strong>{{ invite.organization.name }}</strong> приглашает вас присоединиться к своему составу преподавателей.
+                    <div data-i18n="org.invite_text" data-i18n-html="true" data-i18n-params='{"name": "{{ invite.organization.name|escape }}"}'>
+                        Учебный центр <strong>{{ invite.organization.name }}</strong> приглашает вас присоединиться к своему составу преподавателей.
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <form action="/organization/invite/{{ invite.id }}/accept" method="POST" style="margin: 0;">
@@ -47,15 +47,14 @@
 
         {% if teacher_applications %}
         <section class="mb-4">
-            <div class="section-label" data-i18n="org.my_applications">🏢 Мои заявки в организации</div>
+            <div class="section-label" data-i18n="org.my_applications">🏢 Мои заявки в учебные центры</div>
             <div style="background: var(--bg-card, white); border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); padding: 4px 16px;">
                 {% for app in teacher_applications %}
                 {% if app.status == 'accepted' %}
                 <div class="alert alert-success org-accept-notice" data-org-id="{{ app.organization_id }}" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         🎉 <span data-i18n="org.congrats">Поздравляем!</span> 
-                        <span data-i18n="org.accepted_into">Вы приняты в состав организации</span> 
-                        <strong>{{ app.organization.name }}</strong>.
+                        <span data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ app.organization.name|escape }}"}'>Вы приняты в учебный центр {{ app.organization.name }}</span>
                     </div>
                     <button type="button" class="notice-close" style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:0 5px; color:inherit; line-height:1;">×</button>
                 </div>
@@ -69,15 +68,15 @@
                         {% else %}
                             <strong style="font-size: 1.05rem;">🏢 {{ app.organization.name }}</strong>
                         {% endif %}
-                        <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--text-muted);">Отправлена: {{ app.created_at.strftime("%d.%m.%Y") }}</p>
+                        <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--text-muted);" data-i18n="org.sent_date" data-i18n-params='{"date": "{{ app.created_at.strftime("%d.%m.%Y") }}"}'>Отправлена: {{ app.created_at.strftime("%d.%m.%Y") }}</p>
                     </div>
                     <div>
                         {% if app.status == 'pending' %}
-                            <span style="background: #FFF3CD; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">⏳ Ожидает рассмотрения</span>
+                            <span style="background: #FFF3CD; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_pending">⏳ Ожидает рассмотрения</span>
                         {% elif app.status == 'accepted' %}
-                            <span style="background: #D4EDDA; color: #155724; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">✅ Принят в состав</span>
+                            <span style="background: #D4EDDA; color: #155724; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_accepted">✅ Принят в состав</span>
                         {% elif app.status == 'rejected' %}
-                            <span style="background: #F8D7DA; color: #721C24; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;">❌ Отклонена</span>
+                            <span style="background: #F8D7DA; color: #721C24; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_rejected">❌ Отклонена</span>
                         {% endif %}
                     </div>
                 </div>

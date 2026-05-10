@@ -5,8 +5,8 @@
 {% block content %}
 <div class="admin-header">
     <div>
-        <h1 data-i18n="admin.org.title">🏢 Управление организациями</h1>
-        <p data-i18n="admin.org.subtitle">Всего: {{ orgs|length }} организаций</p>
+        <h1 data-i18n="admin.org.title">🏢 Управление учебными центрами</h1>
+        <p data-i18n="admin.org.subtitle" data-i18n-params='{"count": {{ orgs|length }}}'>Всего: {{ orgs|length }} учебных центров</p>
     </div>
 </div>
 
@@ -15,7 +15,7 @@
     <table class="admin-table">
         <thead>
             <tr>
-                <th data-i18n="admin.org.name">Организация</th>
+                <th data-i18n="admin.org.name">Учебный центр</th>
                 <th data-i18n="admin.org.contact">Контактное лицо</th>
                 <th data-i18n="admin.org.status">Статус</th>
                 <th data-i18n="admin.org.date">Дата регистрации</th>
@@ -67,14 +67,14 @@
                         {% endif %}
                         
                         {% if org.status != 'rejected' %}
-                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Отклонить заявку организации «{{ org.name }}»?')">
+                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="return confirm(t('admin.org.confirm_reject', {name: '{{ org.name|escape }}'}) || 'Отклонить заявку учебного центра «{{ org.name }}»?');">
                             <button type="submit" class="admin-btn admin-btn-outline admin-btn-sm" title="Отклонить">
                                 ❌
                             </button>
                         </form>
                         {% endif %}
 
-                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Удалить организацию «{{ org.name }}»?', 'Полное удаление нельзя отменить!')">
+                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="return confirm(t('admin.org.confirm_delete', {name: '{{ org.name|escape }}'}) || 'Удалить учебный центр «{{ org.name }}»?\nПолное удаление нельзя отменить!');">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
                                 🗑
                             </button>
@@ -89,7 +89,7 @@
 {% else %}
 <div class="admin-empty">
     <div class="admin-empty-icon">🏢</div>
-    <p data-i18n="admin.org.empty">Организации не найдены</p>
+    <p data-i18n="admin.org.empty">Учебные центры не найдены</p>
 </div>
 {% endif %}
 {% endblock %}

@@ -10,7 +10,7 @@
     <div class="dashboard-main">
         <!-- Навигация + заголовок -->
         <div>
-            <a href="/organization/teachers" class="org-back-link">← Назад к преподавателям</a>
+            <a href="/organization/teachers" class="org-back-link" data-i18n="org.back_to_teachers">← Назад к преподавателям</a>
         </div>
 
         <div class="org-teacher-hero">
@@ -28,7 +28,7 @@
         </div>
 
         {% if courses %}
-        <div class="section-label">Курсы преподавателя ({{ courses|length }})</div>
+        <div class="section-label" data-i18n="teacher_profile.courses_title">Курсы преподавателя</div>
         <div class="org-course-list">
             {% for course in courses %}
             <div class="org-course-row fade-in" id="course-card-{{ course.id }}" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
@@ -59,7 +59,7 @@
         {% else %}
         <div class="empty-state">
             <span class="empty-icon">📭</span>
-            <p>У этого преподавателя пока нет курсов.</p>
+            <p data-i18n="teacher_profile.no_courses">У этого преподавателя пока нет курсов.</p>
         </div>
         {% endif %}
     </div>

@@ -51,30 +51,32 @@
                 {% if user and user.is_teacher %}
                 <div style="margin-top: 24px;">
                     {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
-                            Вы уже состоите в организации
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.already_member">
+                            Вы уже состоите в другом учебном центре
                         </button>
                     {% elif user_application and user_application.status == 'accepted' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.accepted_into">
-                            ✅ Вы в этой организации
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+                            Вы приняты в учебный центр {{ org.name }}
                         </button>
                     {% elif user_application and user_application.status == 'pending' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.pending_review">
-                            ⏳ Заявка отправлена
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.pending_review" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+                            Заявка на рассмотрении в центре {{ org.name }}
                         </button>
                     {% elif user_application and user_application.status == 'rejected' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.rejected_from">
-                            ❌ Заявка отклонена
+                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+                            Заявка в учебный центр {{ org.name }} отклонена
                         </button>
                     {% else %}
                         <button id="join-org-btn" class="btn btn-primary btn-lg" onclick="showJoinForm()">
-                            ➕ Вступить в организацию
+                            <span data-i18n="org.join_btn">➕ Вступить в учебный центр</span>
                         </button>
                         {# Форма заявки #}
                         <div id="join-form-block" style="display:none; margin-top:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:540px;">
                             <div class="form-group" style="margin-bottom:14px;">
                                 <label for="cover-letter-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Сопроводительное письмо <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
-                                <textarea id="cover-letter-input" class="form-input form-textarea" maxlength="500" rows="4" placeholder="Расскажите о себе, своём опыте и почему хотите вступить в организацию..."></textarea>
+                                <textarea id="cover-letter-input" class="form-input form-textarea" maxlength="500" rows="4" 
+                                          placeholder="Расскажите о себе, своём опыте и почему хотите вступить в учебный центр..."
+                                          data-i18n="org.cover_letter_ph" data-i18n-prop="placeholder"></textarea>
                                 <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;"><span id="letter-counter">0</span>/500</div>
                             </div>
                             <div class="form-group" style="margin-bottom:18px;">
@@ -96,11 +98,15 @@
                 <div style="margin-top: 24px;">
                     {% if user_student_membership %}
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
-                            ✅ Вы студент этой организации
+                            {% if user_student_membership.status == 'accepted' %}
+                                <span data-i18n="student.accepted_to_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Вы приняты в учебный центр {{ org.name }}</span>
+                            {% else %}
+                                <span data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка на рассмотрении в центре {{ org.name }}</span>
+                            {% endif %}
                         </button>
                     {% else %}
                         <button id="join-student-btn" class="btn btn-primary btn-lg" onclick="joinOrganization({{ org.id }})">
-                            🎓 Вступить в организацию
+                            <span data-i18n="org.join_btn">🎓 Вступить в учебный центр</span>
                         </button>
                     {% endif %}
                 </div>
@@ -145,7 +151,7 @@
         {% else %}
         <div class="empty-state">
             <span class="empty-icon">👨‍🏫</span>
-            <p>В организации пока нет преподавателей.</p>
+            <p data-i18n="org.no_teachers">В учебном центре пока нет преподавателей.</p>
         </div>
         {% endif %}
     </section>
@@ -153,9 +159,7 @@
     {# ══════════════════ КУРСЫ ══════════════════ #}
     <section class="org-pub-section">
         <div class="org-pub-section-head">
-            <h2 class="org-pub-section-title">📚 Курсы организации
-                <span class="org-pub-count">{{ courses | length }}</span>
-            </h2>
+            <h2 class="org-pub-section-title" data-i18n="org.courses_title">📚 Курсы учебного центра <span style="font-weight: 400; color: var(--text-muted); font-size: 0.9rem;">({{ courses|length }})</span></h2>
         </div>
 
         {% if courses %}
@@ -229,15 +233,15 @@ async function submitJoin(orgId) {
         if (r.ok && data.success) {
             document.getElementById('join-form-block').style.display = 'none';
             const wrap = document.getElementById('join-org-btn').parentElement;
-            wrap.innerHTML = '<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ Заявка отправлена</button>';
-            showToast('Заявка успешно отправлена!', 'success');
+            wrap.innerHTML = `<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ ${t('org.pending_review', {name: '{{ org.name|escape }}'})}</button>`;
+            showToast(t('org.join_success') || 'Заявка успешно отправлена!', 'success');
         } else if (r.status === 400) {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Отправить заявку';
+            submitBtn.textContent = t('org.join_send') || 'Отправить заявку';
             showToast(data.detail || 'Ошибка при отправке заявки.', 'error');
         } else {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Отправить заявку';
+            submitBtn.textContent = t('org.join_send') || 'Отправить заявку';
             showToast('Произошла ошибка. Попробуйте ещё раз.', 'error');
         }
     } catch {
@@ -250,7 +254,7 @@ async function submitJoin(orgId) {
 async function joinOrganization(orgId) {
     const btn = document.getElementById('join-student-btn');
     btn.disabled = true;
-    btn.textContent = '⏳ Отправка...';
+    btn.textContent = '⏳ ' + (t('action.loading') || 'Отправка...');
 
     try {
         const res = await fetch(`/organization/${orgId}/student/join`, {
@@ -260,9 +264,8 @@ async function joinOrganization(orgId) {
         const data = await res.json();
 
         if (data.already_in_org) {
-            const confirm = window.confirm(
-                `Вы уже состоите в организации "${data.org_name}".\nХотите покинуть её и вступить в новую?`
-            );
+            const confirmMsg = t('org.confirm_switch_hint', {name: data.org_name}) || `Вы уже состоите в учебном центре "${data.org_name}".\nХотите покинуть его и вступить в новый?`;
+            const confirm = window.confirm(confirmMsg);
             if (confirm) {
                 const res2 = await fetch(`/organization/${orgId}/student/join?force=true`, {
                     method: 'POST',
@@ -270,22 +273,30 @@ async function joinOrganization(orgId) {
                 });
                 const data2 = await res2.json();
                 if (data2.success) {
-                    btn.textContent = '✅ Заявка отправлена';
+                    if (data2.auto_accepted) {
+                        btn.textContent = `✅ ${t('student.accepted_to_center', {name: '{{ org.name|escape }}'})}`;
+                    } else {
+                        btn.textContent = `⏳ ${t('org.join_sent')}`;
+                    }
                     return;
                 }
             }
             btn.disabled = false;
-            btn.textContent = 'Вступить в организацию';
+            btn.textContent = t('org.join_btn') || 'Вступить в учебный центр';
         } else if (data.success) {
-            btn.textContent = '⏳ Заявка отправлена';
+            if (data.auto_accepted) {
+                btn.textContent = `✅ ${t('student.accepted_to_center', {name: '{{ org.name|escape }}'})}`;
+            } else {
+                btn.textContent = `⏳ ${t('org.join_sent')}`;
+            }
         } else {
             btn.disabled = false;
-            btn.textContent = 'Вступить в организацию';
+            btn.textContent = t('org.join_btn') || 'Вступить в учебный центр';
         }
     } catch (err) {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = 'Вступить в организацию';
+        btn.textContent = t('org.join_btn') || 'Вступить в учебный центр';
     }
 }
 </script>

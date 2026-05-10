@@ -20,7 +20,7 @@
             <tr>
                 <th>Имя</th>
                 <th>Email</th>
-                <th>Организация</th>
+                <th data-i18n="admin.org.name">Учебный центр</th>
                 <th>Дата</th>
                 <th>Документ</th>
                 <th>Действия</th>
@@ -87,7 +87,7 @@
             <tr>
                 <th>Имя</th>
                 <th>Email</th>
-                <th>Организация</th>
+                <th data-i18n="admin.org.name">Учебный центр</th>
                 <th>Дата регистрации</th>
                 <th>Действия</th>
             </tr>
@@ -118,8 +118,8 @@
                 <td>
                     <div class="admin-actions">
                         {% if org_link %}
-                        <form action="/admin/teachers/{{ t.id }}/remove-from-org" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, 'Удалить из организации?')">
-                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Удалить из орг.</button>
+                        <form action="/admin/teachers/{{ t.id }}/remove-from-org" method="POST" style="display:inline;" onsubmit="confirmAndSubmit(event, t('admin.teachers.confirm_remove_org') || 'Удалить из учебного центра?')">
+                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" data-i18n="admin.teachers.remove_org">Удалить из центра</button>
                         </form>
                         {% endif %}
                     </div>

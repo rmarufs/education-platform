@@ -10,18 +10,18 @@
         <div class="dashboard-header">
             <div>
                 <h1 data-i18n="org.settings">⚙️ Настройки профиля</h1>
-                <p data-i18n="org.public_profile">Публичная информация и контактные данные организации</p>
+                <p data-i18n="org.public_profile_hint">Публичная информация и контактные данные учебного центра</p>
             </div>
         </div>
 
         {% if request.query_params.get('success') == '1' %}
-        <div class="alert alert-success">✅ Профиль успешно обновлён!</div>
+        <div class="alert alert-success" data-i18n="org.profile_updated">✅ Профиль успешно обновлён!</div>
         {% endif %}
 
         <div class="org-panel" style="max-width: 680px;">
             <form action="/organization/profile/update" method="POST">
                 <div class="form-group">
-                    <label for="name">🏢 <span data-i18n="org.name_label">Название организации</span> <span style="color: var(--danger)">*</span></label>
+                    <label for="name">🏢 <span data-i18n="org.name_label">Название учебного центра</span> <span style="color: var(--danger)">*</span></label>
                     <input type="text" id="name" name="name" class="form-input"
                            value="{{ org.name if org else '' }}" required
                            placeholder="Название вашей организации">
@@ -35,16 +35,31 @@
 
                 <div class="form-group">
                     <label for="website">🌐 Сайт</label>
-                    <input type="url" id="website" name="website" class="form-input"
+                    <input type="text" id="website" name="website" class="form-input"
                            value="{{ org.website if org else '' }}" placeholder="https://example.com">
                 </div>
 
                 <div class="form-group">
-                    <label for="description">📝 <span data-i18n="org.description_label">Описание организации</span></label>
+                    <label for="description">📝 <span data-i18n="org.description_label">Описание учебного центра</span></label>
                     <textarea id="description" name="description" class="form-input form-textarea"
                                rows="5" style="resize: vertical;"
-                               placeholder="Расскажите об организации, её миссии и преподавателях...">{{ org.description if org else '' }}</textarea>
-                    <p class="form-hint">Это описание будет показано на публичной странице организации</p>
+                               placeholder="Расскажите об учебном центре, его миссии и преподавателях..."
+                               data-i18n="org.description_ph" data-i18n-prop="placeholder">{{ org.description if org else '' }}</textarea>
+                    <p class="form-hint" data-i18n="org.description_hint">Это описание будет показано на публичной странице учебного центра</p>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="org.join_type">Тип вступления</label>
+                    <div class="toggle-group" style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-direction: column;">
+                        <label class="toggle-option" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="radio" name="is_open" value="true" {% if org.is_open %}checked{% endif %}>
+                            <span data-i18n="org.type_open">🔓 Открытый — любой ученик может вступить сразу</span>
+                        </label>
+                        <label class="toggle-option" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="radio" name="is_open" value="false" {% if not org.is_open %}checked{% endif %}>
+                            <span data-i18n="org.type_closed">🔒 Закрытый — вступление только после одобрения</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">

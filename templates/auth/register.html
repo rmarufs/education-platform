@@ -120,24 +120,24 @@
 
                 <!-- Выбор организации при регистрации -->
                 <div class="form-group">
-                    <label for="org_id">🏢 <span data-i18n="org.label">Организация</span> <span data-i18n="org.optional">(необязательно)</span></label>
-                    <select id="org_id" name="org_id" class="form-input">
-                        <option value="" data-i18n="org.independent">— Без организации (независимый преподаватель) —</option>
+                    <label for="teacher_org_id">🏢 <span data-i18n="org.label">Учебный центр</span> <span data-i18n="org.optional">(необязательно)</span></label>
+                    <select id="teacher_org_id" name="organization_id" class="form-input">
+                        <option value="" data-i18n="org.independent">— Без учебного центра (независимый преподаватель) —</option>
                     </select>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="org.join_hint">
-                        Если вы преподаватель образовательного центра, выберите его из списка. Ваша заявка поступит к организации.
+                    <p class="form-hint" data-i18n="org.join_hint">
+                        Если вы преподаватель учебного центра, выберите его из списка.
                     </p>
                 </div>
             </div>
 
             <!-- Дополнительные поля для студентов -->
             <div id="student-extra-fields" style="display:none;">
-                <div class="form-group">
-                    <label for="student_org_id">🏢 <span>Вступить в организацию</span> <span style="font-weight:400;color:var(--text-muted);">(необязательно)</span></label>
-                    <select id="student_org_id" name="student_org_id" class="form-input">
-                        <option value="">— Без организации —</option>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="student_org_id">🏢 <span data-i18n="org.join_btn">Вступить в учебный центр</span> <span style="font-weight:400;color:var(--text-muted);" data-i18n="org.optional">(необязательно)</span></label>
+                    <select id="student_org_id" name="organization_id" class="form-input">
+                        <option value="" data-i18n="org.independent">— Без учебного центра —</option>
                     </select>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;">
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="org.student_join_hint">
                         Если вы учитесь в образовательном центре, выберите его из списка и сразу станете его студентом.
                     </p>
                 </div>
@@ -146,13 +146,15 @@
             <!-- Дополнительные поля для организаций -->
             <div id="organization-extra-fields" style="display:none;">
                 <div class="form-group">
-                    <label data-i18n="org.name_label">Название организации</label>
+                    <label data-i18n="org.name_label">Название учебного центра</label>
                     <input
                         type="text"
                         id="org_name"
                         name="org_name"
                         class="form-input"
                         placeholder="Например, IT Академия"
+                        data-i18n="org.name_ph"
+                        data-i18n-prop="placeholder"
                     />
                     <span class="form-error" id="org-name-error"></span>
                 </div>
@@ -170,13 +172,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label data-i18n="org.description_label">Описание организации</label>
+                    <label data-i18n="org.description_label">Описание учебного центра</label>
                     <textarea
                         id="org_description"
                         name="org_description"
                         class="form-input form-textarea"
-                        rows="3"
-                        placeholder="Опишите вашу организацию, направление деятельности..."
+                        rows="4"
+                        placeholder="Опишите ваш учебный центр, направление деятельности..."
+                        data-i18n="org.description_ph"
+                        data-i18n-prop="placeholder"
                         style="resize:vertical;"
                     ></textarea>
                     <span class="form-error" id="org-desc-error"></span>
@@ -209,8 +213,8 @@ function toggleRoleFields() {
     if (teacherRadio.checked) {
         teacherFields.style.display = 'block';
         studentFields.style.display = 'none';
-        // Загружаем список организаций при первом открытии
-        loadOrganizations('org_id');
+        // Загружаем список учебных центров при первом открытии
+        loadOrganizations('teacher_org_id');
     } else {
         teacherFields.style.display = 'none';
     }

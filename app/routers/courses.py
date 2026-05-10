@@ -654,7 +654,7 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
             OrganizationTeacher.status == "accepted"
         ).first()
         if not link:
-            raise HTTPException(status_code=403, detail="Этот курс не принадлежит преподавателю из вашей организации")
+            raise HTTPException(status_code=403, detail="Этот курс не принадлежит преподавателю из вашего учебного центра")
 
     categories = db.query(Category).order_by(Category.name).all()
 
@@ -744,7 +744,7 @@ def edit_course(
             OrganizationTeacher.status == "accepted"
         ).first()
         if not link:
-            raise HTTPException(status_code=403, detail="Курс не принадлежит вашей организации")
+            raise HTTPException(status_code=403, detail="Курс не принадлежит вашему учебному центру")
 
     course.title = title
     course.description = description or None

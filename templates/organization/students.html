@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Ученики — {{ org.name }} — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "students" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1><span style="font-size:1.5rem;margin-right:8px;">🎓</span><span data-i18n="org.manage_students">Ученики</span></h1>
+                <p data-i18n="org.students_subtitle">Управление учениками вашего учебного центра</p>
+            </div>
+        </div>
+
+        {% if pending_students %}
+        <section class="org-panel" style="margin-bottom: 24px;">
+            <h2 class="org-panel-title" style="display: flex; align-items: center; gap: 8px;">
+                <span data-i18n="org.incoming_students">📥 Входящие заявки учеников</span>
+                <span class="org-count-badge">{{ pending_students|length }}</span>
+            </h2>
+            <div class="org-pending-list">
+                {% for s_link in pending_students %}
+                <div class="org-pending-card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="org-pending-info">
+                        <div class="org-staff-name">{{ s_link.student.name }}</div>
+                        <div class="org-staff-email">{{ s_link.student.email }}</div>
+                        <div class="org-pending-date" data-i18n="org.request_date" data-i18n-params='{"date": "{{ s_link.created_at.strftime("%d.%m.%Y") }}"}'>Заявка подана: {{ s_link.created_at.strftime("%d.%m.%Y") }}</div>
+                    </div>
+                    <div class="org-pending-actions" style="display:flex; gap:10px;">
+                        <form action="/organization/student/{{ s_link.id }}/accept" method="POST" style="margin:0;">
+                            <button type="submit" class="btn btn-primary btn-sm" data-i18n="org.accept_btn">✅ Принять</button>
+                        </form>
+                        <form action="/organization/student/{{ s_link.id }}/reject" method="POST" style="margin:0;">
+                            <button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" data-i18n="org.reject_btn">Отклонить</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="org-panel">
+            <h2 class="org-panel-title">
+                <span data-i18n="org.active_students">🎓 Ученики учебного центра</span>
+                <span style="font-weight:400; color: var(--text-muted); font-size: 0.9rem;">({{ org_students|length }})</span>
+            </h2>
+
+            {% if org_students %}
+            <div class="org-staff-grid">
+                {% for link in org_students %}
+                <div class="org-staff-card fade-in" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
+                    <div class="org-staff-top">
+                        <div class="org-teacher-avatar org-teacher-avatar-lg">
+                            {% if link.student.avatar_url %}
+                                <img src="{{ link.student.avatar_url }}" alt="{{ link.student.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            {% else %}
+                                {{ link.student.name[0] | upper }}
+                            {% endif %}
+                        </div>
+                        <div class="org-staff-info">
+                            <span class="org-staff-name">{{ link.student.name }}</span>
+                            <span class="org-staff-email">{{ link.student.email }}</span>
+                        </div>
+                        <span class="org-staff-badge" style="background:var(--success-soft);color:var(--success);" data-i18n="role.student">Студент</span>
+                    </div>
+
+                    <div class="org-staff-joined" data-i18n="org.joined_date" data-i18n-params='{"date": "{{ link.created_at.strftime("%d.%m.%Y") }}"}'>В учебном центре с {{ link.created_at.strftime("%d.%m.%Y") }}</div>
+
+                    <div class="org-staff-actions">
+                        <form action="/organization/student/{{ link.student_id }}/remove" method="POST" style="margin: 0;"
+                              onsubmit="confirmAndSubmit(event, t('org.remove_student_confirm') || 'Удалить ученика из центра?')">
+                            <button type="submit" class="btn btn-sm" style="color:var(--danger);" data-i18n="org.remove_student">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="margin-top: 12px;">
+                <span class="empty-icon">🎓</span>
+                <p data-i18n="org.no_students">В вашем учебном центре пока нет учеников.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

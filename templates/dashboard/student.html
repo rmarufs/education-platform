@@ -19,10 +19,10 @@
                 <span class="link-icon">📚</span>
                 <span data-i18n="nav.courses">Курсы</span>
             </a>
-            {% if student_org %}
-            <a href="/organization/{{ student_org.id }}" class="sidebar-link">
+            {% if student_org_link and student_org_link.status == 'accepted' %}
+            <a href="/organization/{{ student_org_link.organization.id }}" class="sidebar-link">
                 <span class="link-icon">🏢</span>
-                <span>Моя организация</span>
+                <span data-i18n="student.my_org">Мой учебный центр</span>
             </a>
             {% endif %}
             <a href="/logout" class="sidebar-link" data-logout-link>
@@ -46,32 +46,48 @@
 
         <!-- Секция: Моя организация -->
         <section style="margin-bottom: 32px;">
-            <div class="section-label" data-i18n="student.my_org">🏢 Моя организация</div>
-            {% if student_org %}
+            <div class="section-label" data-i18n="student.my_org">🏢 Мой учебный центр</div>
+            {% if student_org_link and student_org_link.status == 'accepted' %}
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <div style="font-size:2rem;">
-                    {% if student_org.logo_url %}
-                        <img src="{{ student_org.logo_url }}" alt="{{ student_org.name }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+                    {% if student_org_link.organization.logo_url %}
+                        <img src="{{ student_org_link.organization.logo_url }}" alt="{{ student_org_link.organization.name }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
                     {% else %}
                         🏢
                     {% endif %}
                 </div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-weight:700;font-size:1rem;margin-bottom:2px;">{{ student_org.name }}</div>
-                    {% if student_org.description %}
-                    <div style="font-size:.85rem;color:var(--text-muted);">{{ student_org.description | striptags | truncate(120) }}</div>
+                    <div style="font-weight:700;font-size:1rem;margin-bottom:2px;"><a href="/organization/{{ student_org_link.organization.id }}" style="color:var(--text); text-decoration:none;">{{ student_org_link.organization.name }}</a></div>
+                    {% if student_org_link.organization.description %}
+                    <div style="font-size:.85rem;color:var(--text-muted);">{{ student_org_link.organization.description | striptags | truncate(120) }}</div>
                     {% endif %}
                 </div>
-                <a href="/organization/{{ student_org.id }}" class="btn btn-outline btn-sm" data-i18n="org.open_btn">👁 Профиль</a>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="/organization/{{ student_org_link.organization.id }}" class="btn btn-outline btn-sm" data-i18n="org.open_btn">👁 Профиль</a>
+                    <form action="/organization/student/leave" method="POST" style="margin: 0;" onsubmit="return confirm(t('confirm.leave_center') || 'Вы уверены, что хотите покинуть этот учебный центр?');">
+                        <button type="submit" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" data-i18n="student.leave_center">Покинуть центр</button>
+                    </form>
+                </div>
+            </div>
+            {% elif student_org_link and student_org_link.status == 'pending' %}
+            <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="font-size:2rem;">⏳</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;" data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ student_org_link.organization.name|escape }}"}'>Заявка на рассмотрении в центре {{ student_org_link.organization.name }}</div>
+                    <div style="font-size:.85rem;color:var(--text-muted);" data-i18n="student.awaiting_approval">Пожалуйста, ожидайте одобрения заявки администратором центра.</div>
+                </div>
+                <form action="/organization/student/leave" method="POST" style="margin: 0;">
+                    <button type="submit" class="btn btn-outline btn-sm" data-i18n="student.cancel_request">Отменить заявку</button>
+                </form>
             </div>
             {% else %}
             <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <div style="font-size:2rem;">💭</div>
                 <div style="flex:1;min-width:0;">
-                    <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;" data-i18n="student.no_org">Вы не состоите ни в одной организации</div>
-                    <div style="font-size:.85rem;color:var(--text-muted);" data-i18n="student.no_org_desc">Вступите в образовательный центр, чтобы получить доступ к его курсам</div>
+                    <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;" data-i18n="student.no_org">Вы не состоите ни в одном учебном центре</div>
+                    <div style="font-size:.85rem;color:var(--text-muted);" data-i18n="student.no_org_desc">Вступите в учебный центр, чтобы получить доступ к его курсам</div>
                 </div>
-                <a href="/search" class="btn btn-primary btn-sm"><span data-i18n="student.find_org">🔍 Найти организацию</span></a>
+                <a href="/search" class="btn btn-primary btn-sm"><span data-i18n="student.find_org">🔍 Найти учебный центр</span></a>
             </div>
             {% endif %}
         </section>
