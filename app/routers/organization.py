@@ -416,6 +416,7 @@ def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)
 
     if link:
         link.status = "accepted"
+        link.last_joined_at = datetime.utcnow()
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -435,7 +436,8 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
     ).first()
 
     if link:
-        db.delete(link)
+        link.status = "removed"
+        link.was_removed_notification = False # Это отказ в заявке, а не удаление действующего участника
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -460,20 +462,23 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    # Если уже состоит в этой организации
+    # Ищем существующую запись (любого статуса: accepted, pending, removed)
     existing = db.query(OrganizationStudent).filter(
         OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == user.id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
+        OrganizationStudent.student_id == user.id
     ).first()
-    if existing:
+
+    # Если уже состоит или заявка на рассмотрении
+    if existing and existing.status in ["accepted", "pending"]:
         return JSONResponse({"success": True, "already": True})
 
-    # Если состоит в другой — проверяем force
+    # Если состоит в другой организации (активно) — проверяем force
     old_link = db.query(OrganizationStudent).filter(
         OrganizationStudent.student_id == user.id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
+        OrganizationStudent.status.in_(["accepted", "pending"]),
+        OrganizationStudent.organization_id != org.id
     ).first()
+
     if old_link:
         if not force:
             old_org = db.query(Organization).filter(Organization.id == old_link.organization_id).first()
@@ -482,26 +487,31 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
                 "org_name": old_org.name if old_org else "Неизвестно"
             })
         else:
+            # Если форсируем вступление в новую — удаляем старую активную связь
             db.delete(old_link)
 
-    if org.is_open:
-        org_student = OrganizationStudent(
-            organization_id=org.id,
-            student_id=user.id,
-            status="accepted"
-        )
-        db.add(org_student)
-        db.commit()
-        return JSONResponse({"success": True, "auto_accepted": True})
+    target_status = "accepted" if org.is_open else "pending"
+
+    if existing:
+        # Переиспользуем существующую запись (например, со статусом 'removed')
+        existing.status = target_status
+        existing.was_removed_notification = False
+        # Если вступление автоматическое, обновляем дату последнего вступления
+        if target_status == "accepted":
+            existing.last_joined_at = datetime.utcnow()
     else:
+        # Создаем новую только если записи совсем нет
         org_student = OrganizationStudent(
             organization_id=org.id,
             student_id=user.id,
-            status="pending"
+            status=target_status,
+            was_removed_notification=False,
+            last_joined_at=datetime.utcnow() if target_status == "accepted" else None
         )
         db.add(org_student)
-        db.commit()
-        return JSONResponse({"success": True, "auto_accepted": False})
+
+    db.commit()
+    return JSONResponse({"success": True, "auto_accepted": org.is_open})
 
 
 # ── Студент покидает организацию ─────────────────────────────────────────────
@@ -518,7 +528,8 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if link:
-        db.delete(link)
+        link.status = "removed"
+        link.was_removed_notification = False # Студент уходит сам, уведомление не нужно
         db.commit()
 
     return RedirectResponse("/dashboard/student", status_code=302)
