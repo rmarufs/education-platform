@@ -77,6 +77,32 @@ async def upload_avatar(
     return JSONResponse({"success": True, "url": avatar_url})
 
 
+@router.delete("/profile/avatar")
+async def delete_avatar(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    uid = request.session.get("user_id")
+    if not uid:
+        return JSONResponse({"success": False, "error": "Unauthorized"}, status_code=401)
+
+    user = db.query(User).filter(User.id == uid).first()
+    if not user:
+        return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
+
+    # Удаляем из Cloudinary (public_id совпадает с тем, что использовали при загрузке)
+    try:
+        import cloudinary.uploader as _uploader
+        _uploader.destroy(f"avatars/user_{uid}", invalidate=True, resource_type="image")
+    except Exception:
+        pass  # Не блокируем удаление из БД, если Cloudinary недоступен
+
+    user.avatar_url = None
+    db.commit()
+
+    return JSONResponse({"success": True})
+
+
 
 @router.get("/profile", response_class=HTMLResponse)
 def profile(request: Request, db: Session = Depends(get_db)):

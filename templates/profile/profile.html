@@ -8,19 +8,25 @@
 
   <!-- Шапка профиля -->
   <div class="profile-header fade-in">
-    <!-- Аватар с возможностью загрузки -->
-    <div class="avatar-upload-wrapper" id="avatar-wrapper" onclick="document.getElementById('avatar-file-input').click()" title="Изменить фото">
+    <!-- Аватар с меню -->
+    <div class="avatar-upload-wrapper" id="avatar-wrapper">
       {% if user.avatar_url %}
-        <img src="{{ user.avatar_url }}" id="avatar-img"
-             class="avatar avatar-xl" alt="{{ user.name }}">
+        <img src="{{ user.avatar_url }}" class="avatar avatar-xl" id="avatar-img" alt="{{ user.name }}">
       {% else %}
-        <div id="avatar-img" class="avatar avatar-xl avatar-placeholder">{{ user.name[0]|upper }}</div>
+        <div class="avatar avatar-xl avatar-placeholder" id="avatar-placeholder">{{ user.name[0]|upper }}</div>
       {% endif %}
       <div class="avatar-upload-overlay">📷</div>
       <div class="avatar-spinner">⏳</div>
     </div>
-    <input type="file" id="avatar-file-input" accept=".jpg,.jpeg,.png,.webp,image/*"
-           style="display:none;" onchange="uploadAvatar(this)">
+
+    <!-- Дропдаун меню -->
+    <div id="avatar-menu" style="display:none;">
+      <button id="avatar-change-btn" type="button">📷 Изменить фото</button>
+      {% if user.avatar_url %}
+      <button id="avatar-delete-btn" type="button" style="color:var(--danger);!important">🗑 Удалить фото</button>
+      {% endif %}
+    </div>
+    <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none;">
 
     <div class="profile-info">
       <h1>{{ user.name }}</h1>
@@ -130,33 +136,123 @@
 
 {% block scripts %}
 <script>
-async function uploadAvatar(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const wrapper = document.getElementById('avatar-wrapper');
-  wrapper.classList.add('loading');
-  const formData = new FormData();
-  formData.append('file', file);
-  try {
-    const res = await fetch('/profile/avatar', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-      const old = document.getElementById('avatar-img');
-      const img = document.createElement('img');
-      img.src = data.url;
-      img.id = 'avatar-img';
-      img.className = 'avatar avatar-xl';
-      img.alt = old.alt || '';
-      old.replaceWith(img);
-    } else {
-      alert(data.error || 'Ошибка загрузки');
+(function () {
+  const wrapper  = document.getElementById('avatar-wrapper');
+  const menu     = document.getElementById('avatar-menu');
+  const fileInput = document.getElementById('avatar-input');
+  const nameChar = {{ user.name[0]|upper|tojson }};
+
+  // Клик на аватар — показать/скрыть меню
+  wrapper.addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Кнопка «Изменить»
+  const changeBtn = document.getElementById('avatar-change-btn');
+  if (changeBtn) changeBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu.style.display = 'none';
+    fileInput.click();
+  });
+
+  // Кнопка «Удалить»
+  const deleteBtn = document.getElementById('avatar-delete-btn');
+  if (deleteBtn) deleteBtn.addEventListener('click', async function (e) {
+    e.stopPropagation();
+    menu.style.display = 'none';
+    wrapper.classList.add('loading');
+    try {
+      const res  = await fetch('/profile/avatar', { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        const img = document.getElementById('avatar-img');
+        if (img) {
+          const ph = document.createElement('div');
+          ph.className = 'avatar avatar-xl avatar-placeholder';
+          ph.id = 'avatar-placeholder';
+          ph.textContent = nameChar;
+          img.replaceWith(ph);
+        }
+        // Убрать кнопку «Удалить» из меню
+        deleteBtn.remove();
+      } else {
+        alert(data.error || 'Ошибка удаления');
+      }
+    } catch {
+      alert('Ошибка сети');
+    } finally {
+      wrapper.classList.remove('loading');
     }
-  } catch {
-    alert('Ошибка сети');
-  } finally {
-    wrapper.classList.remove('loading');
-    input.value = '';
-  }
-}
+  });
+
+  // Загрузка нового фото
+  fileInput.addEventListener('change', async function () {
+    if (!this.files[0]) return;
+    wrapper.classList.add('loading');
+    const formData = new FormData();
+    formData.append('file', this.files[0]);
+    try {
+      const res  = await fetch('/profile/avatar', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        const existing = document.getElementById('avatar-img') ||
+                         document.getElementById('avatar-placeholder');
+        const img = document.createElement('img');
+        img.src = data.url + '?t=' + Date.now();
+        img.id  = 'avatar-img';
+        img.className = 'avatar avatar-xl';
+        img.alt = '';
+        existing.replaceWith(img);
+
+        // Если кнопки «Удалить» ещё не было, добавить
+        if (!document.getElementById('avatar-delete-btn')) {
+          const btn = document.createElement('button');
+          btn.id = 'avatar-delete-btn';
+          btn.type = 'button';
+          btn.style.color = 'var(--danger)';
+          btn.textContent = '🗑 Удалить фото';
+          btn.addEventListener('click', function (e) {
+            document.getElementById('avatar-delete-btn').dispatchEvent(new Event('click', {bubbles:false}));
+          });
+          // Добавляем кнопку в меню и навешиваем хендлер
+          menu.appendChild(btn);
+          btn.addEventListener('click', async function (e) {
+            e.stopPropagation();
+            menu.style.display = 'none';
+            wrapper.classList.add('loading');
+            try {
+              const r = await fetch('/profile/avatar', { method: 'DELETE' });
+              const d = await r.json();
+              if (d.success) {
+                const i = document.getElementById('avatar-img');
+                if (i) {
+                  const ph = document.createElement('div');
+                  ph.className = 'avatar avatar-xl avatar-placeholder';
+                  ph.id = 'avatar-placeholder';
+                  ph.textContent = nameChar;
+                  i.replaceWith(ph);
+                }
+                btn.remove();
+              }
+            } catch {} finally { wrapper.classList.remove('loading'); }
+          });
+        }
+      } else {
+        alert(data.error || 'Ошибка загрузки');
+      }
+    } catch {
+      alert('Ошибка сети');
+    } finally {
+      wrapper.classList.remove('loading');
+      this.value = '';
+    }
+  });
+
+  // Закрыть меню при клике вне
+  document.addEventListener('click', function () {
+    if (menu) menu.style.display = 'none';
+  });
+})();
 </script>
 {% endblock %}

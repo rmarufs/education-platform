@@ -5496,3 +5496,40 @@ html[data-theme="dark"] .org-staff-badge {
 }
 .avatar-upload-wrapper.loading .avatar-upload-overlay { display: none; }
 .avatar-upload-wrapper.loading .avatar-spinner { display: flex; }
+
+/* ── Avatar Dropdown Menu ─────────────────────────────────────────────────── */
+.avatar-upload-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+#avatar-menu {
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    padding: 6px;
+    z-index: 100;
+    min-width: 160px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+#avatar-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-primary, #111);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: background .15s;
+}
+#avatar-menu button:hover {
+    background: var(--surface-soft, #f3f4f6);
+}
