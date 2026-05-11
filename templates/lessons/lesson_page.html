@@ -154,15 +154,6 @@
       {% endif %}
     </div>
     
-    <!-- Нет видео -->
-    {% else %}
-    <div class="video-placeholder">
-      <div class="video-placeholder-inner">
-        <span style="font-size:3rem;">🎬</span>
-        <p style="font-weight:600;font-size:1.1rem;margin:8px 0 4px;" data-i18n="lesson.video_soon">Видео скоро появится</p>
-        <p style="color:var(--text-muted);font-size:0.85rem;" data-i18n="lesson.video_pending">Преподаватель ещё не добавил видео к этому уроку</p>
-      </div>
-    </div>
     {% endif %}
 
     <!-- Заголовок и описание -->
@@ -1235,4 +1226,3 @@ async function submitReview(teacherId, courseId) {
 </script>
 <script src="/static/js/video_player.js?v=1"></script>
 {% endblock %}
-

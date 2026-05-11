@@ -738,8 +738,9 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
     ).first()
+    can_preview_as_owner = bool(user.is_teacher and group.teacher_id == user.id)
 
-    if not membership:
+    if not membership and not can_preview_as_owner:
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
 
     lesson = db.query(GroupLesson).options(

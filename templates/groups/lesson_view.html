@@ -60,6 +60,17 @@
 
   <!-- Основной контент -->
   <main class="lesson-content">
+    {% set lesson_image = lesson.cover_url %}
+    {% if (lesson_image is none or lesson_image|string|trim == '') and (lesson|attr('image_url')) %}
+      {% set lesson_image = lesson|attr('image_url') %}
+    {% endif %}
+    {% if (lesson_image is none or lesson_image|string|trim == '') and (lesson|attr('image')) %}
+      {% set lesson_image = lesson|attr('image') %}
+    {% endif %}
+    {% set lesson_media = lesson|attr('media') %}
+    {% if (lesson_image is none or lesson_image|string|trim == '') and lesson_media and lesson_media.image %}
+      {% set lesson_image = lesson_media.image %}
+    {% endif %}
 
     {% if lesson.video_url %}
     <!-- Есть видео — показываем плеер -->
@@ -147,25 +158,11 @@
       {% endif %}
     </div>
 
-    {% if lesson.cover_url %}
-    <!-- Есть и видео и фото — фото показываем под видео -->
-    <div class="lesson-cover" style="margin-top:16px;">
-        <img src="{{ lesson.cover_url }}"
-             style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
-    </div>
-    {% endif %}
-
-    {% elif lesson.cover_url %}
+    {% elif lesson_image is not none and lesson_image|string|trim != '' %}
     <!-- Нет видео но есть фото — показываем фото на месте плеера -->
     <div class="lesson-cover-main">
-        <img src="{{ lesson.cover_url }}"
+        <img src="{{ lesson_image }}"
              style="width:100%;max-height:480px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
-    </div>
-
-    {% else %}
-    <!-- Нет ни видео ни фото — показываем заглушку -->
-    <div class="lesson-no-media" style="background:var(--surface-soft);border-radius:12px;padding:48px;text-align:center;margin-bottom:16px;">
-        <p style="color:var(--text-muted);" data-i18n="lesson.video_soon">Материал скоро появится</p>
     </div>
     {% endif %}
 
