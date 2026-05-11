@@ -59,7 +59,6 @@ def _create_performance_indexes():
             ("idx_progress_lesson_id", "progress", "lesson_id"),
             ("idx_reviews_student_id", "reviews", "student_id"),
             ("idx_comments_lesson_id", "comments", "lesson_id"),
-            ("idx_comments_author_id", "comments", "author_id"),
         ]
         
         for index_name, table_name, column_name in indexes_to_create:
