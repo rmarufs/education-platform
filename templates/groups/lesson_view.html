@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — Фурузон{% endblock %}
+
+{% block content %}
+<div class="lesson-layout" id="lesson-layout">
+  <button type="button"
+          class="lesson-sidebar-toggle"
+          id="lesson-sidebar-toggle"
+          aria-controls="lesson-sidebar"
+          aria-expanded="false">
+    <span class="lesson-sidebar-toggle-icon" aria-hidden="true">
+      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-menu">☰</span>
+      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-close">✕</span>
+    </span>
+    <span class="lesson-sidebar-toggle-text" data-i18n="lesson.sidebar_open">Уроки</span>
+  </button>
+
+  <div class="lesson-sidebar-overlay" id="lesson-sidebar-overlay"></div>
+
+  <!-- Боковая навигация по урокам -->
+  <aside class="lesson-sidebar" id="lesson-sidebar">
+    <div class="lesson-sidebar-head">
+      <div class="lesson-sidebar-course">
+        {% if group.avatar_url %}
+          <img src="{{ group.avatar_url }}" alt="" class="course-cover-sidebar-sm" style="border-radius: 8px;">
+        {% else %}
+          <div class="course-cover-sidebar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1.2rem;">{{ group.name[0]|upper }}</div>
+        {% endif %}
+        <div class="lesson-sidebar-title">
+          <a href="/groups/{{ group.id }}/view" data-i18n="group.back">← К группе</a>
+        </div>
+      </div>
+      <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
+    </div>
+
+    <div class="lesson-sidebar-body">
+      <div class="lesson-module-group is-expanded">
+        <button type="button" class="lesson-module-trigger" aria-expanded="true" style="pointer-events: none;">
+          <span class="lesson-module-trigger-main">
+            <span class="lesson-module-meta">
+              <span class="lesson-module-label" data-i18n="group.lessons">Уроки</span>
+              <span class="lesson-module-count">{{ group.lessons|length }}</span>
+            </span>
+          </span>
+        </button>
+        <div class="lesson-module-panel" style="height: auto;">
+          <div class="lesson-module-panel-inner">
+            {% for l in group.lessons|sort(attribute='order') %}
+            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
+               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
+              <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
+              <span class="lesson-nav-title">{{ l.title }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Основной контент -->
+  <main class="lesson-content">
+
+    {% if lesson.video_url %}
+    <!-- Есть видео — показываем плеер -->
+    <div class="video-container" id="custom-video-container">
+      {% set vid = lesson.video_url %}
+      {% if "youtube.com" in vid or "youtu.be" in vid %}
+        {% set vid_id = None %}
+        {% if "youtube.com/watch?v=" in vid %}
+          {% set vid_id = vid.split("v=")[1].split("&")[0] %}
+        {% elif "youtu.be/" in vid %}
+          {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
+        {% elif "youtube.com/embed/" in vid %}
+          {% set vid_id = vid.split("youtube.com/embed/")[1].split("?")[0].split("&")[0] %}
+        {% elif "youtube.com/shorts/" in vid %}
+          {% set vid_id = vid.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0] %}
+        {% endif %}
+
+        {% if vid_id %}
+        <!-- Кастомный YouTube плеер -->
+        <div id="yt-player" data-video-token="{{ vid_id | b64encode }}"></div>
+        <div class="dynamic-watermark" id="dynamic-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
+        <div class="video-click-overlay" id="video-click-overlay" oncontextmenu="return false;">
+            <div class="big-play-btn" id="big-play-btn" aria-hidden="true"><span class="big-play-icon"></span></div>
+        </div>
+        <div class="custom-video-controls" id="custom-controls" oncontextmenu="return false;" onclick="event.stopPropagation()">
+           <button type="button" id="play-pause-btn" class="ctrl-btn" aria-label="Play/Pause">▶</button>
+           <div class="progress-container" id="progress-container">
+               <div class="progress-bar" id="progress-bar"></div>
+               <span class="progress-handle" id="progress-handle" aria-hidden="true"></span>
+           </div>
+           <span class="time-display" id="time-display">0:00 / 0:00</span>
+           <div class="speed-control-wrapper">
+             <button type="button" id="speed-btn" class="ctrl-btn text-btn" aria-label="Playback Speed">1x</button>
+             <div class="speed-menu" id="speed-menu">
+               <button type="button" class="speed-option" data-speed="0.5">0.5x</button>
+               <button type="button" class="speed-option" data-speed="0.75">0.75x</button>
+               <button type="button" class="speed-option active" data-speed="1">Обычная (1x)</button>
+               <button type="button" class="speed-option" data-speed="1.25">1.25x</button>
+               <button type="button" class="speed-option" data-speed="1.5">1.5x</button>
+               <button type="button" class="speed-option" data-speed="2">2x</button>
+             </div>
+           </div>
+           <button type="button" id="mute-btn" class="ctrl-btn" aria-label="Mute/Unmute">🔊</button>
+           <button type="button" id="fullscreen-btn" class="ctrl-btn" aria-label="Fullscreen">⛶</button>
+        </div>
+        {% else %}
+        <iframe src="{{ vid }}" allowfullscreen class="lesson-video-frame"></iframe>
+        {% endif %}
+      {% else %}
+        <!-- HTML5 Video Player -->
+        <div class="vp-shell" id="html5-video-shell">
+          <video id="html5-video" class="vp-video" playsinline webkit-playsinline preload="metadata" controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture oncontextmenu="return false;">
+            <source src="{{ lesson.video_url }}" type="video/mp4">
+          </video>
+          <div class="vp-spinner" aria-hidden="true"></div>
+          <div class="vp-error" role="alert">
+            <span class="vp-error-icon">⚠️</span>
+            <span>Не удалось загрузить видео</span>
+          </div>
+          <div class="vp-watermark" id="vp-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
+          <div class="vp-overlay" id="vp-overlay" oncontextmenu="return false;"></div>
+          <div class="vp-big-play" id="vp-big-play" aria-hidden="true"><span class="vp-big-play-icon"></span></div>
+          <div class="vp-controls" id="vp-controls" oncontextmenu="return false;">
+            <button type="button" id="vp-play-btn" class="vp-btn" aria-label="Play/Pause">▶</button>
+            <div class="vp-progress" id="vp-progress" role="slider" aria-label="Прогресс видео">
+              <div class="vp-progress-fill" id="vp-progress-fill"></div>
+              <span class="vp-progress-handle" id="vp-progress-handle" aria-hidden="true"></span>
+            </div>
+            <span class="vp-time" id="vp-time">0:00 / 0:00</span>
+            <div class="vp-speed-wrap">
+              <button type="button" id="vp-speed-btn" class="vp-btn vp-text-btn" aria-label="Скорость">1x</button>
+              <div class="vp-speed-menu" id="vp-speed-menu" role="menu">
+                <button class="vp-speed-opt" data-rate="0.5" role="menuitem">0.5x</button>
+                <button class="vp-speed-opt" data-rate="0.75" role="menuitem">0.75x</button>
+                <button class="vp-speed-opt vp-speed-active" data-rate="1" role="menuitem">Обычная (1x)</button>
+                <button class="vp-speed-opt" data-rate="1.25" role="menuitem">1.25x</button>
+                <button class="vp-speed-opt" data-rate="1.5" role="menuitem">1.5x</button>
+                <button class="vp-speed-opt" data-rate="2" role="menuitem">2x</button>
+              </div>
+            </div>
+            <button type="button" id="vp-mute-btn" class="vp-btn" aria-label="Звук">🔊</button>
+            <button type="button" id="vp-fs-btn" class="vp-btn" aria-label="Полный экран">⛶</button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if lesson.cover_url %}
+    <!-- Есть и видео и фото — фото показываем под видео -->
+    <div class="lesson-cover" style="margin-top:16px;">
+        <img src="{{ lesson.cover_url }}"
+             style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
+    </div>
+    {% endif %}
+
+    {% elif lesson.cover_url %}
+    <!-- Нет видео но есть фото — показываем фото на месте плеера -->
+    <div class="lesson-cover-main">
+        <img src="{{ lesson.cover_url }}"
+             style="width:100%;max-height:480px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
+    </div>
+
+    {% else %}
+    <!-- Нет ни видео ни фото — показываем заглушку -->
+    <div class="lesson-no-media" style="background:var(--surface-soft);border-radius:12px;padding:48px;text-align:center;margin-bottom:16px;">
+        <p style="color:var(--text-muted);" data-i18n="lesson.video_soon">Материал скоро появится</p>
+    </div>
+    {% endif %}
+
+    <!-- Заголовок и описание -->
+    <div class="lesson-header">
+      <h1>{{ lesson.title }}</h1>
+      {% if lesson.description %}
+      <div class="lesson-description rich-text-content">{{ lesson.description | clean_html }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Материалы -->
+    {% if lesson.materials %}
+    <section class="lesson-materials">
+      <h3 data-i18n="lesson.materials">📎 Материалы</h3>
+      <ul class="materials-list">
+        {% for m in lesson.materials %}
+        <li class="material-item">
+          <span class="material-icon">📄</span>
+          <a href="{{ m.file_url }}" target="_blank" rel="noopener">
+            {{ m.title or m.file_url.split("/")[-1] }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+  </main>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  // --- ЗАЩИТА ОТ ИЗВЛЕЧЕНИЯ ССЫЛКИ ---
+  document.addEventListener('keydown', function(e) {
+    var key = e.key ? e.key.toLowerCase() : '';
+    if (
+      key === 'f12' || 
+      (e.ctrlKey && e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) || 
+      (e.ctrlKey && key === 'u') || 
+      (e.metaKey && e.altKey && (key === 'i' || key === 'j' || key === 'u')) || 
+      (e.metaKey && e.shiftKey && key === 'c') || 
+      (e.ctrlKey && (key === 's' || key === 'p')) || 
+      (e.metaKey && (key === 's' || key === 'p'))
+    ) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+
+  setInterval(function() {
+    var threshold = 160;
+    var devtoolsOpen = (window.outerWidth - window.innerWidth > threshold) || 
+                       (window.outerHeight - window.innerHeight > threshold);
+    var container = document.getElementById('custom-video-container');
+    if (devtoolsOpen) {
+      if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
+        player.pauseVideo();
+      }
+      if (container) container.style.filter = 'blur(15px)';
+    } else {
+      if (container && container.style.filter === 'blur(15px)') {
+        container.style.filter = '';
+      }
+    }
+  }, 1000);
+
+  // --- ЛОГИКА ПЛЕЕРА ---
+  var player;
+  var progressInterval;
+  var isPlaying = false;
+  var videoId = '';        
+  var overlayHideTimeout = null; 
+  
+  function decodeYt(token) {
+    try {
+      var decoded = atob(token);
+      var shifted = "";
+      for (var i = 0; i < decoded.length; i++) {
+        shifted += String.fromCharCode(decoded.charCodeAt(i) - 3);
+      }
+      return shifted.split('').reverse().join('');
+    } catch(e) {
+      return '';
+    }
+  }
+
+  var originalAddEventListener = window.addEventListener;
+  window.addEventListener = function(type, listener, options) {
+    if (type === 'message') {
+      var wrappedListener = function(e) {
+        if (e.data && typeof e.data === 'string' && e.data.includes('infoDelivery')) {
+          try {
+            var dataObj = JSON.parse(e.data);
+            if (dataObj.event === 'infoDelivery' && dataObj.info && dataObj.info.videoData) {
+              delete dataObj.info.videoData.video_id;
+              delete dataObj.info.videoData.videoURL;
+              var newEvent = new MessageEvent('message', {
+                data: JSON.stringify(dataObj),
+                origin: e.origin,
+                source: e.source,
+                ports: e.ports
+              });
+              return listener.call(this, newEvent);
+            }
+          } catch (err) { }
+        }
+        return listener.apply(this, arguments);
+      };
+      return originalAddEventListener.call(this, type, wrappedListener, options);
+    }
+    return originalAddEventListener.apply(this, arguments);
+  };
+  
+  function onYouTubeIframeAPIReady() {
+    var ytPlayerEl = document.getElementById('yt-player');
+    if (!ytPlayerEl) return;
+    
+    var videoToken = ytPlayerEl.getAttribute('data-video-token');
+    videoId = ""; 
+    try {
+      videoId = decodeYt(videoToken);
+    } catch(e) {
+      return;
+    }
+    
+    player = new YT.Player('yt-player', {
+      videoId: videoId,
+      host: 'https://www.youtube-nocookie.com',
+      playerVars: {
+        'autoplay': 0,
+        'controls': 0,
+        'rel': 0,
+        'modestbranding': 1,
+        'disablekb': 1,
+        'fs': 0,
+        'playsinline': 1,
+        'iv_load_policy': 3,
+        'cc_load_policy': 0,
+        'showinfo': 0,
+        'origin': window.location.origin,
+        'widget_referrer': window.location.origin
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+    startWatermark();
+  }
+
+  function startWatermark() {
+    var wm = document.getElementById('dynamic-watermark');
+    var container = document.getElementById('custom-video-container');
+    if (!wm || !container) return;
+    function moveWM() {
+      var maxX = container.clientWidth - wm.clientWidth;
+      var maxY = container.clientHeight - wm.clientHeight;
+      if (maxX <= 0) maxX = 50;
+      if (maxY <= 0) maxY = 50;
+      var randomX = Math.floor(Math.random() * maxX);
+      var randomY = Math.floor(Math.random() * maxY);
+      wm.style.transform = 'translate(' + randomX + 'px, ' + randomY + 'px)';
+    }
+    moveWM();
+    setInterval(moveWM, 30000); 
+  }
+
+  function onPlayerReady(event) {
+    var container = document.getElementById('custom-video-container');
+    if (container) container.classList.add('player-ready');
+
+    if (player.getVideoData) {
+      player.getVideoData = function() { return {}; };
+    }
+
+    var iframe = player.getIframe();
+    if (iframe) {
+      iframe.setAttribute('referrerpolicy', 'no-referrer');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+    }
+
+    var playBtn = document.getElementById('play-pause-btn');
+    var overlay = document.getElementById('video-click-overlay');
+    var muteBtn = document.getElementById('mute-btn');
+    var fsBtn = document.getElementById('fullscreen-btn');
+    
+    if(playBtn) playBtn.addEventListener('click', togglePlay);
+    if(overlay) overlay.addEventListener('click', togglePlay);
+    if(muteBtn) muteBtn.addEventListener('click', toggleMute);
+    if(fsBtn) fsBtn.addEventListener('click', toggleFullScreen);
+    
+    var speedBtn = document.getElementById('speed-btn');
+    if (speedBtn) speedBtn.addEventListener('click', function() {
+        document.getElementById('speed-menu').classList.toggle('show');
+    });
+    
+    document.querySelectorAll('.speed-option').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        var rate = parseFloat(e.target.getAttribute('data-speed'));
+        player.setPlaybackRate(rate);
+        document.querySelectorAll('.speed-option').forEach(function(b) { b.classList.remove('active'); });
+        e.target.classList.add('active');
+        document.getElementById('speed-btn').innerText = rate + 'x';
+        document.getElementById('speed-menu').classList.remove('show');
+      });
+    });
+
+    updateTimeDisplay();
+  }
+
+  function togglePlay() {
+    if (isPlaying) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
+    }
+  }
+
+  function toggleMute() {
+    if (player.isMuted()) {
+      player.unMute();
+      document.getElementById('mute-btn').innerText = '🔊';
+    } else {
+      player.mute();
+      document.getElementById('mute-btn').innerText = '🔇';
+    }
+  }
+
+  function toggleFullScreen() {
+    var container = document.getElementById('custom-video-container');
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(err => {});
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  function onPlayerStateChange(event) {
+    var playBtn = document.getElementById('play-pause-btn');
+    var container = document.getElementById('custom-video-container');
+    
+    if (event.data == YT.PlayerState.PLAYING) {
+      isPlaying = true;
+      if(playBtn) playBtn.innerText = '⏸';
+      if(container) container.classList.add('playing');
+      
+      clearTimeout(overlayHideTimeout);
+      overlayHideTimeout = setTimeout(function() {
+        if (container) container.classList.add('overlay-hidden');
+      }, 1500);
+
+      clearInterval(progressInterval);
+      progressInterval = setInterval(updateProgressBar, 500);
+    } else {
+      isPlaying = false;
+      if(playBtn) playBtn.innerText = '▶';
+      if(container) {
+          container.classList.remove('playing');
+          container.classList.remove('overlay-hidden');
+      }
+      clearInterval(progressInterval);
+    }
+  }
+
+  function updateProgressBar() {
+    var progressContainer = document.getElementById('progress-container');
+    var progressBar = document.getElementById('progress-bar');
+    var progressHandle = document.getElementById('progress-handle');
+    
+    if (player && player.getDuration && player.getCurrentTime) {
+      var duration = player.getDuration();
+      var current = player.getCurrentTime();
+      if (duration > 0) {
+        var pct = (current / duration) * 100;
+        progressBar.style.width = pct + '%';
+        progressHandle.style.left = pct + '%';
+        updateTimeDisplay(current, duration);
+      }
+    }
+  }
+
+  function updateTimeDisplay(current, duration) {
+    if (current === undefined && player && player.getCurrentTime) current = player.getCurrentTime();
+    if (duration === undefined && player && player.getDuration) duration = player.getDuration();
+    if (!current) current = 0;
+    if (!duration) duration = 0;
+    document.getElementById('time-display').innerText = formatTime(current) + ' / ' + formatTime(duration);
+  }
+
+  function formatTime(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  // Sidebar toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const layout = document.getElementById('lesson-layout');
+    const toggle = document.getElementById('lesson-sidebar-toggle');
+    const overlay = document.getElementById('lesson-sidebar-overlay');
+    const closeBtn = document.getElementById('lesson-sidebar-close');
+    
+    function setSidebarOpen(open) {
+      layout.classList.toggle('sidebar-open', open);
+      document.body.classList.toggle('lesson-sidebar-open', open);
+    }
+    
+    if (toggle) toggle.addEventListener('click', () => setSidebarOpen(!layout.classList.contains('sidebar-open')));
+    if (closeBtn) closeBtn.addEventListener('click', () => setSidebarOpen(false));
+    if (overlay) overlay.addEventListener('click', () => setSidebarOpen(false));
+  });
+
+</script>
+{% endblock %}

@@ -20,6 +20,7 @@ from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import quizzes  # QUIZ SYSTEM - RESTORED
 from app.routers import admin
 from app.routers import organization
+from app.routers import groups
 
 # Создаём папку data если её нет
 os.makedirs("data", exist_ok=True)
@@ -157,6 +158,7 @@ app.include_router(profile.router)
 app.include_router(pages.router)
 app.include_router(admin.router)
 app.include_router(organization.router)
+app.include_router(groups.router)
 
 
 # ── Главная страница ─────────────────────────────────────────────────────────

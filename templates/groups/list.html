@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Группы — {{ org.name }} — Фурузон{% endblock %}
+{% block title_key %}nav.groups{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "groups" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main">
+        <!-- Заголовок -->
+        <div class="dashboard-header">
+            <div>
+                <h1 data-i18n="group.title">🗂 Группы</h1>
+                <p>Приватные учебные группы вашего центра</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('create-group-modal')">
+                + <span data-i18n="group.create">Создать группу</span>
+            </button>
+        </div>
+
+        {% if groups %}
+        <div class="groups-grid">
+            {% for group in groups %}
+            <div class="group-card fade-in {% if not group.is_active %}group-card--archived{% endif %}">
+                <div class="group-card-header">
+                    {% if group.avatar_url %}
+                    <img src="{{ group.avatar_url }}" alt="Avatar" class="group-icon" style="object-fit: cover;">
+                    {% else %}
+                    <div class="group-icon">{{ group.name[0]|upper }}</div>
+                    {% endif %}
+                    <div class="group-meta">
+                        <h3 class="group-name">{{ group.name }}</h3>
+                        {% if group.is_active %}
+                        <span class="group-badge group-badge--active">✅ <span data-i18n="group.active">Активна</span></span>
+                        {% else %}
+                        <span class="group-badge group-badge--archived">📦 <span data-i18n="group.archived">Архив</span></span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if group.description %}
+                <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
+                {% endif %}
+
+                <div class="group-stats">
+                    <div class="group-stat">
+                        <span class="group-stat-icon">👨‍🏫</span>
+                        <span>{{ group.teacher.name if group.teacher else "Не назначен" }}</span>
+                    </div>
+                    <div class="group-stat">
+                        <span class="group-stat-icon">🎓</span>
+                        <span>{{ group.members|length }} <span data-i18n="group.members_count">учеников</span></span>
+                    </div>
+                    <div class="group-stat">
+                        <span class="group-stat-icon">📚</span>
+                        <span>{{ group.lessons|length }} уроков</span>
+                    </div>
+                </div>
+
+                <div class="group-card-footer">
+                    <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm">
+                        ⚙️ <span data-i18n="group.manage">Управление</span>
+                    </a>
+                    <form action="/groups/{{ group.id }}/delete" method="POST" style="margin:0;"
+                          onsubmit="return confirm('Удалить группу «{{ group.name }}»? Это действие необратимо.')">
+                        <button type="submit" class="btn btn-danger btn-sm">🗑 <span data-i18n="group.delete">Удалить группу</span></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🗂</span>
+            <p data-i18n="group.no_groups">Групп пока нет</p>
+            <button class="btn btn-primary" onclick="openModal('create-group-modal')" data-i18n="group.create">
+                Создать группу
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модалка: Создать группу -->
+<div class="modal-overlay" id="create-group-modal" onclick="closeModal('create-group-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 data-i18n="group.create">Создать группу</h2>
+            <button class="modal-close" onclick="closeModal('create-group-modal')">✕</button>
+        </div>
+        <form action="/groups/create" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="cg-name" data-i18n="group.name">Название группы</label>
+                    <input type="text" id="cg-name" name="name" class="form-input" required
+                           placeholder="Например: Математика 8А" />
+                </div>
+                <div class="form-group">
+                    <label for="cg-desc" data-i18n="group.description">Описание</label>
+                    <textarea id="cg-desc" name="description" class="form-input" rows="3"
+                              placeholder="Краткое описание группы..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="cg-teacher" data-i18n="group.teacher">Преподаватель</label>
+                    <select id="cg-teacher" name="teacher_id" class="form-input">
+                        <option value="">— Не назначен —</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('create-group-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.create">Создать группу</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 8px;
+}
+.group-card {
+    background: var(--bg-card, #fff);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.group-card:hover { box-shadow: 0 8px 32px rgba(99,102,241,0.12); transform: translateY(-2px); }
+.group-card--archived { opacity: 0.65; }
+.group-card-header { display: flex; align-items: center; gap: 14px; }
+.group-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 1.4rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.group-meta { flex: 1; min-width: 0; }
+.group-name { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text, #111);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.group-badge--active { background: #d1fae5; color: #065f46; }
+.group-badge--archived { background: #f3f4f6; color: #6b7280; }
+.group-description { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
+.group-stats { display: flex; flex-direction: column; gap: 6px; }
+.group-stat { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary, #555); }
+.group-stat-icon { width: 20px; text-align: center; }
+.group-card-footer { display: flex; gap: 8px; margin-top: auto; padding-top: 8px;
+    border-top: 1px solid rgba(0,0,0,0.06); }
+.group-card-footer .btn { flex: 1; }
+</style>
+<script>
+function openModal(id) {
+    if (typeof _openModalOverlay === 'function') _openModalOverlay(id);
+    else {
+        const m = document.getElementById(id);
+        if (m) { m.classList.add('open'); document.body.classList.add('modal-open'); }
+    }
+}
+</script>
+{% endblock %}

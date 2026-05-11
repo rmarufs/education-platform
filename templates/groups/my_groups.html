@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Мои группы — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "groups" %}
+    {% include "_teacher_sidebar.html" %}
+
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1>🗂 Мои группы</h1>
+                <p>Группы, в которых вы назначены преподавателем</p>
+            </div>
+        </div>
+
+        {% if groups %}
+        <div class="groups-grid">
+            {% for group in groups %}
+            <div class="group-card fade-in">
+                <div class="group-card-header">
+                    <div class="group-icon">{{ group.name[0]|upper }}</div>
+                    <div class="group-meta">
+                        <h3 class="group-name">{{ group.name }}</h3>
+                        <span style="font-size:0.8rem; color:var(--text-muted);">{{ group.organization.name }}</span>
+                    </div>
+                </div>
+                {% if group.description %}
+                <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
+                {% endif %}
+                <div class="group-stats">
+                    <div class="group-stat"><span class="group-stat-icon">🎓</span><span>{{ group.members|length }} учеников</span></div>
+                    <div class="group-stat"><span class="group-stat-icon">📚</span><span>{{ group.lessons|length }} уроков</span></div>
+                </div>
+                <div class="group-card-footer">
+                    <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm">⚙️ Открыть</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-icon">🗂</span>
+            <p>Вам пока не назначены группы.</p>
+            <p style="font-size:0.875rem; color:var(--text-muted);">Обратитесь к администратору учебного центра.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.groups-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;
+}
+.group-card {
+    background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.group-card:hover { box-shadow: 0 8px 32px rgba(99,102,241,0.12); transform: translateY(-2px); }
+.group-card-header { display: flex; align-items: center; gap: 14px; }
+.group-icon {
+    width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 1.4rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+}
+.group-meta { flex: 1; min-width: 0; }
+.group-name { margin: 0; font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.group-description { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
+.group-stats { display: flex; flex-direction: column; gap: 6px; }
+.group-stat { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary, #555); }
+.group-stat-icon { width: 20px; text-align: center; }
+.group-card-footer { margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); }
+</style>
+{% endblock %}

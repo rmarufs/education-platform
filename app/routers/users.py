@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
+from app.models.group import Group, GroupMember
 
 router = APIRouter()
 from app.ui import templates
@@ -191,6 +192,13 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
                 "last_lesson": last_lessons.get(data["last_accessed_lesson_id"])
             })
 
+    # Группы студента
+    student_groups = db.query(Group).join(
+        GroupMember, GroupMember.group_id == Group.id
+    ).filter(
+        GroupMember.student_id == user.id
+    ).all()
+
     return templates.TemplateResponse(
         "dashboard/student.html",
         {
@@ -198,7 +206,8 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "user": user, 
             "my_courses": my_courses,
             "student_org_link": student_org_link,
-            "show_removed_notification": show_removed_notification
+            "show_removed_notification": show_removed_notification,
+            "student_groups": student_groups
         },
     )
 
@@ -232,6 +241,17 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.teacher_id == user.id
     ).order_by(OrganizationTeacher.created_at.desc()).all()
 
+    # Группы, в которых преподаватель назначен
+    from app.models.group import Group, GroupMember, GroupLesson
+    from sqlalchemy.orm import joinedload as jl
+    my_groups = db.query(Group).options(
+        jl(Group.members),
+        jl(Group.lessons),
+    ).filter(
+        Group.teacher_id == user.id,
+        Group.is_active == True,
+    ).order_by(Group.created_at.desc()).all()
+
     return templates.TemplateResponse(
         "dashboard/teacher.html",
         {
@@ -242,5 +262,6 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
             "pending_invites": pending_invites,
             "my_org_applications": teacher_applications,  # backward compat
             "teacher_applications": teacher_applications,
+            "my_groups": my_groups,
         },
     )

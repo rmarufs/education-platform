@@ -28,6 +28,7 @@ from app.models import user, course, category
 from app.models import module, lesson, material
 from app.models import quiz, progress, review, comment
 from app.models import contact, assessment, organization
+from app.models import group  # Группы
 
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 

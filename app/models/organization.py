@@ -23,6 +23,7 @@ class Organization(Base):
     user = relationship("User", back_populates="organization")
     teachers = relationship("OrganizationTeacher", back_populates="organization")
     students = relationship("OrganizationStudent", back_populates="organization")
+    groups = relationship("Group", back_populates="organization", cascade="all, delete-orphan")
 
 
 class OrganizationTeacher(Base):

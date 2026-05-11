@@ -85,6 +85,33 @@
         </section>
         {% endif %}
 
+        <!-- Мои группы (если назначен) -->
+        {% if my_groups %}
+        <section class="mb-4">
+            <div class="section-label">🗂 Мои группы</div>
+            <div style="display:flex; flex-wrap:wrap; gap:12px;">
+                {% for group in my_groups %}
+                <a href="/groups/{{ group.id }}/manage" style="
+                    display:flex; align-items:center; gap:10px; text-decoration:none;
+                    background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.08);
+                    border-radius: 12px; padding: 12px 16px; transition: box-shadow 0.2s, transform 0.2s;
+                    color: var(--text, #111); min-width: 200px;
+                " class="group-teacher-card">
+                    <div style="width:36px;height:36px;border-radius:10px;flex-shrink:0;
+                        background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+                        font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;">
+                        {{ group.name[0]|upper }}
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ group.name }}</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">{{ group.members|length }} учеников &middot; {{ group.lessons|length }} уроков</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
         <!-- Список курсов преподавателя -->
         <section>
             <div class="section-label" data-i18n="teacher.my_courses">Мои курсы</div>
@@ -332,4 +359,10 @@ document.querySelectorAll('.org-accept-notice').forEach(notice => {
     }
 });
 </script>
+<style>
+.group-teacher-card:hover {
+    box-shadow: 0 6px 24px rgba(99,102,241,0.15);
+    transform: translateY(-2px);
+}
+</style>
 {% endblock %}

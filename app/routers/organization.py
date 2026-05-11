@@ -137,6 +137,10 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationStudent.organization_id == org.id
     ).count() if org else 0
 
+    # Количество групп
+    from app.models.group import Group
+    groups_count = db.query(Group).filter(Group.organization_id == org.id).count() if org else 0
+
     return templates.TemplateResponse(
         "organization/dashboard.html",
         {
@@ -147,6 +151,7 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
             "courses_count": courses_count,
             "students_count": students_count,
             "incoming_count": incoming_count,
+            "groups_count": groups_count,
         }
     )
 

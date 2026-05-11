@@ -1,1 +1,2 @@
-# Пустой __init__ для удобного импорта моделей
+# Импорт моделей для удобного использования и регистрации в Alembic
+from app.models.group import Group, GroupMember, GroupLesson, GroupMaterial

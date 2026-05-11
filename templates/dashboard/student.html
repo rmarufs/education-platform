@@ -58,6 +58,12 @@
         </div>
         {% endif %}
 
+        {% if request.query_params.get('error') == 'access_denied' %}
+        <div class="alert alert-danger" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; background-color: var(--error-light, #fee2e2); color: var(--error-dark, #991b1b); border: 1px solid var(--error, #ef4444);">
+            <span data-i18n="group.access_denied">У вас нет доступа к этой группе.</span>
+        </div>
+        {% endif %}
+
         <!-- Секция: Моя организация -->
         <section style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="student.my_org">🏢 Мой учебный центр</div>
@@ -112,6 +118,40 @@
             {% endif %}
         </section>
 
+        <!-- Мои группы -->
+        <section style="margin-bottom: 32px;">
+            <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
+            {% if student_groups %}
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for group in student_groups %}
+                <div class="alert alert-info" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:16px; border-radius:12px; background-color: var(--surface-soft); border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:16px;">
+                        {% if group.avatar_url %}
+                            <img src="{{ group.avatar_url }}" style="width:56px;height:56px;border-radius:12px;object-fit:cover; border: 1px solid rgba(0,0,0,0.05);">
+                        {% else %}
+                            <div class="avatar avatar-placeholder" style="width:56px;height:56px;border-radius:12px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;">{{ group.name[0]|upper }}</div>
+                        {% endif %}
+                        <div>
+                            <strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">{{ group.name }}</strong>
+                            {% if group.teacher %}
+                            <p style="margin:0;font-size:0.85rem;color:var(--text-muted); display: flex; align-items: center; gap: 4px;">👨‍🏫 {{ group.teacher.name }}</p>
+                            {% endif %}
+                            <p style="margin:4px 0 0;font-size:0.85rem;color:var(--text-muted);">📚 {{ group.lessons|length }} <span data-i18n="group.lessons">уроков</span></p>
+                        </div>
+                    </div>
+                    <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+                        <span data-i18n="course.open">Открыть</span> →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding: 20px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-md);">
+                <span class="empty-icon" style="font-size: 1.5rem; margin-bottom: 8px; display: block;">👥</span>
+                <p style="margin: 0;" class="text-muted" data-i18n="group.no_groups">Вы пока не добавлены ни в одну группу.</p>
+            </div>
+            {% endif %}
+        </section>
 
         <!-- Мои курсы (Активные) -->
         {% if my_courses %}

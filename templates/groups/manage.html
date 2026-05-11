@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Управление группой — Фурузон{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "groups" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main">
+        <!-- Хлебные крошки -->
+        <nav class="breadcrumb" style="margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
+            <a href="/groups/" style="color: var(--primary, #6366f1); text-decoration: none;" data-i18n="group.back">← К группам</a>
+            <span style="margin: 0 6px;">/</span>
+            <span>{{ group.name }}</span>
+        </nav>
+
+        {% if success %}
+        <div class="alert alert-success" style="margin-bottom: 16px;">
+            {% if success == "saved" %}✅ Изменения сохранены.
+            {% elif success == "teacher" %}✅ Преподаватель назначен.
+            {% elif success == "student_added" %}✅ Ученик добавлен в группу.
+            {% elif success == "lesson_created" %}✅ Урок создан.
+            {% elif success == "lesson_saved" %}✅ Урок сохранён.
+            {% else %}✅ Готово.{% endif %}
+        </div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-danger" style="margin-bottom: 16px;">
+            {% if error == "not_org_member" %}❌ Ученик не является членом вашего учебного центра.
+            {% else %}❌ Произошла ошибка.{% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Заголовок группы -->
+        <div class="manage-header">
+            <div style="position: relative; cursor: pointer;" onclick="document.getElementById('avatar-upload-input').click()" title="Изменить аватар">
+                {% if group.avatar_url %}
+                <img src="{{ group.avatar_url }}" alt="Avatar" class="group-icon-lg" style="object-fit: cover;">
+                {% else %}
+                <div class="group-icon-lg">{{ group.name[0]|upper }}</div>
+                {% endif %}
+                <div style="position: absolute; bottom: -8px; right: -8px; background: #fff; border-radius: 50%; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem;">📷</div>
+            </div>
+            <form id="avatar-form" action="/groups/{{ group.id }}/avatar" method="POST" enctype="multipart/form-data" style="display: none;">
+                <input type="file" id="avatar-upload-input" name="avatar" accept=".jpg,.jpeg,.png,.webp" onchange="document.getElementById('avatar-form').submit()">
+            </form>
+            <div class="manage-header-info">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h1 style="margin:0;">{{ group.name }}</h1>
+                    {% if group.is_active %}
+                    <span class="group-badge group-badge--active">✅ <span data-i18n="group.active">Активна</span></span>
+                    {% else %}
+                    <span class="group-badge group-badge--archived">📦 <span data-i18n="group.archived">Архив</span></span>
+                    {% endif %}
+                </div>
+                <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.875rem;">
+                    {{ group.description or "Нет описания" }}
+                </p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="openModal('edit-group-modal')" style="margin-left: auto; white-space: nowrap;">
+                ✏️ <span data-i18n="group.edit">Редактировать</span>
+            </button>
+        </div>
+
+        <div class="manage-grid">
+            <!-- ── Левая колонка: преподаватель + ученики ── -->
+            <div class="manage-col">
+                <!-- Назначить преподавателя -->
+                <div class="manage-section">
+                    <div class="manage-section-header">
+                        <span class="manage-section-icon">👨‍🏫</span>
+                        <h3 data-i18n="group.teacher">Преподаватель</h3>
+                    </div>
+                    <form action="/groups/{{ group.id }}/assign-teacher" method="POST" style="display: flex; gap: 8px; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <select name="teacher_id" class="form-input">
+                                <option value="">— Не назначен —</option>
+                                {% for teacher in org_teachers %}
+                                <option value="{{ teacher.id }}" {% if group.teacher_id == teacher.id %}selected{% endif %}>
+                                    {{ teacher.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm" data-i18n="group.assign_teacher">Назначить преподавателя</button>
+                    </form>
+                </div>
+
+                <!-- Ученики -->
+                <div class="manage-section">
+                    <div class="manage-section-header">
+                        <span class="manage-section-icon">🎓</span>
+                        <h3><span data-i18n="group.students">Ученики</span> ({{ group.members|length }})</h3>
+                        {% if available_students %}
+                        <button class="btn btn-primary btn-sm" onclick="openModal('add-student-modal')" style="margin-left: auto;">
+                            + <span data-i18n="group.add_student">Добавить</span>
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {% if group.members %}
+                    <div class="student-list">
+                        {% for member in group.members %}
+                        <div class="student-row">
+                            <div class="student-avatar">{{ member.student.name[0]|upper }}</div>
+                            <div class="student-info">
+                                <div class="student-name">{{ member.student.name }}</div>
+                                <div class="student-meta">{{ member.student.email }}
+                                    {% if member.grade %} · {{ member.grade }} класс{% endif %}
+                                </div>
+                            </div>
+                            <form action="/groups/{{ group.id }}/member/{{ member.id }}/toggle-paid" method="POST" style="margin:0;">
+                                <button type="submit" class="paid-toggle {% if member.is_paid %}paid-toggle--paid{% endif %}"
+                                        title="{% if member.is_paid %}Оплачено{% else %}Не оплачено{% endif %}">
+                                    {% if member.is_paid %}💚 Оплачено{% else %}⬜ Не оплачено{% endif %}
+                                </button>
+                            </form>
+                            <form action="/groups/{{ group.id }}/remove-student/{{ member.student_id }}" method="POST" style="margin:0;"
+                                  onsubmit="return confirm('Удалить {{ member.student.name }} из группы?')">
+                                <button type="submit" class="btn-icon-danger" title="Удалить">✕</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-mini">🎓 <span data-i18n="group.no_students">Нет учеников</span></div>
+                    {% if available_students %}
+                    <button class="btn btn-outline btn-sm" onclick="openModal('add-student-modal')" style="margin-top:8px;">
+                        + <span data-i18n="group.add_student">Добавить ученика</span>
+                    </button>
+                    {% else %}
+                    <p style="font-size:0.8rem; color: var(--text-muted); margin-top:8px;">
+                        Сначала добавьте учеников в учебный центр в разделе <a href="/organization/students">Ученики</a>.
+                    </p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ── Правая колонка: уроки ── -->
+            <div class="manage-col">
+                <div class="manage-section">
+                    <div class="manage-section-header">
+                        <span class="manage-section-icon">📚</span>
+                        <h3><span data-i18n="group.lessons">Уроки</span> ({{ group.lessons|length }})</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('add-lesson-modal')" style="margin-left: auto;">
+                            + <span data-i18n="group.add_lesson">Урок</span>
+                        </button>
+                    </div>
+
+                    {% if group.lessons %}
+                    <div class="lesson-list">
+                        {% for lesson in group.lessons|sort(attribute='order') %}
+                        <div class="lesson-item" id="lesson-item-{{ lesson.id }}">
+                            <div class="lesson-order">{{ loop.index }}</div>
+                            <div class="lesson-info">
+                                <div class="lesson-title">{{ lesson.title }}</div>
+                                {% if lesson.video_url %}
+                                <div class="lesson-meta">🎬 Видео прикреплено</div>
+                                {% endif %}
+                                {% if lesson.materials %}
+                                <div class="lesson-meta">📎 {{ lesson.materials|length }} материал(ов)</div>
+                                {% endif %}
+                            </div>
+                            <div class="lesson-actions">
+                                <button class="btn btn-outline btn-sm"
+                                        onclick="openEditLesson({{ lesson.id }}, '{{ lesson.title|e }}', `{{ lesson.description|e if lesson.description else '' }}`, '{{ lesson.video_url|e if lesson.video_url else '' }}', {{ lesson.order }})">
+                                    ✏️
+                                </button>
+                                <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;"
+                                      onsubmit="return confirm('Удалить урок «{{ lesson.title }}»?')">
+                                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-mini">📚 <span data-i18n="group.no_lessons">Уроков пока нет.</span></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка: Редактировать группу -->
+<div class="modal-overlay" id="edit-group-modal" onclick="closeModal('edit-group-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 data-i18n="group.edit">Редактировать группу</h2>
+            <button class="modal-close" onclick="closeModal('edit-group-modal')">✕</button>
+        </div>
+        <form action="/groups/{{ group.id }}/edit" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label data-i18n="group.name">Название *</label>
+                    <input type="text" name="name" class="form-input" required value="{{ group.name|e }}" />
+                </div>
+                <div class="form-group">
+                    <label data-i18n="group.description">Описание</label>
+                    <textarea name="description" class="form-input" rows="3">{{ group.description or '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="group.status">Статус</label>
+                    <select name="is_active" class="form-input">
+                        <option value="true" {% if group.is_active %}selected{% endif %}>✅ Активна</option>
+                        <option value="false" {% if not group.is_active %}selected{% endif %}>📦 Архив</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('edit-group-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модалка: Добавить ученика -->
+<div class="modal-overlay" id="add-student-modal" onclick="closeModal('add-student-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 data-i18n="group.add_student">Добавить ученика</h2>
+            <button class="modal-close" onclick="closeModal('add-student-modal')">✕</button>
+        </div>
+        <form action="/groups/{{ group.id }}/add-student" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label>Ученик *</label>
+                    <input type="text" id="student-search" class="form-input" placeholder="Поиск по имени..." oninput="filterStudents(this.value)" />
+                    <select name="student_id" id="student-select" class="form-input" required size="6" style="margin-top:6px; height: auto;">
+                        {% for student in available_students %}
+                        <option value="{{ student.id }}" data-name="{{ student.name|lower }}">
+                            {{ student.name }} — {{ student.email }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Класс (1–11)</label>
+                    <input type="number" name="grade" class="form-input" min="1" max="11" placeholder="Необязательно" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('add-student-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.add_student">Добавить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модалка: Добавить урок -->
+<div class="modal-overlay" id="add-lesson-modal" onclick="closeModal('add-lesson-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="lesson-modal-title">Новый урок</h2>
+            <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
+        </div>
+        <form id="lesson-form" action="/groups/{{ group.id }}/lessons/create" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label>Название урока *</label>
+                    <input type="text" id="lesson-title" name="title" class="form-input" required placeholder="Например: Тема 1. Введение" />
+                </div>
+                <div class="form-group">
+                    <label data-i18n="group.description">Описание</label>
+                    <textarea id="lesson-desc" name="description" class="form-input" rows="3" placeholder="Краткое описание урока..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ссылка на видео</label>
+                    <input type="url" id="lesson-video" name="video_url" class="form-input" placeholder="https://youtube.com/..." />
+                </div>
+                <div class="form-group">
+                    <label>Порядок</label>
+                    <input type="number" id="lesson-order" name="order" class="form-input" value="{{ group.lessons|length + 1 }}" min="0" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.manage-header {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+}
+.group-icon-lg {
+    width: 56px; height: 56px; border-radius: 14px; flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 1.6rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+}
+.manage-header-info { flex: 1; min-width: 0; }
+.manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .manage-grid { grid-template-columns: 1fr; } }
+.manage-col { display: flex; flex-direction: column; gap: 20px; }
+.manage-section {
+    background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 16px; padding: 20px;
+}
+.manage-section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.manage-section-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+.manage-section-icon { font-size: 1.1rem; }
+.student-list { display: flex; flex-direction: column; gap: 10px; }
+.student-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 10px; background: var(--bg, #f9fafb);
+    transition: background 0.15s;
+}
+.student-row:hover { background: var(--bg-hover, #f3f4f6); }
+.student-avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-weight: 700; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.student-info { flex: 1; min-width: 0; }
+.student-name { font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.student-meta { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.paid-toggle {
+    font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.1); background: var(--bg, #f9fafb); cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+}
+.paid-toggle--paid { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.btn-icon-danger {
+    width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+    background: #fee2e2; color: #dc2626; font-size: 0.8rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.btn-icon-danger:hover { background: #fecaca; }
+.lesson-list { display: flex; flex-direction: column; gap: 8px; }
+.lesson-item {
+    display: flex; align-items: center; gap: 10px; padding: 12px;
+    border-radius: 10px; background: var(--bg, #f9fafb); transition: background 0.15s;
+}
+.lesson-item:hover { background: var(--bg-hover, #f3f4f6); }
+.lesson-order {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: var(--primary-light, #ede9fe); color: var(--primary, #6366f1);
+    font-weight: 700; font-size: 0.82rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.lesson-info { flex: 1; min-width: 0; }
+.lesson-title { font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lesson-meta { font-size: 0.75rem; color: var(--text-muted); }
+.lesson-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.empty-mini { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 20px 0; }
+.group-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.group-badge--active { background: #d1fae5; color: #065f46; }
+.group-badge--archived { background: #f3f4f6; color: #6b7280; }
+.breadcrumb { display: flex; align-items: center; }
+</style>
+<script>
+function openModal(id) {
+    if (typeof _openModalOverlay === 'function') _openModalOverlay(id);
+    else { const m = document.getElementById(id); if (m) { m.classList.add('open'); document.body.classList.add('modal-open'); } }
+}
+function filterStudents(q) {
+    const sel = document.getElementById('student-select');
+    q = q.toLowerCase();
+    Array.from(sel.options).forEach(opt => {
+        opt.hidden = q && !opt.dataset.name.includes(q);
+    });
+}
+
+function openEditLesson(id, title, desc, video, order) {
+    document.getElementById('lesson-modal-title').textContent = 'Редактировать урок';
+    document.getElementById('lesson-title').value = title;
+    document.getElementById('lesson-desc').value = desc;
+    document.getElementById('lesson-video').value = video;
+    document.getElementById('lesson-order').value = order;
+    document.getElementById('lesson-form').action = `/groups/{{ group.id }}/lessons/${id}/edit`;
+    openModal('add-lesson-modal');
+}
+
+document.getElementById('add-lesson-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('add-lesson-modal');
+});
+</script>
+{% endblock %}
