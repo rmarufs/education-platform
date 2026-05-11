@@ -52,11 +52,11 @@
                 <div style="margin-top: 24px;">
                     {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.already_member">
-                            Вы уже состоите в другом учебном центре
+                            Вы участник другой организации
                         </button>
                     {% elif user_application and user_application.status == 'accepted' %}
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
-                            Вы приняты в учебный центр {{ org.name }}
+                            Вы приняты
                         </button>
                     {% elif user_application and user_application.status == 'pending' %}
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.pending_review" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
@@ -99,7 +99,7 @@
                     {% if user_student_membership %}
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
                             {% if user_student_membership.status == 'accepted' %}
-                                <span data-i18n="student.is_member">Вы участник</span>
+                                <span data-i18n="student.is_member">Вы приняты</span>
                             {% else %}
                                 <span data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка на рассмотрении в центре {{ org.name }}</span>
                             {% endif %}
@@ -274,7 +274,7 @@ async function joinOrganization(orgId) {
                 const data2 = await res2.json();
                 if (data2.success) {
                     if (data2.auto_accepted) {
-                        btn.textContent = '✅ Принят';
+                        btn.textContent = 'Вы приняты';
                     } else {
                         btn.textContent = '⌛ На рассмотрении';
                     }
@@ -285,7 +285,7 @@ async function joinOrganization(orgId) {
             btn.textContent = 'Вступить';
         } else if (data.success) {
             if (data.auto_accepted) {
-                btn.textContent = '✅ Принят';
+                btn.textContent = 'Вы приняты';
             } else {
                 btn.textContent = '⌛ На рассмотрении';
             }
