@@ -19,6 +19,7 @@
             {% if success == "saved" %}✅ Изменения сохранены.
             {% elif success == "teacher" %}✅ Преподаватель назначен.
             {% elif success == "student_added" %}✅ Ученик добавлен в группу.
+            {% elif success == "student_bulk_added" %}✅ Успешно добавлено {{ request.query_params.get('added', '0') }} учеников, пропущено {{ request.query_params.get('skipped', '0') }} уже существующих.
             {% elif success == "lesson_created" %}✅ Урок создан.
             {% elif success == "lesson_saved" %}✅ Урок сохранён.
             {% else %}✅ Готово.{% endif %}
@@ -93,7 +94,7 @@
                         <h3><span data-i18n="group.students">Ученики</span> ({{ group.members|length }})</h3>
                         {% if available_students %}
                         <button class="btn btn-primary btn-sm" onclick="openModal('add-student-modal')" style="margin-left: auto;">
-                            + <span data-i18n="group.add_student">Добавить</span>
+                            + <span>Добавить учеников</span>
                         </button>
                         {% endif %}
                     </div>
@@ -126,7 +127,7 @@
                     <div class="empty-mini">🎓 <span data-i18n="group.no_students">Нет учеников</span></div>
                     {% if available_students %}
                     <button class="btn btn-outline btn-sm" onclick="openModal('add-student-modal')" style="margin-top:8px;">
-                        + <span data-i18n="group.add_student">Добавить ученика</span>
+                        + <span>Добавить учеников</span>
                     </button>
                     {% else %}
                     <p style="font-size:0.8rem; color: var(--text-muted); margin-top:8px;">
@@ -221,15 +222,15 @@
 <div class="modal-overlay" id="add-student-modal" onclick="closeModal('add-student-modal')">
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h2 data-i18n="group.add_student">Добавить ученика</h2>
+            <h2>Добавить учеников</h2>
             <button class="modal-close" onclick="closeModal('add-student-modal')">✕</button>
         </div>
-        <form action="/groups/{{ group.id }}/add-student" method="POST">
+        <form id="add-students-form">
             <div class="modal-scroll-body">
                 <div class="form-group">
-                    <label>Ученик *</label>
+                    <label>Ученики *</label>
                     <input type="text" id="student-search" class="form-input" placeholder="Поиск по имени..." oninput="filterStudents(this.value)" />
-                    <select name="student_id" id="student-select" class="form-input" required size="6" style="margin-top:6px; height: auto;">
+                    <select name="student_ids" id="student-select" class="form-input" required size="8" multiple style="margin-top:6px; height: auto;">
                         {% for student in available_students %}
                         <option value="{{ student.id }}" data-name="{{ student.name|lower }}">
                             {{ student.name }} — {{ student.email }}
@@ -244,7 +245,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('add-student-modal')" data-i18n="group.cancel">Отмена</button>
-                <button type="submit" class="btn btn-primary" data-i18n="group.add_student">Добавить</button>
+                <button type="submit" class="btn btn-primary">Добавить выбранных учеников</button>
             </div>
         </form>
     </div>
@@ -371,6 +372,51 @@ function filterStudents(q) {
         opt.hidden = q && !opt.dataset.name.includes(q);
     });
 }
+
+document.getElementById('add-students-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const select = document.getElementById('student-select');
+    const gradeInput = this.querySelector('input[name="grade"]');
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const selectedIds = Array.from(select.selectedOptions).map(opt => Number(opt.value));
+
+    if (!selectedIds.length) {
+        alert('Выберите хотя бы одного ученика.');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Добавление...';
+
+    try {
+        const res = await fetch(`/groups/{{ group.id }}/students/bulk-add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_ids: selectedIds,
+                grade: gradeInput.value ? Number(gradeInput.value) : null,
+            }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.detail || 'Ошибка добавления учеников');
+        }
+
+        select.selectedIndex = -1;
+        document.getElementById('student-search').value = '';
+        filterStudents('');
+        closeModal('add-student-modal');
+
+        window.location.href = `/groups/{{ group.id }}/manage?success=student_bulk_added&added=${data.added_count}&skipped=${data.skipped_count}`;
+    } catch (err) {
+        alert(err.message || 'Не удалось добавить учеников');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+});
 
 function openEditLesson(id, title, desc, video, order) {
     document.getElementById('lesson-modal-title').textContent = 'Редактировать урок';

@@ -4,7 +4,8 @@ import uuid
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
-from typing import Optional
+from typing import Optional, List
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import User
@@ -17,6 +18,11 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 
 GROUP_AVATAR_DIR = os.path.join("static", "uploads", "group_avatars")
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
+
+
+class BulkAddStudentsPayload(BaseModel):
+    student_ids: List[int]
+    grade: Optional[int] = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -299,6 +305,68 @@ def group_add_student(
         db.commit()
 
     return RedirectResponse(f"/groups/{group_id}/manage?success=student_added", status_code=302)
+
+
+@router.post("/{group_id}/students/bulk-add")
+def group_bulk_add_students(
+    group_id: int,
+    payload: BulkAddStudentsPayload,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    result, redirect = _require_org(request, db)
+    if redirect:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user, org = result
+    _get_org_for_group(group_id, user, db)
+
+    selected_ids = []
+    seen_ids = set()
+    for sid in payload.student_ids:
+        if sid not in seen_ids:
+            seen_ids.add(sid)
+            selected_ids.append(sid)
+
+    if not selected_ids:
+        raise HTTPException(status_code=400, detail="Не выбраны ученики")
+
+    org_members = db.query(OrganizationStudent.student_id).filter(
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status == "accepted",
+        OrganizationStudent.student_id.in_(selected_ids),
+    ).all()
+    org_member_ids = {row[0] for row in org_members}
+
+    existing_members = db.query(GroupMember.student_id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id.in_(selected_ids),
+    ).all()
+    existing_ids = {row[0] for row in existing_members}
+
+    added_count = 0
+    skipped_count = 0
+    for sid in selected_ids:
+        if sid not in org_member_ids:
+            continue
+        if sid in existing_ids:
+            skipped_count += 1
+            continue
+
+        db.add(GroupMember(
+            group_id=group_id,
+            student_id=sid,
+            grade=payload.grade,
+        ))
+        added_count += 1
+
+    if added_count:
+        db.commit()
+
+    return {
+        "success": True,
+        "added_count": added_count,
+        "skipped_count": skipped_count,
+    }
 
 
 @router.post("/{group_id}/remove-student/{student_id}")
