@@ -687,3 +687,26 @@
   .course-detail-title { font-size: 1.05rem; }
   .lesson-header h1 { font-size: 1.1rem; }
 }
+
+/* Public course page: keep the mobile reading order focused. */
+@media (max-width: 768px) {
+  .course-detail-page .course-detail-layout {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .course-detail-page .course-detail-main {
+    order: 1;
+    width: 100%;
+  }
+
+  .course-detail-page .course-reviews-section {
+    order: 2;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .course-detail-page .course-curriculum {
+    display: none !important;
+  }
+}

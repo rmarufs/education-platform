@@ -121,7 +121,7 @@
                 <!-- Выбор организации при регистрации -->
                 <div class="form-group">
                     <label for="teacher_org_id">🏢 <span data-i18n="org.label">Учебный центр</span> <span data-i18n="org.optional">(необязательно)</span></label>
-                    <select id="teacher_org_id" name="organization_id" class="form-input">
+                    <select id="teacher_org_id" name="org_id" class="form-input" disabled>
                         <option value="" data-i18n="org.independent">— Без учебного центра (независимый преподаватель) —</option>
                     </select>
                     <p class="form-hint" data-i18n="org.join_hint">
@@ -134,7 +134,7 @@
             <div id="student-extra-fields" style="display:none;">
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label for="student_org_id">🏢 <span data-i18n="org.join_btn">Вступить в учебный центр</span> <span style="font-weight:400;color:var(--text-muted);" data-i18n="org.optional">(необязательно)</span></label>
-                    <select id="student_org_id" name="organization_id" class="form-input">
+                    <select id="student_org_id" name="student_org_id" class="form-input" disabled>
                         <option value="" data-i18n="org.independent">— Без учебного центра —</option>
                     </select>
                     <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="org.student_join_hint">
@@ -209,21 +209,29 @@ function toggleRoleFields() {
     const teacherFields = document.getElementById('teacher-extra-fields');
     const orgFields = document.getElementById('organization-extra-fields');
     const studentFields = document.getElementById('student-extra-fields');
+    const teacherOrgSelect = document.getElementById('teacher_org_id');
+    const studentOrgSelect = document.getElementById('student_org_id');
 
     if (teacherRadio.checked) {
         teacherFields.style.display = 'block';
         studentFields.style.display = 'none';
+        teacherOrgSelect.disabled = false;
+        studentOrgSelect.disabled = true;
         // Загружаем список учебных центров при первом открытии
         loadOrganizations('teacher_org_id');
     } else {
         teacherFields.style.display = 'none';
+        teacherOrgSelect.disabled = true;
     }
 
     if (studentRadio.checked) {
         studentFields.style.display = 'block';
+        studentOrgSelect.disabled = false;
+        teacherOrgSelect.disabled = true;
         loadOrganizations('student_org_id');
     } else {
         studentFields.style.display = 'none';
+        studentOrgSelect.disabled = true;
     }
 
     if (orgRadio.checked) {
@@ -260,6 +268,8 @@ function loadOrganizations(selectId) {
         })
         .catch(() => {/* тихо игнорируем ошибки */});
 }
+
+toggleRoleFields();
 </script>
 
 {% endblock %}

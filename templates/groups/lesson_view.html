@@ -27,7 +27,7 @@
           <div class="course-cover-sidebar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1.2rem;">{{ group.name[0]|upper }}</div>
         {% endif %}
         <div class="lesson-sidebar-title">
-          <a href="/groups/{{ group.id }}/view" data-i18n="group.back">← К группе</a>
+          <a href="/groups/{{ group.id }}/view" data-i18n="group.back_to_group">← К группе</a>
         </div>
       </div>
       <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
@@ -45,7 +45,7 @@
         </button>
         <div class="lesson-module-panel" style="height: auto;">
           <div class="lesson-module-panel-inner">
-            {% for l in group.lessons|sort(attribute='order') %}
+            {% for l in ordered_lessons %}
             <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
                class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
@@ -164,6 +164,11 @@
         <img src="{{ lesson_image }}"
              style="width:100%;max-height:480px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
     </div>
+    {% else %}
+    <div class="empty-state" style="margin-bottom: 1.5rem;">
+      <span class="empty-icon">📄</span>
+      <p data-i18n="group.lesson_no_media">В этом уроке пока нет медиа</p>
+    </div>
     {% endif %}
 
     <!-- Заголовок и описание -->
@@ -190,6 +195,22 @@
       </ul>
     </section>
     {% endif %}
+
+    <div class="lesson-complete-bar">
+      <div class="lesson-complete-actions">
+        {% if previous_lesson %}
+        <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
+        {% else %}
+        <a href="/groups/{{ group.id }}/view" class="btn btn-outline" data-i18n="group.back_to_group">← К группе</a>
+        {% endif %}
+
+        {% if next_lesson %}
+        <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+        {% else %}
+        <a href="/groups/{{ group.id }}/view" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
+        {% endif %}
+      </div>
+    </div>
 
   </main>
 </div>

@@ -34,46 +34,41 @@
 
         <!-- Заголовок группы -->
         <div class="manage-header">
-            <div style="position: relative; cursor: pointer;" onclick="document.getElementById('avatar-upload-input').click()" title="Изменить аватар">
-                {% if group.avatar_url %}
-                <img src="{{ group.avatar_url }}" alt="Avatar" class="group-icon-lg" style="object-fit: cover;">
-                {% else %}
-                <div class="group-icon-lg">{{ group.name[0]|upper }}</div>
-                {% endif %}
-                <div style="position: absolute; bottom: -8px; right: -8px; background: #fff; border-radius: 50%; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.8rem;">📷</div>
+            <div>
+                <a href="/groups/" class="back-link" data-i18n="group.back">← К группам</a>
+                <h1>
+                    {{ group.name }}
+                    <span class="badge badge-primary">Группа</span>
+                    {% if group.is_active %}
+                    <span class="badge badge-secondary" data-i18n="group.active">Активна</span>
+                    {% else %}
+                    <span class="badge badge-secondary" data-i18n="group.archived">Архив</span>
+                    {% endif %}
+                </h1>
+                <p class="text-muted">{{ (group.description or "") | striptags }} <span data-i18n="common.no_desc" style="display:{% if group.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
+            </div>
+            <div class="manage-header-actions">
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('avatar-upload-input').click()">
+                    🖼 Обложка
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="openModal('edit-group-modal')">
+                    ✏️ <span data-i18n="group.edit">Редактировать</span>
+                </button>
             </div>
             <form id="avatar-form" action="/groups/{{ group.id }}/avatar" method="POST" enctype="multipart/form-data" style="display: none;">
                 <input type="file" id="avatar-upload-input" name="avatar" accept=".jpg,.jpeg,.png,.webp" onchange="document.getElementById('avatar-form').submit()">
             </form>
-            <div class="manage-header-info">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <h1 style="margin:0;">{{ group.name }}</h1>
-                    {% if group.is_active %}
-                    <span class="group-badge group-badge--active">✅ <span data-i18n="group.active">Активна</span></span>
-                    {% else %}
-                    <span class="group-badge group-badge--archived">📦 <span data-i18n="group.archived">Архив</span></span>
-                    {% endif %}
-                </div>
-                <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.875rem;">
-                    {{ group.description or "Нет описания" }}
-                </p>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="openModal('edit-group-modal')" style="margin-left: auto; white-space: nowrap;">
-                ✏️ <span data-i18n="group.edit">Редактировать</span>
-            </button>
         </div>
 
         <div class="manage-grid">
-            <!-- ── Левая колонка: преподаватель + ученики ── -->
+            <!-- ── Левая колонка: настройки + ученики ── -->
             <div class="manage-col">
-                <!-- Назначить преподавателя -->
+                <!-- Настройки группы -->
                 <div class="manage-section">
-                    <div class="manage-section-header">
-                        <span class="manage-section-icon">👨‍🏫</span>
-                        <h3 data-i18n="group.teacher">Преподаватель</h3>
-                    </div>
+                    <div class="section-label">Настройки группы</div>
                     <form action="/groups/{{ group.id }}/assign-teacher" method="POST" style="display: flex; gap: 8px; align-items: flex-end;">
                         <div style="flex: 1;">
+                            <label class="text-muted" style="display:block;font-size:0.85rem;margin-bottom:6px;" data-i18n="group.teacher">Преподаватель</label>
                             <select name="teacher_id" class="form-input">
                                 <option value="">— Не назначен —</option>
                                 {% for teacher in org_teachers %}
@@ -89,51 +84,76 @@
 
                 <!-- Ученики -->
                 <div class="manage-section">
-                    <div class="manage-section-header">
-                        <span class="manage-section-icon">🎓</span>
-                        <h3><span data-i18n="group.students">Ученики</span> ({{ group.members|length }})</h3>
+                    <div class="section-label">
+                        <span data-i18n="group.students">Ученики</span> ({{ group.members|length }})
                         {% if available_students %}
-                        <button class="btn btn-primary btn-sm" onclick="openModal('add-student-modal')" style="margin-left: auto;">
+                        <button class="btn btn-primary btn-sm" onclick="openModal('add-student-modal')" style="float:right;">
                             + <span>Добавить учеников</span>
                         </button>
                         {% endif %}
                     </div>
 
                     {% if group.members %}
-                    <div class="student-list">
-                        {% for member in group.members %}
-                        <div class="student-row">
-                            <div class="student-avatar">{{ member.student.name[0]|upper }}</div>
-                            <div class="student-info">
-                                <div class="student-name">{{ member.student.name }}</div>
-                                <div class="student-meta">{{ member.student.email }}
-                                    {% if member.grade %} · {{ member.grade }} класс{% endif %}
-                                </div>
-                            </div>
-                            <form action="/groups/{{ group.id }}/member/{{ member.id }}/toggle-paid" method="POST" style="margin:0;">
-                                <button type="submit" class="paid-toggle {% if member.is_paid %}paid-toggle--paid{% endif %}"
-                                        title="{% if member.is_paid %}Оплачено{% else %}Не оплачено{% endif %}">
-                                    {% if member.is_paid %}💚 Оплачено{% else %}⬜ Не оплачено{% endif %}
-                                </button>
-                            </form>
-                            <form action="/groups/{{ group.id }}/remove-student/{{ member.student_id }}" method="POST" style="margin:0;"
-                                  onsubmit="return confirm('Удалить {{ member.student.name }} из группы?')">
-                                <button type="submit" class="btn-icon-danger" title="Удалить">✕</button>
-                            </form>
-                        </div>
-                        {% endfor %}
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="manage.student">Студент</th>
+                                    <th>Класс</th>
+                                    <th>Оплата</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in group.members %}
+                                <tr>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
+                                                {{ member.student.name[0]|upper }}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight:500;color:var(--text);font-size:0.9rem;">{{ member.student.name }}</div>
+                                                <div style="font-size:0.75rem;color:var(--text-muted);">{{ member.student.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ member.grade ~ ' класс' if member.grade else '—' }}</span>
+                                    </td>
+                                    <td>
+                                        <form action="/groups/{{ group.id }}/member/{{ member.id }}/toggle-paid" method="POST" style="margin:0;">
+                                            <button type="submit" class="btn btn-outline btn-xs"
+                                                    title="{% if member.is_paid %}Оплачено{% else %}Не оплачено{% endif %}">
+                                                {% if member.is_paid %}💚 Оплачено{% else %}⬜ Не оплачено{% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form action="/groups/{{ group.id }}/remove-student/{{ member.student_id }}" method="POST" style="margin:0;"
+                                              onsubmit="return confirm('Удалить {{ member.student.name }} из группы?')">
+                                            <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить">🗑️</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                     {% else %}
-                    <div class="empty-mini">🎓 <span data-i18n="group.no_students">Нет учеников</span></div>
-                    {% if available_students %}
-                    <button class="btn btn-outline btn-sm" onclick="openModal('add-student-modal')" style="margin-top:8px;">
-                        + <span>Добавить учеников</span>
-                    </button>
-                    {% else %}
-                    <p style="font-size:0.8rem; color: var(--text-muted); margin-top:8px;">
-                        Сначала добавьте учеников в учебный центр в разделе <a href="/organization/students">Ученики</a>.
-                    </p>
-                    {% endif %}
+                    <div class="empty-state" style="padding:40px;">
+                        <span class="empty-icon" style="font-size: 2.5rem; margin-bottom: 10px; display: block;">🎓</span>
+                        <p style="margin: 0;" data-i18n="group.no_students">Нет учеников</p>
+                        {% if available_students %}
+                        <button class="btn btn-outline btn-sm" onclick="openModal('add-student-modal')" style="margin-top:12px;">
+                            + <span>Добавить учеников</span>
+                        </button>
+                        {% else %}
+                        <p style="font-size:0.8rem; color: var(--text-muted); margin-top:8px;">
+                            Сначала добавьте учеников в учебный центр в разделе <a href="/organization/students">Ученики</a>.
+                        </p>
+                        {% endif %}
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -141,44 +161,61 @@
             <!-- ── Правая колонка: уроки ── -->
             <div class="manage-col">
                 <div class="manage-section">
-                    <div class="manage-section-header">
-                        <span class="manage-section-icon">📚</span>
-                        <h3><span data-i18n="group.lessons">Уроки</span> ({{ group.lessons|length }})</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('add-lesson-modal')" style="margin-left: auto;">
-                            + <span data-i18n="group.add_lesson">Урок</span>
+                    <div class="section-label" data-i18n="group.lessons">Уроки группы</div>
+                    <div class="module-block fade-in">
+                        <div class="module-header">
+                            <span class="module-index">1</span>
+                            <h3 class="module-title">Уроки группы</h3>
+                        </div>
+
+                        <ul class="lessons-list">
+                        {% for lesson in group.lessons|sort(attribute='order') %}
+                        <li class="lesson-item" id="lesson-item-{{ lesson.id }}">
+                            <div class="lesson-manage-main">
+                                <span class="lesson-icon">{{ "🎬" if lesson.video_url else "📄" }}</span>
+                                <span class="lesson-title">{{ lesson.title }}</span>
+                                <div class="lesson-meta">
+                                    {% if lesson.materials %}
+                                    <span class="badge">{{ lesson.materials|length }} файл(ов)</span>
+                                    {% endif %}
+                                </div>
+                                <div class="lesson-actions" style="display: flex; gap: 4px;">
+                                    <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
+                                    <button class="btn btn-outline btn-xs"
+                                        onclick="openEditLesson({{ lesson.id }}, '{{ lesson.title|e }}', `{{ lesson.description|e if lesson.description else '' }}`, '{{ lesson.video_url|e if lesson.video_url else '' }}', {{ lesson.order }})">
+                                        ✏️
+                                    </button>
+                                    <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;"
+                                      onsubmit="return confirm('Удалить урок «{{ lesson.title }}»?')">
+                                        <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок">🗑️</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% if lesson.materials %}
+                            <div style="margin-top: 8px; padding-left: 36px; font-size: 0.85rem;">
+                                <ul class="simple-list" style="margin: 0;">
+                                    {% for mat in lesson.materials %}
+                                    <li style="display:flex;align-items:center;gap:10px;">
+                                        <a href="{{ mat.file_url }}" target="_blank" style="color: var(--primary);">📎 {{ mat.title }}</a>
+                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/materials/{{ mat.id }}/delete" method="POST" style="margin: 0;">
+                                            <button type="submit" class="btn btn-danger btn-xs" style="padding: 2px 6px; font-size: 0.75rem;" title="Удалить материал">✕</button>
+                                        </form>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </li>
+                        {% else %}
+                        <li class="lesson-item text-muted" data-i18n="group.no_lessons">Уроков пока нет.</li>
+                        {% endfor %}
+                        </ul>
+
+                        <button class="btn btn-outline btn-sm add-lesson-btn"
+                            onclick="openModal('add-lesson-modal')" data-i18n="group.add_lesson">
+                            + Добавить урок
                         </button>
                     </div>
-
-                    {% if group.lessons %}
-                    <div class="lesson-list">
-                        {% for lesson in group.lessons|sort(attribute='order') %}
-                        <div class="lesson-item" id="lesson-item-{{ lesson.id }}">
-                            <div class="lesson-order">{{ loop.index }}</div>
-                            <div class="lesson-info">
-                                <div class="lesson-title">{{ lesson.title }}</div>
-                                {% if lesson.video_url %}
-                                <div class="lesson-meta">🎬 Видео прикреплено</div>
-                                {% endif %}
-                                {% if lesson.materials %}
-                                <div class="lesson-meta">📎 {{ lesson.materials|length }} материал(ов)</div>
-                                {% endif %}
-                            </div>
-                            <div class="lesson-actions">
-                                <button class="btn btn-outline btn-sm"
-                                        onclick="openEditLesson({{ lesson.id }}, '{{ lesson.title|e }}', `{{ lesson.description|e if lesson.description else '' }}`, '{{ lesson.video_url|e if lesson.video_url else '' }}', {{ lesson.order }})">
-                                    ✏️
-                                </button>
-                                <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;"
-                                      onsubmit="return confirm('Удалить урок «{{ lesson.title }}»?')">
-                                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
-                                </form>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="empty-mini">📚 <span data-i18n="group.no_lessons">Уроков пока нет.</span></div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -288,18 +325,6 @@
 
 {% block scripts %}
 <style>
-.manage-header {
-    display: flex; align-items: center; gap: 16px;
-    background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.07);
-    border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
-}
-.group-icon-lg {
-    width: 56px; height: 56px; border-radius: 14px; flex-shrink: 0;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff; font-size: 1.6rem; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-}
-.manage-header-info { flex: 1; min-width: 0; }
 .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 768px) { .manage-grid { grid-template-columns: 1fr; } }
 .manage-col { display: flex; flex-direction: column; gap: 20px; }
@@ -307,57 +332,7 @@
     background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.07);
     border-radius: 16px; padding: 20px;
 }
-.manage-section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-.manage-section-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
-.manage-section-icon { font-size: 1.1rem; }
-.student-list { display: flex; flex-direction: column; gap: 10px; }
-.student-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px; border-radius: 10px; background: var(--bg, #f9fafb);
-    transition: background 0.15s;
-}
-.student-row:hover { background: var(--bg-hover, #f3f4f6); }
-.student-avatar {
-    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff; font-weight: 700; font-size: 0.9rem;
-    display: flex; align-items: center; justify-content: center;
-}
-.student-info { flex: 1; min-width: 0; }
-.student-name { font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.student-meta { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.paid-toggle {
-    font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 20px;
-    border: 1px solid rgba(0,0,0,0.1); background: var(--bg, #f9fafb); cursor: pointer;
-    white-space: nowrap; transition: all 0.15s;
-}
-.paid-toggle--paid { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.btn-icon-danger {
-    width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
-    background: #fee2e2; color: #dc2626; font-size: 0.8rem; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; transition: background 0.15s;
-}
-.btn-icon-danger:hover { background: #fecaca; }
-.lesson-list { display: flex; flex-direction: column; gap: 8px; }
-.lesson-item {
-    display: flex; align-items: center; gap: 10px; padding: 12px;
-    border-radius: 10px; background: var(--bg, #f9fafb); transition: background 0.15s;
-}
-.lesson-item:hover { background: var(--bg-hover, #f3f4f6); }
-.lesson-order {
-    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-    background: var(--primary-light, #ede9fe); color: var(--primary, #6366f1);
-    font-weight: 700; font-size: 0.82rem;
-    display: flex; align-items: center; justify-content: center;
-}
-.lesson-info { flex: 1; min-width: 0; }
-.lesson-title { font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lesson-meta { font-size: 0.75rem; color: var(--text-muted); }
-.lesson-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .empty-mini { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 20px 0; }
-.group-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-.group-badge--active { background: #d1fae5; color: #065f46; }
-.group-badge--archived { background: #f3f4f6; color: #6b7280; }
 .breadcrumb { display: flex; align-items: center; }
 </style>
 <script>

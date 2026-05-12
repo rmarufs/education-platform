@@ -12,7 +12,7 @@
         <div class="dashboard-header">
             <div>
                 <h1 data-i18n="group.title">🗂 Группы</h1>
-                <p>Приватные учебные группы вашего центра</p>
+                <p data-i18n="group.private_groups_subtitle">Приватные учебные группы вашего центра</p>
             </div>
             <button class="btn btn-primary" onclick="openModal('create-group-modal')">
                 + <span data-i18n="group.create">Создать группу</span>
@@ -20,50 +20,43 @@
         </div>
 
         {% if groups %}
-        <div class="groups-grid">
+        <div class="courses-grid">
             {% for group in groups %}
-            <div class="group-card fade-in {% if not group.is_active %}group-card--archived{% endif %}">
-                <div class="group-card-header">
+            <div class="course-card fade-in">
+                <div class="course-card-header">
+                    <div class="course-cover">
                     {% if group.avatar_url %}
-                    <img src="{{ group.avatar_url }}" alt="Avatar" class="group-icon" style="object-fit: cover;">
+                        <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="course-cover-image" loading="lazy">
                     {% else %}
-                    <div class="group-icon">{{ group.name[0]|upper }}</div>
+                        <div class="course-cover-placeholder">
+                            <span class="course-cover-letter">{{ group.name[0]|upper }}</span>
+                        </div>
                     {% endif %}
-                    <div class="group-meta">
-                        <h3 class="group-name">{{ group.name }}</h3>
+                    </div>
+                </div>
+                <div class="course-card-body">
+                    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                        <span class="badge badge-primary" data-i18n="group.badge">Группа</span>
                         {% if group.is_active %}
-                        <span class="group-badge group-badge--active">✅ <span data-i18n="group.active">Активна</span></span>
+                        <span class="badge badge-secondary" data-i18n="group.active">Активна</span>
                         {% else %}
-                        <span class="group-badge group-badge--archived">📦 <span data-i18n="group.archived">Архив</span></span>
+                        <span class="badge badge-secondary" data-i18n="group.archived">Архив</span>
                         {% endif %}
                     </div>
-                </div>
-
-                {% if group.description %}
-                <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
-                {% endif %}
-
-                <div class="group-stats">
-                    <div class="group-stat">
-                        <span class="group-stat-icon">👨‍🏫</span>
-                        <span>{{ group.teacher.name if group.teacher else "Не назначен" }}</span>
-                    </div>
-                    <div class="group-stat">
-                        <span class="group-stat-icon">🎓</span>
-                        <span>{{ group.members|length }} <span data-i18n="group.members_count">учеников</span></span>
-                    </div>
-                    <div class="group-stat">
-                        <span class="group-stat-icon">📚</span>
-                        <span>{{ group.lessons|length }} уроков</span>
+                    <h3 class="course-title">{{ group.name }}</h3>
+                    <p class="course-desc">{{ (group.description or "") | striptags }}{% if not group.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+                    <div class="course-meta">
+                        <span>👨‍🏫 {% if group.teacher %}{{ group.teacher.name }}{% else %}<span data-i18n="group.teacher_not_assigned">Не назначен</span>{% endif %}</span>
+                        <span>🎓 {{ group.members|length }} <span data-i18n="group.members_count">учеников</span></span>
+                        <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></span>
                     </div>
                 </div>
-
-                <div class="group-card-footer">
-                    <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm">
+                <div class="course-card-footer teacher-actions">
+                    <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm" data-i18n="group.manage">
                         ⚙️ <span data-i18n="group.manage">Управление</span>
                     </a>
                     <form action="/groups/{{ group.id }}/delete" method="POST" style="margin:0;"
-                          onsubmit="return confirm('Удалить группу «{{ group.name }}»? Это действие необратимо.')">
+                          onsubmit="return confirm(t('group.confirm_delete_group', {name: '{{ group.name|escape }}'}))">
                         <button type="submit" class="btn btn-danger btn-sm">🗑 <span data-i18n="group.delete">Удалить группу</span></button>
                     </form>
                 </div>
@@ -104,7 +97,7 @@
                 <div class="form-group">
                     <label for="cg-teacher" data-i18n="group.teacher">Преподаватель</label>
                     <select id="cg-teacher" name="teacher_id" class="form-input">
-                        <option value="">— Не назначен —</option>
+                        <option value="" data-i18n="group.teacher_not_assigned">— Не назначен —</option>
                         {% for teacher in teachers %}
                         <option value="{{ teacher.id }}">{{ teacher.name }}</option>
                         {% endfor %}
@@ -121,47 +114,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-.groups-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 8px;
-}
-.group-card {
-    background: var(--bg-card, #fff);
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: box-shadow 0.2s, transform 0.2s;
-}
-.group-card:hover { box-shadow: 0 8px 32px rgba(99,102,241,0.12); transform: translateY(-2px); }
-.group-card--archived { opacity: 0.65; }
-.group-card-header { display: flex; align-items: center; gap: 14px; }
-.group-icon {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff; font-size: 1.4rem; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.group-meta { flex: 1; min-width: 0; }
-.group-name { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text, #111);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.group-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-.group-badge--active { background: #d1fae5; color: #065f46; }
-.group-badge--archived { background: #f3f4f6; color: #6b7280; }
-.group-description { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
-.group-stats { display: flex; flex-direction: column; gap: 6px; }
-.group-stat { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary, #555); }
-.group-stat-icon { width: 20px; text-align: center; }
-.group-card-footer { display: flex; gap: 8px; margin-top: auto; padding-top: 8px;
-    border-top: 1px solid rgba(0,0,0,0.06); }
-.group-card-footer .btn { flex: 1; }
-</style>
 <script>
 function openModal(id) {
     if (typeof _openModalOverlay === 'function') _openModalOverlay(id);

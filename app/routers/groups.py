@@ -86,7 +86,11 @@ def groups_list(request: Request, db: Session = Depends(get_db)):
 
     groups = (
         db.query(Group)
-        .options(joinedload(Group.teacher), joinedload(Group.members))
+        .options(
+            joinedload(Group.teacher),
+            joinedload(Group.members),
+            joinedload(Group.lessons),
+        )
         .filter(Group.organization_id == org.id)
         .order_by(Group.created_at.desc())
         .all()
@@ -434,6 +438,7 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
     if user.is_org:
         org = db.query(Organization).filter(Organization.user_id == user.id).first()
         group = db.query(Group).options(
+            joinedload(Group.organization),
             joinedload(Group.teacher),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
@@ -478,6 +483,7 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
 
     elif user.is_teacher:
         group = db.query(Group).options(
+            joinedload(Group.organization),
             joinedload(Group.teacher),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
@@ -576,6 +582,31 @@ async def lesson_create(
     return RedirectResponse(f"/groups/{group_id}/manage?success=lesson_created", status_code=302)
 
 
+@router.get("/{group_id}/lessons/{lesson_id}/edit", response_class=HTMLResponse)
+def lesson_edit_page(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_lessons(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    return RedirectResponse(f"/groups/{group_id}/manage?edit_lesson={lesson_id}", status_code=302)
+
+
 @router.post("/{group_id}/lessons/{lesson_id}/edit")
 async def lesson_edit(
     group_id: int,
@@ -585,6 +616,7 @@ async def lesson_edit(
     description: str = Form(""),
     video_url: Optional[str] = Form(None),
     order: int = Form(0),
+    cover: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
     user = _get_user(request, db)
@@ -606,6 +638,14 @@ async def lesson_edit(
     lesson.description = description.strip() if description else None
     lesson.video_url = video_url.strip() if video_url else None
     lesson.order = order
+
+    if cover and cover.filename:
+        cover_url = compress_and_upload_avatar(
+            cover.file,
+            public_id=f"group_lessons/lesson_{lesson.id}"
+        )
+        if cover_url:
+            lesson.cover_url = cover_url
 
     # Process files if any
     form_data = await request.form()
@@ -655,6 +695,58 @@ def lesson_delete(
     return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
 
 
+@router.post("/{group_id}/lessons/{lesson_id}/materials/add")
+async def lesson_material_add(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    title: str = Form(""),
+    file_url: Optional[str] = Form(None),
+    file: UploadFile = File(None),
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_lessons(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    material_title = title.strip()
+    if file and file.filename:
+        os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
+        original_name = os.path.basename(file.filename)
+        filename = f"{uuid.uuid4().hex}_{original_name}"
+        save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        db.add(GroupMaterial(
+            lesson_id=lesson.id,
+            title=material_title or original_name,
+            file_url="/" + save_path,
+        ))
+    elif file_url and file_url.strip():
+        clean_file_url = file_url.strip()
+        db.add(GroupMaterial(
+            lesson_id=lesson.id,
+            title=material_title or clean_file_url.split("/")[-1] or "Материал",
+            file_url=clean_file_url,
+        ))
+    else:
+        raise HTTPException(status_code=400, detail="Добавьте файл или ссылку на материал")
+
+    db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=material_added", status_code=302)
+
+
 @router.post("/{group_id}/lessons/{lesson_id}/materials/{material_id}/delete")
 def lesson_material_delete(
     group_id: int,
@@ -695,6 +787,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return redirect
 
     group = db.query(Group).options(
+        joinedload(Group.organization),
         joinedload(Group.lessons).joinedload(GroupLesson.materials),
         joinedload(Group.teacher),
     ).filter(Group.id == group_id, Group.is_active == True).first()
@@ -727,6 +820,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         return redirect
 
     group = db.query(Group).options(
+        joinedload(Group.organization),
         joinedload(Group.lessons),
         joinedload(Group.teacher),
     ).filter(Group.id == group_id, Group.is_active == True).first()
@@ -753,10 +847,25 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
 
+    ordered_lessons = sorted(group.lessons, key=lambda item: (item.order or 0, item.id))
+    current_index = next(
+        (index for index, item in enumerate(ordered_lessons) if item.id == lesson.id),
+        None,
+    )
+    previous_lesson = ordered_lessons[current_index - 1] if current_index and current_index > 0 else None
+    next_lesson = (
+        ordered_lessons[current_index + 1]
+        if current_index is not None and current_index + 1 < len(ordered_lessons)
+        else None
+    )
+
     return templates.TemplateResponse("groups/lesson_view.html", {
         "request": request,
         "user": user,
         "group": group,
         "lesson": lesson,
         "membership": membership,
+        "ordered_lessons": ordered_lessons,
+        "previous_lesson": previous_lesson,
+        "next_lesson": next_lesson,
     })

@@ -22,7 +22,7 @@ from app.models.material import Material
 from app.models.review import Review
 from app.models.quiz import Quiz, Question
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-from app.quiz_flow import course_progress_state, course_progress_state_from_obj, is_course_ready_for_quiz, is_module_ready_for_quiz
+from app.quiz_flow import course_learning_url, course_progress_state, course_progress_state_from_obj, first_course_lesson_url, is_course_ready_for_quiz, is_module_ready_for_quiz
 
 try:
     import cloudinary
@@ -529,6 +529,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     module_quiz_states = {}
     course_quiz_unlocked = False
     course_quiz_passed = False
+    learning_url = None
     if is_student(user):
         course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
         progress_rows = (
@@ -559,6 +560,9 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         }
         course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
         course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
+        learning_url = course_learning_url(db, user.id, course)
+    else:
+        learning_url = first_course_lesson_url(course)
 
     # \u0423\u0436\u0435 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u043b \u043e\u0442\u0437\u044b\u0432?
     user_review = None
@@ -610,6 +614,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "module_quiz_states": module_quiz_states,
         "course_quiz_unlocked": course_quiz_unlocked,
         "course_quiz_passed": course_quiz_passed,
+        "learning_url": learning_url,
         "user_review": user_review,
         "top_reviews": top_reviews,
         "show_review_prompt": show_review_prompt,

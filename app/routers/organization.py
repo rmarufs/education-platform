@@ -134,7 +134,8 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
 
     # Количество студентов
     students_count = db.query(OrganizationStudent).filter(
-        OrganizationStudent.organization_id == org.id
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status == "accepted"
     ).count() if org else 0
 
     # Количество групп
@@ -440,7 +441,8 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
     ).first()
 
     if link:
-        db.delete(link)
+        link.status = "rejected"
+        link.was_removed_notification = False
         db.commit()
 
     return RedirectResponse("/organization/students", status_code=302)
@@ -528,7 +530,8 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if link:
-        db.delete(link)
+        link.status = "left"
+        link.was_removed_notification = False
         db.commit()
 
     return RedirectResponse("/dashboard/student", status_code=302)
@@ -709,7 +712,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
         user_student_membership = db.query(OrganizationStudent).filter(
             OrganizationStudent.organization_id == org.id,
             OrganizationStudent.student_id == user.id,
-            OrganizationStudent.status.in_(["accepted", "pending"])
+            OrganizationStudent.status.in_(["accepted", "pending", "rejected"])
         ).first()
         
         if not user_student_membership:

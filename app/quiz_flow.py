@@ -215,6 +215,36 @@ def _resolve_after_module(course: Course, module: Module, completed_lesson_ids: 
     return f"/courses/{course.id}/completed"
 
 
+def first_course_lesson_url(course: Course) -> str | None:
+    for module in course.modules:
+        if module.lessons:
+            return f"/lessons/{module.lessons[0].id}"
+    return None
+
+
+def course_learning_url(db: Session, student_id: int, course: Course) -> str | None:
+    completed_lesson_ids, _ = _state_sets(db, student_id, course)
+    if not completed_lesson_ids:
+        return first_course_lesson_url(course)
+
+    last_progress = (
+        db.query(Progress)
+        .join(Lesson, Progress.lesson_id == Lesson.id)
+        .join(Module, Lesson.module_id == Module.id)
+        .filter(
+            Progress.student_id == student_id,
+            Progress.completed == True,  # noqa: E712
+            Module.course_id == course.id,
+        )
+        .order_by(Progress.completed_at.desc(), Progress.id.desc())
+        .first()
+    )
+    if not last_progress:
+        return first_course_lesson_url(course)
+
+    return next_after_lesson(db, student_id, last_progress.lesson_id)
+
+
 def next_after_lesson(db: Session, student_id: int, lesson_id: int) -> str:
     lesson = (
         db.query(Lesson)

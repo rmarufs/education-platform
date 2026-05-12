@@ -57,8 +57,8 @@
             <div class="enrolled-badge">
               <span>✅</span><span data-i18n="course_page.avail">Курс доступен вам</span>
             </div>
-            {% if course.modules and course.modules[0].lessons %}
-            <a href="/lessons/{{ course.modules[0].lessons[0].id }}"
+            {% if learning_url %}
+            <a href="{{ learning_url }}"
                class="btn btn-primary btn-full" style="margin-top: 8px;" data-i18n="course_page.start_continue">
                ▶ Начать / Продолжить
             </a>

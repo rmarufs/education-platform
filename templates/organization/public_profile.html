@@ -85,8 +85,8 @@
                                 <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
                             </div>
                             <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                                <button id="submit-join-btn" class="btn btn-primary" onclick="submitJoin({{ org.id }})">Отправить заявку</button>
-                                <button class="btn btn-outline" onclick="hideJoinForm()">Отмена</button>
+                                <button id="submit-join-btn" class="btn btn-primary" onclick="submitJoin({{ org.id }})" data-i18n="org.join_send">Отправить заявку</button>
+                                <button class="btn btn-outline" onclick="hideJoinForm()" data-i18n="action.cancel">Отмена</button>
                             </div>
                         </div>
                     {% endif %}
@@ -100,8 +100,10 @@
                         <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
                             {% if user_student_membership.status == 'accepted' %}
                                 <span data-i18n="student.is_member">Вы приняты</span>
-                            {% else %}
+                            {% elif user_student_membership.status == 'pending' %}
                                 <span data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка на рассмотрении в центре {{ org.name }}</span>
+                            {% elif user_student_membership.status == 'rejected' %}
+                                <span data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка в учебный центр {{ org.name }} отклонена</span>
                             {% endif %}
                         </button>
                     {% else %}
@@ -217,7 +219,7 @@ if (letterInput && letterCounter) {
 async function submitJoin(orgId) {
     const submitBtn = document.getElementById('submit-join-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ Отправка...';
+    submitBtn.textContent = t('action.sending') || 'Отправка...';
 
     const formData = new FormData();
     const coverLetter = document.getElementById('cover-letter-input').value;
@@ -234,7 +236,7 @@ async function submitJoin(orgId) {
             document.getElementById('join-form-block').style.display = 'none';
             const wrap = document.getElementById('join-org-btn').parentElement;
             wrap.innerHTML = `<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ ${t('org.pending_review', {name: '{{ org.name|escape }}'})}</button>`;
-            showToast(t('org.join_success') || 'Заявка успешно отправлена!', 'success');
+            showToast(t('org.join_sent') || 'Заявка успешно отправлена!', 'success');
         } else if (r.status === 400) {
             submitBtn.disabled = false;
             submitBtn.textContent = t('org.join_send') || 'Отправить заявку';
@@ -246,15 +248,15 @@ async function submitJoin(orgId) {
         }
     } catch {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить заявку';
-        showToast('Нет связи с сервером.', 'error');
+        submitBtn.textContent = t('org.join_send') || 'Отправить заявку';
+        showToast(t('common.error_conn') || 'Нет связи с сервером.', 'error');
     }
 }
 
 async function joinOrganization(orgId) {
     const btn = document.getElementById('join-student-btn');
     btn.disabled = true;
-    btn.textContent = '⏳ Отправка...';
+    btn.textContent = t('action.sending') || 'Отправка...';
 
     try {
         const res = await fetch(`/organization/${orgId}/student/join`, {
@@ -264,39 +266,46 @@ async function joinOrganization(orgId) {
         const data = await res.json();
 
         if (data.already_in_org) {
-            const confirmMsg = t('org.confirm_switch_hint', {name: data.org_name}) || `Вы уже состоите в учебном центре "${data.org_name}".\nХотите покинуть его и вступить в новый?`;
-            const confirm = window.confirm(confirmMsg);
-            if (confirm) {
+            const confirmSwitchText = t('org.confirm_switch_btn');
+            const confirmed = await showConfirmModal(
+                t('org.confirm_switch') || 'Смена учебного центра',
+                t('org.confirm_switch_hint', {name: data.org_name}) || `Вы уже состоите в учебном центре "${data.org_name}". Хотите покинуть его и вступить в новый?`,
+                confirmSwitchText === 'org.confirm_switch_btn' ? 'Да, сменить' : confirmSwitchText,
+                t('action.cancel') || 'Отмена',
+                true
+            );
+            if (confirmed) {
                 const res2 = await fetch(`/organization/${orgId}/student/join?force=true`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'}
                 });
                 const data2 = await res2.json();
-                if (data2.success) {
-                    if (data2.auto_accepted) {
-                        btn.textContent = 'Вы приняты';
-                    } else {
-                        btn.textContent = '⌛ На рассмотрении';
-                    }
+                if (res2.ok && data2.success) {
+                    btn.textContent = data2.auto_accepted
+                        ? t('student.is_member')
+                        : t('org.status_pending');
+                    showToast(data2.auto_accepted ? t('org.join_success') : t('org.join_sent'), 'success');
                     return;
                 }
+                showToast(data2.detail || t('common.error_conn'), 'error');
             }
             btn.disabled = false;
-            btn.textContent = 'Вступить';
-        } else if (data.success) {
-            if (data.auto_accepted) {
-                btn.textContent = 'Вы приняты';
-            } else {
-                btn.textContent = '⌛ На рассмотрении';
-            }
+            btn.textContent = t('org.join_btn') || 'Вступить';
+        } else if (res.ok && data.success) {
+            btn.textContent = data.auto_accepted
+                ? t('student.is_member')
+                : t('org.status_pending');
+            showToast(data.auto_accepted ? t('org.join_success') : t('org.join_sent'), 'success');
         } else {
             btn.disabled = false;
-            btn.textContent = 'Вступить';
+            btn.textContent = t('org.join_btn') || 'Вступить';
+            showToast(data.detail || t('common.error_conn'), 'error');
         }
     } catch (err) {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = 'Вступить';
+        btn.textContent = t('org.join_btn') || 'Вступить';
+        showToast(t('common.error_conn') || 'Нет связи с сервером.', 'error');
     }
 }
 </script>

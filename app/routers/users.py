@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember
+from app.quiz_flow import course_learning_url
 
 router = APIRouter()
 from app.ui import templates
@@ -189,15 +190,22 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             my_courses.append({
                 "course": c,
                 "progress_pct": pct,
-                "last_lesson": last_lessons.get(data["last_accessed_lesson_id"])
+                "last_lesson": last_lessons.get(data["last_accessed_lesson_id"]),
+                "continue_url": course_learning_url(db, user.id, c),
             })
 
     # Группы студента
-    student_groups = db.query(Group).join(
-        GroupMember, GroupMember.group_id == Group.id
-    ).filter(
-        GroupMember.student_id == user.id
-    ).all()
+    student_groups = (
+        db.query(Group)
+        .options(
+            joinedload(Group.organization),
+            joinedload(Group.teacher),
+            joinedload(Group.lessons),
+        )
+        .join(GroupMember, GroupMember.group_id == Group.id)
+        .filter(GroupMember.student_id == user.id)
+        .all()
+    )
 
     return templates.TemplateResponse(
         "dashboard/student.html",

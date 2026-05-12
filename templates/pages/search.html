@@ -110,7 +110,7 @@
                 <p class="course-desc" style="font-size:.85rem;">${o.description}</p>
               </div>
               <div class="course-card-footer" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">
-                <a href="/organization/${o.id}" class="btn btn-outline" data-i18n="org.open_btn" style="width:100%;text-align:center;">Открыть</a>
+                <a href="/organization/${o.id}" class="btn btn-outline" style="width:100%;text-align:center;">${t('org.open_btn')}</a>
               </div>
             `;
             orgsContainer.appendChild(card);
@@ -229,6 +229,7 @@
   catSel.addEventListener('change', () => doSearch(1));
   lvlSel.addEventListener('change', () => doSearch(1));
   sortSel.addEventListener('change', () => doSearch(1));
+  window.refreshSearchResults = doSearch;
 
   // Начальный поиск (чтение 'q' из URL если есть)
   const urlParams = new URLSearchParams(window.location.search);
@@ -241,10 +242,11 @@
 
 async function studentJoinOrg(orgId, hasOtherOrg) {
     if (hasOtherOrg) {
+        const confirmSwitchText = t('org.confirm_switch_btn');
         const confirmed = await showConfirmModal(
             t('org.confirm_switch') || 'Смена учебного центра',
             t('org.confirm_switch_hint') || 'Вы состоите в другом учебном центре. При смене вы будете отчислены из текущего и зачислены в новый.',
-            t('org.confirm_switch_btn') || 'Да, сменить',
+            confirmSwitchText === 'org.confirm_switch_btn' ? 'Да, сменить' : confirmSwitchText,
             t('action.cancel') || 'Отмена',
             true
         );
@@ -252,15 +254,16 @@ async function studentJoinOrg(orgId, hasOtherOrg) {
     }
 
     try {
-        const r = await fetch(`/organization/${orgId}/student/join`, { method: 'POST' });
+        const url = `/organization/${orgId}/student/join${hasOtherOrg ? '?force=true' : ''}`;
+        const r = await fetch(url, { method: 'POST' });
         let data = {};
         try { data = await r.json(); } catch (_) {}
 
         if (r.ok) {
-            showToast(t('org.join_success') || 'Вы успешно отправили заявку в учебный центр!', 'success');
-            doSearch();
+            showToast(data.auto_accepted ? t('org.join_success') : t('org.join_sent'), 'success');
+            if (typeof window.refreshSearchResults === 'function') window.refreshSearchResults();
         } else {
-            showToast(data.detail || t('common.error') || 'Произошла ошибка.', 'error');
+            showToast(data.detail || t('common.error_conn') || 'Произошла ошибка.', 'error');
         }
     } catch (e) {
         console.error(e);

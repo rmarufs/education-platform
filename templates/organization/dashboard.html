@@ -70,7 +70,7 @@
                 <div class="org-metric-icon" style="background: #f0fdf4; color: #16a34a;">🗂</div>
                 <div class="org-metric-data">
                     <div class="org-metric-value">{{ groups_count }}</div>
-                    <div class="org-metric-label">Групп</div>
+                    <div class="org-metric-label" data-i18n="org.stats_groups">Групп</div>
                 </div>
             </div>
         </div>
@@ -79,7 +79,7 @@
         {% if groups_count > 0 or True %}
         <div style="margin-top: 20px;">
             <a href="/groups/" class="btn btn-outline" style="gap: 8px;">
-                🗂 Управление группами
+                🗂 <span data-i18n="org.manage_groups">Управление группами</span>
                 {% if groups_count > 0 %}<span style="background:var(--primary,#6366f1);color:#fff;padding:1px 8px;border-radius:20px;font-size:0.75rem;">{{ groups_count }}</span>{% endif %}
             </a>
         </div>

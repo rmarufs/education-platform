@@ -122,33 +122,35 @@
         <section style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
             {% if student_groups %}
-            <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="courses-grid">
                 {% for group in student_groups %}
-                <div class="alert alert-info" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:16px; border-radius:12px; background-color: var(--surface-soft); border: 1px solid var(--border);">
-                    <div style="display:flex; align-items:center; gap:16px;">
-                        {% if group.avatar_url %}
-                            <img src="{{ group.avatar_url }}" style="width:56px;height:56px;border-radius:12px;object-fit:cover; border: 1px solid rgba(0,0,0,0.05);">
-                        {% else %}
-                            <div class="avatar avatar-placeholder" style="width:56px;height:56px;border-radius:12px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;">{{ group.name[0]|upper }}</div>
-                        {% endif %}
-                        <div>
-                            <strong style="font-size: 1.05rem; display: block; margin-bottom: 4px;">{{ group.name }}</strong>
-                            {% if group.teacher %}
-                            <p style="margin:0;font-size:0.85rem;color:var(--text-muted); display: flex; align-items: center; gap: 4px;">👨‍🏫 {{ group.teacher.name }}</p>
+                <div class="course-card fade-in">
+                    {% if group.avatar_url %}
+                        <img src="{{ group.avatar_url }}" class="course-cover" alt="{{ group.name }}">
+                    {% else %}
+                        <div class="course-cover course-cover-placeholder">{{ group.name[0]|upper }}</div>
+                    {% endif %}
+                    <div class="course-card-body">
+                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                            <span class="badge badge-primary" data-i18n="group.badge">Группа</span>
+                            {% if group.organization %}
+                            <span class="badge badge-secondary">{{ group.organization.name }}</span>
                             {% endif %}
-                            <p style="margin:4px 0 0;font-size:0.85rem;color:var(--text-muted);">📚 {{ group.lessons|length }} <span data-i18n="group.lessons">уроков</span></p>
                         </div>
+                        <h3 class="course-title">{{ group.name }}</h3>
+                        {% if group.teacher %}
+                        <p class="course-teacher">👨‍🏫 {{ group.teacher.name }}</p>
+                        {% endif %}
+                        <p class="course-meta">📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></p>
+                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-full" data-i18n="catalog.open">Открыть →</a>
                     </div>
-                    <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm" style="white-space:nowrap;">
-                        <span data-i18n="course.open">Открыть</span> →
-                    </a>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
             <div class="empty-state" style="padding: 20px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-md);">
                 <span class="empty-icon" style="font-size: 1.5rem; margin-bottom: 8px; display: block;">👥</span>
-                <p style="margin: 0;" class="text-muted" data-i18n="group.no_groups">Вы пока не добавлены ни в одну группу.</p>
+                <p style="margin: 0;" class="text-muted" data-i18n="group.no_student_groups">Вы пока не добавлены ни в одну группу.</p>
             </div>
             {% endif %}
         </section>
@@ -174,8 +176,8 @@
                         <p class="course-desc" style="-webkit-line-clamp: 2;">{{ (item.course.description or "") | striptags }}{% if not item.course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
                     </div>
                     <div class="course-card-footer" style="display: flex; flex-direction: column; gap: 8px;">
-                        {% if item.last_lesson %}
-                        <a href="/lessons/{{ item.last_lesson.id }}" class="btn btn-primary btn-sm btn-full" title="{{ item.last_lesson.title }}" data-i18n="course_page.start_continue">▶ Начать / Продолжить</a>
+                        {% if item.continue_url %}
+                        <a href="{{ item.continue_url }}" class="btn btn-primary btn-sm btn-full" title="{{ item.last_lesson.title if item.last_lesson else item.course.title }}" data-i18n="course_page.start_continue">▶ Начать / Продолжить</a>
                         {% else %}
                         <a href="/courses/{{ item.course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="course_page.start_continue">▶ Начать / Продолжить</a>
                         {% endif %}
