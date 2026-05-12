@@ -146,26 +146,28 @@
   <button type="button" 
           class="btn btn-outline btn-sm google-forms-add-btn"
           data-i18n="manage.add_test"
-          onclick="openGoogleFormsModal('{{ scope_name }}', {{ scope_id }}, '{{ label }}')">
+          onclick="openGoogleFormsModal({{ scope_name | tojson }}, {{ scope_id }}, {{ label | tojson }})">
     + Добавить тест
   </button>
   {% else %}
   <div class="google-forms-card">
     <div class="google-forms-header">
       <span class="badge badge-quiz">Google Forms</span>
-      <a href="{{ quiz_url }}" target="_blank" class="btn btn-secondary btn-xs">📋 Открыть форму</a>
+      <a href="{{ quiz_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-xs" data-i18n="manage.google_forms_open">📋 Открыть форму</a>
     </div>
     <p class="google-forms-url" title="{{ quiz_url }}">{{ quiz_url | truncate(60, True, '...') }}</p>
-    <span class="text-muted small">Результаты доступны в вашем Google Forms аккаунте</span>
+    <span class="text-muted small" data-i18n="manage.google_forms_results_hint">Результаты доступны в вашем Google Forms аккаунте</span>
     <div class="google-forms-actions" style="margin-top: 8px; display: flex; gap: 8px;">
       <button type="button" 
               class="btn btn-outline btn-xs"
-              onclick="openGoogleFormsModal('{{ scope_name }}', {{ scope_id }}, '{{ label }}', '{{ quiz_url }}')">
+              data-i18n="action.edit"
+              onclick="openGoogleFormsModal({{ scope_name | tojson }}, {{ scope_id }}, {{ label | tojson }}, {{ (quiz_url or '') | tojson }})">
         ✏️ Изменить
       </button>
       <button type="button" 
               class="btn btn-danger btn-xs"
-              onclick="deleteGoogleFormsUrl('{{ scope_name }}', {{ scope_id }})">
+              data-i18n="action.delete"
+              onclick="deleteGoogleFormsUrl({{ scope_name | tojson }}, {{ scope_id }})">
         🗑 Удалить
       </button>
     </div>

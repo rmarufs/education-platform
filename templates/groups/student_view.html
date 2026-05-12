@@ -2,6 +2,7 @@
 {% block title %}{{ group.name }} — Фурузон{% endblock %}
 
 {% block content %}
+{% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | sort(attribute="order") | list %}
 <div class="course-detail-page">
   <div class="breadcrumb">
     <a href="/dashboard/student" data-i18n="nav.dashboard">Кабинет</a> <span>›</span>
@@ -22,13 +23,13 @@
             {% endif %}
           </div>
           <div class="course-hero-meta">
-            <span class="category-badge" data-i18n="group.center_badge" data-i18n-params='{"name":"{{ group.organization.name|escape }}"}'>Группа · {{ group.organization.name }}</span>
+            <span class="category-badge" data-i18n="group.center_badge" data-i18n-params='{{ {"name": group.organization.name} | tojson }}'>Группа · {{ group.organization.name }}</span>
             <h1 class="course-detail-title">{{ group.name }}</h1>
             <div class="course-detail-info">
               {% if group.teacher %}
-              <span>👨‍🏫 {{ group.teacher.name }}</span>
+              <span>👨‍🏫 <span data-i18n="group.teacher">Преподаватель</span>: {{ group.teacher.name }}</span>
               {% endif %}
-              <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></span>
+              <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></span>
               {% if membership.is_paid %}
               <span>💚 <span data-i18n="group.paid">Оплачено</span></span>
               {% else %}
@@ -50,8 +51,8 @@
             <div class="enrolled-badge">
               <span>✅</span><span data-i18n="group.available">Группа доступна вам</span>
             </div>
-            {% if group.lessons %}
-            <a href="/groups/{{ group.id }}/lessons/{{ (group.lessons|sort(attribute='order'))[0].id }}"
+            {% if ordered_lessons %}
+            <a href="/groups/{{ group.id }}/lessons/{{ ordered_lessons[0].id }}"
                class="btn btn-primary btn-full" style="margin-top: 8px;" data-i18n="course_page.start_continue">
                ▶ Начать / Продолжить
             </a>
@@ -61,33 +62,84 @@
       </div>
     </div>
 
-    {% if group.lessons %}
+    {% if group_modules or unassigned_lessons or group.quiz_url %}
     <section class="course-curriculum is-open" id="course-curriculum">
       <div class="course-curriculum-header">
         <h2 data-i18n="group.content">Содержание группы</h2>
         <button type="button" class="btn btn-outline btn-sm curriculum-toggle" id="curriculum-toggle" aria-expanded="false" data-i18n="course_page.show_lessons">Показать уроки</button>
       </div>
       <div class="course-curriculum-body" id="course-curriculum-body">
-        <div class="curriculum-module" id="group-curriculum-{{ group.id }}">
+        {% if group.quiz_url %}
+        <div class="curriculum-module group-student-quiz-card">
           <div class="curriculum-module-header">
             <div class="curriculum-module-main">
-              <span class="module-index">1</span>
-              <strong data-i18n="group.group_lessons">Уроки группы</strong>
-              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span>
+              <span class="module-index">✓</span>
+              <strong data-i18n="group.group_test">Тест группы</strong>
             </div>
+            <a href="{{ group.quiz_url }}" target="_blank" rel="noopener" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="group.open_group_test">Открыть тест группы</a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% for module in group_modules %}
+        <div class="curriculum-module" id="group-module-curriculum-{{ module.id }}">
+          <div class="curriculum-module-header">
+            <div class="curriculum-module-main">
+              <span class="module-index">{{ loop.index }}</span>
+              <strong>{{ module.title }}</strong>
+              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": module.lessons|length} | tojson }}'>{{ module.lessons|length }} урок(ов)</span>
+            </div>
+            {% if module.quiz_url %}
+            <a href="{{ module.quiz_url }}" target="_blank" rel="noopener" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="group.open_module_test">Тест модуля</a>
+            {% endif %}
           </div>
           <ul class="curriculum-lessons">
-            {% for lesson in group.lessons|sort(attribute='order') %}
+            {% for lesson in module.lessons|sort(attribute='order') %}
             <li class="curriculum-lesson">
               <span>{{ "🎥" if lesson.video_url else "📄" }}</span>
               <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
               {% if lesson.materials %}
-              <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
+              <span class="badge" data-i18n="manage.files_count" data-i18n-params='{{ {"count": lesson.materials|length} | tojson }}'>{{ lesson.materials|length }} файл(ов)</span>
+              {% endif %}
+              {% if lesson.quiz_url %}
+              <a href="{{ lesson.quiz_url }}" target="_blank" rel="noopener" class="badge badge-quiz group-student-quiz-link" data-i18n="group.open_lesson_test">Тест урока</a>
+              {% endif %}
+            </li>
+            {% else %}
+            <li class="curriculum-lesson text-muted">
+              <span>📄</span>
+              <span data-i18n="group.no_lessons">Уроков пока нет</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+
+        {% if unassigned_lessons %}
+        <div class="curriculum-module group-unassigned-lessons">
+          <div class="curriculum-module-header">
+            <div class="curriculum-module-main">
+              <span class="module-index">•</span>
+              <strong data-i18n="group.lessons_without_module">Уроки без модуля</strong>
+              <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": unassigned_lessons|length} | tojson }}'>{{ unassigned_lessons|length }} урок(ов)</span>
+            </div>
+          </div>
+          <ul class="curriculum-lessons">
+            {% for lesson in unassigned_lessons %}
+            <li class="curriculum-lesson">
+              <span>{{ "🎥" if lesson.video_url else "📄" }}</span>
+              <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
+              {% if lesson.materials %}
+              <span class="badge" data-i18n="manage.files_count" data-i18n-params='{{ {"count": lesson.materials|length} | tojson }}'>{{ lesson.materials|length }} файл(ов)</span>
+              {% endif %}
+              {% if lesson.quiz_url %}
+              <a href="{{ lesson.quiz_url }}" target="_blank" rel="noopener" class="badge badge-quiz group-student-quiz-link" data-i18n="group.open_lesson_test">Тест урока</a>
               {% endif %}
             </li>
             {% endfor %}
           </ul>
         </div>
+        {% endif %}
       </div>
     </section>
     {% else %}
@@ -98,6 +150,37 @@
     {% endif %}
   </div>
 </div>
+
+<style>
+  .group-student-quiz-card .curriculum-module-header {
+    border-bottom: 0;
+  }
+
+  .group-student-quiz-link {
+    text-decoration: none;
+  }
+
+  @media (max-width: 768px) {
+    .course-curriculum-header,
+    .curriculum-module-header,
+    .curriculum-module-main,
+    .curriculum-lesson {
+      align-items: flex-start;
+    }
+
+    .curriculum-module-header {
+      gap: 10px;
+      flex-direction: column;
+    }
+
+    .curriculum-module-quiz-link,
+    .group-student-quiz-link {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block scripts %}

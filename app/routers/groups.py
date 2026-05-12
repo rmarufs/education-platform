@@ -1,8 +1,9 @@
 import os
 import shutil
 import uuid
+from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from pydantic import BaseModel
@@ -10,7 +11,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupLesson, GroupMaterial
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial
 from app.ui import templates
 from app.utils.image import compress_and_upload_avatar
 
@@ -72,6 +73,39 @@ def _get_org_for_group(group_id: int, user: User, db: Session):
     return org, group
 
 
+def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
+    if user.is_org:
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        return bool(org and group.organization_id == org.id)
+    if user.is_teacher:
+        return group.teacher_id == user.id
+    return False
+
+
+def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
+    user = _get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+    if not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    return user, group
+
+
+def _validate_quiz_url(quiz_url: str) -> str:
+    clean_url = quiz_url.strip()
+    if not clean_url:
+        raise HTTPException(status_code=400, detail="URL cannot be empty")
+
+    parsed = urlparse(clean_url)
+    if not all([parsed.scheme, parsed.netloc]):
+        raise HTTPException(status_code=400, detail="Invalid URL format")
+    return clean_url
+
+
 # ═══════════════════════════════════════════════════════════
 # ORG ENDPOINTS
 # ═══════════════════════════════════════════════════════════
@@ -89,6 +123,7 @@ def groups_list(request: Request, db: Session = Depends(get_db)):
         .options(
             joinedload(Group.teacher),
             joinedload(Group.members),
+            joinedload(Group.modules),
             joinedload(Group.lessons),
         )
         .filter(Group.organization_id == org.id)
@@ -124,6 +159,7 @@ def my_groups(request: Request, db: Session = Depends(get_db)):
     groups = db.query(Group).options(
         joinedload(Group.organization),
         joinedload(Group.members),
+        joinedload(Group.modules),
         joinedload(Group.lessons),
     ).filter(
         Group.teacher_id == user.id,
@@ -440,8 +476,10 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
         group = db.query(Group).options(
             joinedload(Group.organization),
             joinedload(Group.teacher),
+            joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.materials),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
+            joinedload(Group.lessons).joinedload(GroupLesson.group_module),
         ).filter(
             Group.id == group_id,
             Group.organization_id == org.id,
@@ -475,6 +513,7 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
             "user": user,
             "org": org,
             "group": group,
+            "group_modules": group.modules,
             "org_teachers": org_teachers,
             "available_students": available_students,
             "success": success,
@@ -485,8 +524,10 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
         group = db.query(Group).options(
             joinedload(Group.organization),
             joinedload(Group.teacher),
+            joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.materials),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
+            joinedload(Group.lessons).joinedload(GroupLesson.group_module),
         ).filter(
             Group.id == group_id,
             Group.teacher_id == user.id,
@@ -498,6 +539,7 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
             "request": request,
             "user": user,
             "group": group,
+            "group_modules": group.modules,
             "success": success,
             "error": error,
         })
@@ -513,18 +555,185 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
 
 def _can_manage_lessons(user: User, group: Group, db: Session) -> bool:
     """Check if user can manage lessons in this group."""
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        return org and group.organization_id == org.id
-    if user.is_teacher:
-        return group.teacher_id == user.id
-    return False
+    return _can_manage_group_content(user, group, db)
+
+
+@router.post("/{group_id}/modules/create")
+def group_module_create(
+    group_id: int,
+    request: Request,
+    title: str = Form(...),
+    order_index: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+):
+    _, group = _get_manageable_group(group_id, request, db)
+
+    clean_title = title.strip()
+    if not clean_title:
+        raise HTTPException(status_code=400, detail="Введите название модуля")
+
+    module_order = order_index
+    if module_order is None:
+        module_order = db.query(GroupModule).filter(GroupModule.group_id == group_id).count()
+
+    module = GroupModule(
+        group_id=group_id,
+        title=clean_title,
+        order_index=module_order,
+    )
+    db.add(module)
+    db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=module_created", status_code=302)
+
+
+@router.post("/{group_id}/modules/{module_id}/edit")
+def group_module_edit(
+    group_id: int,
+    module_id: int,
+    request: Request,
+    title: str = Form(...),
+    order_index: int = Form(0),
+    db: Session = Depends(get_db),
+):
+    _, group = _get_manageable_group(group_id, request, db)
+
+    module = db.query(GroupModule).filter(
+        GroupModule.id == module_id,
+        GroupModule.group_id == group.id,
+    ).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Модуль не найден")
+
+    clean_title = title.strip()
+    if not clean_title:
+        raise HTTPException(status_code=400, detail="Введите название модуля")
+
+    module.title = clean_title
+    module.order_index = order_index
+    db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=module_saved", status_code=302)
+
+
+@router.post("/{group_id}/modules/{module_id}/delete")
+def group_module_delete(
+    group_id: int,
+    module_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    _, group = _get_manageable_group(group_id, request, db)
+
+    module = db.query(GroupModule).filter(
+        GroupModule.id == module_id,
+        GroupModule.group_id == group.id,
+    ).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Модуль не найден")
+
+    db.query(GroupLesson).filter(
+        GroupLesson.group_id == group.id,
+        GroupLesson.group_module_id == module.id,
+    ).update({GroupLesson.group_module_id: None}, synchronize_session=False)
+    db.delete(module)
+    db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=module_deleted", status_code=302)
+
+
+@router.post("/api/quiz-url")
+async def save_group_quiz_url(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    form_data = await request.form()
+    scope_name = form_data.get("scope_name", "").strip()
+    try:
+        scope_id = int(form_data.get("scope_id", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid scope_id")
+
+    quiz_url = _validate_quiz_url(form_data.get("quiz_url", ""))
+
+    if scope_name == "group":
+        group = db.query(Group).filter(Group.id == scope_id).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+        if not _can_manage_group_content(user, group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        group.quiz_url = quiz_url
+    elif scope_name == "module":
+        module = db.query(GroupModule).filter(GroupModule.id == scope_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        if not _can_manage_group_content(user, module.group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        module.quiz_url = quiz_url
+    elif scope_name == "lesson":
+        lesson = db.query(GroupLesson).options(joinedload(GroupLesson.group)).filter(GroupLesson.id == scope_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        if not _can_manage_group_content(user, lesson.group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        lesson.quiz_url = quiz_url
+    else:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+
+    db.commit()
+    return JSONResponse({"success": True})
+
+
+@router.delete("/api/quiz-url")
+async def delete_group_quiz_url(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    form_data = await request.form()
+    scope_name = form_data.get("scope_name", "").strip()
+    try:
+        scope_id = int(form_data.get("scope_id", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid scope_id")
+
+    if scope_name == "group":
+        group = db.query(Group).filter(Group.id == scope_id).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+        if not _can_manage_group_content(user, group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        group.quiz_url = None
+    elif scope_name == "module":
+        module = db.query(GroupModule).filter(GroupModule.id == scope_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+        if not _can_manage_group_content(user, module.group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        module.quiz_url = None
+    elif scope_name == "lesson":
+        lesson = db.query(GroupLesson).options(joinedload(GroupLesson.group)).filter(GroupLesson.id == scope_id).first()
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        if not _can_manage_group_content(user, lesson.group, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
+        lesson.quiz_url = None
+    else:
+        raise HTTPException(status_code=400, detail="Invalid scope")
+
+    db.commit()
+    return JSONResponse({"success": True})
 
 
 @router.post("/{group_id}/lessons/create")
 async def lesson_create(
     group_id: int,
     request: Request,
+    group_module_id: Optional[int] = Form(None),
     title: str = Form(...),
     description: str = Form(""),
     video_url: Optional[str] = Form(None),
@@ -540,8 +749,18 @@ async def lesson_create(
     if not group or not _can_manage_lessons(user, group, db):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
+    module = None
+    if group_module_id:
+        module = db.query(GroupModule).filter(
+            GroupModule.id == group_module_id,
+            GroupModule.group_id == group.id,
+        ).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Модуль не найден")
+
     lesson = GroupLesson(
         group_id=group_id,
+        group_module_id=module.id if module else None,
         title=title.strip(),
         description=description.strip() if description else None,
         video_url=video_url.strip() if video_url else None,
@@ -612,6 +831,7 @@ async def lesson_edit(
     group_id: int,
     lesson_id: int,
     request: Request,
+    group_module_id: Optional[int] = Form(None),
     title: str = Form(...),
     description: str = Form(""),
     video_url: Optional[str] = Form(None),
@@ -634,7 +854,17 @@ async def lesson_edit(
     if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
 
+    module = None
+    if group_module_id:
+        module = db.query(GroupModule).filter(
+            GroupModule.id == group_module_id,
+            GroupModule.group_id == group.id,
+        ).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Модуль не найден")
+
     lesson.title = title.strip()
+    lesson.group_module_id = module.id if module else None
     lesson.description = description.strip() if description else None
     lesson.video_url = video_url.strip() if video_url else None
     lesson.order = order
@@ -788,6 +1018,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
 
     group = db.query(Group).options(
         joinedload(Group.organization),
+        joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.materials),
         joinedload(Group.lessons).joinedload(GroupLesson.materials),
         joinedload(Group.teacher),
     ).filter(Group.id == group_id, Group.is_active == True).first()
@@ -804,10 +1035,26 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     if not membership:
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
+    ordered_lessons = []
+    seen_lesson_ids = set()
+    for module in sorted(group.modules, key=lambda item: (item.order_index or 0, item.id)):
+        for item in sorted(module.lessons, key=lambda lesson_item: (lesson_item.order or 0, lesson_item.id)):
+            if item.group_id == group.id and item.id not in seen_lesson_ids:
+                ordered_lessons.append(item)
+                seen_lesson_ids.add(item.id)
+
+    unassigned_lessons = sorted(
+        [item for item in group.lessons if item.group_module_id is None and item.id not in seen_lesson_ids],
+        key=lambda item: (item.order or 0, item.id),
+    )
+    ordered_lessons.extend(unassigned_lessons)
+
     return templates.TemplateResponse("groups/student_view.html", {
         "request": request,
         "user": user,
         "group": group,
+        "group_modules": group.modules,
+        "ordered_lessons": ordered_lessons,
         "membership": membership,
     })
 
@@ -821,6 +1068,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
 
     group = db.query(Group).options(
         joinedload(Group.organization),
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
         joinedload(Group.lessons),
         joinedload(Group.teacher),
     ).filter(Group.id == group_id).first()
@@ -841,7 +1089,8 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
 
     lesson = db.query(GroupLesson).options(
-        joinedload(GroupLesson.materials)
+        joinedload(GroupLesson.materials),
+        joinedload(GroupLesson.group_module),
     ).filter(
         GroupLesson.id == lesson_id,
         GroupLesson.group_id == group_id
@@ -850,7 +1099,19 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
 
-    ordered_lessons = sorted(group.lessons, key=lambda item: (item.order or 0, item.id))
+    ordered_lessons = []
+    seen_lesson_ids = set()
+    for module in sorted(group.modules, key=lambda item: (item.order_index or 0, item.id)):
+        for item in sorted(module.lessons, key=lambda lesson_item: (lesson_item.order or 0, lesson_item.id)):
+            if item.group_id == group.id and item.id not in seen_lesson_ids:
+                ordered_lessons.append(item)
+                seen_lesson_ids.add(item.id)
+
+    unassigned_lessons = sorted(
+        [item for item in group.lessons if item.group_module_id is None and item.id not in seen_lesson_ids],
+        key=lambda item: (item.order or 0, item.id),
+    )
+    ordered_lessons.extend(unassigned_lessons)
     current_index = next(
         (index for index, item in enumerate(ordered_lessons) if item.id == lesson.id),
         None,
@@ -866,6 +1127,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "request": request,
         "user": user,
         "group": group,
+        "group_modules": group.modules,
         "lesson": lesson,
         "membership": membership,
         "ordered_lessons": ordered_lessons,

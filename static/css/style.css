@@ -4539,6 +4539,23 @@ body.dark .error-page-status {
   border-top: 1px solid var(--border);
 }
 
+@media (max-width: 640px) {
+  .google-forms-modal-content {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    max-height: 92vh;
+  }
+
+  .google-forms-modal-body .google-forms-modal-form > div:last-child {
+    flex-direction: column;
+  }
+
+  .google-forms-modal-body .google-forms-modal-form > div:last-child .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Google Forms Iframe */
 #google-forms-iframe-container {
   position: fixed;
@@ -5661,4 +5678,3 @@ html[data-theme="dark"] .org-staff-badge {
     box-sizing: border-box;
   }
 }
-

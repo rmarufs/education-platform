@@ -3,6 +3,7 @@
 
 {% block content %}
 {% set group_return_url = "/groups/" ~ group.id ~ ("/manage" if can_preview_as_owner else "/view") %}
+{% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | sort(attribute="order") | list %}
 <div class="lesson-layout" id="lesson-layout">
   <button type="button"
           class="lesson-sidebar-toggle"
@@ -35,27 +36,72 @@
     </div>
 
     <div class="lesson-sidebar-body">
+      {% if group.quiz_url %}
+      <a href="{{ group.quiz_url }}" target="_blank" rel="noopener" class="lesson-nav-item group-lesson-quiz-nav">
+        <span class="lesson-nav-icon">✓</span>
+        <span class="lesson-nav-title" data-i18n="group.open_group_test">Открыть тест группы</span>
+      </a>
+      {% endif %}
+
+      {% for module in group_modules %}
       <div class="lesson-module-group is-expanded">
-        <button type="button" class="lesson-module-trigger" aria-expanded="true" style="pointer-events: none;">
+        <button type="button" class="lesson-module-trigger" aria-expanded="true">
           <span class="lesson-module-trigger-main">
             <span class="lesson-module-meta">
-              <span class="lesson-module-label" data-i18n="group.lessons">Уроки</span>
-              <span class="lesson-module-count">{{ group.lessons|length }}</span>
+              <span class="lesson-module-label">{{ module.title }}</span>
+              <span class="lesson-module-count">{{ module.lessons|length }}</span>
             </span>
           </span>
         </button>
         <div class="lesson-module-panel" style="height: auto;">
           <div class="lesson-module-panel-inner">
-            {% for l in ordered_lessons %}
+            {% if module.quiz_url %}
+            <a href="{{ module.quiz_url }}" target="_blank" rel="noopener" class="lesson-nav-item group-lesson-quiz-nav">
+              <span class="lesson-nav-icon">✓</span>
+              <span class="lesson-nav-title" data-i18n="group.open_module_test">Тест модуля</span>
+            </a>
+            {% endif %}
+            {% for l in module.lessons|sort(attribute='order') %}
             <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
                class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
               <span class="lesson-nav-title">{{ l.title }}</span>
+              {% if l.quiz_url %}
+              <span class="badge badge-quiz">Google Forms</span>
+              {% endif %}
             </a>
             {% endfor %}
           </div>
         </div>
       </div>
+      {% endfor %}
+
+      {% if unassigned_lessons %}
+      <div class="lesson-module-group is-expanded">
+        <button type="button" class="lesson-module-trigger" aria-expanded="true">
+          <span class="lesson-module-trigger-main">
+            <span class="lesson-module-meta">
+              <span class="lesson-module-label" data-i18n="group.lessons_without_module">Уроки без модуля</span>
+              <span class="lesson-module-count">{{ unassigned_lessons|length }}</span>
+            </span>
+          </span>
+        </button>
+        <div class="lesson-module-panel" style="height: auto;">
+          <div class="lesson-module-panel-inner">
+            {% for l in unassigned_lessons %}
+            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
+               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
+              <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
+              <span class="lesson-nav-title">{{ l.title }}</span>
+              {% if l.quiz_url %}
+              <span class="badge badge-quiz">Google Forms</span>
+              {% endif %}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </aside>
 
@@ -174,6 +220,18 @@
 
     <!-- Заголовок и описание -->
     <div class="lesson-header">
+      <div class="group-lesson-meta">
+        <a href="{{ group_return_url }}" data-i18n="group.back_to_group">← К группе</a>
+        <span>{{ group.name }}</span>
+        {% if lesson.group_module %}
+        <span>·</span>
+        <span data-i18n="group.module">Модуль</span>
+        <span>{{ lesson.group_module.title }}</span>
+        {% else %}
+        <span>·</span>
+        <span data-i18n="group.lessons_without_module">Уроки без модуля</span>
+        {% endif %}
+      </div>
       <h1>{{ lesson.title }}</h1>
       {% if lesson.description %}
       <div class="lesson-description rich-text-content">{{ lesson.description | clean_html }}</div>
@@ -197,6 +255,13 @@
     </section>
     {% endif %}
 
+    {% if lesson.quiz_url %}
+    <section class="lesson-materials group-lesson-quiz-section">
+      <h3 data-i18n="group.lesson_test">Google Forms-тест урока</h3>
+      <a href="{{ lesson.quiz_url }}" target="_blank" rel="noopener" class="btn btn-primary" data-i18n="group.open_lesson_test">Тест урока</a>
+    </section>
+    {% endif %}
+
     <div class="lesson-complete-bar">
       <div class="lesson-complete-actions">
         {% if previous_lesson %}
@@ -216,6 +281,46 @@
   </main>
 </div>
 
+<style>
+  .group-lesson-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .group-lesson-meta a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .group-lesson-quiz-nav {
+    text-decoration: none;
+  }
+
+  .group-lesson-quiz-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .group-lesson-quiz-section {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .group-lesson-quiz-section .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block scripts %}

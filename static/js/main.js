@@ -69,7 +69,7 @@ function _resolveConfirmModal(result) {
 }
 
 /**
- * Используется в onsubmit форм вместо return confirm('...')
+ * Используется в onsubmit форм вместо нативного browser-confirm.
  * onsubmit="confirmAndSubmit(event, 'Сообщение');"
  */
 async function confirmAndSubmit(event, message, hint = '') {
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Open Google Forms in iframe
 function openGoogleFormsIframe(formUrl, title) {
   if (!formUrl) {
-    showToast('Форма не была добавлена', 'error');
+    showToast(t('manage.google_forms_missing'), 'error');
     return;
   }
 
@@ -170,10 +170,10 @@ function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
   const modal = document.getElementById('google-forms-modal');
   const existing = modal || createGoogleFormsModal();
   
-  existing.querySelector('h2').textContent = t('manage.google_forms_add_title');
+  existing.querySelector('h2').textContent = window.t ? t('manage.google_forms_add_title') : 'Добавить ссылку на Google Forms';
   const input = existing.querySelector('input[name="quiz_url"]');
   input.value = currentUrl || '';
-  input.placeholder = t('manage.google_forms_ph');
+  input.placeholder = window.t ? t('manage.google_forms_ph') : 'Вставьте ссылку на Google Forms...';
   
   const form = existing.querySelector('form');
   form.dataset.scopeName = scopeName;
@@ -210,6 +210,8 @@ function createGoogleFormsModal() {
   if (existing) return existing;
   const title = window.t ? t('manage.google_forms_add_title') : 'Добавить ссылку на Google Forms';
   const urlLabel = window.t ? t('manage.google_forms_url') : 'Ссылка на Google Forms';
+  const urlPlaceholder = window.t ? t('manage.google_forms_ph') : 'Вставьте ссылку на Google Forms...';
+  const closeText = window.t ? t('action.close') : 'Закрыть';
   const cancelText = window.t ? t('action.cancel') : 'Отмена';
   const saveText = window.t ? t('action.save') : 'Сохранить';
   
@@ -218,14 +220,14 @@ function createGoogleFormsModal() {
   modal.innerHTML = `
     <div class="google-forms-modal-content">
       <div class="google-forms-modal-header">
-        <h2>${title}</h2>
-        <button type="button" onclick="closeGoogleFormsModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);">✕</button>
+        <h2>${escapeHtml(title)}</h2>
+        <button type="button" onclick="closeGoogleFormsModal()" aria-label="${escapeHtml(closeText)}" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);">✕</button>
       </div>
       <div class="google-forms-modal-body">
         <form class="google-forms-modal-form" id="google-forms-form">
           <div>
-            <label for="quiz-url-input">${urlLabel}</label>
-            <input type="url" id="quiz-url-input" name="quiz_url" placeholder="https://forms.gle/..." required />
+            <label for="quiz-url-input">${escapeHtml(urlLabel)}</label>
+            <input type="url" id="quiz-url-input" name="quiz_url" placeholder="${escapeHtml(urlPlaceholder)}" required />
           </div>
           <div style="display:flex;gap:12px;justify-content:flex-end;">
             <button type="button" class="btn btn-outline" onclick="closeGoogleFormsModal()">${cancelText}</button>
@@ -307,7 +309,8 @@ async function handleGoogleFormsSubmit(e) {
     formData.append('scope_id', scopeId);
     formData.append('quiz_url', quizUrl);
     
-    const response = await fetch(`/courses/api/quiz-url`, {
+    const endpoint = window.GOOGLE_FORMS_QUIZ_URL_ENDPOINT || '/courses/api/quiz-url';
+    const response = await fetch(endpoint, {
       method: 'POST',
       body: formData,
     });
@@ -355,22 +358,23 @@ async function deleteGoogleFormsUrl(scopeName, scopeId) {
     formData.append('scope_name', scopeName);
     formData.append('scope_id', scopeId);
     
-    const response = await fetch(`/courses/api/quiz-url`, {
+    const endpoint = window.GOOGLE_FORMS_QUIZ_URL_ENDPOINT || '/courses/api/quiz-url';
+    const response = await fetch(endpoint, {
       method: 'DELETE',
       body: formData,
     });
     
     if (!response.ok) {
       const data = await response.json();
-      showToast(data.detail || 'Ошибка при удалении', 'error');
+      showToast(data.detail || t('manage.google_forms_delete_error'), 'error');
       return;
     }
     
-    showToast('Ссылка удалена', 'success');
+    showToast(t('manage.google_forms_deleted'), 'success');
     window.location.reload();
   } catch (error) {
     console.error('Error:', error);
-    showToast('Ошибка при удалении ссылки', 'error');
+    showToast(t('manage.google_forms_delete_error'), 'error');
   }
 }
 
