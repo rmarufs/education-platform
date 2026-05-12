@@ -2,6 +2,7 @@
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
+{% set group_return_url = "/groups/" ~ group.id ~ ("/manage" if can_preview_as_owner else "/view") %}
 <div class="lesson-layout" id="lesson-layout">
   <button type="button"
           class="lesson-sidebar-toggle"
@@ -27,7 +28,7 @@
           <div class="course-cover-sidebar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1.2rem;">{{ group.name[0]|upper }}</div>
         {% endif %}
         <div class="lesson-sidebar-title">
-          <a href="/groups/{{ group.id }}/view" data-i18n="group.back_to_group">← К группе</a>
+          <a href="{{ group_return_url }}" data-i18n="group.back_to_group">← К группе</a>
         </div>
       </div>
       <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
@@ -201,13 +202,13 @@
         {% if previous_lesson %}
         <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
         {% else %}
-        <a href="/groups/{{ group.id }}/view" class="btn btn-outline" data-i18n="group.back_to_group">← К группе</a>
+        <a href="{{ group_return_url }}" class="btn btn-outline" data-i18n="group.back_to_group">← К группе</a>
         {% endif %}
 
         {% if next_lesson %}
         <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
         {% else %}
-        <a href="/groups/{{ group.id }}/view" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
+        <a href="{{ group_return_url }}" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
         {% endif %}
       </div>
     </div>

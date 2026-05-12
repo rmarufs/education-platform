@@ -10,7 +10,7 @@
       <a href="/groups/my" class="back-link" data-i18n="group.back">← Мои группы</a>
       <h1>
         {{ group.name }}
-        <span class="badge badge-primary" data-i18n="group.center_badge" data-i18n-params='{"name":"{{ group.organization.name|escape }}"}'>Группа · {{ group.organization.name }}</span>
+        <span class="badge badge-primary" data-i18n="group.center_badge" data-i18n-params='{{ {"name": group.organization.name} | tojson }}'>Группа · {{ group.organization.name }}</span>
       </h1>
       <p class="text-muted">{{ (group.description or "") | striptags }} <span data-i18n="common.no_desc" style="display:{% if group.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
     </div>
@@ -59,7 +59,7 @@
                 data-lesson-desc="{{ (lesson.description or '') | e }}"
                 data-lesson-order="{{ lesson.order }}"
                 onclick="openEditLessonModal(this.dataset)">✏️</button>
-              <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, t('group.confirm_delete_lesson'), t('confirm.action_irreversible'))">
+              <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
                 <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="group.confirm_delete_lesson" data-i18n-prop="title">🗑️</button>
               </form>
             </div>
@@ -153,30 +153,38 @@
     <form action="/groups/{{ group.id }}/lessons/create" method="POST" enctype="multipart/form-data">
       <div class="modal-scroll-body">
         <div class="form-group">
-          <label for="l-title" data-i18n="group.lesson_title">Название урока</label>
-          <input type="text" id="l-title" name="title" class="form-input" required />
+          <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
+          <input type="text" id="l-title" name="title" class="form-input" required data-i18n="group.lesson_title_ph" data-i18n-prop="placeholder" placeholder="Например: Тема 1. Введение" />
         </div>
         <div class="form-group">
-          <label for="l-video">📹 <span data-i18n="manage.lesson_video">Ссылка на видео</span></label>
+          <label for="l-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
           <input type="url" id="l-video" name="video_url" class="form-input"
                  placeholder="https://youtube.com/watch?v=..." />
         </div>
         <div class="form-group">
-          <label for="l-desc">Описание</label>
-          <textarea id="l-desc" name="description" class="form-input" rows="3"></textarea>
+          <label for="l-desc" data-i18n="manage.lesson_desc">Описание урока</label>
+          <div class="rich-editor">
+            <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="l-desc" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Краткое описание урока..."
+                   data-i18n="group.lesson_desc_ph"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="l-order" data-i18n="group.order_number">Порядок (номер)</label>
           <input type="number" id="l-order" name="order" class="form-input" value="{{ group.lessons|length + 1 }}" />
         </div>
         <div class="form-group">
-          <label for="l-files">📎 <span data-i18n="group.attach_materials">Прикрепить материалы</span></label>
+          <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы</label>
           <input type="file" id="l-files" name="files" multiple class="form-input" />
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="group.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="group.save">Создать урок</button>
+        <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
       </div>
     </form>
   </div>
@@ -192,29 +200,37 @@
     <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
       <div class="modal-scroll-body">
         <div class="form-group">
-          <label for="el-title" data-i18n="group.lesson_title">Название урока</label>
+          <label for="el-title" data-i18n="manage.lesson_title">Название урока</label>
           <input type="text" id="el-title" name="title" class="form-input" required />
         </div>
         <div class="form-group">
-          <label for="el-video">📹 <span data-i18n="manage.lesson_video">Ссылка на видео</span></label>
+          <label for="el-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
           <input type="url" id="el-video" name="video_url" class="form-input" />
         </div>
         <div class="form-group">
-          <label for="el-desc" data-i18n="group.description">Описание</label>
-          <textarea id="el-desc" name="description" class="form-input" rows="3"></textarea>
+          <label for="el-desc" data-i18n="manage.lesson_desc">Описание урока</label>
+          <div class="rich-editor">
+            <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
+            <div class="rich-editor-shell">
+              <div id="el-desc" class="rich-editor-surface" contenteditable="true"
+                   data-placeholder="Краткое описание урока..."
+                   data-i18n="group.lesson_desc_ph"
+                   data-i18n-prop="data-placeholder"></div>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="el-order" data-i18n="group.order_number">Порядок (номер)</label>
           <input type="number" id="el-order" name="order" class="form-input" />
         </div>
         <div class="form-group">
-          <label for="el-files">📎 <span data-i18n="group.add_materials">Добавить материалы</span></label>
+          <label for="el-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы</label>
           <input type="file" id="el-files" name="files" multiple class="form-input" />
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeModal('edit-lesson-modal')" data-i18n="group.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
+        <button type="submit" class="btn btn-primary" data-i18n="action.save">Сохранить</button>
       </div>
     </form>
   </div>
@@ -238,7 +254,9 @@ function closeModal(modalId) {
 function openAddLessonModal() {
   document.getElementById('l-title').value = '';
   document.getElementById('l-video').value = '';
-  document.getElementById('l-desc').value = '';
+  document.getElementById('l-order').value = '{{ group.lessons|length + 1 }}';
+  document.getElementById('l-files').value = '';
+  setRichTextValue('l-desc-input', '');
   _openModalOverlay('add-lesson-modal');
 }
 function openEditLessonModal(dataset) {
@@ -246,16 +264,25 @@ function openEditLessonModal(dataset) {
   form.action = `/groups/{{ group.id }}/lessons/${dataset.lessonId}/edit`;
   document.getElementById('el-title').value = dataset.lessonTitle || '';
   document.getElementById('el-video').value = dataset.lessonVideo || '';
-  document.getElementById('el-desc').value = dataset.lessonDesc || '';
   document.getElementById('el-order').value = dataset.lessonOrder || '0';
+  document.getElementById('el-files').value = '';
+  setRichTextValue('el-desc-input', dataset.lessonDesc || '');
   _openModalOverlay('edit-lesson-modal');
 }
-function confirmAndSubmit(e, title, desc) {
-  if(!confirm(title + '\n' + desc)) {
-    e.preventDefault();
-    return false;
+async function confirmAndSubmit(e, titleKey, descKey) {
+  e.preventDefault();
+  const confirmed = await showConfirmModal(
+    t(titleKey),
+    t(descKey),
+    t('confirm.confirm'),
+    t('action.cancel'),
+    true
+  );
+  if (confirmed) {
+    const form = e.target || e.currentTarget;
+    form.onsubmit = null;
+    form.submit();
   }
-  return true;
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') ['add-lesson-modal','edit-lesson-modal'].forEach(closeModal);

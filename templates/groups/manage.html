@@ -38,7 +38,7 @@
                 <a href="/groups/" class="back-link" data-i18n="group.back">← К группам</a>
                 <h1>
                     {{ group.name }}
-                    <span class="badge badge-primary">Группа</span>
+                    <span class="badge badge-primary" data-i18n="group.center_badge" data-i18n-params='{{ {"name": group.organization.name} | tojson }}'>Группа · {{ group.organization.name }}</span>
                     {% if group.is_active %}
                     <span class="badge badge-secondary" data-i18n="group.active">Активна</span>
                     {% else %}
@@ -161,11 +161,11 @@
             <!-- ── Правая колонка: уроки ── -->
             <div class="manage-col">
                 <div class="manage-section">
-                    <div class="section-label" data-i18n="group.lessons">Уроки группы</div>
+                    <div class="section-label" data-i18n="group.group_lessons">Уроки группы</div>
                     <div class="module-block fade-in">
                         <div class="module-header">
                             <span class="module-index">1</span>
-                            <h3 class="module-title">Уроки группы</h3>
+                            <h3 class="module-title" data-i18n="group.group_lessons">Уроки группы</h3>
                         </div>
 
                         <ul class="lessons-list">
@@ -176,18 +176,22 @@
                                 <span class="lesson-title">{{ lesson.title }}</span>
                                 <div class="lesson-meta">
                                     {% if lesson.materials %}
-                                    <span class="badge">{{ lesson.materials|length }} файл(ов)</span>
+                                    <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
                                     {% endif %}
                                 </div>
                                 <div class="lesson-actions" style="display: flex; gap: 4px;">
                                     <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
-                                    <button class="btn btn-outline btn-xs"
-                                        onclick="openEditLesson({{ lesson.id }}, '{{ lesson.title|e }}', `{{ lesson.description|e if lesson.description else '' }}`, '{{ lesson.video_url|e if lesson.video_url else '' }}', {{ lesson.order }})">
+                                    <button type="button" class="btn btn-outline btn-xs"
+                                        data-lesson-id="{{ lesson.id }}"
+                                        data-lesson-title="{{ lesson.title | e }}"
+                                        data-lesson-video="{{ lesson.video_url | e }}"
+                                        data-lesson-desc="{{ (lesson.description or '') | e }}"
+                                        data-lesson-order="{{ lesson.order }}"
+                                        onclick="openEditLessonModal(this.dataset)">
                                         ✏️
                                     </button>
-                                    <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;"
-                                      onsubmit="return confirm('Удалить урок «{{ lesson.title }}»?')">
-                                        <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок">🗑️</button>
+                                    <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
+                                        <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="group.confirm_delete_lesson" data-i18n-prop="title">🗑️</button>
                                     </form>
                                 </div>
                             </div>
@@ -198,7 +202,7 @@
                                     <li style="display:flex;align-items:center;gap:10px;">
                                         <a href="{{ mat.file_url }}" target="_blank" style="color: var(--primary);">📎 {{ mat.title }}</a>
                                         <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/materials/{{ mat.id }}/delete" method="POST" style="margin: 0;">
-                                            <button type="submit" class="btn btn-danger btn-xs" style="padding: 2px 6px; font-size: 0.75rem;" title="Удалить материал">✕</button>
+                                            <button type="submit" class="btn btn-danger btn-xs" style="padding: 2px 6px; font-size: 0.75rem;" title="Удалить материал" data-i18n="group.confirm_delete_material" data-i18n-prop="title">✕</button>
                                         </form>
                                     </li>
                                     {% endfor %}
@@ -207,12 +211,12 @@
                             {% endif %}
                         </li>
                         {% else %}
-                        <li class="lesson-item text-muted" data-i18n="group.no_lessons">Уроков пока нет.</li>
+                        <li class="lesson-item text-muted" data-i18n="group.no_lessons">Уроков пока нет</li>
                         {% endfor %}
                         </ul>
 
                         <button class="btn btn-outline btn-sm add-lesson-btn"
-                            onclick="openModal('add-lesson-modal')" data-i18n="group.add_lesson">
+                            onclick="openAddLessonModal()" data-i18n="group.add_lesson">
                             + Добавить урок
                         </button>
                     </div>
@@ -292,31 +296,89 @@
 <div class="modal-overlay" id="add-lesson-modal" onclick="closeModal('add-lesson-modal')">
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h2 id="lesson-modal-title">Новый урок</h2>
+            <h2 data-i18n="group.new_lesson">Новый урок</h2>
             <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
         </div>
-        <form id="lesson-form" action="/groups/{{ group.id }}/lessons/create" method="POST">
+        <form action="/groups/{{ group.id }}/lessons/create" method="POST" enctype="multipart/form-data">
             <div class="modal-scroll-body">
                 <div class="form-group">
-                    <label>Название урока *</label>
-                    <input type="text" id="lesson-title" name="title" class="form-input" required placeholder="Например: Тема 1. Введение" />
+                    <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
+                    <input type="text" id="l-title" name="title" class="form-input" required data-i18n="group.lesson_title_ph" data-i18n-prop="placeholder" placeholder="Например: Тема 1. Введение" />
                 </div>
                 <div class="form-group">
-                    <label data-i18n="group.description">Описание</label>
-                    <textarea id="lesson-desc" name="description" class="form-input" rows="3" placeholder="Краткое описание урока..."></textarea>
+                    <label for="l-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
+                    <input type="url" id="l-video" name="video_url" class="form-input" placeholder="https://youtube.com/watch?v=..." />
                 </div>
                 <div class="form-group">
-                    <label>Ссылка на видео</label>
-                    <input type="url" id="lesson-video" name="video_url" class="form-input" placeholder="https://youtube.com/..." />
+                    <label for="l-desc" data-i18n="manage.lesson_desc">Описание урока</label>
+                    <div class="rich-editor">
+                        <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
+                        <div class="rich-editor-shell">
+                            <div id="l-desc" class="rich-editor-surface" contenteditable="true"
+                                 data-placeholder="Краткое описание урока..."
+                                 data-i18n="group.lesson_desc_ph"
+                                 data-i18n-prop="data-placeholder"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Порядок</label>
-                    <input type="number" id="lesson-order" name="order" class="form-input" value="{{ group.lessons|length + 1 }}" min="0" />
+                    <label for="l-order" data-i18n="group.order_number">Порядок (номер)</label>
+                    <input type="number" id="l-order" name="order" class="form-input" value="{{ group.lessons|length + 1 }}" min="0" />
+                </div>
+                <div class="form-group">
+                    <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы</label>
+                    <input type="file" id="l-files" name="files" multiple class="form-input" />
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="group.cancel">Отмена</button>
-                <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
+                <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модалка: Редактировать урок -->
+<div class="modal-overlay" id="edit-lesson-modal" onclick="if(event.target===this) closeModal('edit-lesson-modal')">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 data-i18n="group.edit_lesson">Редактировать урок</h2>
+            <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>
+        </div>
+        <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="el-title" data-i18n="manage.lesson_title">Название урока</label>
+                    <input type="text" id="el-title" name="title" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label for="el-video" data-i18n="manage.lesson_video">📹 Видео (YouTube ссылка)</label>
+                    <input type="url" id="el-video" name="video_url" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label for="el-desc" data-i18n="manage.lesson_desc">Описание урока</label>
+                    <div class="rich-editor">
+                        <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
+                        <div class="rich-editor-shell">
+                            <div id="el-desc" class="rich-editor-surface" contenteditable="true"
+                                 data-placeholder="Краткое описание урока..."
+                                 data-i18n="group.lesson_desc_ph"
+                                 data-i18n-prop="data-placeholder"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="el-order" data-i18n="group.order_number">Порядок (номер)</label>
+                    <input type="number" id="el-order" name="order" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label for="el-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы</label>
+                    <input type="file" id="el-files" name="files" multiple class="form-input" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('edit-lesson-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="action.save">Сохранить</button>
             </div>
         </form>
     </div>
@@ -340,6 +402,20 @@ function openModal(id) {
     if (typeof _openModalOverlay === 'function') _openModalOverlay(id);
     else { const m = document.getElementById(id); if (m) { m.classList.add('open'); document.body.classList.add('modal-open'); } }
 }
+function _openModalOverlay(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        document.body.classList.add('modal-open');
+        modal.classList.add('open');
+    }
+}
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('open');
+    if (!document.querySelector('.modal-overlay.open')) {
+        document.body.classList.remove('modal-open');
+    }
+}
 function filterStudents(q) {
     const sel = document.getElementById('student-select');
     q = q.toLowerCase();
@@ -357,13 +433,13 @@ document.getElementById('add-students-form').addEventListener('submit', async fu
     const selectedIds = Array.from(select.selectedOptions).map(opt => Number(opt.value));
 
     if (!selectedIds.length) {
-        alert('Выберите хотя бы одного ученика.');
+        alert(t('group.select_at_least_one_student'));
         return;
     }
 
     submitBtn.disabled = true;
     const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Добавление...';
+    submitBtn.textContent = t('group.adding_students');
 
     try {
         const res = await fetch(`/groups/{{ group.id }}/students/bulk-add`, {
@@ -377,7 +453,7 @@ document.getElementById('add-students-form').addEventListener('submit', async fu
 
         const data = await res.json();
         if (!res.ok || !data.success) {
-            throw new Error(data.detail || 'Ошибка добавления учеников');
+            throw new Error(data.detail || t('group.add_students_error'));
         }
 
         select.selectedIndex = -1;
@@ -387,24 +463,48 @@ document.getElementById('add-students-form').addEventListener('submit', async fu
 
         window.location.href = `/groups/{{ group.id }}/manage?success=student_bulk_added&added=${data.added_count}&skipped=${data.skipped_count}`;
     } catch (err) {
-        alert(err.message || 'Не удалось добавить учеников');
+        alert(err.message || t('group.add_students_failed'));
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
     }
 });
 
-function openEditLesson(id, title, desc, video, order) {
-    document.getElementById('lesson-modal-title').textContent = 'Редактировать урок';
-    document.getElementById('lesson-title').value = title;
-    document.getElementById('lesson-desc').value = desc;
-    document.getElementById('lesson-video').value = video;
-    document.getElementById('lesson-order').value = order;
-    document.getElementById('lesson-form').action = `/groups/{{ group.id }}/lessons/${id}/edit`;
-    openModal('add-lesson-modal');
+function openAddLessonModal() {
+    document.getElementById('l-title').value = '';
+    document.getElementById('l-video').value = '';
+    document.getElementById('l-order').value = '{{ group.lessons|length + 1 }}';
+    document.getElementById('l-files').value = '';
+    setRichTextValue('l-desc-input', '');
+    _openModalOverlay('add-lesson-modal');
+}
+function openEditLessonModal(dataset) {
+    const form = document.getElementById('edit-lesson-form');
+    form.action = `/groups/{{ group.id }}/lessons/${dataset.lessonId}/edit`;
+    document.getElementById('el-title').value = dataset.lessonTitle || '';
+    document.getElementById('el-video').value = dataset.lessonVideo || '';
+    document.getElementById('el-order').value = dataset.lessonOrder || '0';
+    document.getElementById('el-files').value = '';
+    setRichTextValue('el-desc-input', dataset.lessonDesc || '');
+    _openModalOverlay('edit-lesson-modal');
+}
+async function confirmAndSubmit(e, titleKey, descKey) {
+    e.preventDefault();
+    const confirmed = await showConfirmModal(
+        t(titleKey),
+        t(descKey),
+        t('confirm.confirm'),
+        t('action.cancel'),
+        true
+    );
+    if (confirmed) {
+        const form = e.target || e.currentTarget;
+        form.onsubmit = null;
+        form.submit();
+    }
 }
 
-document.getElementById('add-lesson-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal('add-lesson-modal');
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['edit-group-modal','add-student-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
 });
 </script>
 {% endblock %}

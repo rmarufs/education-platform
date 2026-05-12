@@ -25,11 +25,13 @@ function showToast(message, type = 'success') {
 /* ── Глобальная кастомная confirm-модалка (заменяет нативный confirm) ── */
 let _confirmResolve = null;
 
-function showConfirmModal(message, hint = '', confirmText = 'Подтвердить', cancelText = 'Отмена', isDanger = true) {
+function showConfirmModal(message, hint = '', confirmText, cancelText, isDanger = true) {
   return new Promise((resolve) => {
     _confirmResolve = resolve;
     const modal = document.getElementById('confirm-modal');
     if (!modal) { resolve(false); return; }
+    const resolvedConfirmText = confirmText || (window.t ? t('confirm.confirm') : 'Подтвердить');
+    const resolvedCancelText = cancelText || (window.t ? t('action.cancel') : 'Отмена');
     const titleEl = document.getElementById('confirm-modal-title');
     if (titleEl) titleEl.textContent = message;
     const hintEl = document.getElementById('confirm-modal-hint');
@@ -39,11 +41,11 @@ function showConfirmModal(message, hint = '', confirmText = 'Подтверди�
     }
     const confirmBtn = document.getElementById('confirm-modal-ok');
     if (confirmBtn) {
-      confirmBtn.textContent = confirmText;
+      confirmBtn.textContent = resolvedConfirmText;
       confirmBtn.className = 'btn ' + (isDanger ? 'btn-danger' : 'btn-primary');
     }
     const cancelBtn = document.getElementById('confirm-modal-cancel');
-    if (cancelBtn) cancelBtn.textContent = cancelText;
+    if (cancelBtn) cancelBtn.textContent = resolvedCancelText;
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
@@ -168,10 +170,10 @@ function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
   const modal = document.getElementById('google-forms-modal');
   const existing = modal || createGoogleFormsModal();
   
-  existing.querySelector('h2').textContent = 'Добавить ссылку на Google Forms';
+  existing.querySelector('h2').textContent = t('manage.google_forms_add_title');
   const input = existing.querySelector('input[name="quiz_url"]');
   input.value = currentUrl || '';
-  input.placeholder = 'Вставьте ссылку на Google Forms...';
+  input.placeholder = t('manage.google_forms_ph');
   
   const form = existing.querySelector('form');
   form.dataset.scopeName = scopeName;
@@ -206,24 +208,28 @@ function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
 function createGoogleFormsModal() {
   const existing = document.getElementById('google-forms-modal');
   if (existing) return existing;
+  const title = window.t ? t('manage.google_forms_add_title') : 'Добавить ссылку на Google Forms';
+  const urlLabel = window.t ? t('manage.google_forms_url') : 'Ссылка на Google Forms';
+  const cancelText = window.t ? t('action.cancel') : 'Отмена';
+  const saveText = window.t ? t('action.save') : 'Сохранить';
   
   const modal = document.createElement('div');
   modal.id = 'google-forms-modal';
   modal.innerHTML = `
     <div class="google-forms-modal-content">
       <div class="google-forms-modal-header">
-        <h2>Добавить ссылку на Google Forms</h2>
+        <h2>${title}</h2>
         <button type="button" onclick="closeGoogleFormsModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);">✕</button>
       </div>
       <div class="google-forms-modal-body">
         <form class="google-forms-modal-form" id="google-forms-form">
           <div>
-            <label for="quiz-url-input">Ссылка на Google Forms</label>
+            <label for="quiz-url-input">${urlLabel}</label>
             <input type="url" id="quiz-url-input" name="quiz_url" placeholder="https://forms.gle/..." required />
           </div>
           <div style="display:flex;gap:12px;justify-content:flex-end;">
-            <button type="button" class="btn btn-outline" onclick="closeGoogleFormsModal()">Отмена</button>
-            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="button" class="btn btn-outline" onclick="closeGoogleFormsModal()">${cancelText}</button>
+            <button type="submit" class="btn btn-primary">${saveText}</button>
           </div>
         </form>
       </div>
@@ -279,7 +285,7 @@ async function handleGoogleFormsSubmit(e) {
   const quizUrl = form.querySelector('input[name="quiz_url"]').value.trim();
   
   if (!quizUrl) {
-    showToast('Пожалуйста, введите ссылку', 'error');
+    showToast(t('manage.google_forms_required'), 'error');
     return;
   }
   
@@ -287,7 +293,7 @@ async function handleGoogleFormsSubmit(e) {
   try {
     new URL(quizUrl);
   } catch {
-    showToast('Введите корректную ссылку', 'error');
+    showToast(t('manage.google_forms_invalid'), 'error');
     return;
   }
 
@@ -308,19 +314,19 @@ async function handleGoogleFormsSubmit(e) {
     
     if (!response.ok) {
       const data = await response.json();
-      showToast(data.detail || 'Ошибка при сохранении', 'error');
+      showToast(data.detail || t('manage.google_forms_save_error'), 'error');
       if (submitBtn) submitBtn.disabled = false;
       return;
     }
     
-    showToast('Ссылка сохранена успешно', 'success');
+    showToast(t('manage.google_forms_saved'), 'success');
     closeGoogleFormsModal();
     
     // Refresh the page to show updated content
     window.location.reload();
   } catch (error) {
     console.error('Error:', error);
-    showToast('Ошибка при сохранении ссылки', 'error');
+    showToast(t('manage.google_forms_save_error'), 'error');
     if (submitBtn) submitBtn.disabled = false;
   }
 }
@@ -336,10 +342,10 @@ function closeGoogleFormsModal() {
 // Delete Google Forms URL
 async function deleteGoogleFormsUrl(scopeName, scopeId) {
   const confirmed = await showConfirmModal(
-    'Удалить ссылку на Google Forms?',
-    'Это действие нельзя отменить.',
-    'Удалить',
-    'Отмена',
+    t('manage.google_forms_delete'),
+    t('confirm.action_irreversible'),
+    t('action.delete'),
+    t('action.cancel'),
     true
   );
   if (!confirmed) return;

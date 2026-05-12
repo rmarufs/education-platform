@@ -823,16 +823,19 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         joinedload(Group.organization),
         joinedload(Group.lessons),
         joinedload(Group.teacher),
-    ).filter(Group.id == group_id, Group.is_active == True).first()
+    ).filter(Group.id == group_id).first()
 
     if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    can_preview_as_owner = _can_manage_lessons(user, group, db)
+    if not group.is_active and not can_preview_as_owner:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
     ).first()
-    can_preview_as_owner = bool(user.is_teacher and group.teacher_id == user.id)
 
     if not membership and not can_preview_as_owner:
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
@@ -868,4 +871,5 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "ordered_lessons": ordered_lessons,
         "previous_lesson": previous_lesson,
         "next_lesson": next_lesson,
+        "can_preview_as_owner": can_preview_as_owner,
     })
