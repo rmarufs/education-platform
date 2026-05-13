@@ -10,6 +10,17 @@
     </div>
 </div>
 
+{% set success = request.query_params.get('success') %}
+{% set error = request.query_params.get('error') %}
+{% if success == 'deleted' %}
+<div class="admin-message admin-message-success" data-i18n="admin.org.success_deleted">Учебный центр удалён.</div>
+{% endif %}
+{% if error == 'not_found' %}
+<div class="admin-message admin-message-error" data-i18n="admin.org.error_not_found">Учебный центр не найден.</div>
+{% elif error == 'delete_failed' %}
+<div class="admin-message admin-message-error" data-i18n="admin.org.error_delete_failed">Не удалось удалить учебный центр. Проверьте связанные данные и попробуйте ещё раз.</div>
+{% endif %}
+
 {% if orgs %}
 <div class="admin-table-wrap">
     <table class="admin-table">

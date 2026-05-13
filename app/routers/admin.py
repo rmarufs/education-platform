@@ -18,7 +18,15 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 from app.models.assessment import AssessmentResponse
 from app.models.comment import Comment
-from app.models.group import Group, GroupJournalEntry, GroupMember, GroupPaymentEntry
+from app.models.group import (
+    Group,
+    GroupJournalEntry,
+    GroupLesson,
+    GroupMaterial,
+    GroupMember,
+    GroupModule,
+    GroupPaymentEntry,
+)
 from app.models.organization import Organization, OrganizationStudent, OrganizationTeacher
 from app.models.quiz import QuizAttempt, QuizResult
 from app.models.review import Review
@@ -41,6 +49,12 @@ def get_admin(request: Request, db: Session) -> User:
 def _admin_users_redirect(**params) -> RedirectResponse:
     query = urlencode({key: value for key, value in params.items() if value})
     location = f"/admin/users?{query}" if query else "/admin/users"
+    return RedirectResponse(location, status_code=302)
+
+
+def _admin_organizations_redirect(**params) -> RedirectResponse:
+    query = urlencode({key: value for key, value in params.items() if value})
+    location = f"/admin/organizations?{query}" if query else "/admin/organizations"
     return RedirectResponse(location, status_code=302)
 
 
@@ -71,9 +85,40 @@ def _delete_owned_organization(db: Session, user: User) -> None:
     if not org:
         return
 
+    _delete_organization_dependencies(db, org)
+    db.delete(org)
+
+
+def _delete_organization_dependencies(db: Session, org: Organization) -> None:
+    """Delete organization-owned data while keeping linked user accounts intact."""
+    group_ids = [
+        row[0]
+        for row in db.query(Group.id)
+        .filter(Group.organization_id == org.id)
+        .all()
+    ]
+
+    if group_ids:
+        lesson_ids = [
+            row[0]
+            for row in db.query(GroupLesson.id)
+            .filter(GroupLesson.group_id.in_(group_ids))
+            .all()
+        ]
+
+        db.query(GroupJournalEntry).filter(GroupJournalEntry.group_id.in_(group_ids)).delete(synchronize_session=False)
+        db.query(GroupPaymentEntry).filter(GroupPaymentEntry.group_id.in_(group_ids)).delete(synchronize_session=False)
+        db.query(GroupMember).filter(GroupMember.group_id.in_(group_ids)).delete(synchronize_session=False)
+
+        if lesson_ids:
+            db.query(GroupMaterial).filter(GroupMaterial.lesson_id.in_(lesson_ids)).delete(synchronize_session=False)
+
+        db.query(GroupLesson).filter(GroupLesson.group_id.in_(group_ids)).delete(synchronize_session=False)
+        db.query(GroupModule).filter(GroupModule.group_id.in_(group_ids)).delete(synchronize_session=False)
+        db.query(Group).filter(Group.id.in_(group_ids)).delete(synchronize_session=False)
+
     db.query(OrganizationTeacher).filter(OrganizationTeacher.organization_id == org.id).delete(synchronize_session=False)
     db.query(OrganizationStudent).filter(OrganizationStudent.organization_id == org.id).delete(synchronize_session=False)
-    db.delete(org)
 
 
 def _delete_user_dependencies(db: Session, user: User) -> None:
@@ -286,17 +331,22 @@ def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db
 
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        raise HTTPException(status_code=404)
+        return _admin_organizations_redirect(error="not_found")
 
-    owner = db.query(User).filter(User.id == org.user_id).first()
-    if owner:
-        owner.role = UserRole.guest
-        owner.is_active = False
+    try:
+        owner = db.query(User).filter(User.id == org.user_id).first()
+        if owner:
+            owner.role = UserRole.guest
+            owner.is_active = False
 
-    db.delete(org)
-    db.commit()
+        _delete_organization_dependencies(db, org)
+        db.delete(org)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return _admin_organizations_redirect(error="delete_failed")
 
-    return RedirectResponse("/admin/organizations", status_code=302)
+    return _admin_organizations_redirect(success="deleted")
 
 
 

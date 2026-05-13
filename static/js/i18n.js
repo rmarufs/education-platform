@@ -772,6 +772,9 @@ const translations = {
     "admin.org.delete": "Удалить",
     "admin.org.confirm_reject": "Отклонить заявку учебного центра «{name}»?",
     "admin.org.confirm_delete": "Удалить учебный центр «{name}»?\nПолное удаление нельзя отменить!",
+    "admin.org.success_deleted": "Учебный центр удалён.",
+    "admin.org.error_not_found": "Учебный центр не найден.",
+    "admin.org.error_delete_failed": "Не удалось удалить учебный центр. Проверьте связанные данные и попробуйте ещё раз.",
 
     "nav.overview": "Обзор",
     "nav.profile": "Профиль",
@@ -1719,6 +1722,9 @@ const translations = {
     "admin.org.delete": "Ҳазф",
     "admin.org.confirm_reject": "Дархости маркази таълимии «{name}» рад карда шавад?",
     "admin.org.confirm_delete": "Маркази таълимии «{name}» ҳазф карда шавад?\nҲазфи пурраро бекор кардан мумкин нест!",
+    "admin.org.success_deleted": "Маркази таълимӣ ҳазф шуд.",
+    "admin.org.error_not_found": "Маркази таълимӣ ёфт нашуд.",
+    "admin.org.error_delete_failed": "Маркази таълимӣ ҳазф карда нашуд. Маълумоти вобастаро санҷед ва боз кӯшиш кунед.",
 
     "nav.overview": "Шарҳи умумӣ",
     "nav.profile": "Профил",
