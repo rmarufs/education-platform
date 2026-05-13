@@ -121,7 +121,7 @@ def _delete_organization_dependencies(db: Session, org: Organization) -> None:
     db.query(OrganizationStudent).filter(OrganizationStudent.organization_id == org.id).delete(synchronize_session=False)
 
 
-def _delete_user_dependencies(db: Session, user: User) -> None:
+def _delete_user_dependencies(db: Session, user: User, delete_owned_organization: bool = True) -> None:
     """Remove or detach records that can block deleting older test users."""
     db.query(QuizAttempt).filter(QuizAttempt.student_id == user.id).delete(synchronize_session=False)
     db.query(QuizResult).filter(QuizResult.student_id == user.id).delete(synchronize_session=False)
@@ -133,6 +133,10 @@ def _delete_user_dependencies(db: Session, user: User) -> None:
     ).delete(synchronize_session=False)
     db.query(GroupJournalEntry).filter(GroupJournalEntry.student_id == user.id).delete(synchronize_session=False)
     db.query(GroupPaymentEntry).filter(GroupPaymentEntry.student_id == user.id).delete(synchronize_session=False)
+    db.query(GroupPaymentEntry).filter(GroupPaymentEntry.marked_by_id == user.id).update(
+        {GroupPaymentEntry.marked_by_id: None},
+        synchronize_session=False,
+    )
     db.query(GroupMember).filter(GroupMember.student_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationTeacher).filter(OrganizationTeacher.teacher_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationStudent).filter(OrganizationStudent.student_id == user.id).delete(synchronize_session=False)
@@ -142,7 +146,21 @@ def _delete_user_dependencies(db: Session, user: User) -> None:
     )
 
     _delete_user_courses(db, user)
-    _delete_owned_organization(db, user)
+    if delete_owned_organization:
+        _delete_owned_organization(db, user)
+
+
+def _delete_organization_owner_user(db: Session, owner: User, admin: User) -> bool:
+    """Delete the technical organization owner account to release its unique email."""
+    if owner.id == admin.id or _is_last_admin(db, owner):
+        return False
+    if owner.role != UserRole.organization:
+        return False
+
+    _delete_user_document(owner)
+    _delete_user_dependencies(db, owner, delete_owned_organization=False)
+    db.delete(owner)
+    return True
 
 
 # ── Главная админ-панели ─────────────────────────────────────────────────────
@@ -335,18 +353,23 @@ def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db
 
     try:
         owner = db.query(User).filter(User.id == org.user_id).first()
-        if owner:
-            owner.role = UserRole.student
-            owner.is_active = False
 
         _delete_organization_dependencies(db, org)
         db.delete(org)
+        db.flush()
+
+        owner_deleted = False
+        if owner:
+            owner_deleted = _delete_organization_owner_user(db, owner, admin)
+            if not owner_deleted:
+                owner.is_active = False
+
         db.commit()
     except SQLAlchemyError:
         db.rollback()
         return _admin_organizations_redirect(error="delete_failed")
 
-    return _admin_organizations_redirect(success="deleted")
+    return _admin_organizations_redirect(success="deleted_email_released" if owner_deleted else "deleted_owner_kept")
 
 
 

@@ -31,19 +31,24 @@
                 <div class="org-pub-metrics">
                     <div class="org-pub-metric">
                         <span class="org-pub-metric-val">{{ org_teachers | length }}</span>
-                        <span class="org-pub-metric-lbl">Преподавателей</span>
+                        <span class="org-pub-metric-lbl" data-i18n="org.stats_teachers">Преподавателей</span>
                     </div>
                     <div class="org-pub-metric-sep"></div>
                     <div class="org-pub-metric">
                         <span class="org-pub-metric-val">{{ courses | length }}</span>
-                        <span class="org-pub-metric-lbl">Курсов</span>
+                        <span class="org-pub-metric-lbl" data-i18n="org.stats_courses">Курсов</span>
+                    </div>
+                    <div class="org-pub-metric-sep"></div>
+                    <div class="org-pub-metric">
+                        <span class="org-pub-metric-val">{{ students_count }}</span>
+                        <span class="org-pub-metric-lbl" data-i18n="org.stats_students">Учеников</span>
                     </div>
                     <div class="org-pub-metric-sep"></div>
                     <div class="org-pub-metric">
                         <span class="org-pub-metric-val rating-text">
                             {% if avg_rating > 0 %}⭐ {{ avg_rating }}{% else %}—{% endif %}
                         </span>
-                        <span class="org-pub-metric-lbl">Средний рейтинг</span>
+                        <span class="org-pub-metric-lbl" data-i18n="org.stats.rating">Средний рейтинг</span>
                     </div>
                 </div>
 

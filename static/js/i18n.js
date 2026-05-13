@@ -773,6 +773,8 @@ const translations = {
     "admin.org.confirm_reject": "Отклонить заявку учебного центра «{name}»?",
     "admin.org.confirm_delete": "Удалить учебный центр «{name}»?\nПолное удаление нельзя отменить!",
     "admin.org.success_deleted": "Учебный центр удалён.",
+    "admin.org.success_deleted_email_released": "Учебный центр удалён, email владельца освобождён.",
+    "admin.org.success_deleted_owner_kept": "Учебный центр удалён. Связанный пользователь сохранён, поэтому его email остаётся занятым.",
     "admin.org.error_not_found": "Учебный центр не найден.",
     "admin.org.error_delete_failed": "Не удалось удалить учебный центр. Проверьте связанные данные и попробуйте ещё раз.",
 
@@ -1723,6 +1725,8 @@ const translations = {
     "admin.org.confirm_reject": "Дархости маркази таълимии «{name}» рад карда шавад?",
     "admin.org.confirm_delete": "Маркази таълимии «{name}» ҳазф карда шавад?\nҲазфи пурраро бекор кардан мумкин нест!",
     "admin.org.success_deleted": "Маркази таълимӣ ҳазф шуд.",
+    "admin.org.success_deleted_email_released": "Маркази таълимӣ ҳазф шуд, email-и соҳиби он озод шуд.",
+    "admin.org.success_deleted_owner_kept": "Маркази таълимӣ ҳазф шуд. Корбари вобаста нигоҳ дошта шуд, бинобар ин email-и ӯ банд мемонад.",
     "admin.org.error_not_found": "Маркази таълимӣ ёфт нашуд.",
     "admin.org.error_delete_failed": "Маркази таълимӣ ҳазф карда нашуд. Маълумоти вобастаро санҷед ва боз кӯшиш кунед.",
 

@@ -12,7 +12,11 @@
 
 {% set success = request.query_params.get('success') %}
 {% set error = request.query_params.get('error') %}
-{% if success == 'deleted' %}
+{% if success == 'deleted_email_released' %}
+<div class="admin-message admin-message-success" data-i18n="admin.org.success_deleted_email_released">Учебный центр удалён, email владельца освобождён.</div>
+{% elif success == 'deleted_owner_kept' %}
+<div class="admin-message admin-message-success" data-i18n="admin.org.success_deleted_owner_kept">Учебный центр удалён. Связанный пользователь сохранён, поэтому его email остаётся занятым.</div>
+{% elif success == 'deleted' %}
 <div class="admin-message admin-message-success" data-i18n="admin.org.success_deleted">Учебный центр удалён.</div>
 {% endif %}
 {% if error == 'not_found' %}

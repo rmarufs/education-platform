@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.course import Course
+from app.models.group import Group, GroupMember
 
 router = APIRouter()
 from app.ui import templates
@@ -684,6 +685,30 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
             joinedload(Course.category)
         ).filter(Course.teacher_id.in_(teacher_ids)).all()
 
+    direct_student_ids = {
+        student_id
+        for (student_id,) in db.query(OrganizationStudent.student_id)
+        .join(User, User.id == OrganizationStudent.student_id)
+        .filter(
+            OrganizationStudent.organization_id == org.id,
+            OrganizationStudent.status == "accepted",
+            User.role == UserRole.student,
+        )
+        .all()
+    }
+    group_student_ids = {
+        student_id
+        for (student_id,) in db.query(GroupMember.student_id)
+        .join(Group, Group.id == GroupMember.group_id)
+        .join(User, User.id == GroupMember.student_id)
+        .filter(
+            Group.organization_id == org.id,
+            User.role == UserRole.student,
+        )
+        .all()
+    }
+    students_count = len(direct_student_ids | group_student_ids)
+
     from app.models.review import Review
     from sqlalchemy.sql import func
     avg_rating = 0.0
@@ -733,6 +758,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
             "org": org,
             "org_teachers": [ot.teacher for ot in org_teachers],
             "courses": courses,
+            "students_count": students_count,
             "avg_rating": avg_rating,
             "user_application": user_application,
             "user_in_any_org": user_in_any_org,
