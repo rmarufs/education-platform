@@ -336,7 +336,7 @@ def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db
     try:
         owner = db.query(User).filter(User.id == org.user_id).first()
         if owner:
-            owner.role = UserRole.guest
+            owner.role = UserRole.student
             owner.is_active = False
 
         _delete_organization_dependencies(db, org)
