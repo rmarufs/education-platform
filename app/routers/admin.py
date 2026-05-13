@@ -1,9 +1,11 @@
 # Роутер админ-панели
 import os
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 import csv
 import io
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -14,6 +16,12 @@ from app.models.course import Course
 from app.models.progress import Progress
 from app.models.module import Module
 from app.models.lesson import Lesson
+from app.models.assessment import AssessmentResponse
+from app.models.comment import Comment
+from app.models.group import Group, GroupMember
+from app.models.organization import Organization, OrganizationStudent, OrganizationTeacher
+from app.models.quiz import QuizAttempt, QuizResult
+from app.models.review import Review
 
 router = APIRouter(prefix="/admin")
 from app.ui import templates
@@ -28,6 +36,66 @@ def get_admin(request: Request, db: Session) -> User:
     if not user or user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Доступ запрещён")
     return user
+
+
+def _admin_users_redirect(**params) -> RedirectResponse:
+    query = urlencode({key: value for key, value in params.items() if value})
+    location = f"/admin/users?{query}" if query else "/admin/users"
+    return RedirectResponse(location, status_code=302)
+
+
+def _is_last_admin(db: Session, user: User) -> bool:
+    if user.role != UserRole.admin:
+        return False
+    return db.query(func.count(User.id)).filter(User.role == UserRole.admin).scalar() <= 1
+
+
+def _delete_user_document(user: User) -> None:
+    if not user.documents:
+        return
+    file_path = user.documents.lstrip("/")
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+
+
+def _delete_user_courses(db: Session, user: User) -> None:
+    for course in db.query(Course).filter(Course.teacher_id == user.id).all():
+        db.delete(course)
+
+
+def _delete_owned_organization(db: Session, user: User) -> None:
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    if not org:
+        return
+
+    db.query(OrganizationTeacher).filter(OrganizationTeacher.organization_id == org.id).delete(synchronize_session=False)
+    db.query(OrganizationStudent).filter(OrganizationStudent.organization_id == org.id).delete(synchronize_session=False)
+    db.delete(org)
+
+
+def _delete_user_dependencies(db: Session, user: User) -> None:
+    """Remove or detach records that can block deleting older test users."""
+    db.query(QuizAttempt).filter(QuizAttempt.student_id == user.id).delete(synchronize_session=False)
+    db.query(QuizResult).filter(QuizResult.student_id == user.id).delete(synchronize_session=False)
+    db.query(Progress).filter(Progress.student_id == user.id).delete(synchronize_session=False)
+    db.query(Comment).filter(Comment.user_id == user.id).delete(synchronize_session=False)
+    db.query(AssessmentResponse).filter(AssessmentResponse.user_id == user.id).delete(synchronize_session=False)
+    db.query(Review).filter(
+        (Review.student_id == user.id) | (Review.teacher_id == user.id)
+    ).delete(synchronize_session=False)
+    db.query(GroupMember).filter(GroupMember.student_id == user.id).delete(synchronize_session=False)
+    db.query(OrganizationTeacher).filter(OrganizationTeacher.teacher_id == user.id).delete(synchronize_session=False)
+    db.query(OrganizationStudent).filter(OrganizationStudent.student_id == user.id).delete(synchronize_session=False)
+    db.query(Group).filter(Group.teacher_id == user.id).update(
+        {Group.teacher_id: None},
+        synchronize_session=False,
+    )
+
+    _delete_user_courses(db, user)
+    _delete_owned_organization(db, user)
 
 
 # ── Главная админ-панели ─────────────────────────────────────────────────────
@@ -258,16 +326,23 @@ def toggle_user_active(user_id: int, request: Request, db: Session = Depends(get
 
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
-        raise HTTPException(status_code=404)
+        return _admin_users_redirect(error="not_found")
 
     # Нельзя заблокировать самого себя
     if target.id == admin.id:
-        raise HTTPException(status_code=400, detail="Нельзя заблокировать свой аккаунт")
+        return _admin_users_redirect(error="cannot_block_self")
+
+    if target.is_active and _is_last_admin(db, target):
+        return _admin_users_redirect(error="cannot_block_last_admin")
 
     target.is_active = not target.is_active
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return _admin_users_redirect(error="action_failed")
 
-    return RedirectResponse("/admin/users", status_code=302)
+    return _admin_users_redirect(success="unblocked" if target.is_active else "blocked")
 
 
 @router.post("/users/{user_id}/delete")
@@ -276,21 +351,24 @@ def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
 
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
-        raise HTTPException(status_code=404)
+        return _admin_users_redirect(error="not_found")
 
     if target.id == admin.id:
-        raise HTTPException(status_code=400, detail="Нельзя удалить свой аккаунт")
+        return _admin_users_redirect(error="cannot_delete_self")
 
-    # Удаляем документ, если есть
-    if target.documents:
-        file_path = target.documents.lstrip("/")
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    if _is_last_admin(db, target):
+        return _admin_users_redirect(error="cannot_delete_last_admin")
 
-    db.delete(target)
-    db.commit()
+    try:
+        _delete_user_document(target)
+        _delete_user_dependencies(db, target)
+        db.delete(target)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return _admin_users_redirect(error="delete_failed")
 
-    return RedirectResponse("/admin/users", status_code=302)
+    return _admin_users_redirect(success="deleted")
 
 
 # ── Управление курсами ──────────────────────────────────────────────────────

@@ -10,6 +10,31 @@
     </div>
 </div>
 
+{% set success = request.query_params.get('success') %}
+{% set error = request.query_params.get('error') %}
+{% if success == 'blocked' %}
+<div class="admin-message admin-message-success" data-i18n="admin.users.success_blocked">Пользователь заблокирован.</div>
+{% elif success == 'unblocked' %}
+<div class="admin-message admin-message-success" data-i18n="admin.users.success_unblocked">Пользователь разблокирован.</div>
+{% elif success == 'deleted' %}
+<div class="admin-message admin-message-success" data-i18n="admin.users.success_deleted">Пользователь удалён.</div>
+{% endif %}
+{% if error == 'not_found' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_not_found">Пользователь не найден.</div>
+{% elif error == 'cannot_block_self' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_cannot_block_self">Нельзя заблокировать свой аккаунт.</div>
+{% elif error == 'cannot_delete_self' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_cannot_delete_self">Нельзя удалить свой аккаунт.</div>
+{% elif error == 'cannot_block_last_admin' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_cannot_block_last_admin">Нельзя заблокировать последнего администратора.</div>
+{% elif error == 'cannot_delete_last_admin' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_cannot_delete_last_admin">Нельзя удалить последнего администратора.</div>
+{% elif error == 'action_failed' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_action_failed">Не удалось изменить статус пользователя.</div>
+{% elif error == 'delete_failed' %}
+<div class="admin-message admin-message-error" data-i18n="admin.users.error_delete_failed">Не удалось удалить пользователя. Проверьте связанные данные и попробуйте ещё раз.</div>
+{% endif %}
+
 <!-- Поиск -->
 <form action="/admin/users" method="GET" class="admin-search">
     <input type="text" name="q" value="{{ q }}" placeholder="Поиск по имени или email..." class="admin-search-input" data-i18n="admin.users.search_placeholder" data-i18n-prop="placeholder" />
@@ -35,29 +60,30 @@
         </thead>
         <tbody>
             {% for u in users_list %}
+            {% set role_value = u.role.value if u.role else '' %}
             <tr style="{% if not u.is_active %}opacity:0.6;{% endif %}">
                 <td class="admin-muted" style="font-size:0.85rem;">#{{ u.id }}</td>
                 <td>
                     <div class="admin-flex">
                         <span class="admin-avatar">
-                            {{ u.name[0].upper() }}
+                            {{ u.name[0].upper() if u.name else '?' }}
                         </span>
                         <span>{{ u.name }}</span>
                     </div>
                 </td>
                 <td>{{ u.email }}</td>
                 <td>
-                    {% if u.is_admin %}
+                    {% if role_value == 'admin' %}
                         <span class="admin-badge admin-badge-admin">🔑 <span data-i18n="admin.roles.admin">Админ</span></span>
-                    {% elif u.is_teacher %}
+                    {% elif role_value == 'teacher' %}
                         <span class="admin-badge admin-badge-teacher">👨‍🏫 <span data-i18n="admin.roles.teacher">Преподаватель</span></span>
-                    {% elif u.role.value == 'teacher_pending' %}
+                    {% elif role_value == 'teacher_pending' %}
                         <span class="admin-badge admin-badge-pending">⏳ <span data-i18n="admin.roles.pending">На рассмотрении</span></span>
                     {% else %}
                         <span class="admin-badge admin-badge-student">👨‍🎓 <span data-i18n="admin.roles.student">Студент</span></span>
                     {% endif %}
                 </td>
-                <td style="font-size:0.85rem;">{{ u.created_at.strftime("%d.%m.%Y") }}</td>
+                <td style="font-size:0.85rem;">{{ u.created_at.strftime("%d.%m.%Y") if u.created_at else '—' }}</td>
                 <td>
                     {% if u.is_active %}
                         <span class="admin-badge admin-badge-active">● <span data-i18n="admin.users.status_active">Активен</span></span>
@@ -70,18 +96,18 @@
                         {% if u.id != user.id %}
                         <form action="/admin/users/{{ u.id }}/toggle-active" method="POST" style="display:inline;">
                             {% if u.is_active %}
-                            <button type="submit" class="admin-btn admin-btn-warning admin-btn-sm" title="Заблокировать">
+                            <button type="submit" class="admin-btn admin-btn-warning admin-btn-sm" title="Заблокировать" data-i18n="admin.users.block" data-i18n-prop="title">
                                 🔒
                             </button>
                             {% else %}
-                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" title="Разблокировать">
+                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" title="Разблокировать" data-i18n="admin.users.unblock" data-i18n-prop="title">
                                 🔓
                             </button>
                             {% endif %}
                         </form>
                         <form action="/admin/users/{{ u.id }}/delete" method="POST" style="display:inline;"
-                              onsubmit="confirmAndSubmit(event, 'Удалить пользователя {{ u.name }}?', 'Это действие нельзя отменить.')">
-                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
+                              onsubmit="confirmAndSubmit(event, 'admin.users.delete_confirm_title', 'admin.users.delete_confirm_hint', {{ {'name': u.name}|tojson }})">
+                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить" data-i18n="action.delete" data-i18n-prop="title">
                                 🗑
                             </button>
                         </form>
@@ -104,4 +130,26 @@
     {% endif %}
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function adminInterpolate(text, params) {
+  let result = text;
+  Object.entries(params || {}).forEach(([key, value]) => {
+    result = result.replaceAll(`{${key}}`, value);
+  });
+  return result;
+}
+
+async function confirmAndSubmit(event, titleKey, hintKey, params = {}) {
+  event.preventDefault();
+  const title = window.t ? adminInterpolate(t(titleKey), params) : titleKey;
+  const hint = window.t ? adminInterpolate(t(hintKey), params) : hintKey;
+  const confirmed = window.confirm(`${title}\n\n${hint}`);
+  if (confirmed) {
+    event.currentTarget.submit();
+  }
+}
+</script>
 {% endblock %}

@@ -246,6 +246,25 @@ html[data-theme="light"] .admin-back-link:hover {
   margin: 4px 0 0;
 }
 
+.admin-message {
+  border-radius: var(--admin-radius-sm);
+  font-weight: 600;
+  margin: -12px 0 24px;
+  padding: 12px 14px;
+}
+
+.admin-message-success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  color: var(--admin-success);
+}
+
+.admin-message-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: var(--admin-danger);
+}
+
 /* ── Stats cards ───────────────────────────────────────────── */
 .admin-stats {
   display: grid;
