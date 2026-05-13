@@ -102,7 +102,7 @@ async def create_lesson(
     lesson = Lesson(
         module_id=module_id,
         title=title,
-        video_url=video_url or None,
+        video_url=video_url.strip() if video_url and video_url.strip() else None,
         description=description or None,
         order_index=max_order,
     )
@@ -252,7 +252,7 @@ async def edit_lesson(
         raise HTTPException(status_code=403)
 
     lesson.title = title
-    lesson.video_url = video_url or None
+    lesson.video_url = video_url.strip() if video_url and video_url.strip() else None
     lesson.description = description or None
     db.commit()
 
