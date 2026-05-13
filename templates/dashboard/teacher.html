@@ -88,7 +88,12 @@
         <!-- Мои группы (если назначен) -->
         {% if my_groups %}
         <section class="mb-4">
-            <div class="section-label">🗂 Мои группы</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+                <div class="section-label" data-i18n="group.my_groups">🗂 Мои группы</div>
+                <a href="/groups/analytics" class="btn btn-outline btn-sm">
+                    📊 <span data-i18n="analytics.open">Аналитика</span>
+                </a>
+            </div>
             <div style="display:flex; flex-wrap:wrap; gap:12px;">
                 {% for group in my_groups %}
                 <a href="/groups/{{ group.id }}/manage" style="

@@ -14,9 +14,14 @@
                 <h1 data-i18n="group.title">🗂 Группы</h1>
                 <p data-i18n="group.private_groups_subtitle">Приватные учебные группы вашего центра</p>
             </div>
-            <button class="btn btn-primary" onclick="openModal('create-group-modal')">
-                + <span data-i18n="group.create">Создать группу</span>
-            </button>
+            <div class="group-header-actions">
+                <a href="/groups/analytics" class="btn btn-outline">
+                    📊 <span data-i18n="analytics.open">Аналитика</span>
+                </a>
+                <button class="btn btn-primary" onclick="openModal('create-group-modal')">
+                    + <span data-i18n="group.create">Создать группу</span>
+                </button>
+            </div>
         </div>
 
         {% if groups %}
@@ -114,6 +119,25 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+.group-header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+@media (max-width: 640px) {
+    .group-header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    .group-header-actions .btn,
+    .group-header-actions button {
+        flex: 1 1 160px;
+        justify-content: center;
+    }
+}
+</style>
 <script>
 function openModal(id) {
     if (typeof _openModalOverlay === 'function') _openModalOverlay(id);

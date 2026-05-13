@@ -9,9 +9,12 @@
     <div class="dashboard-main">
         <div class="dashboard-header">
             <div>
-                <h1>🗂 Мои группы</h1>
-                <p>Группы, в которых вы назначены преподавателем</p>
+                <h1 data-i18n="group.my_groups">🗂 Мои группы</h1>
+                <p data-i18n="analytics.teacher_groups_subtitle">Группы, в которых вы назначены преподавателем</p>
             </div>
+            <a href="/groups/analytics" class="btn btn-outline">
+                📊 <span data-i18n="analytics.open">Аналитика</span>
+            </a>
         </div>
 
         {% if groups %}

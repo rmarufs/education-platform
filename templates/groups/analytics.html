@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Аналитика групп — Фурузон{% endblock %}
+{% block title_key %}analytics.title{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "groups" %}
+    {% if analytics_scope == "organization" %}
+        {% include "_org_sidebar.html" %}
+    {% else %}
+        {% include "_teacher_sidebar.html" %}
+    {% endif %}
+
+    <div class="dashboard-main">
+        <div class="dashboard-header analytics-header">
+            <div>
+                {% if analytics_scope == "organization" %}
+                <a href="{{ back_url }}" class="back-link" data-i18n="group.back">← К группам</a>
+                {% else %}
+                <a href="{{ back_url }}" class="back-link" data-i18n="group.back_my_groups">← Мои группы</a>
+                {% endif %}
+                <h1 data-i18n="analytics.title">Аналитика групп</h1>
+                <p data-i18n="analytics.subtitle">Посещаемость, средний балл и ученики, которым нужна поддержка.</p>
+            </div>
+        </div>
+
+        {% if group_analytics %}
+        <section class="analytics-section">
+            <div class="section-label" data-i18n="analytics.charts_title">Визуальный обзор</div>
+            <div class="analytics-chart-grid">
+                <div class="analytics-chart-card">
+                    <h3 data-i18n="analytics.attendance_chart">Посещаемость по группам</h3>
+                    <div class="analytics-bars">
+                        {% for item in group_analytics %}
+                        <div class="analytics-bar-row">
+                            <div class="analytics-bar-label">{{ item.group.name }}</div>
+                            {% if item.attendance_percent is not none %}
+                            <div class="analytics-bar-track">
+                                <div class="analytics-bar-fill analytics-bar-fill--{{ 'good' if item.attendance_percent >= 80 else 'warn' if item.attendance_percent >= 60 else 'risk' }}" style="width: {{ item.attendance_percent }}%;"></div>
+                            </div>
+                            <div class="analytics-bar-value">{{ item.attendance_percent }}%</div>
+                            {% else %}
+                            <div class="analytics-bar-empty" data-i18n="analytics.no_data">Пока нет данных</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="analytics-chart-card">
+                    <h3 data-i18n="analytics.grade_chart">Средний балл по группам</h3>
+                    <div class="analytics-bars">
+                        {% for item in group_analytics %}
+                        <div class="analytics-bar-row">
+                            <div class="analytics-bar-label">{{ item.group.name }}</div>
+                            {% if item.average_grade is not none %}
+                            <div class="analytics-bar-track">
+                                <div class="analytics-bar-fill analytics-bar-fill--{{ 'good' if item.average_grade >= 4 else 'warn' if item.average_grade >= 3 else 'risk' }}" style="width: {{ item.average_grade * 20 }}%;"></div>
+                            </div>
+                            <div class="analytics-bar-value">{{ item.average_grade }}/5</div>
+                            {% else %}
+                            <div class="analytics-bar-empty" data-i18n="analytics.no_data">Пока нет данных</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="analytics-scale-note" data-i18n="analytics.grade_scale">Шкала: 0–5</div>
+                </div>
+
+                {% if lagging_students %}
+                <div class="analytics-chart-card analytics-chart-card--wide">
+                    <h3 data-i18n="analytics.lagging_chart">Отстающие по группам</h3>
+                    <div class="analytics-bars">
+                        {% for item in group_analytics %}
+                        <div class="analytics-bar-row">
+                            <div class="analytics-bar-label">{{ item.group.name }}</div>
+                            <div class="analytics-bar-track">
+                                <div class="analytics-bar-fill analytics-bar-fill--risk" style="width: {{ [item.lagging_count * 18, 100] | min }}%;"></div>
+                            </div>
+                            <div class="analytics-bar-value">{{ item.lagging_count }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="analytics-section">
+            <div class="section-label" data-i18n="analytics.groups_overview">Обзор по группам</div>
+            <div class="data-table-wrap analytics-table-wrap">
+                <table class="data-table analytics-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="group.name">Название группы</th>
+                            <th data-i18n="analytics.attendance">Посещаемость</th>
+                            <th data-i18n="journal.average">Средний балл</th>
+                            <th data-i18n="analytics.lagging_count">Отстающие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in group_analytics %}
+                        <tr>
+                            <td>
+                                <div class="analytics-group-name">{{ item.group.name }}</div>
+                                {% if analytics_scope == "teacher" and item.group.organization %}
+                                <div class="text-muted analytics-group-meta">{{ item.group.organization.name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.attendance_percent is not none %}
+                                <strong>{{ item.attendance_percent }}%</strong>
+                                <div class="text-muted analytics-group-meta" data-i18n="analytics.attendance_ratio" data-i18n-params='{{ {"present": item.present_count, "total": item.marked_count} | tojson }}'>{{ item.present_count }} из {{ item.marked_count }}</div>
+                                {% else %}
+                                <span class="text-muted" data-i18n="analytics.no_data">Пока нет данных</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.average_grade is not none %}
+                                <strong>{{ item.average_grade }}</strong>
+                                <div class="text-muted analytics-group-meta" data-i18n="analytics.grade_count" data-i18n-params='{{ {"count": item.grade_count} | tojson }}'>{{ item.grade_count }} оценок</div>
+                                {% else %}
+                                <span class="text-muted" data-i18n="analytics.no_data">Пока нет данных</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.lagging_count %}
+                                <span class="badge badge-secondary">{{ item.lagging_count }}</span>
+                                {% else %}
+                                <span class="text-muted" data-i18n="analytics.none">Нет</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="analytics-section">
+            <div class="section-label" data-i18n="analytics.lagging_students">Ученики, которым нужна поддержка</div>
+            {% if lagging_students %}
+            <div class="analytics-support-list">
+                {% for item in lagging_students %}
+                <div class="analytics-support-card">
+                    <div>
+                        <div class="analytics-group-name">{{ item.student.name }}</div>
+                        <div class="text-muted analytics-group-meta">{{ item.group.name }}</div>
+                    </div>
+                    <div class="analytics-support-grade">
+                        <span data-i18n="journal.average">Средний балл</span>
+                        <strong>{{ item.average_grade }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state analytics-empty">
+                <span class="empty-icon">🌱</span>
+                <p data-i18n="analytics.no_lagging">Пока нет учеников с риском по оценкам.</p>
+            </div>
+            {% endif %}
+        </section>
+        {% else %}
+        <div class="empty-state analytics-empty">
+            <span class="empty-icon">📊</span>
+            {% if analytics_scope == "teacher" %}
+            <p data-i18n="analytics.no_teacher_groups">Вам пока не назначены группы.</p>
+            {% else %}
+            <p data-i18n="group.no_groups">Групп пока нет</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.analytics-header { align-items: flex-start; }
+.analytics-section { margin-bottom: 28px; }
+.analytics-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+.analytics-chart-card {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-radius: 16px;
+    padding: 18px;
+}
+.analytics-chart-card--wide { grid-column: 1 / -1; }
+.analytics-chart-card h3 {
+    margin: 0 0 14px;
+    font-size: 1rem;
+    color: var(--text, #111827);
+}
+.analytics-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.analytics-bar-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) minmax(120px, 2fr) 54px;
+    align-items: center;
+    gap: 10px;
+}
+.analytics-bar-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text, #111827);
+}
+.analytics-bar-track {
+    height: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--surface-strong, #e2e8f0) 70%, var(--bg-card, #fff)),
+            color-mix(in srgb, var(--surface-soft, #f8fafc) 82%, var(--border-strong, #cbd5e1))
+        );
+    border: 1px solid color-mix(in srgb, var(--border-strong, #cbd5e1) 82%, var(--text-muted, #64748b));
+    box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.12),
+        0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.analytics-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.analytics-bar-fill--good { background: linear-gradient(90deg, var(--success, #22c55e), #86efac); }
+.analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
+.analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
+.analytics-bar-value {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: right;
+    color: var(--text, #111827);
+}
+.analytics-bar-empty {
+    grid-column: span 2;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+.analytics-scale-note {
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.analytics-table-wrap { overflow-x: auto; }
+.analytics-table { min-width: 720px; }
+.analytics-group-name { font-weight: 700; color: var(--text, #111827); }
+.analytics-group-meta { font-size: 0.82rem; margin-top: 4px; }
+.analytics-support-list { display: grid; gap: 12px; }
+.analytics-support-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.analytics-support-grade {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+.analytics-support-grade strong {
+    font-size: 1.1rem;
+    color: var(--text, #111827);
+}
+.analytics-empty {
+    padding: 24px;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+@media (max-width: 640px) {
+    .analytics-chart-card { padding: 14px; }
+    .analytics-bar-row {
+        grid-template-columns: 1fr 48px;
+        gap: 6px 10px;
+    }
+    .analytics-bar-label { grid-column: 1 / -1; }
+    .analytics-bar-track { grid-column: 1 / 2; }
+    .analytics-bar-empty { grid-column: 1 / -1; }
+    .analytics-support-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .analytics-support-grade {
+        align-items: flex-start;
+    }
+}
+html[data-theme="dark"] .analytics-bar-track,
+body.dark .analytics-bar-track {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--surface-strong, #334155) 64%, var(--bg-card, #111827)),
+            color-mix(in srgb, var(--surface-soft, #172033) 76%, var(--border-strong, #475569))
+        );
+    border-color: color-mix(in srgb, var(--border-strong, #475569) 78%, var(--text-muted, #cbd5e1));
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.42),
+        0 1px 0 rgba(255, 255, 255, 0.04);
+}
+</style>
+{% endblock %}

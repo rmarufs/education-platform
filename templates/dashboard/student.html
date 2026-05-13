@@ -121,6 +121,34 @@
         <!-- Мои группы -->
         <section style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
+            <div class="student-analytics-cards">
+                <div class="student-analytics-card">
+                    <div class="student-analytics-label" data-i18n="analytics.attendance">Посещаемость</div>
+                    {% if student_analytics.attendance_percent is not none %}
+                    <div class="student-analytics-value">{{ student_analytics.present_count }} / {{ student_analytics.marked_count }}</div>
+                    <div class="student-analytics-bar" aria-hidden="true">
+                        <div class="student-analytics-bar-fill student-analytics-bar-fill--{{ 'good' if student_analytics.attendance_percent >= 80 else 'warn' if student_analytics.attendance_percent >= 60 else 'risk' }}" style="width: {{ student_analytics.attendance_percent }}%;"></div>
+                    </div>
+                    <div class="student-analytics-note">{{ student_analytics.attendance_percent }}%</div>
+                    {% else %}
+                    <div class="student-analytics-value" data-i18n="analytics.no_data_short">Нет данных</div>
+                    <div class="student-analytics-note" data-i18n="analytics.no_data">Пока нет данных</div>
+                    {% endif %}
+                </div>
+                <div class="student-analytics-card">
+                    <div class="student-analytics-label" data-i18n="journal.average">Средний балл</div>
+                    {% if student_analytics.average_grade is not none %}
+                    <div class="student-analytics-value">{{ student_analytics.average_grade }}</div>
+                    <div class="student-analytics-bar" aria-hidden="true">
+                        <div class="student-analytics-bar-fill student-analytics-bar-fill--{{ 'good' if student_analytics.average_grade >= 4 else 'warn' if student_analytics.average_grade >= 3 else 'risk' }}" style="width: {{ student_analytics.average_grade * 20 }}%;"></div>
+                    </div>
+                    <div class="student-analytics-note" data-i18n="analytics.grade_count" data-i18n-params='{{ {"count": student_analytics.grade_count} | tojson }}'>{{ student_analytics.grade_count }} оценок</div>
+                    {% else %}
+                    <div class="student-analytics-value" data-i18n="analytics.no_data_short">Нет данных</div>
+                    <div class="student-analytics-note" data-i18n="analytics.no_data">Пока нет данных</div>
+                    {% endif %}
+                </div>
+            </div>
             {% if student_groups %}
             <div class="courses-grid">
                 {% for group in student_groups %}
@@ -201,4 +229,75 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.student-analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 12px 0 18px;
+}
+.student-analytics-card {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.student-analytics-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.student-analytics-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text, #111827);
+}
+.student-analytics-note {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+.student-analytics-bar {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--surface-strong, #e2e8f0) 70%, var(--bg-card, #fff)),
+            color-mix(in srgb, var(--surface-soft, #f8fafc) 82%, var(--border-strong, #cbd5e1))
+        );
+    border: 1px solid color-mix(in srgb, var(--border-strong, #cbd5e1) 82%, var(--text-muted, #64748b));
+    box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.12),
+        0 1px 0 rgba(255, 255, 255, 0.55);
+    margin-top: 10px;
+}
+.student-analytics-bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.student-analytics-bar-fill--good { background: linear-gradient(90deg, var(--success, #22c55e), #86efac); }
+.student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
+.student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
+html[data-theme="dark"] .student-analytics-bar,
+body.dark .student-analytics-bar {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--surface-strong, #334155) 64%, var(--bg-card, #111827)),
+            color-mix(in srgb, var(--surface-soft, #172033) 76%, var(--border-strong, #475569))
+        );
+    border-color: color-mix(in srgb, var(--border-strong, #475569) 78%, var(--text-muted, #cbd5e1));
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.42),
+        0 1px 0 rgba(255, 255, 255, 0.04);
+}
+</style>
 {% endblock %}

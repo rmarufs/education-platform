@@ -9,6 +9,7 @@ from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember
 from app.quiz_flow import course_learning_url
+from app.utils.group_analytics import build_student_analytics
 
 router = APIRouter()
 from app.ui import templates
@@ -206,6 +207,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         .filter(GroupMember.student_id == user.id)
         .all()
     )
+    student_analytics = build_student_analytics(db, user.id)
 
     return templates.TemplateResponse(
         "dashboard/student.html",
@@ -215,7 +217,8 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "my_courses": my_courses,
             "student_org_link": student_org_link,
             "show_removed_notification": show_removed_notification,
-            "student_groups": student_groups
+            "student_groups": student_groups,
+            "student_analytics": student_analytics,
         },
     )
 
