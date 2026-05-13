@@ -5,13 +5,14 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import Optional, List
 from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry
 from app.ui import templates
 from app.utils.image import compress_and_upload_avatar
 
@@ -104,6 +105,33 @@ def _validate_quiz_url(quiz_url: str) -> str:
     if not all([parsed.scheme, parsed.netloc]):
         raise HTTPException(status_code=400, detail="Invalid URL format")
     return clean_url
+
+
+def _ordered_group_lessons(group: Group) -> list[GroupLesson]:
+    ordered_lessons = []
+    seen_lesson_ids = set()
+    for module in sorted(group.modules, key=lambda item: (item.order_index or 0, item.id)):
+        for item in sorted(module.lessons, key=lambda lesson_item: (lesson_item.order or 0, lesson_item.id)):
+            if item.group_id == group.id and item.id not in seen_lesson_ids:
+                ordered_lessons.append(item)
+                seen_lesson_ids.add(item.id)
+
+    unassigned_lessons = sorted(
+        [item for item in group.lessons if item.group_module_id is None and item.id not in seen_lesson_ids],
+        key=lambda item: (item.order or 0, item.id),
+    )
+    ordered_lessons.extend(unassigned_lessons)
+    return ordered_lessons
+
+
+def _journal_redirect(group_id: int, **params) -> RedirectResponse:
+    from urllib.parse import urlencode
+
+    query = urlencode({key: value for key, value in params.items() if value})
+    location = f"/groups/{group_id}/journal"
+    if query:
+        location = f"{location}?{query}"
+    return RedirectResponse(location, status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -427,6 +455,10 @@ def group_remove_student(
         GroupMember.student_id == student_id,
     ).first()
     if member:
+        db.query(GroupJournalEntry).filter(
+            GroupJournalEntry.group_id == group_id,
+            GroupJournalEntry.student_id == student_id,
+        ).delete(synchronize_session=False)
         db.delete(member)
         db.commit()
 
@@ -546,6 +578,127 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
 
     else:
         raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+
+# ═══════════════════════════════════════════════════════════
+# GROUP JOURNAL — ORG & TEACHER
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/{group_id}/journal", response_class=HTMLResponse)
+def group_journal(group_id: int, request: Request, db: Session = Depends(get_db)):
+    user, group = _get_manageable_group(group_id, request, db)
+
+    group = db.query(Group).options(
+        joinedload(Group.organization),
+        joinedload(Group.teacher),
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.lessons),
+        joinedload(Group.members).joinedload(GroupMember.student),
+    ).filter(Group.id == group.id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    lessons = _ordered_group_lessons(group)
+    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
+    lesson_ids = [lesson.id for lesson in lessons]
+    student_ids = [member.student_id for member in members]
+
+    entries = []
+    if lesson_ids and student_ids:
+        entries = db.query(GroupJournalEntry).filter(
+            GroupJournalEntry.group_id == group.id,
+            GroupJournalEntry.lesson_id.in_(lesson_ids),
+            GroupJournalEntry.student_id.in_(student_ids),
+        ).all()
+
+    entries_map = {
+        (entry.student_id, entry.lesson_id): entry
+        for entry in entries
+    }
+    averages = {
+        student_id: avg
+        for student_id, avg in db.query(
+            GroupJournalEntry.student_id,
+            func.avg(GroupJournalEntry.grade),
+        ).filter(
+            GroupJournalEntry.group_id == group.id,
+            GroupJournalEntry.student_id.in_(student_ids or [0]),
+            GroupJournalEntry.present.is_(True),
+            GroupJournalEntry.grade.isnot(None),
+        ).group_by(GroupJournalEntry.student_id).all()
+    }
+
+    return templates.TemplateResponse("groups/journal.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "members": members,
+        "lessons": lessons,
+        "entries_map": entries_map,
+        "averages": averages,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error"),
+    })
+
+
+@router.post("/{group_id}/journal")
+async def group_journal_save(group_id: int, request: Request, db: Session = Depends(get_db)):
+    _, group = _get_manageable_group(group_id, request, db)
+
+    group = db.query(Group).options(
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.lessons),
+        joinedload(Group.members),
+    ).filter(Group.id == group.id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    lessons = _ordered_group_lessons(group)
+    lesson_ids = [lesson.id for lesson in lessons]
+    student_ids = [member.student_id for member in group.members]
+    form_data = await request.form()
+
+    existing_entries = db.query(GroupJournalEntry).filter(
+        GroupJournalEntry.group_id == group.id,
+        GroupJournalEntry.lesson_id.in_(lesson_ids or [0]),
+        GroupJournalEntry.student_id.in_(student_ids or [0]),
+    ).all()
+    entries_map = {
+        (entry.student_id, entry.lesson_id): entry
+        for entry in existing_entries
+    }
+
+    try:
+        for student_id in student_ids:
+            for lesson_id in lesson_ids:
+                present = f"present_{student_id}_{lesson_id}" in form_data
+                raw_grade = (form_data.get(f"grade_{student_id}_{lesson_id}") or "").strip()
+                grade = int(raw_grade) if raw_grade else None
+
+                if grade is not None and grade not in {1, 2, 3, 4, 5}:
+                    return _journal_redirect(group.id, error="invalid_grade")
+                if not present:
+                    grade = None
+
+                entry = entries_map.get((student_id, lesson_id))
+                if entry:
+                    entry.present = present
+                    entry.grade = grade
+                else:
+                    db.add(GroupJournalEntry(
+                        group_id=group.id,
+                        lesson_id=lesson_id,
+                        student_id=student_id,
+                        present=present,
+                        grade=grade,
+                    ))
+
+        db.commit()
+    except ValueError:
+        db.rollback()
+        return _journal_redirect(group.id, error="invalid_grade")
+
+    return _journal_redirect(group.id, success="journal_saved")
 
 
 
@@ -1035,19 +1188,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     if not membership:
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
-    ordered_lessons = []
-    seen_lesson_ids = set()
-    for module in sorted(group.modules, key=lambda item: (item.order_index or 0, item.id)):
-        for item in sorted(module.lessons, key=lambda lesson_item: (lesson_item.order or 0, lesson_item.id)):
-            if item.group_id == group.id and item.id not in seen_lesson_ids:
-                ordered_lessons.append(item)
-                seen_lesson_ids.add(item.id)
-
-    unassigned_lessons = sorted(
-        [item for item in group.lessons if item.group_module_id is None and item.id not in seen_lesson_ids],
-        key=lambda item: (item.order or 0, item.id),
-    )
-    ordered_lessons.extend(unassigned_lessons)
+    ordered_lessons = _ordered_group_lessons(group)
 
     return templates.TemplateResponse("groups/student_view.html", {
         "request": request,
@@ -1099,19 +1240,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
 
-    ordered_lessons = []
-    seen_lesson_ids = set()
-    for module in sorted(group.modules, key=lambda item: (item.order_index or 0, item.id)):
-        for item in sorted(module.lessons, key=lambda lesson_item: (lesson_item.order or 0, lesson_item.id)):
-            if item.group_id == group.id and item.id not in seen_lesson_ids:
-                ordered_lessons.append(item)
-                seen_lesson_ids.add(item.id)
-
-    unassigned_lessons = sorted(
-        [item for item in group.lessons if item.group_module_id is None and item.id not in seen_lesson_ids],
-        key=lambda item: (item.order or 0, item.id),
-    )
-    ordered_lessons.extend(unassigned_lessons)
+    ordered_lessons = _ordered_group_lessons(group)
     current_index = next(
         (index for index, item in enumerate(ordered_lessons) if item.id == lesson.id),
         None,
@@ -1122,6 +1251,13 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         if current_index is not None and current_index + 1 < len(ordered_lessons)
         else None
     )
+    journal_entry = None
+    if membership and user.is_student:
+        journal_entry = db.query(GroupJournalEntry).filter(
+            GroupJournalEntry.group_id == group_id,
+            GroupJournalEntry.lesson_id == lesson_id,
+            GroupJournalEntry.student_id == user.id,
+        ).first()
 
     return templates.TemplateResponse("groups/lesson_view.html", {
         "request": request,
@@ -1133,5 +1269,6 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "ordered_lessons": ordered_lessons,
         "previous_lesson": previous_lesson,
         "next_lesson": next_lesson,
+        "journal_entry": journal_entry,
         "can_preview_as_owner": can_preview_as_owner,
     })

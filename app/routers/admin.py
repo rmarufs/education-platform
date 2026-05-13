@@ -18,7 +18,7 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 from app.models.assessment import AssessmentResponse
 from app.models.comment import Comment
-from app.models.group import Group, GroupMember
+from app.models.group import Group, GroupJournalEntry, GroupMember
 from app.models.organization import Organization, OrganizationStudent, OrganizationTeacher
 from app.models.quiz import QuizAttempt, QuizResult
 from app.models.review import Review
@@ -86,6 +86,7 @@ def _delete_user_dependencies(db: Session, user: User) -> None:
     db.query(Review).filter(
         (Review.student_id == user.id) | (Review.teacher_id == user.id)
     ).delete(synchronize_session=False)
+    db.query(GroupJournalEntry).filter(GroupJournalEntry.student_id == user.id).delete(synchronize_session=False)
     db.query(GroupMember).filter(GroupMember.student_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationTeacher).filter(OrganizationTeacher.teacher_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationStudent).filter(OrganizationStudent.student_id == user.id).delete(synchronize_session=False)

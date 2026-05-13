@@ -52,6 +52,9 @@
                 <p class="text-muted">{{ (group.description or "") | striptags }} <span data-i18n="common.no_desc" style="display:{% if group.description %}none{% else %}inline{% endif %}">Нет описания</span></p>
             </div>
             <div class="manage-header-actions">
+                <a href="/groups/{{ group.id }}/journal" class="btn btn-primary btn-sm">
+                    📒 <span data-i18n="journal.open">Журнал</span>
+                </a>
                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('avatar-upload-input').click()">
                     🖼 <span data-i18n="group.cover">Обложка</span>
                 </button>

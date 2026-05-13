@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import CheckConstraint, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,6 +19,7 @@ class Group(Base):
     organization = relationship("Organization", back_populates="groups")
     teacher = relationship("User", foreign_keys=[teacher_id])
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
+    journal_entries = relationship("GroupJournalEntry", back_populates="group", cascade="all, delete-orphan")
     modules = relationship(
         "GroupModule",
         back_populates="group",
@@ -73,6 +74,7 @@ class GroupLesson(Base):
     group = relationship("Group", back_populates="lessons")
     group_module = relationship("GroupModule", back_populates="lessons")
     materials = relationship("GroupMaterial", back_populates="lesson", cascade="all, delete-orphan")
+    journal_entries = relationship("GroupJournalEntry", back_populates="lesson", cascade="all, delete-orphan")
 
 
 class GroupMaterial(Base):
@@ -84,3 +86,24 @@ class GroupMaterial(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     lesson = relationship("GroupLesson", back_populates="materials")
+
+
+class GroupJournalEntry(Base):
+    __tablename__ = "group_journal_entries"
+    __table_args__ = (
+        UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_journal_entry"),
+        CheckConstraint("grade IS NULL OR (grade >= 1 AND grade <= 5)", name="ck_group_journal_grade_range"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("group_lessons.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    present = Column(Boolean, default=False, nullable=False)
+    grade = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    group = relationship("Group", back_populates="journal_entries")
+    lesson = relationship("GroupLesson", back_populates="journal_entries")
+    student = relationship("User", foreign_keys=[student_id], back_populates="group_journal_entries")

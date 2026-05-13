@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Журнал — Фурузон{% endblock %}
+
+{% block content %}
+<div class="manage-page">
+  <div class="manage-header">
+    <div>
+      <a href="/groups/{{ group.id }}/manage" class="back-link" data-i18n="group.back_to_group">← К группе</a>
+      <h1>
+        <span data-i18n="journal.title">Электронный журнал</span>
+        <span class="badge badge-primary">{{ group.name }}</span>
+      </h1>
+      <p class="text-muted" data-i18n="journal.subtitle">Отмечайте посещаемость и оценки учеников по урокам группы.</p>
+    </div>
+  </div>
+
+  {% if success == "journal_saved" %}
+  <div class="alert alert-success" style="margin-bottom:16px;">
+    <span data-i18n="journal.success_saved">Журнал сохранён.</span>
+  </div>
+  {% endif %}
+  {% if error == "invalid_grade" %}
+  <div class="alert alert-danger" style="margin-bottom:16px;">
+    <span data-i18n="journal.error_invalid_grade">Оценка должна быть от 1 до 5.</span>
+  </div>
+  {% elif error %}
+  <div class="alert alert-danger" style="margin-bottom:16px;">
+    <span data-i18n="group.error_generic">Произошла ошибка.</span>
+  </div>
+  {% endif %}
+
+  <section class="manage-section">
+    {% if members and lessons %}
+    <form action="/groups/{{ group.id }}/journal" method="POST">
+      <div class="data-table-wrap journal-table-wrap">
+        <table class="data-table journal-table">
+          <thead>
+            <tr>
+              <th class="journal-student-col" data-i18n="manage.student">Студент</th>
+              {% for lesson in lessons %}
+              <th>
+                <div class="journal-lesson-title">{{ lesson.title }}</div>
+              </th>
+              {% endfor %}
+              <th data-i18n="journal.average">Средний балл</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in members %}
+            <tr>
+              <td class="journal-student-col">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
+                    {{ member.student.name[0]|upper if member.student.name else "?" }}
+                  </div>
+                  <div>
+                    <div style="font-weight:600;color:var(--text);font-size:0.9rem;">{{ member.student.name }}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">{{ member.student.email }}</div>
+                  </div>
+                </div>
+              </td>
+              {% for lesson in lessons %}
+              {% set entry = entries_map.get((member.student_id, lesson.id)) %}
+              <td>
+                <div class="journal-cell">
+                  <label class="journal-present">
+                    <input type="checkbox" name="present_{{ member.student_id }}_{{ lesson.id }}" {% if entry and entry.present %}checked{% endif %}>
+                    <span data-i18n="journal.present_short">Был</span>
+                  </label>
+                  <select name="grade_{{ member.student_id }}_{{ lesson.id }}" class="form-input journal-grade">
+                    <option value="" data-i18n="journal.no_grade">Без оценки</option>
+                    {% for grade in [1, 2, 3, 4, 5] %}
+                    <option value="{{ grade }}" {% if entry and entry.present and entry.grade == grade %}selected{% endif %}>{{ grade }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </td>
+              {% endfor %}
+              <td>
+                {% if averages.get(member.student_id) is not none %}
+                <span class="badge badge-primary">{{ "%.2f"|format(averages.get(member.student_id)) }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="journal-actions">
+        <button type="submit" class="btn btn-primary" data-i18n="journal.save">Сохранить журнал</button>
+        <a href="/groups/{{ group.id }}/manage" class="btn btn-outline" data-i18n="action.cancel">Отмена</a>
+      </div>
+    </form>
+    {% else %}
+    <div class="empty-state" style="padding:40px;">
+      <span class="empty-icon" style="font-size:2.5rem;margin-bottom:10px;display:block;">📒</span>
+      {% if not members %}
+      <p style="margin:0;" data-i18n="journal.empty_students">В группе пока нет учеников.</p>
+      {% else %}
+      <p style="margin:0;" data-i18n="journal.empty_lessons">В группе пока нет уроков.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.journal-table-wrap { overflow-x: auto; }
+.journal-table { min-width: 900px; }
+.journal-table th,
+.journal-table td { vertical-align: top; }
+.journal-student-col {
+  left: 0;
+  min-width: 220px;
+  position: sticky;
+  z-index: 2;
+  background: var(--bg-card);
+}
+.journal-table thead .journal-student-col { z-index: 3; }
+.journal-lesson-title {
+  min-width: 150px;
+  max-width: 220px;
+  white-space: normal;
+}
+.journal-cell {
+  display: grid;
+  gap: 8px;
+  min-width: 150px;
+}
+.journal-present {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.journal-grade {
+  min-width: 120px;
+  padding: 0.45rem 0.65rem;
+}
+.journal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+@media (max-width: 640px) {
+  .journal-student-col { min-width: 180px; }
+  .journal-actions .btn { flex: 1 1 160px; justify-content: center; }
+}
+</style>
+
+<script>
+document.querySelectorAll('.journal-present input[type="checkbox"]').forEach((checkbox) => {
+  checkbox.addEventListener('change', () => {
+    if (!checkbox.checked) {
+      const gradeSelect = checkbox.closest('.journal-cell')?.querySelector('.journal-grade');
+      if (gradeSelect) gradeSelect.value = '';
+    }
+  });
+});
+</script>
+{% endblock %}

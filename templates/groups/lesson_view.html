@@ -238,6 +238,30 @@
       {% endif %}
     </div>
 
+    {% if membership and not can_preview_as_owner %}
+    <section class="lesson-materials group-lesson-journal-result">
+      <h3 data-i18n="journal.my_result">Мой результат по уроку</h3>
+      {% if journal_entry %}
+        {% if journal_entry.present %}
+        <p class="text-muted" style="margin:0;">
+          <span class="badge badge-primary" data-i18n="journal.student_present">Присутствовал</span>
+          {% if journal_entry.grade %}
+          <span data-i18n="journal.student_grade" data-i18n-params='{{ {"grade": journal_entry.grade} | tojson }}'>Оценка: {{ journal_entry.grade }}</span>
+          {% else %}
+          <span data-i18n="journal.student_no_grade">Оценка пока не выставлена.</span>
+          {% endif %}
+        </p>
+        {% else %}
+        <p class="text-muted" style="margin:0;">
+          <span class="badge badge-secondary" data-i18n="journal.student_absent">Отсутствовал</span>
+        </p>
+        {% endif %}
+      {% else %}
+      <p class="text-muted" style="margin:0;" data-i18n="journal.student_not_marked">Пока не отмечено.</p>
+      {% endif %}
+    </section>
+    {% endif %}
+
     <!-- Материалы -->
     {% if lesson.materials %}
     <section class="lesson-materials">
