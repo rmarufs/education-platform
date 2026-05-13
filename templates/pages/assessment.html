@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title_key %}ass.title{% endblock %}
-{% block title %}Определение уровня — Фурузон{% endblock %}
+{% block title %}Фурузон{% endblock %}
 
 {% block content %}
 <div class="assessment-wrapper">
@@ -13,43 +13,163 @@
         <div class="assessment-form-card">
             
             <div id="assessment-intro" class="assessment-step active">
-                <h1 style="margin-bottom:20px;" data-i18n="ass.title">Добро пожаловать!</h1>
+                <h1 style="margin-bottom:20px;" data-i18n="ass.title">Хуш омадед!</h1>
                 <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;" data-i18n="ass.subtitle">
-                    Чтобы предложить вам наиболее подходящие курсы, пожалуйста, ответьте на несколько коротких вопросов. Это поможет определить ваш текущий уровень подготовки.
+                    Ба чанд саволи кӯтоҳ ҷавоб диҳед, то мо барои шумо курсҳои мувофиқро пешниҳод намоем.
                 </p>
-                <button type="button" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" onclick="startAssessment()">
-                    Начать опрос →
+                <button type="button" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" onclick="startAssessment()" data-i18n="ass.start">
+                    Оғози пурсиш →
                 </button>
             </div>
 
             <form action="/assessment" method="POST" id="assessment-form">
-                {% for number in range(1, 6) %}
-                <div class="assessment-step" id="step-{{ number }}" style="display: none;">
-                    <div class="step-counter">Шаг {{ number }} из 5</div>
-                    <h2 class="assessment-question-title" data-i18n="ass.q{{ number }}">
-                        Вопрос {{ number }}
-                    </h2>
+                <div class="assessment-step" id="step-1" style="display: none;">
+                    <div class="step-counter" data-i18n="ass.step_counter" data-i18n-params='{"current":1,"total":5}'>Қадам 1 аз 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q1">Оё шумо таҷрибаи гузаштан аз курсҳои онлайн доред?</h2>
                     <div class="assessment-options-grid">
-                        {% for value in range(1, 4) %}
                         <label class="assessment-option-card">
-                            <input type="radio" name="q{{ number }}" value="{{ value }}" required onchange="nextStep({{ number }})">
+                            <input type="radio" name="q1" value="1" required onchange="nextStep(1)">
                             <div class="option-content">
                                 <div class="option-radio"></div>
-                                <span class="option-text" data-i18n="ass.q{{ number }}_{{ value }}">Вариант</span>
+                                <span class="option-text" data-i18n="ass.q1_1">Бале, якчанд курс гузаштам</span>
                             </div>
                         </label>
-                        {% endfor %}
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q1" value="2" required onchange="nextStep(1)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q1_2">1–2 курс гузаштам</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q1" value="3" required onchange="nextStep(1)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q1_3">Не, нагузаштаам</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
-                {% endfor %}
+
+                <div class="assessment-step" id="step-2" style="display: none;">
+                    <div class="step-counter" data-i18n="ass.step_counter" data-i18n-params='{"current":2,"total":5}'>Қадам 2 аз 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q2">То чи андоза шумо (бе омӯзгор) худомузи мекунед?</h2>
+                    <div class="assessment-options-grid">
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q2" value="1" required onchange="nextStep(2)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q2_1">Зуд-зуд</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q2" value="2" required onchange="nextStep(2)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q2_2">Баъзан</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q2" value="3" required onchange="nextStep(2)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q2_3">Кам</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="assessment-step" id="step-3" style="display: none;">
+                    <div class="step-counter" data-i18n="ass.step_counter" data-i18n-params='{"current":3,"total":5}'>Қадам 3 аз 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q3">Оё шумо одатан омӯзишро то охир мерасонед?</h2>
+                    <div class="assessment-options-grid">
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q3" value="1" required onchange="nextStep(3)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q3_1">Бале, қариб ҳамеша</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q3" value="2" required onchange="nextStep(3)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q3_2">Баъзан</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q3" value="3" required onchange="nextStep(3)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q3_3">Кам</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="assessment-step" id="step-4" style="display: none;">
+                    <div class="step-counter" data-i18n="ass.step_counter" data-i18n-params='{"current":4,"total":5}'>Қадам 4 аз 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q4">Ба шумо то чӣ андоза бароҳат аст, ки бе роҳнамо омӯзед?</h2>
+                    <div class="assessment-options-grid">
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q4" value="1" required onchange="nextStep(4)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q4_1">Хеле бароҳат</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q4" value="2" required onchange="nextStep(4)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q4_2">Муқаррарӣ</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q4" value="3" required onchange="nextStep(4)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q4_3">Душвор</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="assessment-step" id="step-5" style="display: none;">
+                    <div class="step-counter" data-i18n="ass.step_counter" data-i18n-params='{"current":5,"total":5}'>Қадам 5 аз 5</div>
+                    <h2 class="assessment-question-title" data-i18n="ass.q5">Ҳангоми омӯзиши мустақилона бештар бо кадом мушкилот рӯ ба рӯ мешавед?</h2>
+                    <div class="assessment-options-grid">
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q5" value="1" required onchange="nextStep(5)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q5_1">Мотивация намерасад</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q5" value="2" required onchange="nextStep(5)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q5_2">Фаҳмидани мавод душвор аст</span>
+                            </div>
+                        </label>
+                        <label class="assessment-option-card">
+                            <input type="radio" name="q5" value="3" required onchange="nextStep(5)">
+                            <div class="option-content">
+                                <div class="option-radio"></div>
+                                <span class="option-text" data-i18n="ass.q5_3">Мушкилот надорам</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
 
                 <div class="assessment-step" id="step-final" style="display: none; text-align: center;">
-                    <h2 style="margin-bottom:20px;">🎉 Поздравляем!</h2>
-                    <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;">
-                        Вы успешно зарегистрировались и завершили опрос.
+                    <h2 style="margin-bottom:20px;" data-i18n="ass.final_title">🎉 Табрик!</h2>
+                    <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:30px;" data-i18n="ass.final_desc">
+                        Шумо бомуваффақият сабти ном шудед ва пурсишро анҷом додед.
                     </p>
-                    <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;">
-                        Перейти в каталог курсов
+                    <button type="submit" class="btn btn-primary btn-full" style="font-size:1.1rem;padding:12px;" data-i18n="ass.catalog_btn">
+                        Ба каталоги курсҳо гузаред
                     </button>
                 </div>
             </form>
