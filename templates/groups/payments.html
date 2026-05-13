@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Журнал оплаты — Фурузон{% endblock %}
+
+{% block content %}
+<div class="manage-page">
+  <div class="manage-header">
+    <div>
+      <a href="/groups/{{ group.id }}/manage" class="back-link" data-i18n="group.back_to_group">← К группе</a>
+      <h1>
+        <span data-i18n="payment.title">Журнал оплаты</span>
+        <span class="badge badge-primary">{{ group.name }}</span>
+      </h1>
+      <p class="text-muted" data-i18n="payment.subtitle">Отмечайте факт оплаты учениками выбранного месяца.</p>
+    </div>
+  </div>
+
+  {% if success == "payments_saved" %}
+  <div class="alert alert-success" style="margin-bottom:16px;">
+    <span data-i18n="payment.success_saved">Журнал оплаты сохранён.</span>
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="alert alert-danger" style="margin-bottom:16px;">
+    <span data-i18n="group.error_generic">Произошла ошибка.</span>
+  </div>
+  {% endif %}
+
+  <section class="manage-section">
+    <form action="/groups/{{ group.id }}/payments" method="GET" class="payment-month-form">
+      <label class="text-muted" for="payment-month" data-i18n="payment.month">Месяц</label>
+      <input id="payment-month" type="month" name="month" class="form-input payment-month-input" value="{{ month_value }}">
+      <button type="submit" class="btn btn-outline" data-i18n="payment.show_month">Показать месяц</button>
+    </form>
+
+    {% if members %}
+    <form action="/groups/{{ group.id }}/payments" method="POST">
+      <input type="hidden" name="month" value="{{ month_value }}">
+      <div class="data-table-wrap payment-table-wrap">
+        <table class="data-table payment-table">
+          <thead>
+            <tr>
+              <th data-i18n="manage.student">Студент</th>
+              <th data-i18n="payment.is_paid">Оплачено</th>
+              <th data-i18n="payment.paid_at">Дата оплаты</th>
+              <th data-i18n="payment.marked_by">Кто отметил</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in members %}
+            {% set entry = entries_map.get(member.student_id) %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
+                    {{ member.student.name[0]|upper if member.student.name else "?" }}
+                  </div>
+                  <div>
+                    <div style="font-weight:600;color:var(--text);font-size:0.9rem;">{{ member.student.name }}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">{{ member.student.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                {% if can_edit_payments %}
+                <label class="payment-checkbox">
+                  <input type="checkbox" name="paid_{{ member.student_id }}" {% if entry and entry.is_paid %}checked{% endif %}>
+                  <span data-i18n="payment.paid">Оплачено</span>
+                </label>
+                {% elif entry and entry.is_paid %}
+                <span class="badge badge-primary" data-i18n="payment.paid">Оплачено</span>
+                {% else %}
+                <span class="badge badge-secondary" data-i18n="payment.unpaid">Не оплачено</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry and entry.paid_at %}
+                {{ entry.paid_at.strftime("%d.%m.%Y %H:%M") }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry and entry.marked_by %}
+                {{ entry.marked_by.name }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="payment-actions">
+        {% if can_edit_payments %}
+        <button type="submit" class="btn btn-primary" data-i18n="payment.save">Сохранить оплату</button>
+        {% else %}
+        <span class="text-muted" data-i18n="payment.readonly_teacher">Преподавателю доступен только просмотр.</span>
+        {% endif %}
+        <a href="/groups/{{ group.id }}/manage" class="btn btn-outline" data-i18n="action.cancel">Отмена</a>
+      </div>
+    </form>
+    {% else %}
+    <div class="empty-state" style="padding:40px;">
+      <span class="empty-icon" style="font-size:2.5rem;margin-bottom:10px;display:block;">💳</span>
+      <p style="margin:0;" data-i18n="payment.empty_students">В группе пока нет учеников.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.payment-month-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.payment-month-form label {
+  flex: 1 0 100%;
+  font-size: 0.85rem;
+}
+.payment-month-input { max-width: 220px; }
+.payment-table-wrap { overflow-x: auto; }
+.payment-table { min-width: 760px; }
+.payment-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+@media (max-width: 640px) {
+  .payment-month-input,
+  .payment-month-form .btn,
+  .payment-actions .btn { width: 100%; justify-content: center; }
+}
+</style>
+{% endblock %}

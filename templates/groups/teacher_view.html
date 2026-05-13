@@ -18,6 +18,9 @@
       <a href="/groups/{{ group.id }}/journal" class="btn btn-primary btn-sm">
         📒 <span data-i18n="journal.open">Журнал</span>
       </a>
+      <a href="/groups/{{ group.id }}/payments" class="btn btn-outline btn-sm">
+        💳 <span data-i18n="payment.open">Журнал оплаты</span>
+      </a>
       {% if group.lessons %}
       <a href="/groups/{{ group.id }}/lessons/{{ (group.lessons|sort(attribute='order'))[0].id }}" class="btn btn-secondary btn-sm" data-i18n="manage.view">👁 Просмотр</a>
       {% endif %}
@@ -204,7 +207,6 @@
           <tr>
             <th data-i18n="manage.student">Студент</th>
             <th data-i18n="group.grade">Класс</th>
-            <th data-i18n="group.payment_status">Статус оплаты</th>
           </tr>
         </thead>
         <tbody>
@@ -226,13 +228,6 @@
               <span class="text-muted" data-i18n="group.grade_value" data-i18n-params='{{ {"grade": member.grade} | tojson }}'>{{ member.grade }} класс</span>
               {% else %}
               <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if member.is_paid %}
-              <span class="badge badge-primary" data-i18n="group.paid">Оплачено</span>
-              {% else %}
-              <span class="badge badge-secondary" data-i18n="group.unpaid">Не оплачено</span>
               {% endif %}
             </td>
           </tr>

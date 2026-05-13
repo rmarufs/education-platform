@@ -30,7 +30,7 @@
               <span>👨‍🏫 <span data-i18n="group.teacher">Преподаватель</span>: {{ group.teacher.name }}</span>
               {% endif %}
               <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></span>
-              {% if membership.is_paid %}
+              {% if payment_current_paid %}
               <span>💚 <span data-i18n="group.paid">Оплачено</span></span>
               {% else %}
               <span>⏳ <span data-i18n="group.awaiting_payment">Ожидает оплаты</span></span>
@@ -43,6 +43,12 @@
         <div class="course-detail-body">
           <h2 data-i18n="group.about">О группе</h2>
           <div class="rich-text-content">{{ group.description | clean_html }}</div>
+        </div>
+        {% endif %}
+
+        {% if payment_overdue %}
+        <div class="alert alert-warning group-payment-notice" style="margin: 0 0 16px; padding: 16px; border-radius: 8px; background-color: var(--warning-light, #fef3c7); color: var(--warning-dark, #92400e); border: 1px solid var(--warning, #f59e0b);">
+          <span data-i18n="payment.student_overdue_notice">Пожалуйста, оплатите обучение за текущий месяц в учебном центре, когда будет удобно.</span>
         </div>
         {% endif %}
 

@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+from datetime import date, datetime
 from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -12,7 +13,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupPaymentEntry
 from app.ui import templates
 from app.utils.image import compress_and_upload_avatar
 
@@ -132,6 +133,47 @@ def _journal_redirect(group_id: int, **params) -> RedirectResponse:
     if query:
         location = f"{location}?{query}"
     return RedirectResponse(location, status_code=302)
+
+
+def _month_start(value: date | None = None) -> date:
+    value = value or date.today()
+    return date(value.year, value.month, 1)
+
+
+def _parse_month(value: str | None) -> date:
+    if not value:
+        return _month_start()
+    try:
+        if len(value) == 7:
+            parsed = datetime.strptime(value, "%Y-%m").date()
+        else:
+            parsed = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid month")
+    return _month_start(parsed)
+
+
+def _payment_redirect(group_id: int, month: date, **params) -> RedirectResponse:
+    from urllib.parse import urlencode
+
+    payload = {"month": month.strftime("%Y-%m"), **{key: value for key, value in params.items() if value}}
+    return RedirectResponse(f"/groups/{group_id}/payments?{urlencode(payload)}", status_code=302)
+
+
+def _student_payment_overdue(db: Session, group_id: int, student_id: int, today: date | None = None) -> bool:
+    today = today or date.today()
+    if today.day <= 7:
+        return False
+    entry = _student_month_payment_entry(db, group_id, student_id, _month_start(today))
+    return not (entry and entry.is_paid)
+
+
+def _student_month_payment_entry(db: Session, group_id: int, student_id: int, month: date) -> GroupPaymentEntry | None:
+    return db.query(GroupPaymentEntry).filter(
+        GroupPaymentEntry.group_id == group_id,
+        GroupPaymentEntry.student_id == student_id,
+        GroupPaymentEntry.month == month,
+    ).first()
 
 
 # ═══════════════════════════════════════════════════════════
@@ -459,31 +501,11 @@ def group_remove_student(
             GroupJournalEntry.group_id == group_id,
             GroupJournalEntry.student_id == student_id,
         ).delete(synchronize_session=False)
+        db.query(GroupPaymentEntry).filter(
+            GroupPaymentEntry.group_id == group_id,
+            GroupPaymentEntry.student_id == student_id,
+        ).delete(synchronize_session=False)
         db.delete(member)
-        db.commit()
-
-    return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
-
-
-@router.post("/{group_id}/member/{member_id}/toggle-paid")
-def group_toggle_paid(
-    group_id: int,
-    member_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    result, redirect = _require_org(request, db)
-    if redirect:
-        return redirect
-    user, org = result
-    _get_org_for_group(group_id, user, db)
-
-    member = db.query(GroupMember).filter(
-        GroupMember.id == member_id,
-        GroupMember.group_id == group_id,
-    ).first()
-    if member:
-        member.is_paid = not member.is_paid
         db.commit()
 
     return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
@@ -699,6 +721,106 @@ async def group_journal_save(group_id: int, request: Request, db: Session = Depe
         return _journal_redirect(group.id, error="invalid_grade")
 
     return _journal_redirect(group.id, success="journal_saved")
+
+
+# ═══════════════════════════════════════════════════════════
+# PAYMENT JOURNAL — ORG EDITS, TEACHER READS
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/{group_id}/payments", response_class=HTMLResponse)
+def group_payments(group_id: int, request: Request, month: Optional[str] = None, db: Session = Depends(get_db)):
+    user, group = _get_manageable_group(group_id, request, db)
+    selected_month = _parse_month(month)
+
+    group = db.query(Group).options(
+        joinedload(Group.organization),
+        joinedload(Group.teacher),
+        joinedload(Group.members).joinedload(GroupMember.student),
+    ).filter(Group.id == group.id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
+    student_ids = [member.student_id for member in members]
+    entries = []
+    if student_ids:
+        entries = db.query(GroupPaymentEntry).options(
+            joinedload(GroupPaymentEntry.marked_by)
+        ).filter(
+            GroupPaymentEntry.group_id == group.id,
+            GroupPaymentEntry.month == selected_month,
+            GroupPaymentEntry.student_id.in_(student_ids),
+        ).all()
+
+    entries_map = {entry.student_id: entry for entry in entries}
+    can_edit_payments = user.is_org and _can_manage_group_content(user, group, db)
+
+    return templates.TemplateResponse("groups/payments.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "members": members,
+        "entries_map": entries_map,
+        "selected_month": selected_month,
+        "month_value": selected_month.strftime("%Y-%m"),
+        "can_edit_payments": can_edit_payments,
+        "success": request.query_params.get("success"),
+        "error": request.query_params.get("error"),
+    })
+
+
+@router.post("/{group_id}/payments")
+async def group_payments_save(group_id: int, request: Request, db: Session = Depends(get_db)):
+    user = _get_user(request, db)
+    if not user or not user.is_org:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+    if not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    form_data = await request.form()
+    selected_month = _parse_month(form_data.get("month"))
+
+    group = db.query(Group).options(joinedload(Group.members)).filter(
+        Group.id == group.id,
+    ).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    student_ids = [member.student_id for member in group.members]
+    existing_entries = db.query(GroupPaymentEntry).filter(
+        GroupPaymentEntry.group_id == group.id,
+        GroupPaymentEntry.month == selected_month,
+        GroupPaymentEntry.student_id.in_(student_ids or [0]),
+    ).all()
+    entries_map = {entry.student_id: entry for entry in existing_entries}
+    now = datetime.utcnow()
+
+    for student_id in student_ids:
+        is_paid = f"paid_{student_id}" in form_data
+        entry = entries_map.get(student_id)
+        if not entry:
+            entry = GroupPaymentEntry(
+                group_id=group.id,
+                student_id=student_id,
+                month=selected_month,
+            )
+            db.add(entry)
+
+        if is_paid:
+            if not entry.is_paid or not entry.paid_at:
+                entry.paid_at = now
+            entry.is_paid = True
+        else:
+            entry.is_paid = False
+            entry.paid_at = None
+        entry.marked_by_id = user.id
+
+    db.commit()
+    return _payment_redirect(group.id, selected_month, success="payments_saved")
 
 
 
@@ -1189,6 +1311,9 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     ordered_lessons = _ordered_group_lessons(group)
+    current_payment = _student_month_payment_entry(db, group_id, user.id, _month_start())
+    payment_current_paid = bool(current_payment and current_payment.is_paid)
+    payment_overdue = _student_payment_overdue(db, group_id, user.id)
 
     return templates.TemplateResponse("groups/student_view.html", {
         "request": request,
@@ -1197,6 +1322,8 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         "group_modules": group.modules,
         "ordered_lessons": ordered_lessons,
         "membership": membership,
+        "payment_current_paid": payment_current_paid,
+        "payment_overdue": payment_overdue,
     })
 
 

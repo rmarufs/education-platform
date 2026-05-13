@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import CheckConstraint, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -20,6 +20,7 @@ class Group(Base):
     teacher = relationship("User", foreign_keys=[teacher_id])
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
     journal_entries = relationship("GroupJournalEntry", back_populates="group", cascade="all, delete-orphan")
+    payment_entries = relationship("GroupPaymentEntry", back_populates="group", cascade="all, delete-orphan")
     modules = relationship(
         "GroupModule",
         back_populates="group",
@@ -107,3 +108,24 @@ class GroupJournalEntry(Base):
     group = relationship("Group", back_populates="journal_entries")
     lesson = relationship("GroupLesson", back_populates="journal_entries")
     student = relationship("User", foreign_keys=[student_id], back_populates="group_journal_entries")
+
+
+class GroupPaymentEntry(Base):
+    __tablename__ = "group_payment_entries"
+    __table_args__ = (
+        UniqueConstraint("group_id", "student_id", "month", name="uq_group_payment_entry"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    month = Column(Date, nullable=False)
+    is_paid = Column(Boolean, default=False, nullable=False)
+    paid_at = Column(DateTime, nullable=True)
+    marked_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    group = relationship("Group", back_populates="payment_entries")
+    student = relationship("User", foreign_keys=[student_id], back_populates="group_payment_entries")
+    marked_by = relationship("User", foreign_keys=[marked_by_id], back_populates="marked_group_payments")
