@@ -13,8 +13,9 @@
 
             {# Логотип / заглушка #}
             <div class="org-pub-logo">
-                {% if org.logo_url %}
-                    <img src="{{ org.logo_url }}" alt="{{ org.name }}" class="org-pub-logo-img">
+                {% set org_logo_url = org.logo_url or (org.user.avatar_url if org.user else None) %}
+                {% if org_logo_url %}
+                    <img src="{{ org_logo_url }}" alt="{{ org.name }}" class="org-pub-logo-img">
                 {% else %}
                     <span class="org-pub-logo-placeholder">🏢</span>
                 {% endif %}

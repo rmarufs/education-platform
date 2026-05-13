@@ -31,10 +31,16 @@ def require_org(request: Request, db: Session):
 
 @router.get("/api/organizations/list")
 def list_organizations_api(db: Session = Depends(get_db)):
-    orgs = db.query(Organization).filter(Organization.status == "approved").order_by(Organization.name).all()
+    orgs = (
+        db.query(Organization)
+        .options(joinedload(Organization.user))
+        .filter(Organization.status == "approved")
+        .order_by(Organization.name)
+        .all()
+    )
     return JSONResponse({
         "organizations": [
-            {"id": o.id, "name": o.name, "logo_url": o.logo_url}
+            {"id": o.id, "name": o.name, "logo_url": o.logo_url or (o.user.avatar_url if o.user else None)}
             for o in orgs
         ]
     })

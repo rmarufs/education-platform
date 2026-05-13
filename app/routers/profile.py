@@ -17,6 +17,7 @@ from app.models.progress import Progress
 from app.models.review import Review
 from app.models.lesson import Lesson
 from app.models.module import Module
+from app.models.organization import Organization
 from app.utils.image import compress_and_upload_avatar
 
 router = APIRouter()
@@ -81,6 +82,10 @@ async def upload_avatar(
         )
 
     user.avatar_url = avatar_url
+    if user.is_org:
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if org:
+            org.logo_url = avatar_url
     db.commit()
     
     logger.info(f"Avatar saved: {user.avatar_url}")
@@ -109,6 +114,10 @@ async def delete_avatar(
         pass  # Не блокируем удаление из БД, если Cloudinary недоступен
 
     user.avatar_url = None
+    if user.is_org:
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if org:
+            org.logo_url = None
     db.commit()
 
     return JSONResponse({"success": True})

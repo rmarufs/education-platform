@@ -133,7 +133,7 @@ def search_api(
     organizations = []
     
     # Поиск организаций: если запрос пуст, показываем популярные (например, первые 3 одобренные)
-    org_query = db.query(Organization).filter(Organization.status == "approved")
+    org_query = db.query(Organization).options(joinedload(Organization.user)).filter(Organization.status == "approved")
     if q:
         org_query = org_query.filter(Organization.name.ilike(f"%{q}%"))
         orgs = org_query.limit(10).all()
@@ -145,7 +145,7 @@ def search_api(
             "id": o.id,
             "name": o.name,
             "description": _plain_text(o.description)[:120] if o.description else "Организация",
-            "logo_url": o.logo_url
+            "logo_url": o.logo_url or (o.user.avatar_url if o.user else None)
         }
         for o in orgs
     ]
