@@ -133,10 +133,16 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
 
     courses_count = db.query(Course).filter(Course.teacher_id.in_(teacher_ids)).count() if teacher_ids else 0
 
-    # Входящие заявки (pending — учителя выбрали эту организацию при регистрации)
+    # Входящие заявки преподавателей (pending — учителя выбрали эту организацию при регистрации)
     incoming_count = db.query(OrganizationTeacher).filter(
         OrganizationTeacher.organization_id == org.id,
         OrganizationTeacher.status == "pending"
+    ).count() if org else 0
+
+    # Входящие заявки студентов (pending — студенты ждут одобрения закрытого центра)
+    student_requests_count = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.status == "pending"
     ).count() if org else 0
 
     # Количество студентов
@@ -159,6 +165,7 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
             "courses_count": courses_count,
             "students_count": students_count,
             "incoming_count": incoming_count,
+            "student_requests_count": student_requests_count,
             "groups_count": groups_count,
         }
     )

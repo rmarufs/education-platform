@@ -5060,6 +5060,10 @@ body.dark .org-pub-teacher-card:hover {
   gap: 16px;
   transition: box-shadow 0.2s, transform 0.2s;
 }
+.org-metric-link {
+  color: inherit;
+  text-decoration: none;
+}
 .org-metric-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);

@@ -52,21 +52,28 @@
                     <div class="org-metric-label" data-i18n="org.stats_courses">Курсов</div>
                 </div>
             </div>
-            <div class="org-metric-card fade-in" style="animation-delay: 0.1s;">
+            <a href="/organization/teachers" class="org-metric-card fade-in org-metric-link" style="animation-delay: 0.1s;">
                 <div class="org-metric-icon" style="background: var(--warning-soft); color: var(--warning);">📥</div>
                 <div class="org-metric-data">
                     <div class="org-metric-value">{{ incoming_count }}</div>
-                    <div class="org-metric-label" data-i18n="org.stats_incoming">Входящих заявок</div>
+                    <div class="org-metric-label" data-i18n="org.stats_teacher_requests">Заявки преподавателей</div>
                 </div>
-            </div>
-            <div class="org-metric-card fade-in" style="animation-delay: 0.15s;">
+            </a>
+            <a href="/organization/students" class="org-metric-card fade-in org-metric-link" style="animation-delay: 0.15s;">
+                <div class="org-metric-icon" style="background: var(--info-soft, #e0f2fe); color: var(--info, #0284c7);">📥</div>
+                <div class="org-metric-data">
+                    <div class="org-metric-value">{{ student_requests_count }}</div>
+                    <div class="org-metric-label" data-i18n="org.stats_student_requests">Заявки студентов</div>
+                </div>
+            </a>
+            <div class="org-metric-card fade-in" style="animation-delay: 0.2s;">
                 <div class="org-metric-icon" style="background: var(--info-soft, #e0f2fe); color: var(--info, #0284c7);">🎓</div>
                 <div class="org-metric-data">
                     <div class="org-metric-value">{{ students_count }}</div>
                     <div class="org-metric-label" data-i18n="org.stats_students">Учеников</div>
                 </div>
             </div>
-            <div class="org-metric-card fade-in" style="animation-delay: 0.2s;">
+            <div class="org-metric-card fade-in" style="animation-delay: 0.25s;">
                 <div class="org-metric-icon" style="background: #f0fdf4; color: #16a34a;">🗂</div>
                 <div class="org-metric-data">
                     <div class="org-metric-value">{{ groups_count }}</div>
