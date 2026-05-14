@@ -169,13 +169,18 @@ function closeGoogleFormsIframe() {
 function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
   const modal = document.getElementById('google-forms-modal');
   const existing = modal || createGoogleFormsModal();
-  
-  existing.querySelector('h2').textContent = window.t ? t('manage.google_forms_add_title') : 'Добавить ссылку на Google Forms';
+
+  const title = existing.querySelector('h2');
+  if (title) {
+    title.textContent = window.t ? t('manage.google_forms_add_title') : 'Добавить ссылку на Google Forms';
+  }
   const input = existing.querySelector('input[name="quiz_url"]');
+  if (!input) return;
   input.value = currentUrl || '';
   input.placeholder = window.t ? t('manage.google_forms_ph') : 'Вставьте ссылку на Google Forms...';
   
   const form = existing.querySelector('form');
+  if (!form) return;
   form.dataset.scopeName = scopeName;
   form.dataset.scopeId = scopeId;
   
@@ -202,6 +207,35 @@ function openGoogleFormsModal(scopeName, scopeId, label, currentUrl = '') {
   
   existing.classList.add('active');
   input.focus();
+}
+
+function getGoogleFormsButtonPayload(button) {
+  return {
+    scopeName: button.dataset.googleFormsScopeName || '',
+    scopeId: button.dataset.googleFormsScopeId || '',
+    label: button.dataset.googleFormsLabel || '',
+    currentUrl: button.dataset.googleFormsCurrentUrl || '',
+  };
+}
+
+function initGoogleFormsAuthoring(scope = document) {
+  if (!scope || scope.dataset?.googleFormsAuthoringReady === '1') return;
+  if (scope.dataset) scope.dataset.googleFormsAuthoringReady = '1';
+
+  scope.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-google-forms-action]');
+    if (!button) return;
+
+    const payload = getGoogleFormsButtonPayload(button);
+    if (!payload.scopeName || !payload.scopeId) return;
+
+    event.preventDefault();
+    if (button.dataset.googleFormsAction === 'delete') {
+      deleteGoogleFormsUrl(payload.scopeName, payload.scopeId);
+      return;
+    }
+    openGoogleFormsModal(payload.scopeName, payload.scopeId, payload.label, payload.currentUrl);
+  });
 }
 
 // Create Google Forms modal if it doesn't exist
@@ -316,7 +350,7 @@ async function handleGoogleFormsSubmit(e) {
     });
     
     if (!response.ok) {
-      const data = await response.json();
+      const data = await readGoogleFormsResponse(response);
       showToast(data.detail || t('manage.google_forms_save_error'), 'error');
       if (submitBtn) submitBtn.disabled = false;
       return;
@@ -365,7 +399,7 @@ async function deleteGoogleFormsUrl(scopeName, scopeId) {
     });
     
     if (!response.ok) {
-      const data = await response.json();
+      const data = await readGoogleFormsResponse(response);
       showToast(data.detail || t('manage.google_forms_delete_error'), 'error');
       return;
     }
@@ -378,8 +412,17 @@ async function deleteGoogleFormsUrl(scopeName, scopeId) {
   }
 }
 
+async function readGoogleFormsResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return { detail: '' };
+  }
+}
+
 // Helper function to escape HTML
 function escapeHtml(text) {
+  text = String(text ?? '');
   const map = {
     '&': '&amp;',
     '<': '&lt;',
@@ -389,6 +432,16 @@ function escapeHtml(text) {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
+
+window.openGoogleFormsIframe = openGoogleFormsIframe;
+window.closeGoogleFormsIframe = closeGoogleFormsIframe;
+window.openGoogleFormsModal = openGoogleFormsModal;
+window.closeGoogleFormsModal = closeGoogleFormsModal;
+window.deleteGoogleFormsUrl = deleteGoogleFormsUrl;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initGoogleFormsAuthoring(document);
+});
 
 /* ── Глобальная защита от двойной отправки форм ── */
 (function() {

@@ -67,6 +67,23 @@ def get_teacher_org(teacher_id, db):
     return None
 
 
+def _can_manage_course_quiz_url(user: User, course: Course, db: Session) -> bool:
+    if is_admin(user):
+        return True
+    if is_teacher(user):
+        return course.teacher_id == user.id
+    if user.role.value == "organization":
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if not org:
+            return False
+        return db.query(OrganizationTeacher.id).filter(
+            OrganizationTeacher.organization_id == org.id,
+            OrganizationTeacher.teacher_id == course.teacher_id,
+            OrganizationTeacher.status == "accepted",
+        ).first() is not None
+    return False
+
+
 def _course_image_fs_path(image_url: str | None) -> str | None:
     if not image_url or not image_url.startswith("/static/"):
         return None
@@ -384,43 +401,36 @@ async def save_quiz_url(
     
     # Handle different scopes
     if scope_name == "course":
-        course = db.query(Course).filter(
-            Course.id == scope_id,
-            Course.teacher_id == user.id
-        ).first()
+        course = db.query(Course).filter(Course.id == scope_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
+        if not _can_manage_course_quiz_url(user, course, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
         course.quiz_url = quiz_url
     
     elif scope_name == "module":
-        module = db.query(Module).filter(Module.id == scope_id).first()
+        module = db.query(Module).options(joinedload(Module.course)).filter(Module.id == scope_id).first()
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        
-        # Check teacher ownership
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
+
+        if not module.course or not _can_manage_course_quiz_url(user, module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         module.quiz_url = quiz_url
     
     elif scope_name == "lesson":
-        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
+        lesson = (
+            db.query(Lesson)
+            .options(joinedload(Lesson.module).joinedload(Module.course))
+            .filter(Lesson.id == scope_id)
+            .first()
+        )
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        
-        # Check teacher ownership
-        module = db.query(Module).filter(Module.id == lesson.module_id).first()
-        if not module:
+
+        if not lesson.module:
             raise HTTPException(status_code=404, detail="Module not found")
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
+        if not lesson.module.course or not _can_manage_course_quiz_url(user, lesson.module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         lesson.quiz_url = quiz_url
@@ -452,43 +462,36 @@ async def delete_quiz_url(
     
     # Handle different scopes
     if scope_name == "course":
-        course = db.query(Course).filter(
-            Course.id == scope_id,
-            Course.teacher_id == user.id
-        ).first()
+        course = db.query(Course).filter(Course.id == scope_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
+        if not _can_manage_course_quiz_url(user, course, db):
+            raise HTTPException(status_code=403, detail="Unauthorized")
         course.quiz_url = None
     
     elif scope_name == "module":
-        module = db.query(Module).filter(Module.id == scope_id).first()
+        module = db.query(Module).options(joinedload(Module.course)).filter(Module.id == scope_id).first()
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        
-        # Check teacher ownership
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
+
+        if not module.course or not _can_manage_course_quiz_url(user, module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         module.quiz_url = None
     
     elif scope_name == "lesson":
-        lesson = db.query(Lesson).filter(Lesson.id == scope_id).first()
+        lesson = (
+            db.query(Lesson)
+            .options(joinedload(Lesson.module).joinedload(Module.course))
+            .filter(Lesson.id == scope_id)
+            .first()
+        )
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        
-        # Check teacher ownership
-        module = db.query(Module).filter(Module.id == lesson.module_id).first()
-        if not module:
+
+        if not lesson.module:
             raise HTTPException(status_code=404, detail="Module not found")
-        course = db.query(Course).filter(
-            Course.id == module.course_id,
-            Course.teacher_id == user.id
-        ).first()
-        if not course:
+        if not lesson.module.course or not _can_manage_course_quiz_url(user, lesson.module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         lesson.quiz_url = None

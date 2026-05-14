@@ -145,8 +145,12 @@
   {% if not quiz_url %}
   <button type="button" 
           class="btn btn-outline btn-sm google-forms-add-btn"
-          data-i18n="manage.add_test"
-          onclick="openGoogleFormsModal({{ scope_name | tojson }}, {{ scope_id }}, {{ label | tojson }})">
+          data-google-forms-action="open"
+          data-google-forms-scope-name="{{ scope_name }}"
+          data-google-forms-scope-id="{{ scope_id }}"
+          data-google-forms-label="{{ label }}"
+          data-google-forms-current-url=""
+          data-i18n="manage.add_test">
     + Добавить тест
   </button>
   {% else %}
@@ -160,14 +164,20 @@
     <div class="google-forms-actions" style="margin-top: 8px; display: flex; gap: 8px;">
       <button type="button" 
               class="btn btn-outline btn-xs"
-              data-i18n="action.edit"
-              onclick="openGoogleFormsModal({{ scope_name | tojson }}, {{ scope_id }}, {{ label | tojson }}, {{ (quiz_url or '') | tojson }})">
+              data-google-forms-action="open"
+              data-google-forms-scope-name="{{ scope_name }}"
+              data-google-forms-scope-id="{{ scope_id }}"
+              data-google-forms-label="{{ label }}"
+              data-google-forms-current-url="{{ quiz_url }}"
+              data-i18n="action.edit">
         ✏️ Изменить
       </button>
       <button type="button" 
               class="btn btn-danger btn-xs"
-              data-i18n="action.delete"
-              onclick="deleteGoogleFormsUrl({{ scope_name | tojson }}, {{ scope_id }})">
+              data-google-forms-action="delete"
+              data-google-forms-scope-name="{{ scope_name }}"
+              data-google-forms-scope-id="{{ scope_id }}"
+              data-i18n="action.delete">
         🗑 Удалить
       </button>
     </div>
