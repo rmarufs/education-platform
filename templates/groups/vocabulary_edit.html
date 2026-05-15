@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{% if vocab %}{{ vocab.title }} — Редактировать{% else %}Новый словарь{% endif %} — {{ group.name }} — Фурузон{% endblock %}
+
+{% block content %}
+<div class="vocab-edit-page">
+  <a href="/groups/{{ group.id }}/{% if can_preview_as_owner %}manage{% else %}lessons/{{ lesson.id }}{% endif %}" class="vocab-back-link">
+    ← <span data-i18n="vocabulary.back_to_manage">К управлению</span>
+  </a>
+
+  <div class="vocab-edit-card">
+    <h1 class="vocab-edit-title">
+      {% if vocab %}
+        📖 <span data-i18n="vocabulary.edit_title">Редактировать словарь</span>
+      {% else %}
+        📖 <span data-i18n="vocabulary.create_title">Новый словарь</span>
+      {% endif %}
+    </h1>
+    <p class="vocab-edit-lesson-info text-muted">
+      <span data-i18n="vocabulary.for_lesson">Для урока:</span> <strong>{{ lesson.title }}</strong>
+    </p>
+
+    <form method="POST" class="vocab-edit-form" id="vocab-edit-form">
+      <div class="form-group">
+        <label for="vocab-title" data-i18n="vocabulary.set_title">Название словаря</label>
+        <input type="text" id="vocab-title" name="title" class="form-input"
+               value="{{ vocab.title if vocab else '' }}" required
+               data-i18n="vocabulary.set_title_ph" data-i18n-prop="placeholder"
+               placeholder="Например: Тема 1. Цвета" />
+      </div>
+      <div class="form-group">
+        <label for="vocab-desc" data-i18n="vocabulary.set_desc">Описание (необязательно)</label>
+        <textarea id="vocab-desc" name="description" class="form-input" rows="2">{{ vocab.description if vocab else '' }}</textarea>
+      </div>
+
+      <div class="vocab-words-section">
+        <div class="vocab-words-header">
+          <label data-i18n="vocabulary.words_label">Слова</label>
+          <div class="vocab-words-hint" data-i18n="vocabulary.words_hint">
+            Формат: слово = перевод; перевод2 (каждое слово с новой строки)
+          </div>
+        </div>
+        <div class="vocab-words-example">
+          <code>cat = кошка; кот<br>dog = собака<br>apple = яблоко; яблок</code>
+        </div>
+        <textarea id="vocab-words-bulk" name="words_bulk" class="form-input vocab-words-textarea"
+                  rows="12" spellcheck="false"
+                  data-i18n="vocabulary.words_ph" data-i18n-prop="placeholder"
+                  placeholder="cat = кошка; кот&#10;dog = собака&#10;apple = яблоко">{{ words_bulk if words_bulk else '' }}</textarea>
+        <div class="vocab-words-count" id="vocab-words-count">
+          <span id="vocab-count-num">0</span> <span data-i18n="vocabulary.words_count">слов</span>
+        </div>
+      </div>
+
+      <div class="vocab-edit-actions">
+        <a href="/groups/{{ group.id }}/{% if can_preview_as_owner %}manage{% else %}lessons/{{ lesson.id }}{% endif %}"
+           class="btn btn-outline" data-i18n="action.cancel">Отмена</a>
+        <button type="submit" class="btn btn-primary" id="vocab-save-btn">
+          <span data-i18n="action.save">Сохранить</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.vocab-edit-page { max-width: 700px; margin: 0 auto; padding: 24px 16px 60px; }
+.vocab-back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-weight: 500; font-size: 0.9rem; margin-bottom: 20px; }
+.vocab-back-link:hover { text-decoration: underline; }
+.vocab-edit-card { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.07); border-radius: 20px; padding: 36px; box-shadow: 0 4px 24px rgba(99,102,241,0.06); }
+.vocab-edit-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 6px; color: var(--text); }
+.vocab-edit-lesson-info { font-size: 0.9rem; margin: 0 0 28px; }
+.vocab-words-section { margin-top: 24px; }
+.vocab-words-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.vocab-words-header label { font-weight: 600; color: var(--text); }
+.vocab-words-hint { font-size: 0.8rem; color: var(--text-muted); }
+.vocab-words-example { background: var(--bg-secondary, #f8fafc); border: 1px solid var(--border-light, rgba(0,0,0,0.07)); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; font-size: 0.82rem; color: var(--text-muted); }
+.vocab-words-example code { font-family: 'Courier New', monospace; display: block; white-space: pre; }
+.vocab-words-textarea { font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.7; resize: vertical; min-height: 200px; }
+.vocab-words-count { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; text-align: right; }
+.vocab-edit-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
+@media (max-width: 480px) {
+  .vocab-edit-card { padding: 24px 16px; }
+  .vocab-edit-actions { flex-direction: column; }
+  .vocab-edit-actions .btn { width: 100%; justify-content: center; }
+}
+</style>
+
+<script>
+function countWords(text) {
+  return text.split('\n').filter(line => line.trim() && line.includes('=')).length;
+}
+const textarea = document.getElementById('vocab-words-bulk');
+const countEl = document.getElementById('vocab-count-num');
+function updateCount() {
+  countEl.textContent = countWords(textarea.value);
+}
+textarea.addEventListener('input', updateCount);
+updateCount();
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Результаты: {{ vocab.title }} — {{ group.name }} — Фурузон{% endblock %}
+
+{% block content %}
+<div class="vocab-results-page">
+  <a href="/groups/{{ group.id }}/{% if can_manage %}manage{% else %}lessons/{{ lesson.id }}{% endif %}" class="vocab-back-link">
+    ← <span data-i18n="vocabulary.back_to_manage">К управлению</span>
+  </a>
+
+  <div class="vocab-results-header">
+    <h1>📊 {{ vocab.title }}</h1>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <p class="text-muted" style="margin:0;">
+        <span data-i18n="vocabulary.results_subtitle">Результаты студентов по словарю</span>
+        · <strong>{{ lesson.title }}</strong>
+      </p>
+      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/toggle-retake" method="POST" style="margin:0;">
+        {% if vocab.allow_retake %}
+        <button type="submit" class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);">
+          🔓 <span data-i18n="vocabulary.disable_retake">Запретить повтор</span>
+        </button>
+        {% else %}
+        <button type="submit" class="btn btn-outline btn-sm">
+          🔁 <span data-i18n="vocabulary.enable_retake">Разрешить повтор</span>
+        </button>
+        {% endif %}
+      </form>
+    </div>
+    {% if vocab.allow_retake %}
+    <div class="alert" style="background:var(--primary-light,#eef2ff);color:var(--primary);border-radius:10px;padding:8px 14px;font-size:0.85rem;display:inline-block;margin-bottom:12px;">
+      🔁 <span data-i18n="vocabulary.retake_allowed">Повторное прохождение разрешено</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if attempts %}
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th data-i18n="manage.student">Студент</th>
+          <th data-i18n="vocabulary.score_col">Результат</th>
+          <th data-i18n="vocabulary.pct_col">%</th>
+          <th data-i18n="vocabulary.date_col">Дата</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in attempts %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
+                {{ attempt.student.name[0]|upper }}
+              </div>
+              <div>
+                <div style="font-weight:500;font-size:0.9rem;color:var(--text);">{{ attempt.student.name }}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">{{ attempt.student.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span style="font-weight:600;">{{ attempt.score }}</span>
+            <span class="text-muted">/ {{ attempt.total }}</span>
+          </td>
+          <td>
+            <span class="badge {% if attempt.percentage >= 80 %}badge-primary{% elif attempt.percentage >= 50 %}badge-quiz{% else %}badge-secondary{% endif %}">
+              {{ attempt.percentage }}%
+            </span>
+          </td>
+          <td style="font-size:0.85rem;color:var(--text-muted);">
+            {{ attempt.completed_at.strftime('%d.%m.%Y %H:%M') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px 20px;">
+    <span class="empty-icon">📭</span>
+    <p data-i18n="vocabulary.no_attempts">Пока никто не проходил этот словарь.</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.vocab-results-page { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px; }
+.vocab-back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; font-weight: 500; font-size: 0.9rem; margin-bottom: 20px; }
+.vocab-back-link:hover { text-decoration: underline; }
+.vocab-results-header { margin-bottom: 28px; }
+.vocab-results-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 6px; }
+</style>
+{% endblock %}

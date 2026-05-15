@@ -76,6 +76,7 @@ class GroupLesson(Base):
     group_module = relationship("GroupModule", back_populates="lessons")
     materials = relationship("GroupMaterial", back_populates="lesson", cascade="all, delete-orphan")
     journal_entries = relationship("GroupJournalEntry", back_populates="lesson", cascade="all, delete-orphan")
+    vocabularies = relationship("VocabularySet", back_populates="lesson", cascade="all, delete-orphan")
 
 
 class GroupMaterial(Base):

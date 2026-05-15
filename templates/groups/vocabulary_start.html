@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ vocab.title }} — Словарь — {{ group.name }} — Фурузон{% endblock %}
+
+{% block content %}
+<div class="vocab-start-page">
+  <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="vocab-back-link">
+    ← <span data-i18n="vocabulary.back_to_lesson">К уроку</span>
+  </a>
+
+  <div class="vocab-start-card">
+    <div class="vocab-start-icon">📚</div>
+    <h1 class="vocab-start-title">{{ vocab.title }}</h1>
+    {% if vocab.description %}
+    <p class="vocab-start-desc">{{ vocab.description }}</p>
+    {% endif %}
+
+    <div class="vocab-start-meta">
+      <div class="vocab-meta-item">
+        <span class="vocab-meta-number">{{ vocab.items | length }}</span>
+        <span class="vocab-meta-label" data-i18n="vocabulary.words_count">слов</span>
+      </div>
+      {% if last_attempt %}
+      <div class="vocab-meta-item">
+        <span class="vocab-meta-number">{{ last_attempt.percentage }}%</span>
+        <span class="vocab-meta-label" data-i18n="vocabulary.last_result">прошлый результат</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if last_attempt %}
+    <div class="vocab-last-attempt">
+      <span data-i18n="vocabulary.last_attempt_label">Последняя попытка:</span>
+      <strong>{{ last_attempt.score }} / {{ last_attempt.total }}</strong>
+      — <strong>{{ last_attempt.percentage }}%</strong>
+    </div>
+    {% endif %}
+
+    {% if can_retake %}
+    <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/quiz"
+       class="btn btn-primary vocab-start-btn" id="vocab-start-btn">
+      {% if last_attempt %}
+      <span data-i18n="vocabulary.retake_btn">Пройти ещё раз →</span>
+      {% else %}
+      <span data-i18n="vocabulary.start_btn">Начать словарь →</span>
+      {% endif %}
+    </a>
+    {% else %}
+    {# Студент уже прошёл, повтор не разрешён #}
+    <div class="vocab-locked-block">
+      <div class="vocab-locked-icon">🔒</div>
+      <p class="vocab-locked-msg" data-i18n="vocabulary.locked_msg">
+        Вы уже прошли этот словарь. Повторное прохождение закрыто.
+      </p>
+      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="btn btn-outline vocab-start-btn">
+        <span data-i18n="vocabulary.back_to_lesson">← К уроку</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.vocab-start-page {
+  max-width: 520px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+.vocab-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+.vocab-back-link:hover { text-decoration: underline; }
+.vocab-start-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 20px;
+  padding: 48px 36px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.07);
+}
+.vocab-start-icon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+.vocab-start-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+.vocab-start-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+.vocab-start-meta {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+.vocab-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.vocab-meta-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+.vocab-meta-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.vocab-last-attempt {
+  background: var(--primary-light, #eef2ff);
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  margin-bottom: 28px;
+}
+.vocab-start-btn {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  justify-content: center;
+}
+.vocab-locked-block {
+  text-align: center;
+  padding: 8px 0;
+}
+.vocab-locked-icon {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+.vocab-locked-msg {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+@media (max-width: 480px) {
+  .vocab-start-card { padding: 32px 20px; }
+  .vocab-start-title { font-size: 1.3rem; }
+}
+</style>
+{% endblock %}

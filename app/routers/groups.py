@@ -1417,6 +1417,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     lesson = db.query(GroupLesson).options(
         joinedload(GroupLesson.materials),
         joinedload(GroupLesson.group_module),
+        joinedload(GroupLesson.vocabularies).joinedload(VocabularySet.items),
     ).filter(
         GroupLesson.id == lesson_id,
         GroupLesson.group_id == group_id
@@ -1457,3 +1458,573 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "journal_entry": journal_entry,
         "can_preview_as_owner": can_preview_as_owner,
     })
+
+
+# ═══════════════════════════════════════════════════════════
+# VOCABULARY — СОЗДАНИЕ / РЕДАКТИРОВАНИЕ (teacher / org)
+# ═══════════════════════════════════════════════════════════
+
+import json as _json
+import re as _re
+from app.models.vocabulary import VocabularySet, VocabularyItem, VocabularyAttempt, VocabularyAttemptAnswer
+
+
+def _parse_words_bulk(text: str) -> list[dict]:
+    """
+    Парсит текстовый блок в список слов.
+    Формат каждой строки: слово = ответ1; ответ2; ответ3
+    Возвращает список словарей с ключами prompt_word и accepted_answers (через |).
+    """
+    items = []
+    for i, line in enumerate(text.splitlines()):
+        line = line.strip()
+        if not line or "=" not in line:
+            continue
+        parts = line.split("=", 1)
+        prompt = parts[0].strip()
+        answers_raw = parts[1].strip()
+        # Разделитель ответов — точка с запятой или запятая, нормализуем в |
+        answers = [a.strip() for a in _re.split(r"[;,]", answers_raw) if a.strip()]
+        if not prompt or not answers:
+            continue
+        items.append({
+            "prompt_word": prompt,
+            "accepted_answers": "|".join(answers),
+            "position": i,
+        })
+    return items
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/create", response_class=HTMLResponse)
+def vocab_create_page(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    return templates.TemplateResponse("groups/vocabulary_edit.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "vocab": None,
+        "words_bulk": "",
+        "can_preview_as_owner": True,
+    })
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/create")
+async def vocab_create(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    words_bulk: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    vocab = VocabularySet(
+        lesson_id=lesson_id,
+        title=title.strip(),
+        description=description.strip() or None,
+    )
+    db.add(vocab)
+    db.flush()  # получаем vocab.id
+
+    for word_data in _parse_words_bulk(words_bulk):
+        db.add(VocabularyItem(
+            vocab_set_id=vocab.id,
+            prompt_word=word_data["prompt_word"],
+            accepted_answers=word_data["accepted_answers"],
+            position=word_data["position"],
+        ))
+
+    db.commit()
+    return RedirectResponse(
+        f"/groups/{group_id}/manage?success=vocab_created",
+        status_code=302,
+    )
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/edit", response_class=HTMLResponse)
+def vocab_edit_page(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    vocab = db.query(VocabularySet).options(
+        joinedload(VocabularySet.items)
+    ).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    # Строим bulk-текст из существующих слов
+    lines = []
+    for item in sorted(vocab.items, key=lambda x: x.position):
+        answers = item.accepted_answers or ""
+        answers_display = answers.replace("|", "; ")
+        lines.append(f"{item.prompt_word} = {answers_display}")
+    words_bulk = "\n".join(lines)
+
+    return templates.TemplateResponse("groups/vocabulary_edit.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "vocab": vocab,
+        "words_bulk": words_bulk,
+        "can_preview_as_owner": True,
+    })
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/edit")
+async def vocab_edit(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    words_bulk: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    vocab = db.query(VocabularySet).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    vocab.title = title.strip()
+    vocab.description = description.strip() or None
+
+    # Удаляем старые слова и создаём новые
+    db.query(VocabularyItem).filter(VocabularyItem.vocab_set_id == vocab_id).delete()
+
+    for word_data in _parse_words_bulk(words_bulk):
+        db.add(VocabularyItem(
+            vocab_set_id=vocab.id,
+            prompt_word=word_data["prompt_word"],
+            accepted_answers=word_data["accepted_answers"],
+            position=word_data["position"],
+        ))
+
+    db.commit()
+    return RedirectResponse(
+        f"/groups/{group_id}/manage?success=vocab_saved",
+        status_code=302,
+    )
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/delete")
+def vocab_delete(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    vocab = db.query(VocabularySet).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if vocab:
+        db.delete(vocab)
+        db.commit()
+
+    return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
+
+
+# ═══════════════════════════════════════════════════════════
+# VOCABULARY — ПРОСМОТР И ПРОХОЖДЕНИЕ (student)
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}", response_class=HTMLResponse)
+def vocab_start_page(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    can_preview_as_owner = _can_manage_group_content(user, group, db)
+    if not group.is_active and not can_preview_as_owner:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+
+    if not membership and not can_preview_as_owner:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    vocab = db.query(VocabularySet).options(
+        joinedload(VocabularySet.items)
+    ).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    # Последняя попытка студента
+    last_attempt = None
+    if membership:
+        last_attempt = (
+            db.query(VocabularyAttempt)
+            .filter(
+                VocabularyAttempt.vocab_set_id == vocab_id,
+                VocabularyAttempt.student_id == user.id,
+            )
+            .order_by(VocabularyAttempt.completed_at.desc())
+            .first()
+        )
+
+    # Может ли студент начать/повторить:
+    # - ещё не проходил (last_attempt is None), ИЛИ
+    # - преподаватель разрешил повтор (vocab.allow_retake), ИЛИ
+    # - админ/org смотрит предпросмотр (can_preview_as_owner)
+    can_retake = can_preview_as_owner or vocab.allow_retake or (last_attempt is None)
+
+    return templates.TemplateResponse("groups/vocabulary_start.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "vocab": vocab,
+        "last_attempt": last_attempt,
+        "membership": membership,
+        "can_preview_as_owner": can_preview_as_owner,
+        "can_retake": can_retake,
+    })
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/quiz", response_class=HTMLResponse)
+def vocab_quiz_page(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    can_preview_as_owner = _can_manage_group_content(user, group, db)
+    if not group.is_active and not can_preview_as_owner:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+
+    if not membership and not can_preview_as_owner:
+        raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    vocab = db.query(VocabularySet).options(
+        joinedload(VocabularySet.items)
+    ).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    # Блокировка повторного прохождения на уровне GET /quiz
+    if membership and not can_preview_as_owner and not vocab.allow_retake:
+        # Есть ли уже завершённая попытка?
+        existing_attempt = (
+            db.query(VocabularyAttempt.id)
+            .filter(
+                VocabularyAttempt.vocab_set_id == vocab_id,
+                VocabularyAttempt.student_id == user.id,
+            )
+            .first()
+        )
+        if existing_attempt:
+            # Редирект на стартовую страницу — там студент увидит результат
+            return RedirectResponse(
+                f"/groups/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}",
+                status_code=302,
+            )
+
+    items_data = [
+        {
+            "id": item.id,
+            "prompt_word": item.prompt_word,
+            "accepted_answers": item.accepted_answers or "",
+            "accepted_answers_ru": item.accepted_answers_ru or "",
+            "accepted_answers_tj": item.accepted_answers_tj or "",
+        }
+        for item in sorted(vocab.items, key=lambda x: x.position)
+    ]
+
+    return templates.TemplateResponse("groups/vocabulary_quiz.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "vocab": vocab,
+        "items_json": _json.dumps(items_data, ensure_ascii=False),
+        "membership": membership,
+    })
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/submit")
+async def vocab_submit(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+    can_preview_as_owner = _can_manage_group_content(user, group, db)
+    if not membership and not can_preview_as_owner:
+        raise HTTPException(status_code=403, detail="Нет доступа")
+
+    vocab = db.query(VocabularySet).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    body = await request.json()
+    answers_payload = body.get("answers", [])
+    lang = body.get("lang", "ru")
+
+    # Защита от повторного сабмита на уровне backend
+    # Если попытка уже есть И allow_retake=False И это реальный студент — блокируем
+    if membership and not can_preview_as_owner and not vocab.allow_retake:
+        existing_attempt = (
+            db.query(VocabularyAttempt.id)
+            .filter(
+                VocabularyAttempt.vocab_set_id == vocab_id,
+                VocabularyAttempt.student_id == user.id,
+            )
+            .first()
+        )
+        if existing_attempt:
+            from fastapi.responses import JSONResponse as _JSONResponse
+            return _JSONResponse(
+                {"success": False, "detail": "already_attempted"},
+                status_code=409,
+            )
+
+    correct_count = sum(1 for a in answers_payload if a.get("is_correct"))
+    total = len(answers_payload)
+
+    attempt = VocabularyAttempt(
+        vocab_set_id=vocab_id,
+        student_id=user.id,
+        score=correct_count,
+        total=total,
+        lang_used=lang,
+    )
+    db.add(attempt)
+    db.flush()
+
+    for ans in answers_payload:
+        db.add(VocabularyAttemptAnswer(
+            attempt_id=attempt.id,
+            item_id=ans.get("item_id"),
+            student_answer=ans.get("student_answer", ""),
+            is_correct=bool(ans.get("is_correct")),
+        ))
+
+    db.commit()
+    from fastapi.responses import JSONResponse as _JSONResponse
+    return _JSONResponse({"success": True, "score": correct_count, "total": total})
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results", response_class=HTMLResponse)
+def vocab_results_page(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    lesson = db.query(GroupLesson).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    vocab = db.query(VocabularySet).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    attempts = (
+        db.query(VocabularyAttempt)
+        .options(joinedload(VocabularyAttempt.student))
+        .filter(VocabularyAttempt.vocab_set_id == vocab_id)
+        .order_by(VocabularyAttempt.completed_at.desc())
+        .all()
+    )
+
+    return templates.TemplateResponse("groups/vocabulary_results.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "vocab": vocab,
+        "attempts": attempts,
+        "can_manage": True,
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+# VOCABULARY — Разрешить/запретить повторные попытки (teacher / org)
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/toggle-retake")
+def vocab_toggle_retake(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Toggle allow_retake on a vocabulary set. Only teacher/org can call this."""
+    user = _get_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group or not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    vocab = db.query(VocabularySet).filter(
+        VocabularySet.id == vocab_id,
+        VocabularySet.lesson_id == lesson_id,
+    ).first()
+    if not vocab:
+        raise HTTPException(status_code=404, detail="Словарь не найден")
+
+    vocab.allow_retake = not vocab.allow_retake
+    db.commit()
+
+    return RedirectResponse(
+        f"/groups/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results",
+        status_code=302,
+    )

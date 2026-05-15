@@ -26,6 +26,8 @@
             {% elif success == "module_deleted" %}<span data-i18n="group.success_module_deleted">✅ Модуль удалён.</span>
             {% elif success == "lesson_created" %}<span data-i18n="group.success_lesson_created">✅ Урок создан.</span>
             {% elif success == "lesson_saved" %}<span data-i18n="group.success_lesson_saved">✅ Урок сохранён.</span>
+            {% elif success == "vocab_created" %}<span data-i18n="vocabulary.success_created">✅ Словарь создан.</span>
+            {% elif success == "vocab_saved" %}<span data-i18n="vocabulary.success_saved">✅ Словарь сохранён.</span>
             {% else %}<span data-i18n="group.success_done">✅ Готово.</span>{% endif %}
         </div>
         {% endif %}
@@ -238,6 +240,20 @@
                                     <div class="lesson-inline-quiz">
                                         {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
                                     </div>
+                                    <div class="lesson-inline-vocab">
+                                      {% for vocab in lesson.vocabularies %}
+                                      <div style="display:flex;align-items:center;gap:8px;padding:4px 0 0;">
+                                        <span>📖</span>
+                                        <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/edit" style="color:var(--text);font-size:0.85rem;flex:1;">{{ vocab.title }}</a>
+                                        <span style="font-size:0.75rem;color:var(--text-muted);">{{ vocab.items|length }} сл.</span>
+                                        <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/results" style="color:var(--primary);font-size:0.75rem;" data-i18n="vocabulary.results_link">Результаты</a>
+                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="return confirm(t('vocabulary.confirm_delete'))">
+                                          <button type="submit" class="btn btn-danger btn-xs" style="padding:2px 6px;">✕</button>
+                                        </form>
+                                      </div>
+                                      {% endfor %}
+                                      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/create" class="btn btn-outline btn-xs" style="margin-top:6px;" data-i18n="vocabulary.add_vocab">+ Словарь</a>
+                                    </div>
                                 </li>
                                 {% else %}
                                 <li class="lesson-item text-muted" data-i18n="group.no_lessons">Уроков пока нет</li>
@@ -308,6 +324,20 @@
                                     {% endif %}
                                     <div class="lesson-inline-quiz">
                                         {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
+                                    </div>
+                                    <div class="lesson-inline-vocab">
+                                      {% for vocab in lesson.vocabularies %}
+                                      <div style="display:flex;align-items:center;gap:8px;padding:4px 0 0;">
+                                        <span>📖</span>
+                                        <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/edit" style="color:var(--text);font-size:0.85rem;flex:1;">{{ vocab.title }}</a>
+                                        <span style="font-size:0.75rem;color:var(--text-muted);">{{ vocab.items|length }} сл.</span>
+                                        <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/results" style="color:var(--primary);font-size:0.75rem;" data-i18n="vocabulary.results_link">Результаты</a>
+                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="return confirm(t('vocabulary.confirm_delete'))">
+                                          <button type="submit" class="btn btn-danger btn-xs" style="padding:2px 6px;">✕</button>
+                                        </form>
+                                      </div>
+                                      {% endfor %}
+                                      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/create" class="btn btn-outline btn-xs" style="margin-top:6px;" data-i18n="vocabulary.add_vocab">+ Словарь</a>
                                     </div>
                                 </li>
                                 {% endfor %}
