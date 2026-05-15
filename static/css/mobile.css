@@ -192,6 +192,371 @@
   .dashboard-header h1 { font-size: 1.35rem; }
   .dashboard-header .btn { width: 100%; justify-content: center; }
 
+  /* ══════ Кабинет студента/преподавателя: mobile polish ══════ */
+  .user-dashboard-page .main-content {
+    background: var(--surface-soft);
+  }
+
+  .user-dashboard {
+    min-height: auto;
+  }
+
+  .user-dashboard .sidebar {
+    padding: 14px max(14px, env(safe-area-inset-right, 0px)) 12px max(14px, env(safe-area-inset-left, 0px));
+    gap: 10px;
+    align-items: center;
+    background: var(--bg-card);
+    box-shadow: 0 1px 0 var(--border);
+  }
+
+  .user-dashboard .sidebar-profile {
+    flex: 1 1 220px;
+    min-width: 0;
+    padding: 0;
+    border-bottom: 0;
+    gap: 10px;
+  }
+
+  .user-dashboard .avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 1.05rem;
+  }
+
+  .user-dashboard .profile-info {
+    min-width: 0;
+  }
+
+  .user-dashboard .profile-info h3 {
+    font-size: 1rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .user-dashboard .role-badge {
+    display: inline-flex;
+    margin-top: 4px;
+    padding: 3px 9px;
+    font-size: .66rem;
+    letter-spacing: .06em;
+  }
+
+  .user-dashboard .sidebar-nav {
+    flex: 1 0 100%;
+    width: 100%;
+    padding: 6px 0 0;
+    margin-top: 2px;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+
+  .user-dashboard .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .user-dashboard .sidebar-link {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+    font-size: .87rem;
+    line-height: 1.15;
+  }
+
+  .user-dashboard .sidebar-link.active {
+    border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+    background: var(--primary-light);
+  }
+
+  .user-dashboard .link-icon {
+    font-size: .95rem;
+  }
+
+  .user-dashboard .dashboard-main {
+    max-width: 100%;
+    padding: 18px 14px 34px;
+    gap: 18px;
+  }
+
+  .user-dashboard .dashboard-main > section {
+    margin-bottom: 0 !important;
+  }
+
+  .user-dashboard .dashboard-header {
+    gap: 8px;
+  }
+
+  .user-dashboard .dashboard-header h1 {
+    margin-bottom: 4px;
+    font-size: 1.4rem;
+    line-height: 1.22;
+  }
+
+  .user-dashboard .dashboard-header p {
+    font-size: .94rem;
+    line-height: 1.45;
+  }
+
+  .user-dashboard .section-label {
+    margin-bottom: 10px;
+    font-size: .72rem;
+    letter-spacing: .07em;
+  }
+
+  .user-dashboard .dashboard-main .btn {
+    width: auto;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-size: .88rem;
+  }
+
+  .user-dashboard .dashboard-header .btn,
+  .user-dashboard .course-card .btn-full,
+  .user-dashboard .course-card-footer .btn,
+  .user-dashboard .org-card__actions .btn,
+  .user-dashboard .org-card__actions button {
+    width: 100%;
+  }
+
+  .user-dashboard .student-analytics-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 8px 0 14px;
+  }
+
+  .user-dashboard .student-analytics-card {
+    min-height: 104px;
+    padding: 12px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .user-dashboard .student-analytics-label {
+    margin-bottom: 5px;
+    font-size: .74rem;
+    line-height: 1.25;
+  }
+
+  .user-dashboard .student-analytics-value {
+    font-size: 1.05rem;
+    line-height: 1.18;
+  }
+
+  .user-dashboard .student-analytics-note {
+    margin-top: 4px;
+    font-size: .74rem;
+    line-height: 1.25;
+  }
+
+  .user-dashboard .student-analytics-bar {
+    height: 6px;
+    margin-top: 8px;
+  }
+
+  .user-dashboard .org-card {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .user-dashboard .org-card__info {
+    gap: 12px;
+  }
+
+  .user-dashboard .org-card__icon {
+    font-size: 1.55rem;
+  }
+
+  .user-dashboard .org-card__icon img {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .user-dashboard .org-card__name {
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .user-dashboard .org-card__desc {
+    font-size: .88rem;
+    line-height: 1.45;
+  }
+
+  .user-dashboard .courses-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  .user-dashboard .course-card {
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  }
+
+  .user-dashboard .course-card:hover {
+    transform: none;
+  }
+
+  .user-dashboard .course-card-header {
+    height: 72px;
+    aspect-ratio: auto;
+  }
+
+  .user-dashboard .course-card > .course-cover {
+    height: 54px;
+    min-height: 54px;
+    object-fit: cover;
+  }
+
+  .user-dashboard .course-card > .course-cover-placeholder {
+    font-size: 1.05rem;
+    font-weight: 800;
+  }
+
+  .user-dashboard .course-card-body {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+
+  .user-dashboard .course-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+
+  .user-dashboard .badge {
+    padding: 3px 9px;
+    font-size: .68rem;
+  }
+
+  .user-dashboard .course-title {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .user-dashboard .course-desc {
+    font-size: .84rem;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+  }
+
+  .user-dashboard .course-teacher,
+  .user-dashboard .course-meta {
+    margin: 0;
+    font-size: .84rem;
+    line-height: 1.35;
+  }
+
+  .user-dashboard .course-card-footer {
+    padding: 0 16px 14px;
+    border-top: 0;
+  }
+
+  .user-dashboard--teacher .group-teacher-card {
+    flex: 1 1 100%;
+    min-width: 0 !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .user-dashboard--teacher .teacher-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .user-dashboard--teacher .teacher-actions .btn {
+    width: 100%;
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .user-dashboard--teacher .teacher-actions .delete-course-btn {
+    grid-column: 1 / -1;
+  }
+
+  .user-dashboard .empty-state {
+    padding: 24px 16px !important;
+    gap: 10px;
+    border-width: 1px;
+    border-radius: 16px;
+  }
+
+  .user-dashboard .empty-icon {
+    font-size: 2rem;
+  }
+
+  .user-dashboard .empty-state p {
+    max-width: 28rem;
+    margin: 0;
+    font-size: .95rem;
+    line-height: 1.45;
+  }
+
+  .user-dashboard .empty-state .btn {
+    width: min(100%, 260px) !important;
+    margin-top: 4px !important;
+  }
+
+  .user-dashboard-page .footer-shell {
+    padding: 24px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .user-dashboard-page .footer-grid {
+    gap: 14px 18px;
+    margin-bottom: 18px;
+  }
+
+  .user-dashboard-page .footer-logo {
+    margin-bottom: 8px;
+  }
+
+  .user-dashboard-page .footer-logo-icon {
+    font-size: 1.25rem;
+  }
+
+  .user-dashboard-page .footer-logo-text {
+    font-size: 1.08rem;
+  }
+
+  .user-dashboard-page .footer-title {
+    margin-bottom: 8px;
+    font-size: .82rem;
+  }
+
+  .user-dashboard-page .footer-tagline {
+    font-size: .82rem;
+    line-height: 1.45;
+  }
+
+  .user-dashboard-page .footer-links {
+    gap: 6px;
+  }
+
+  .user-dashboard-page .footer-links a {
+    font-size: .82rem;
+  }
+
+  .user-dashboard-page .footer-socials a {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .user-dashboard-page .footer-bottom {
+    padding-top: 14px;
+    font-size: .75rem;
+  }
+
   /* ══════ Страница урока ════════════════════════════ */
   .lesson-layout,
   .lesson-layout.sidebar-open {
@@ -536,6 +901,34 @@
 
   /* Dashboard */
   .dashboard-main { padding: 16px 12px; }
+  .user-dashboard .sidebar {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+  .user-dashboard .dashboard-main {
+    padding: 14px 12px 30px;
+    gap: 16px;
+  }
+  .user-dashboard .dashboard-header h1 {
+    font-size: 1.28rem;
+  }
+  .user-dashboard .student-analytics-card {
+    min-height: 96px;
+    padding: 11px 10px;
+  }
+  .user-dashboard .student-analytics-value {
+    font-size: .98rem;
+  }
+  .user-dashboard .course-card-header {
+    height: 64px;
+  }
+  .user-dashboard .course-card > .course-cover {
+    height: 48px;
+    min-height: 48px;
+  }
+  .user-dashboard-page .footer-shell {
+    padding: 20px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* Sidebar info — один столбец */
   .sidebar-card-body { grid-template-columns: 1fr; }

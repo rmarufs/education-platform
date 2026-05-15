@@ -2,9 +2,10 @@
 {% from "_course_macros.html" import course_cover %}
 {% block title_key %}nav.dashboard{% endblock %}
 {% block title %}Кабинет студента — Фурузон{% endblock %}
+{% block body_class %}user-dashboard-page{% endblock %}
 
 {% block content %}
-<div class="dashboard">
+<div class="dashboard user-dashboard user-dashboard--student">
     <!-- Боковая панель -->
     <aside class="sidebar">
         <div class="sidebar-profile">
@@ -159,7 +160,7 @@
                         <div class="course-cover course-cover-placeholder">{{ group.name[0]|upper }}</div>
                     {% endif %}
                     <div class="course-card-body">
-                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                        <div class="course-card-badges">
                             <span class="badge badge-primary" data-i18n="group.badge">Группа</span>
                             {% if group.organization %}
                             <span class="badge badge-secondary">{{ group.organization.name }}</span>
