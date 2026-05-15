@@ -1764,9 +1764,10 @@ def vocab_start_page(
 
     # Может ли студент начать/повторить:
     # - ещё не проходил (last_attempt is None), ИЛИ
-    # - преподаватель разрешил повтор (vocab.allow_retake), ИЛИ
+    # - попытка не завершена (in_progress), ИЛИ
+    # - преподаватель разрешил повтор именно для этой попытки (retake_allowed), ИЛИ
     # - админ/org смотрит предпросмотр (can_preview_as_owner)
-    can_retake = can_preview_as_owner or vocab.allow_retake or (last_attempt is None)
+    can_retake = can_preview_as_owner or (last_attempt is None) or (not last_attempt.is_completed) or last_attempt.retake_allowed
 
     return templates.TemplateResponse("groups/vocabulary_start.html", {
         "request": request,
@@ -1825,23 +1826,68 @@ def vocab_quiz_page(
     if not vocab:
         raise HTTPException(status_code=404, detail="Словарь не найден")
 
-    # Блокировка повторного прохождения на уровне GET /quiz
-    if membership and not can_preview_as_owner and not vocab.allow_retake:
-        # Есть ли уже завершённая попытка?
-        existing_attempt = (
-            db.query(VocabularyAttempt.id)
+    existing_answers_data = []
+    attempt_id = None
+
+    if membership and not can_preview_as_owner:
+        latest_attempt = (
+            db.query(VocabularyAttempt)
             .filter(
                 VocabularyAttempt.vocab_set_id == vocab_id,
                 VocabularyAttempt.student_id == user.id,
             )
+            .order_by(VocabularyAttempt.completed_at.desc())
             .first()
         )
-        if existing_attempt:
-            # Редирект на стартовую страницу — там студент увидит результат
-            return RedirectResponse(
-                f"/groups/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}",
-                status_code=302,
+
+        if latest_attempt:
+            if latest_attempt.is_completed:
+                if not latest_attempt.retake_allowed:
+                    # Редирект на стартовую страницу — там студент увидит результат
+                    return RedirectResponse(
+                        f"/groups/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}",
+                        status_code=302,
+                    )
+                else:
+                    # Разрешен повтор: создаем новую попытку
+                    new_attempt = VocabularyAttempt(
+                        vocab_set_id=vocab_id,
+                        student_id=user.id,
+                        is_completed=False,
+                    )
+                    db.add(new_attempt)
+                    # Сбрасываем разрешение на предыдущей попытке, чтобы не было бесконечных повторов
+                    latest_attempt.retake_allowed = False
+                    db.commit()
+                    db.refresh(new_attempt)
+                    attempt_id = new_attempt.id
+            else:
+                # Есть незавершенная попытка, продолжаем её
+                attempt_id = latest_attempt.id
+                existing_answers = (
+                    db.query(VocabularyAttemptAnswer)
+                    .filter(VocabularyAttemptAnswer.attempt_id == attempt_id)
+                    .all()
+                )
+                existing_answers_data = [
+                    {
+                        "item_id": a.item_id,
+                        "student_answer": a.student_answer,
+                        "is_correct": a.is_correct
+                    }
+                    for a in existing_answers
+                ]
+        else:
+            # Нет ни одной попытки, создаем первую
+            new_attempt = VocabularyAttempt(
+                vocab_set_id=vocab_id,
+                student_id=user.id,
+                is_completed=False,
             )
+            db.add(new_attempt)
+            db.commit()
+            db.refresh(new_attempt)
+            attempt_id = new_attempt.id
 
     items_data = [
         {
@@ -1861,15 +1907,18 @@ def vocab_quiz_page(
         "lesson": lesson,
         "vocab": vocab,
         "items_json": _json.dumps(items_data, ensure_ascii=False),
+        "existing_answers_json": _json.dumps(existing_answers_data, ensure_ascii=False),
+        "attempt_id": attempt_id,
         "membership": membership,
     })
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/submit")
-async def vocab_submit(
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/answer")
+async def vocab_submit_answer(
     group_id: int,
     lesson_id: int,
     vocab_id: int,
+    attempt_id: int,
     request: Request,
     db: Session = Depends(get_db),
 ):
@@ -1877,71 +1926,89 @@ async def vocab_submit(
     if redirect:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-
-    membership = db.query(GroupMember).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
+    attempt = db.query(VocabularyAttempt).filter(
+        VocabularyAttempt.id == attempt_id,
+        VocabularyAttempt.vocab_set_id == vocab_id,
+        VocabularyAttempt.student_id == user.id,
     ).first()
-    can_preview_as_owner = _can_manage_group_content(user, group, db)
-    if not membership and not can_preview_as_owner:
-        raise HTTPException(status_code=403, detail="Нет доступа")
 
-    vocab = db.query(VocabularySet).filter(
-        VocabularySet.id == vocab_id,
-        VocabularySet.lesson_id == lesson_id,
-    ).first()
-    if not vocab:
-        raise HTTPException(status_code=404, detail="Словарь не найден")
+    if not attempt or attempt.is_completed:
+        from fastapi.responses import JSONResponse as _JSONResponse
+        return _JSONResponse({"success": False, "detail": "Invalid or completed attempt"}, status_code=400)
 
     body = await request.json()
-    answers_payload = body.get("answers", [])
+    item_id = body.get("item_id")
+    student_answer = body.get("student_answer", "")
+    is_correct = bool(body.get("is_correct"))
     lang = body.get("lang", "ru")
+    
+    attempt.lang_used = lang
 
-    # Защита от повторного сабмита на уровне backend
-    # Если попытка уже есть И allow_retake=False И это реальный студент — блокируем
-    if membership and not can_preview_as_owner and not vocab.allow_retake:
-        existing_attempt = (
-            db.query(VocabularyAttempt.id)
-            .filter(
-                VocabularyAttempt.vocab_set_id == vocab_id,
-                VocabularyAttempt.student_id == user.id,
-            )
-            .first()
-        )
-        if existing_attempt:
-            from fastapi.responses import JSONResponse as _JSONResponse
-            return _JSONResponse(
-                {"success": False, "detail": "already_attempted"},
-                status_code=409,
-            )
+    # Check if answer already exists
+    existing_answer = db.query(VocabularyAttemptAnswer).filter(
+        VocabularyAttemptAnswer.attempt_id == attempt.id,
+        VocabularyAttemptAnswer.item_id == item_id
+    ).first()
 
-    correct_count = sum(1 for a in answers_payload if a.get("is_correct"))
-    total = len(answers_payload)
-
-    attempt = VocabularyAttempt(
-        vocab_set_id=vocab_id,
-        student_id=user.id,
-        score=correct_count,
-        total=total,
-        lang_used=lang,
-    )
-    db.add(attempt)
-    db.flush()
-
-    for ans in answers_payload:
+    if existing_answer:
+        existing_answer.student_answer = student_answer
+        existing_answer.is_correct = is_correct
+    else:
         db.add(VocabularyAttemptAnswer(
             attempt_id=attempt.id,
-            item_id=ans.get("item_id"),
-            student_answer=ans.get("student_answer", ""),
-            is_correct=bool(ans.get("is_correct")),
+            item_id=item_id,
+            student_answer=student_answer,
+            is_correct=is_correct,
         ))
 
     db.commit()
     from fastapi.responses import JSONResponse as _JSONResponse
-    return _JSONResponse({"success": True, "score": correct_count, "total": total})
+    return _JSONResponse({"success": True})
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/complete")
+async def vocab_complete(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    attempt_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    attempt = db.query(VocabularyAttempt).filter(
+        VocabularyAttempt.id == attempt_id,
+        VocabularyAttempt.vocab_set_id == vocab_id,
+        VocabularyAttempt.student_id == user.id,
+    ).first()
+
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    if attempt.is_completed:
+        from fastapi.responses import JSONResponse as _JSONResponse
+        return _JSONResponse({"success": True, "score": attempt.score, "total": attempt.total})
+
+    # Recalculate score and total just to be safe
+    answers = db.query(VocabularyAttemptAnswer).filter(
+        VocabularyAttemptAnswer.attempt_id == attempt.id
+    ).all()
+
+    correct_count = sum(1 for a in answers if a.is_correct)
+    total = len(answers)
+
+    attempt.score = correct_count
+    attempt.total = total
+    attempt.is_completed = True
+    attempt.completed_at = datetime.utcnow()
+
+    db.commit()
+    
+    from fastapi.responses import JSONResponse as _JSONResponse
+    return _JSONResponse({"success": True, "score": attempt.score, "total": attempt.total})
 
 
 @router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results", response_class=HTMLResponse)
@@ -1998,14 +2065,14 @@ def vocab_results_page(
 # ═══════════════════════════════════════════════════════════
 
 @router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/toggle-retake")
-def vocab_toggle_retake(
+async def vocab_toggle_retake(
     group_id: int,
     lesson_id: int,
     vocab_id: int,
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Toggle allow_retake on a vocabulary set. Only teacher/org can call this."""
+    """Toggle retake_allowed on a specific student's latest vocabulary attempt. Only teacher/org can call this."""
     user = _get_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=302)
@@ -2021,8 +2088,24 @@ def vocab_toggle_retake(
     if not vocab:
         raise HTTPException(status_code=404, detail="Словарь не найден")
 
-    vocab.allow_retake = not vocab.allow_retake
-    db.commit()
+    form_data = await request.form()
+    student_id = form_data.get("student_id")
+    if not student_id:
+        raise HTTPException(status_code=400, detail="Missing student_id")
+
+    latest_attempt = (
+        db.query(VocabularyAttempt)
+        .filter(
+            VocabularyAttempt.vocab_set_id == vocab_id,
+            VocabularyAttempt.student_id == student_id,
+        )
+        .order_by(VocabularyAttempt.completed_at.desc())
+        .first()
+    )
+
+    if latest_attempt:
+        latest_attempt.retake_allowed = not latest_attempt.retake_allowed
+        db.commit()
 
     return RedirectResponse(
         f"/groups/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results",

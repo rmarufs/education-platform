@@ -1,10 +1,14 @@
 {% extends "base.html" %}
+{% block title_key %}vocabulary.section_title{% endblock %}
 {% block title %}{{ vocab.title }} — {{ group.name }} — Фурузон{% endblock %}
 
 {% block content %}
 <script>
 const VOCAB_ITEMS = {{ items_json | safe }};
-const VOCAB_SUBMIT_URL = "/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/submit";
+const EXISTING_ANSWERS = {{ existing_answers_json | safe | default('[]', true) }};
+const ATTEMPT_ID = {{ attempt_id | default('null', true) }};
+const VOCAB_SUBMIT_ANSWER_URL = ATTEMPT_ID ? `/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/attempts/${ATTEMPT_ID}/answer` : null;
+const VOCAB_COMPLETE_URL = ATTEMPT_ID ? `/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/attempts/${ATTEMPT_ID}/complete` : null;
 const VOCAB_BACK_URL = "/groups/{{ group.id }}/lessons/{{ lesson.id }}";
 const VOCAB_RESULT_URL = "/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}";
 const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
@@ -98,8 +102,8 @@ const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
 </style>
 
 <script>
-let currentIndex = 0;
-const answers = [];
+let currentIndex = EXISTING_ANSWERS ? EXISTING_ANSWERS.length : 0;
+const answers = EXISTING_ANSWERS ? [...EXISTING_ANSWERS] : [];
 
 // \u0422\u0430\u0434\u0436\u0438\u043a\u0441\u043a\u0438\u0435 \u044d\u043a\u0432\u0438\u0432\u0430\u043b\u0435\u043d\u0442\u044b: \u043e\u0431\u0435 \u0441\u0442\u043e\u0440\u043e\u043d\u044b (tj-\u0431\u0443\u043a\u0432\u0430 \u2192 \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u0438 \u043d\u0430\u043e\u0431\u043e\u0440\u043e\u0442)
 const TJ_EQUIV = [
@@ -171,8 +175,7 @@ function skipWord() {
   showResult(item, '', false, accepted, true);
 }
 
-function showResult(item, userAnswer, isCorrect, accepted, skipped) {
-  answers.push({ item_id: item.id, student_answer: userAnswer, is_correct: isCorrect });
+async function showResult(item, userAnswer, isCorrect, accepted, skipped) {
   const card = document.getElementById('vocab-card');
   document.getElementById('vocab-result-icon').textContent = skipped ? '\u23ed' : (isCorrect ? '\u2705' : '\u274c');
   const statusEl = document.getElementById('vocab-result-status');
@@ -185,6 +188,20 @@ function showResult(item, userAnswer, isCorrect, accepted, skipped) {
   document.getElementById('vocab-correct-row').style.display = (skipped || !isCorrect) ? 'flex' : 'none';
   document.getElementById('vocab-screen-word').style.display = 'none';
   document.getElementById('vocab-screen-result').style.display = 'flex';
+
+  answers.push({ item_id: item.id, student_answer: userAnswer, is_correct: isCorrect });
+  
+  if (VOCAB_SUBMIT_ANSWER_URL) {
+    try {
+      await fetch(VOCAB_SUBMIT_ANSWER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: item.id, student_answer: userAnswer, is_correct: isCorrect, lang: CURRENT_LANG }),
+      });
+    } catch (e) {
+      console.error("Failed to save answer", e);
+    }
+  }
 }
 
 function nextWord() {
@@ -198,14 +215,18 @@ function nextWord() {
 
 async function submitResults() {
   document.getElementById('vocab-progress-bar').style.width = '100%';
+  if (!VOCAB_COMPLETE_URL) {
+    window.location.href = VOCAB_RESULT_URL;
+    return;
+  }
   try {
-    const resp = await fetch(VOCAB_SUBMIT_URL, {
+    const resp = await fetch(VOCAB_COMPLETE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers, lang: CURRENT_LANG }),
+      body: JSON.stringify({}),
     });
     if (resp.status === 409) {
-      // \u0423\u0436\u0435 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u043b, \u043f\u043e\u0432\u0442\u043e\u0440 \u0437\u0430\u043f\u0440\u0435\u0449\u0451\u043d \u2014 \u043f\u0435\u0440\u0435\u043d\u0430\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c \u043d\u0430 \u0441\u0442\u0430\u0440\u0442\u043e\u0432\u0443\u044e \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443 \u0441 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u043e\u043c
+      // Уже проходил, повтор запрещён
       window.location.href = VOCAB_RESULT_URL;
       return;
     }
@@ -227,10 +248,14 @@ function confirmQuit(e) {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!VOCAB_ITEMS.length) {
-    document.getElementById('vocab-quiz-wrap').innerHTML = '<p style="text-align:center;padding:40px;" data-i18n="vocabulary.no_words">\u0412 \u044d\u0442\u043e\u043c \u0441\u043b\u043e\u0432\u0430\u0440\u0435 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0441\u043b\u043e\u0432.</p>';
+    document.getElementById('vocab-quiz-wrap').innerHTML = `<p style="text-align:center;padding:40px;" data-i18n="vocabulary.no_words">${t('vocabulary.no_words')}</p>`;
     return;
   }
-  showWord(0);
+  if (currentIndex >= VOCAB_ITEMS.length) {
+    submitResults();
+    return;
+  }
+  showWord(currentIndex);
   document.getElementById('vocab-answer-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
 });
 </script>

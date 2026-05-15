@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_key %}{% if vocab %}vocabulary.edit_title{% else %}vocabulary.create_title{% endif %}{% endblock %}
 {% block title %}{% if vocab %}{{ vocab.title }} — Редактировать{% else %}Новый словарь{% endif %} — {{ group.name }} — Фурузон{% endblock %}
 
 {% block content %}

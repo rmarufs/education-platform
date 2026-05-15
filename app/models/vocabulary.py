@@ -90,6 +90,8 @@ class VocabularyAttempt(Base):
     score = Column(Integer, default=0, nullable=False)        # кол-во правильных ответов
     total = Column(Integer, default=0, nullable=False)        # всего слов
     lang_used = Column(String(10), default="ru", nullable=False)  # язык при прохождении
+    is_completed = Column(Boolean, default=False, nullable=False) # завершена ли попытка
+    retake_allowed = Column(Boolean, default=False, nullable=False) # разрешен ли повтор именно этой попытки
     completed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     vocab_set = relationship("VocabularySet", back_populates="attempts")

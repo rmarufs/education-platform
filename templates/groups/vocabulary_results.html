@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title_key %}vocabulary.results_subtitle{% endblock %}
 {% block title %}Результаты: {{ vocab.title }} — {{ group.name }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -14,23 +15,7 @@
         <span data-i18n="vocabulary.results_subtitle">Результаты студентов по словарю</span>
         · <strong>{{ lesson.title }}</strong>
       </p>
-      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/toggle-retake" method="POST" style="margin:0;">
-        {% if vocab.allow_retake %}
-        <button type="submit" class="btn btn-outline btn-sm" style="color:var(--error);border-color:var(--error);">
-          🔓 <span data-i18n="vocabulary.disable_retake">Запретить повтор</span>
-        </button>
-        {% else %}
-        <button type="submit" class="btn btn-outline btn-sm">
-          🔁 <span data-i18n="vocabulary.enable_retake">Разрешить повтор</span>
-        </button>
-        {% endif %}
-      </form>
     </div>
-    {% if vocab.allow_retake %}
-    <div class="alert" style="background:var(--primary-light,#eef2ff);color:var(--primary);border-radius:10px;padding:8px 14px;font-size:0.85rem;display:inline-block;margin-bottom:12px;">
-      🔁 <span data-i18n="vocabulary.retake_allowed">Повторное прохождение разрешено</span>
-    </div>
-    {% endif %}
   </div>
 
   {% if attempts %}
@@ -42,6 +27,7 @@
           <th data-i18n="vocabulary.score_col">Результат</th>
           <th data-i18n="vocabulary.pct_col">%</th>
           <th data-i18n="vocabulary.date_col">Дата</th>
+          <th data-i18n="action.actions">Действия</th>
         </tr>
       </thead>
       <tbody>
@@ -68,7 +54,25 @@
             </span>
           </td>
           <td style="font-size:0.85rem;color:var(--text-muted);">
-            {{ attempt.completed_at.strftime('%d.%m.%Y %H:%M') }}
+            {% if attempt.is_completed %}
+              {{ attempt.completed_at.strftime('%d.%m.%Y %H:%M') }}
+            {% else %}
+              <span style="color:var(--primary);" data-i18n="vocabulary.in_progress">В процессе</span>
+            {% endif %}
+          </td>
+          <td>
+            <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/toggle-retake" method="POST" style="margin:0;">
+              <input type="hidden" name="student_id" value="{{ attempt.student_id }}">
+              {% if attempt.retake_allowed %}
+              <button type="submit" class="btn btn-outline btn-xs" style="color:var(--error);border-color:var(--error);">
+                🔓 <span data-i18n="vocabulary.disable_retake">Запретить повтор</span>
+              </button>
+              {% else %}
+              <button type="submit" class="btn btn-outline btn-xs" {% if not attempt.is_completed %}disabled{% endif %}>
+                🔁 <span data-i18n="vocabulary.enable_retake">Разрешить повтор</span>
+              </button>
+              {% endif %}
+            </form>
           </td>
         </tr>
         {% endfor %}

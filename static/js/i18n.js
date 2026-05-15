@@ -1001,7 +1001,9 @@ const translations = {
     "vocabulary.locked_msg": "Вы уже прошли этот словарь. Повторное прохождение закрыто.",
     "vocabulary.enable_retake": "Разрешить повтор",
     "vocabulary.disable_retake": "Запретить повтор",
-    "vocabulary.retake_allowed": "Повторное прохождение разрешено"
+    "vocabulary.retake_allowed": "Повторное прохождение разрешено",
+    "vocabulary.words_short": "сл.",
+    "vocabulary.in_progress": "В процессе"
   },
 
   tj: {
@@ -2007,7 +2009,9 @@ const translations = {
     "vocabulary.locked_msg": "Шумо аз ин луғат гузаштадед. Дубора гузаштан баста аст.",
     "vocabulary.enable_retake": "Дубора иҷоза додан",
     "vocabulary.disable_retake": "Дубора манъдан",
-    "vocabulary.retake_allowed": "Дубора гузаштан иҷоза дода шуд"
+    "vocabulary.retake_allowed": "Дубора гузаштан иҷоза дода шуд",
+    "vocabulary.words_short": "к.",
+    "vocabulary.in_progress": "Дар ҷараён"
   }
 };
 
