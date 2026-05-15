@@ -228,73 +228,12 @@
   .lesson-header h1 { font-size: 1.25rem; }
 
   /* Видео на всю ширину */
-  .video-container {
+  .video-container,
+  .protected-video-container {
     border-radius: 0;
     margin-left: -16px;
     margin-right: -16px;
     width: calc(100% + 32px);
-  }
-
-  /* ══════ Видеоплеер — улучшения ════════════════════ */
-  #custom-video-container {
-    border-radius: 0;
-  }
-  .custom-video-controls {
-    left: 10px;
-    right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    min-height: 52px;
-    padding: 8px 10px;
-    gap: 10px;
-    border-radius: 14px;
-  }
-  .ctrl-btn {
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 12px;
-    font-size: 1.1rem;
-  }
-  .text-btn { width: 44px; }
-  .progress-container {
-    height: 10px;
-  }
-  .progress-handle {
-    width: 22px;
-    height: 22px;
-  }
-  .progress-container:hover .progress-handle,
-  #custom-video-container.seeking .progress-handle {
-    width: 24px;
-    height: 24px;
-  }
-  .time-display {
-    font-size: .75rem;
-    min-width: 48px;
-  }
-  .big-play-btn {
-    width: 82px;
-    height: 82px;
-  }
-  .big-play-btn::before { inset: -12px; }
-  .big-play-icon {
-    margin-left: 5px;
-    border-top-width: 16px;
-    border-bottom-width: 16px;
-    border-left-width: 26px;
-  }
-  .speed-menu {
-    bottom: auto;
-    top: auto;
-    right: 0;
-    transform: translateX(0) translateY(-100%);
-    bottom: calc(100% + 10px);
-  }
-  .speed-menu.show {
-    transform: translateX(0) translateY(0);
-    bottom: calc(100% + 10px);
-  }
-  #custom-video-container::after {
-    height: 100px;
   }
 
   /* ══════ Формы и кнопки (touch) ════════════════════ */
@@ -575,7 +514,8 @@
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
-  .video-container {
+  .video-container,
+  .protected-video-container {
     margin-left: -12px;
     margin-right: -12px;
     width: calc(100% + 24px);
@@ -617,24 +557,6 @@
     align-items: start !important;
   }
 
-  /* Видеоплеер */
-  .custom-video-controls {
-    left: 6px;
-    right: 6px;
-    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-    gap: 6px;
-    padding: 6px 8px;
-    border-radius: 12px;
-    min-height: 48px;
-  }
-  .ctrl-btn {
-    min-width: 40px;
-    min-height: 40px;
-    font-size: 1rem;
-    border-radius: 10px;
-  }
-  .time-display { display: none; }
-
   /* Footer */
   .footer-shell { padding: 24px 12px calc(16px + env(safe-area-inset-bottom)); }
   .footer-grid { margin-bottom: 20px; }
@@ -655,18 +577,10 @@
   .lesson-content {
     padding-top: 12px !important;
   }
-  .video-container,
-  #custom-video-container,
-  #html5-video-shell {
+  .video-container {
     margin-left: -16px;
     margin-right: -16px;
     width: calc(100% + 32px);
-  }
-
-  /* Pseudo-fullscreen — без Safe Area в landscape */
-  #custom-video-container.is-pseudo-fullscreen,
-  #html5-video-shell.vp-pseudo-fs {
-    padding-bottom: 0;
   }
 
   /* Hero — компактнее */

@@ -1,505 +1,483 @@
-/**
- * Фурузон — HTML5 Video Player (iOS/WebKit-stable)
- * Архитектура: videoLayer (чистый) + uiLayer (контролы) + fullscreenManager
- *
- * iOS edge cases закрыты:
- *  - video.webkitEnterFullscreen() → нативный FS на iPhone
- *  - playsinline + webkit-playsinline → inline воспроизведение
- *  - orientationchange + 300ms timeout → пересчёт layout
- *  - env(safe-area-inset-*) → notch/Dynamic Island
- *  - object-fit: contain → нет обрезания в landscape
- *  - НЕТ backdrop-filter на overlay → нет артефактов Chrome iOS
- */
 (function () {
   'use strict';
 
-  /* ── Утилиты ─────────────────────────────────────────────── */
-  function fmt(s) {
-    if (isNaN(s) || s < 0) s = 0;
-    s = Math.round(s);
-    var m = Math.floor(s / 60);
-    var sec = s % 60;
-    return m + ':' + (sec < 10 ? '0' : '') + sec;
-  }
-
-  function debounce(fn, ms) {
-    var t;
-    return function () { clearTimeout(t); t = setTimeout(fn, ms); };
-  }
-
-  /* ── Определение iOS ─────────────────────────────────────── */
+  var ytApiPromise = null;
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  var isIOSSafari = isIOS && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
 
-  /* ══════════════════════════════════════════════════════════
-     VideoPlayer — главный класс
-     ══════════════════════════════════════════════════════════ */
-  function VideoPlayer(shell) {
-    this.shell      = shell;
-    this.video      = shell.querySelector('.vp-video');
-    this.overlay    = shell.querySelector('.vp-overlay');
-    this.bigPlay    = shell.querySelector('.vp-big-play');
-    this.controls   = shell.querySelector('.vp-controls');
-    this.playBtn    = shell.querySelector('#vp-play-btn');
-    this.muteBtn    = shell.querySelector('#vp-mute-btn');
-    this.fsBtn      = shell.querySelector('#vp-fs-btn');
-    this.progressEl = shell.querySelector('.vp-progress');
-    this.fillEl     = shell.querySelector('.vp-progress-fill');
-    this.handleEl   = shell.querySelector('.vp-progress-handle');
-    this.timeEl     = shell.querySelector('.vp-time');
-    this.speedBtn   = shell.querySelector('#vp-speed-btn');
-    this.speedMenu  = shell.querySelector('.vp-speed-menu');
-    this.watermark  = shell.querySelector('.vp-watermark');
-    this.spinner    = shell.querySelector('.vp-spinner');
-
-    // Состояние
-    this.isPlaying     = false;
-    this.isSeeking     = false;
-    this.isMuted       = false;
-    this.isPseudoFS    = false;
-    this.currentRate   = 1;
-    this.controlsTimer = null;
-    this.seekPercent   = 0;
-    this.progressInterval = null;
-
-    this._bindEvents();
-    this._initWatermark();
+  function decodeToken(token) {
+    if (!token) return '';
+    try {
+      var binary = atob(token);
+      var decoded;
+      if (window.TextDecoder) {
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        decoded = new TextDecoder('utf-8').decode(bytes);
+      } else {
+        decoded = decodeURIComponent(escape(binary));
+      }
+      var original = '';
+      for (var j = 0; j < decoded.length; j += 1) {
+        original += String.fromCharCode(decoded.charCodeAt(j) - 3);
+      }
+      return original.split('').reverse().join('');
+    } catch (_) {
+      return '';
+    }
   }
 
-  /* ── Привязка событий ────────────────────────────────────── */
-  VideoPlayer.prototype._bindEvents = function () {
+  function fmt(seconds) {
+    seconds = Number(seconds);
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    seconds = Math.round(seconds);
+    var h = Math.floor(seconds / 3600);
+    var m = Math.floor((seconds % 3600) / 60);
+    var s = seconds % 60;
+    if (h > 0) return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function loadYouTubeApi() {
+    if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if (ytApiPromise) return ytApiPromise;
+
+    ytApiPromise = new Promise(function (resolve) {
+      var previous = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (typeof previous === 'function') previous();
+        resolve(window.YT);
+      };
+      var script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      document.head.appendChild(script);
+    });
+
+    return ytApiPromise;
+  }
+
+  function ProtectedVideoPlayer(shell) {
+    this.shell = shell;
+    this.provider = shell.getAttribute('data-vp-provider');
+    this.token = shell.getAttribute('data-video-token') || '';
+    this.video = shell.querySelector('.vp-video');
+    this.youtubeMount = shell.querySelector('.vp-youtube');
+    this.clickLayer = shell.querySelector('.vp-click-layer');
+    this.playBtn = shell.querySelector('.vp-play');
+    this.muteBtn = shell.querySelector('.vp-mute');
+    this.fsBtn = shell.querySelector('.vp-fullscreen');
+    this.progress = shell.querySelector('.vp-progress');
+    this.fill = shell.querySelector('.vp-progress-fill');
+    this.handle = shell.querySelector('.vp-progress-handle');
+    this.time = shell.querySelector('.vp-time');
+    this.bigPlay = shell.querySelector('.vp-big-play');
+
+    this.player = null;
+    this.ready = false;
+    this.playing = false;
+    this.muted = false;
+    this.seeking = false;
+    this.seekPercent = 0;
+    this.wasPlayingBeforeSeek = false;
+
+    this.bindCommon();
+    if (this.provider === 'youtube') this.initYouTube();
+    else this.initHtml5();
+  }
+
+  ProtectedVideoPlayer.prototype.bindCommon = function () {
     var self = this;
-    var v    = this.video;
 
-    // Video events
-    v.addEventListener('play',     function () { self._onPlay(); });
-    v.addEventListener('pause',    function () { self._onPause(); });
-    v.addEventListener('ended',    function () { self._onPause(); });
-    v.addEventListener('waiting',  function () { self.shell.classList.add('vp-loading'); });
-    v.addEventListener('canplay',  function () { self.shell.classList.remove('vp-loading'); });
-    v.addEventListener('timeupdate', function () { if (!self.isSeeking) self._updateProgress(); });
-    v.addEventListener('error',    function () { self.shell.classList.add('vp-error-state'); });
-
-    // Fullscreen events (нативный)
-    ['webkitendfullscreen', 'webkitbeginfullscreen'].forEach(function (ev) {
-      v.addEventListener(ev, function () { self._syncFSState(); });
-    });
-    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
-      document.addEventListener(ev, function () { self._syncFSState(); });
+    this.shell.addEventListener('contextmenu', function (event) {
+      event.preventDefault();
     });
 
-    // Кнопки
-    this.playBtn  && this.playBtn.addEventListener('click', function (e) { e.stopPropagation(); self.togglePlay(); });
-    this.muteBtn  && this.muteBtn.addEventListener('click', function (e) { e.stopPropagation(); self.toggleMute(); });
-    this.fsBtn    && this.fsBtn.addEventListener('click', function (e) { e.stopPropagation(); self.toggleFullscreen(); });
-    this.speedBtn && this.speedBtn.addEventListener('click', function (e) { e.stopPropagation(); self._toggleSpeedMenu(); });
+    if (this.playBtn) {
+      this.playBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        self.togglePlay();
+      });
+    }
 
-    // Speed options
-    this.shell.querySelectorAll('.vp-speed-opt').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        self.setRate(parseFloat(btn.getAttribute('data-rate')));
+    if (this.clickLayer) {
+      this.clickLayer.addEventListener('click', function (event) {
+        event.preventDefault();
+        self.togglePlay();
+      });
+    }
+
+    if (this.muteBtn) {
+      this.muteBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        self.toggleMute();
+      });
+    }
+
+    if (this.fsBtn) {
+      if (isIOS || !this.shell.requestFullscreen) {
+        this.fsBtn.hidden = true;
+      } else {
+        this.fsBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          self.toggleFullscreen();
+        });
+      }
+    }
+
+    this.bindSeek();
+
+    if (this.progress) {
+      this.progress.addEventListener('keydown', function (event) {
+        self.handleSeekKey(event);
+      });
+    }
+
+    document.addEventListener('fullscreenchange', function () {
+      self.syncFullscreen();
+    });
+
+    this.progressTimer = window.setInterval(function () {
+      self.refreshProgress();
+    }, 250);
+  };
+
+  ProtectedVideoPlayer.prototype.initHtml5 = function () {
+    var self = this;
+    var src = decodeToken(this.token);
+    if (!this.video || !src) {
+      this.showError();
+      return;
+    }
+
+    this.video.src = src;
+    this.video.load();
+
+    this.video.addEventListener('loadedmetadata', function () {
+      self.ready = true;
+      self.refreshProgress();
+    });
+    this.video.addEventListener('play', function () {
+      self.setPlaying(true);
+    });
+    this.video.addEventListener('pause', function () {
+      self.setPlaying(false);
+    });
+    this.video.addEventListener('ended', function () {
+      self.setPlaying(false);
+      self.refreshProgress();
+    });
+    this.video.addEventListener('timeupdate', function () {
+      self.refreshProgress();
+    });
+    this.video.addEventListener('waiting', function () {
+      self.shell.classList.add('vp-loading');
+    });
+    this.video.addEventListener('canplay', function () {
+      self.shell.classList.remove('vp-loading');
+    });
+    this.video.addEventListener('error', function () {
+      self.showError();
+    });
+  };
+
+  ProtectedVideoPlayer.prototype.initYouTube = function () {
+    var self = this;
+    var videoId = decodeToken(this.token);
+    if (!this.youtubeMount || !videoId) {
+      this.showError();
+      return;
+    }
+
+    loadYouTubeApi().then(function (YT) {
+      self.player = new YT.Player(self.youtubeMount, {
+        videoId: videoId,
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          rel: 0,
+          modestbranding: 1,
+          disablekb: 1,
+          fs: 0,
+          playsinline: 1,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          origin: window.location.origin,
+          widget_referrer: window.location.origin
+        },
+        events: {
+          onReady: function () {
+            self.ready = true;
+            self.prepareYouTubeIframe();
+            self.refreshProgress();
+          },
+          onStateChange: function (event) {
+            self.onYouTubeStateChange(event);
+          },
+          onError: function () {
+            self.showError();
+          }
+        }
       });
     });
-
-    // Клик вне speed menu
-    document.addEventListener('click', function (e) {
-      if (self.speedMenu && !self.speedMenu.contains(e.target) && e.target !== self.speedBtn) {
-        self.speedMenu.classList.remove('vp-speed-open');
-      }
-    });
-
-    // Overlay — play/pause + мобильные жесты
-    this.overlay && this._bindOverlay();
-
-    // Progress / Seek
-    this.progressEl && this._bindSeek();
-
-    // Ориентация экрана
-    window.addEventListener('orientationchange', function () {
-      setTimeout(function () { self._recalcLayout(); }, 300);
-    });
-    window.addEventListener('resize', debounce(function () { self._recalcLayout(); }, 150));
-
-    // ESC выход из pseudo-FS
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && self.isPseudoFS) self._exitPseudoFS();
-    });
-
-    // Водяной знак
-    this._moveWatermark();
-    this._wmInterval = setInterval(function () { self._moveWatermark(); }, 30000);
   };
 
-  /* ── Play / Pause ────────────────────────────────────────── */
-  VideoPlayer.prototype.togglePlay = function () {
-    if (this.video.paused) {
-      this.video.play().catch(function () {});
-    } else {
-      this.video.pause();
+  ProtectedVideoPlayer.prototype.prepareYouTubeIframe = function () {
+    if (!this.player || !this.player.getIframe) return;
+    var iframe = this.player.getIframe();
+    if (!iframe) return;
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+    iframe.setAttribute('tabindex', '-1');
+  };
+
+  ProtectedVideoPlayer.prototype.onYouTubeStateChange = function (event) {
+    if (!window.YT || !window.YT.PlayerState) return;
+    if (event.data === window.YT.PlayerState.PLAYING) {
+      this.setPlaying(true);
+    } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.CUED) {
+      this.setPlaying(false);
+    } else if (event.data === window.YT.PlayerState.ENDED) {
+      this.setPlaying(false);
+      try {
+        this.player.seekTo(0, false);
+      } catch (_) {}
+      this.setProgressVisual(0, 0, this.getDuration());
     }
   };
 
-  VideoPlayer.prototype._onPlay = function () {
-    this.isPlaying = true;
-    this.shell.classList.add('vp-playing');
-    this.playBtn && (this.playBtn.textContent = '⏸');
-    this._resetControlsTimer();
-    clearInterval(this.progressInterval);
-    this.progressInterval = setInterval(this._updateProgress.bind(this), 250);
+  ProtectedVideoPlayer.prototype.showError = function () {
+    this.shell.classList.add('vp-error-state');
   };
 
-  VideoPlayer.prototype._onPause = function () {
-    this.isPlaying = false;
-    this.shell.classList.remove('vp-playing');
-    this.playBtn && (this.playBtn.textContent = '▶');
-    clearTimeout(this.controlsTimer);
-    clearInterval(this.progressInterval);
-    this.shell.classList.remove('vp-controls-hidden');
+  ProtectedVideoPlayer.prototype.setPlaying = function (playing) {
+    this.playing = !!playing;
+    this.shell.classList.toggle('vp-playing', this.playing);
+    if (this.playBtn) this.playBtn.textContent = this.playing ? '\u23f8' : '\u25b6';
+    if (this.bigPlay) this.bigPlay.textContent = this.playing ? '' : '\u25b6';
   };
 
-  /* ── Mute ────────────────────────────────────────────────── */
-  VideoPlayer.prototype.toggleMute = function () {
-    this.video.muted = !this.video.muted;
-    this.isMuted = this.video.muted;
-    this.muteBtn && (this.muteBtn.textContent = this.isMuted ? '🔇' : '🔊');
+  ProtectedVideoPlayer.prototype.isPlaying = function () {
+    if (this.provider === 'html5') {
+      return !!(this.video && !this.video.paused && !this.video.ended);
+    }
+    return this.playing;
   };
 
-  /* ── Speed ───────────────────────────────────────────────── */
-  VideoPlayer.prototype.setRate = function (rate) {
-    this.video.playbackRate = rate;
-    this.currentRate = rate;
-    this.speedBtn && (this.speedBtn.textContent = rate === 1 ? '1x' : rate + 'x');
-    this.shell.querySelectorAll('.vp-speed-opt').forEach(function (btn) {
-      btn.classList.toggle('vp-speed-active', parseFloat(btn.getAttribute('data-rate')) === rate);
-    });
-    this.speedMenu && this.speedMenu.classList.remove('vp-speed-open');
+  ProtectedVideoPlayer.prototype.play = function () {
+    if (!this.ready && this.provider === 'youtube') return;
+    if (this.provider === 'html5') {
+      if (!this.video) return;
+      var promise = this.video.play();
+      if (promise && promise.catch) promise.catch(function () {});
+    } else if (this.player && this.player.playVideo) {
+      this.player.playVideo();
+    }
   };
 
-  VideoPlayer.prototype._toggleSpeedMenu = function () {
-    this.speedMenu && this.speedMenu.classList.toggle('vp-speed-open');
+  ProtectedVideoPlayer.prototype.pause = function () {
+    if (this.provider === 'html5') {
+      if (this.video) this.video.pause();
+    } else if (this.player && this.player.pauseVideo) {
+      this.player.pauseVideo();
+    }
   };
 
-  /* ── Progress / Seek ─────────────────────────────────────── */
-  VideoPlayer.prototype._updateProgress = function () {
-    if (this.isSeeking) return;
-    var dur = this.video.duration || 0;
-    var cur = this.video.currentTime || 0;
-    var pct = dur > 0 ? (cur / dur) * 100 : 0;
-    this._setProgressVisual(pct, cur, dur);
+  ProtectedVideoPlayer.prototype.togglePlay = function () {
+    if (this.isPlaying()) this.pause();
+    else this.play();
   };
 
-  VideoPlayer.prototype._setProgressVisual = function (pct, cur, dur) {
+  ProtectedVideoPlayer.prototype.toggleMute = function () {
+    this.muted = !this.muted;
+    if (this.provider === 'html5') {
+      if (this.video) this.video.muted = this.muted;
+    } else if (this.player) {
+      if (this.muted && this.player.mute) this.player.mute();
+      if (!this.muted && this.player.unMute) this.player.unMute();
+    }
+    if (this.muteBtn) this.muteBtn.textContent = this.muted ? '\ud83d\udd07' : '\ud83d\udd0a';
+  };
+
+  ProtectedVideoPlayer.prototype.getCurrentTime = function () {
+    if (this.provider === 'html5') return this.video ? (this.video.currentTime || 0) : 0;
+    if (this.player && this.player.getCurrentTime) return this.player.getCurrentTime() || 0;
+    return 0;
+  };
+
+  ProtectedVideoPlayer.prototype.getDuration = function () {
+    if (this.provider === 'html5') return this.video ? (this.video.duration || 0) : 0;
+    if (this.player && this.player.getDuration) return this.player.getDuration() || 0;
+    return 0;
+  };
+
+  ProtectedVideoPlayer.prototype.seekTo = function (seconds) {
+    var duration = this.getDuration();
+    if (!duration) return;
+    seconds = Math.max(0, Math.min(duration, seconds));
+    if (this.provider === 'html5') {
+      if (this.video) this.video.currentTime = seconds;
+    } else if (this.player && this.player.seekTo) {
+      this.player.seekTo(seconds, true);
+    }
+    this.setProgressVisual((seconds / duration) * 100, seconds, duration);
+  };
+
+  ProtectedVideoPlayer.prototype.refreshProgress = function () {
+    if (this.seeking) return;
+    var duration = this.getDuration();
+    var current = this.getCurrentTime();
+    var pct = duration > 0 ? (current / duration) * 100 : 0;
+    this.setProgressVisual(pct, current, duration);
+  };
+
+  ProtectedVideoPlayer.prototype.setProgressVisual = function (pct, current, duration) {
     pct = Math.max(0, Math.min(100, pct || 0));
-    if (this.fillEl)   this.fillEl.style.width = pct + '%';
-    if (this.progressEl) this.progressEl.style.setProperty('--vp-progress', pct + '%');
-    if (this.handleEl) this.handleEl.style.left = pct + '%';
-    if (this.timeEl && typeof cur === 'number' && typeof dur === 'number') {
-      this.timeEl.textContent = fmt(cur) + ' / ' + fmt(dur);
+    if (this.fill) this.fill.style.width = pct + '%';
+    if (this.handle) this.handle.style.left = pct + '%';
+    if (this.progress) {
+      this.progress.style.setProperty('--vp-progress', pct + '%');
+      this.progress.setAttribute('aria-valuenow', String(Math.round(pct)));
     }
+    if (this.time) this.time.textContent = fmt(current) + ' / ' + fmt(duration);
   };
 
-  VideoPlayer.prototype._bindSeek = function () {
+  ProtectedVideoPlayer.prototype.bindSeek = function () {
     var self = this;
-    var el   = this.progressEl;
+    if (!this.progress) return;
 
-    function getPct(e) {
-      var pt = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
-      var rect = el.getBoundingClientRect();
+    function pointFromEvent(event) {
+      if (event.touches && event.touches.length) return event.touches[0];
+      if (event.changedTouches && event.changedTouches.length) return event.changedTouches[0];
+      return event;
+    }
+
+    function percentFromEvent(event) {
+      var point = pointFromEvent(event);
+      var rect = self.progress.getBoundingClientRect();
       if (!rect.width) return 0;
-      return Math.max(0, Math.min(1, (pt.clientX - rect.left) / rect.width));
+      return Math.max(0, Math.min(1, (point.clientX - rect.left) / rect.width));
     }
 
-    function onStart(e) {
-      if (e.button && e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      self.isSeeking = true;
+    function preview(event) {
+      var duration = self.getDuration();
+      if (!duration) return;
+      self.seekPercent = percentFromEvent(event);
+      self.setProgressVisual(self.seekPercent * 100, self.seekPercent * duration, duration);
+    }
+
+    function start(event) {
+      if (event.type === 'mousedown' && event.button !== 0) return;
+      var duration = self.getDuration();
+      if (!duration) return;
+      event.preventDefault();
+      event.stopPropagation();
+      self.seeking = true;
+      self.wasPlayingBeforeSeek = self.isPlaying();
       self.shell.classList.add('vp-seeking');
-      var pct = getPct(e);
-      self.seekPercent = pct;
-      self._setProgressVisual(pct * 100, pct * (self.video.duration || 0), self.video.duration || 0);
+      if (self.wasPlayingBeforeSeek) self.pause();
+      preview(event);
     }
 
-    function onMove(e) {
-      if (!self.isSeeking) return;
-      e.preventDefault();
-      var pct = getPct(e);
-      self.seekPercent = pct;
-      self._setProgressVisual(pct * 100, pct * (self.video.duration || 0), self.video.duration || 0);
+    function move(event) {
+      if (!self.seeking) return;
+      event.preventDefault();
+      preview(event);
     }
 
-    function onEnd(e) {
-      if (!self.isSeeking) return;
-      e.preventDefault();
-      var dur = self.video.duration || 0;
-      if (dur > 0) self.video.currentTime = self.seekPercent * dur;
-      self.isSeeking = false;
+    function end(event) {
+      if (!self.seeking) return;
+      event.preventDefault();
+      preview(event);
+      var duration = self.getDuration();
+      self.seekTo(self.seekPercent * duration);
+      self.seeking = false;
       self.shell.classList.remove('vp-seeking');
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onEnd);
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
+      if (self.wasPlayingBeforeSeek) self.play();
     }
 
-    el.addEventListener('mousedown', function (e) {
-      onStart(e);
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onEnd);
-    });
+    if (window.PointerEvent) {
+      this.progress.addEventListener('pointerdown', function (event) {
+        start(event);
+        if (!self.seeking) return;
+        try {
+          self.progress.setPointerCapture(event.pointerId);
+        } catch (_) {}
+      });
+      this.progress.addEventListener('pointermove', move);
+      this.progress.addEventListener('pointerup', end);
+      this.progress.addEventListener('pointercancel', end);
+    } else {
+      this.progress.addEventListener('mousedown', function (event) {
+        start(event);
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      this.progress.addEventListener('touchstart', function (event) {
+        start(event);
+        document.addEventListener('touchmove', move, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+        document.addEventListener('touchcancel', onTouchEnd);
+      }, { passive: false });
+    }
 
-    el.addEventListener('touchstart', function (e) {
-      onStart(e);
-      document.addEventListener('touchmove', onMove, { passive: false });
-      document.addEventListener('touchend', onEnd);
-    }, { passive: false });
+    function onMouseUp(event) {
+      end(event);
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
+    function onTouchEnd(event) {
+      end(event);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
+    }
   };
 
-  /* ── Controls auto-hide ──────────────────────────────────── */
-  VideoPlayer.prototype._resetControlsTimer = function () {
+  ProtectedVideoPlayer.prototype.handleSeekKey = function (event) {
+    var duration = this.getDuration();
+    if (!duration) return;
+    var current = this.getCurrentTime();
+    if (event.key === 'ArrowLeft') current -= 5;
+    else if (event.key === 'ArrowRight') current += 5;
+    else if (event.key === 'Home') current = 0;
+    else if (event.key === 'End') current = duration;
+    else return;
+    event.preventDefault();
+    this.seekTo(current);
+  };
+
+  ProtectedVideoPlayer.prototype.toggleFullscreen = function () {
     var self = this;
-    this.shell.classList.remove('vp-controls-hidden');
-    clearTimeout(this.controlsTimer);
-    if (this.isPlaying) {
-      this.controlsTimer = setTimeout(function () {
-        self.shell.classList.add('vp-controls-hidden');
-      }, 3000);
-    }
-  };
-
-  /* ── Touch overlay (мобильные жесты) ────────────────────── */
-  VideoPlayer.prototype._bindOverlay = function () {
-    var self      = this;
-    var overlay   = this.overlay;
-    var startX, startY, startTime, lastTap = 0, lastTapX = 0;
-    var SWIPE_THR   = 50;
-    var DOUBLE_MS   = 280;
-
-    overlay.addEventListener('touchstart', function (e) {
-      startX    = e.touches[0].clientX;
-      startY    = e.touches[0].clientY;
-      startTime = Date.now();
-    }, { passive: true });
-
-    overlay.addEventListener('touchend', function (e) {
-      var t  = e.changedTouches[0];
-      var dx = t.clientX - startX;
-      var dy = t.clientY - startY;
-      var dt = Date.now() - startTime;
-
-      // Вертикальный скролл — игнорируем
-      if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) {
-        self._resetControlsTimer(); return;
-      }
-
-      // Swipe: перемотка ±10 сек
-      if (Math.abs(dx) > SWIPE_THR && dt < 400 && Math.abs(dy) < 40) {
-        var newTime = Math.max(0, self.video.currentTime + (dx > 0 ? 10 : -10));
-        self.video.currentTime = Math.min(newTime, self.video.duration || newTime);
-        self._showRipple(dx > 0, 10);
-        self._resetControlsTimer();
-        return;
-      }
-
-      // Tap / Double tap
-      if (Math.abs(dx) < 16 && Math.abs(dy) < 16 && dt < 260) {
-        var now    = Date.now();
-        var rect   = self.shell.getBoundingClientRect();
-        var relX   = (t.clientX - rect.left) / rect.width;
-        var isDouble = (now - lastTap < DOUBLE_MS) && (Math.abs(t.clientX - lastTapX) < 64);
-
-        if (isDouble) {
-          if (relX < 0.3) {
-            self.video.currentTime = Math.max(0, self.video.currentTime - 10);
-            self._showRipple(false, 10);
-          } else if (relX > 0.7) {
-            self.video.currentTime = Math.min(self.video.duration || Infinity, self.video.currentTime + 10);
-            self._showRipple(true, 10);
-          } else {
-            self.togglePlay();
-          }
-          lastTap = 0;
-          self._resetControlsTimer();
-          return;
-        }
-
-        lastTap  = now;
-        lastTapX = t.clientX;
-
-        if (self.shell.classList.contains('vp-controls-hidden')) {
-          self._resetControlsTimer();
-        } else {
-          self.togglePlay();
-          self._resetControlsTimer();
-        }
-      }
-    }, { passive: true });
-
-    // Касание controls — сброс таймера
-    this.controls && this.controls.addEventListener('touchstart', function () {
-      self._resetControlsTimer();
-    }, { passive: true });
-  };
-
-  /* ── Seek ripple ─────────────────────────────────────────── */
-  VideoPlayer.prototype._showRipple = function (isRight, secs) {
-    var old = this.shell.querySelector('.vp-ripple');
-    if (old) old.remove();
-    var r = document.createElement('div');
-    r.className = 'vp-ripple';
-    r.style[isRight ? 'right' : 'left'] = '14%';
-    r.innerHTML = (isRight ? '+' : '−') + secs + '<br><span class="vp-ripple-label">сек</span>';
-    this.shell.appendChild(r);
-    setTimeout(function () { if (r.parentNode) r.remove(); }, 700);
-  };
-
-  /* ── Watermark ───────────────────────────────────────────── */
-  VideoPlayer.prototype._moveWatermark = function () {
-    if (!this.watermark) return;
-    var s = this.shell;
-    var w = this.watermark;
-    var maxX = Math.max(10, s.clientWidth  - w.clientWidth  - 10);
-    var maxY = Math.max(10, s.clientHeight - w.clientHeight - 10);
-    w.style.transform = 'translate(' +
-      Math.floor(Math.random() * maxX) + 'px, ' +
-      Math.floor(Math.random() * maxY) + 'px)';
-  };
-  VideoPlayer.prototype._initWatermark = function () {
-    this._moveWatermark();
-  };
-
-  /* ── Layout recalc (orientation) ────────────────────────── */
-  VideoPlayer.prototype._recalcLayout = function () {
-    // Принудительный reflow чтобы браузер пересчитал размеры
-    if (this.isPseudoFS) {
-      this.shell.style.height = '';
-      void this.shell.offsetHeight;
-    }
-    this._moveWatermark();
-  };
-
-  /* ══════════════════════════════════════════════════════════
-     Fullscreen Manager
-     Порядок попыток:
-      1. iOS: video.webkitEnterFullscreen() — нативный плеер iOS
-      2. Standard: shell.requestFullscreen()
-      3. Pseudo-fullscreen (position: fixed)
-     ══════════════════════════════════════════════════════════ */
-  VideoPlayer.prototype.toggleFullscreen = function () {
-    // Выход
-    if (this.isPseudoFS) { this._exitPseudoFS(); return; }
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      this._exitNativeFS(); return;
-    }
-    // Вход
-    this._enterFullscreen();
-  };
-
-  VideoPlayer.prototype._enterFullscreen = function () {
-    var self = this;
-    var v    = this.video;
-    var s    = this.shell;
-
-    // Приоритет 1: iOS native fullscreen (лучшая поддержка на iPhone)
-    // webkitEnterFullscreen работает напрямую с <video>, не с контейнером
-    if (isIOS && v.webkitEnterFullscreen) {
-      // Убеждаемся что видео готово
-      if (v.readyState < 1) {
-        v.load();
-        v.addEventListener('loadedmetadata', function onMeta() {
-          v.removeEventListener('loadedmetadata', onMeta);
-          v.webkitEnterFullscreen();
-        });
-      } else {
-        v.webkitEnterFullscreen();
-      }
+    if (document.fullscreenElement) {
+      var exitPromise = document.exitFullscreen();
+      if (exitPromise && exitPromise.catch) exitPromise.catch(function () {});
       return;
     }
-
-    // Приоритет 2: Standard Fullscreen API на shell
-    var req = s.requestFullscreen || s.webkitRequestFullscreen || s.mozRequestFullScreen;
-    if (req) {
-      var p = req.call(s);
-      if (p && p.then) {
-        p.then(function () {
-          self._syncFSState();
-          self._lockLandscape();
-        }).catch(function () {
-          self._enterPseudoFS();
-        });
-      } else {
-        setTimeout(function () {
-          if (document.fullscreenElement || document.webkitFullscreenElement) {
-            self._syncFSState();
-            self._lockLandscape();
-          } else {
-            self._enterPseudoFS();
-          }
-        }, 80);
-      }
+    var requestPromise = this.shell.requestFullscreen();
+    if (!requestPromise || !requestPromise.then) {
+      this.syncFullscreen();
       return;
     }
-
-    // Приоритет 3: Pseudo-fullscreen fallback
-    this._enterPseudoFS();
+    requestPromise.then(function () {
+      self.syncFullscreen();
+    }).catch(function () {});
   };
 
-  VideoPlayer.prototype._exitNativeFS = function () {
-    var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
-    if (exit) exit.call(document);
+  ProtectedVideoPlayer.prototype.syncFullscreen = function () {
+    var active = document.fullscreenElement === this.shell;
+    this.shell.classList.toggle('vp-fullscreen-active', active);
+    if (this.fsBtn) this.fsBtn.textContent = active ? '\u00d7' : '\u26f6';
   };
 
-  VideoPlayer.prototype._enterPseudoFS = function () {
-    this.isPseudoFS = true;
-    this.shell.classList.add('vp-pseudo-fs');
-    document.body.classList.add('vp-body-fs');
-    this._syncFSState();
-    this._lockLandscape();
-  };
-
-  VideoPlayer.prototype._exitPseudoFS = function () {
-    this.isPseudoFS = false;
-    this.shell.classList.remove('vp-pseudo-fs');
-    document.body.classList.remove('vp-body-fs');
-    this._syncFSState();
-    this._unlockOrientation();
-  };
-
-  VideoPlayer.prototype._syncFSState = function () {
-    var inNativeFS  = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    var inWebkitFS  = !!(this.video.webkitDisplayingFullscreen);
-    var isFS = inNativeFS || inWebkitFS || this.isPseudoFS;
-    this.fsBtn && (this.fsBtn.textContent = isFS ? '✕' : '⛶');
-    if (!isFS) {
-      this._unlockOrientation();
-      // После выхода из нативного FS iOS — восстановить состояние
-      this.isPseudoFS = false;
-      this.shell.classList.remove('vp-pseudo-fs');
-      document.body.classList.remove('vp-body-fs');
-    }
-  };
-
-  VideoPlayer.prototype._lockLandscape = function () {
-    try {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(function () {});
-      }
-    } catch (e) {}
-  };
-
-  VideoPlayer.prototype._unlockOrientation = function () {
-    try {
-      if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      }
-    } catch (e) {}
-  };
-
-  /* ── Инициализация ───────────────────────────────────────── */
   function init() {
-    var shell = document.getElementById('html5-video-shell');
-    if (!shell) return; // Нет HTML5 плеера на этой странице
-    window._vpInstance = new VideoPlayer(shell);
+    document.querySelectorAll('.vp-shell[data-vp-provider]').forEach(function (shell) {
+      if (!shell.__protectedVideoPlayer) {
+        shell.__protectedVideoPlayer = new ProtectedVideoPlayer(shell);
+      }
+    });
   }
 
   if (document.readyState === 'loading') {
@@ -507,5 +485,4 @@
   } else {
     init();
   }
-
 })();

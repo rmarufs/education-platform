@@ -1,589 +1,256 @@
-/*
- * ══════════════════════════════════════════════════════════════════
- *  Фурузон — HTML5 Video Player (iOS/WebKit-safe)
- *  Правила: НЕТ backdrop-filter, НЕТ transform на контейнере,
- *           НЕТ isolation, НЕТ opacity<1 на родителях видео.
- * ══════════════════════════════════════════════════════════════════
- */
-
-/* ─── Shell (внешний контейнер) ──────────────────────────────────
-   КРИТИЧНО: никаких CSS-свойств, создающих compositing layer,
-   которые ломают WebKit native fullscreen и вызывают артефакты.
-   ─────────────────────────────────────────────────────────────── */
-.vp-shell {
-  position: relative;
-  display: block;
-  background: #000;
-  aspect-ratio: 16 / 9;
-  border-radius: 18px;
-  overflow: hidden;
+.protected-video-container {
+  width: 100%;
+  max-width: 100%;
   margin-bottom: 1.5rem;
-  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
-  /* НЕТ: isolation, transform, backdrop-filter, opacity */
 }
 
-/* ─── Video element (video layer — чистый, без эффектов) ─────── */
-.vp-video {
+.vp-shell {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius, 14px);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.vp-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+.vp-stage,
+.vp-video,
+.vp-youtube,
+.vp-youtube iframe,
+.vp-click-layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  /* КРИТИЧНО: contain = нет обрезания при любом соотношении сторон */
-  object-fit: contain;
-  background: #000;
-  /* НЕТ: transform, filter, opacity */
+}
+
+.vp-video,
+.vp-youtube iframe {
   display: block;
-  /* Отключаем системный UI на iOS */
-  -webkit-media-controls: none;
+  border: 0;
+  background: #000;
+  object-fit: contain;
 }
 
-/* Скрыть встроенные контролы браузера (iOS показывает их если controls атрибут) */
-.vp-video::-webkit-media-controls { display: none !important; }
-.vp-video::-webkit-media-controls-enclosure { display: none !important; }
-
-/* ─── Gradient overlay снизу (для читаемости контролов) ──────── */
-.vp-shell::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: clamp(90px, 22%, 150px);
-  background: linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.88),
-    rgba(0, 0, 0, 0.30) 55%,
-    transparent
-  );
-  pointer-events: none;
-  z-index: 10;
-  /* ВАЖНО: gradient, не backdrop-filter */
-}
-
-/* ─── Native Fullscreen (стандарт + WebKit) ──────────────────── */
-.vp-shell:fullscreen,
-.vp-shell:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
-  max-width: none;
-  max-height: none;
-  border-radius: 0;
-  aspect-ratio: auto;
-  box-shadow: none;
-}
-
-/* ─── Pseudo-Fullscreen (iOS Safari fallback) ────────────────── */
-/*
-   Используется когда video.webkitEnterFullscreen() недоступен
-   или когда нужен кастомный UI поверх нативного.
-   100dvh = dynamic viewport height (учитывает Safari toolbar).
-*/
-.vp-shell.vp-pseudo-fs {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  width: 100vw;
-  /* dvh: динамический viewport, не обрезается Safari toolbar */
-  height: 100dvh;
-  border-radius: 0;
-  aspect-ratio: auto;
-  box-shadow: none;
-  /* Safe-area inset для notch/Dynamic Island */
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  /* НЕТ: backdrop-filter, overflow, transform */
-}
-
-/* Скрыть navbar при pseudo-fullscreen */
-body.vp-body-fs {
-  overflow: hidden;
-}
-body.vp-body-fs .navbar {
+.vp-video::-webkit-media-controls,
+.vp-video::-webkit-media-controls-enclosure {
   display: none !important;
 }
 
-/* ─── Click overlay (play/pause + жесты) ────────────────────── */
-/*
-   КРИТИЧНО: background только rgba, не backdrop-filter.
-   pointer-events: auto — перехватываем клики.
-*/
-.vp-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
+.vp-youtube,
+.vp-youtube iframe {
+  pointer-events: none;
+}
+
+.vp-click-layer {
+  z-index: 12;
   cursor: pointer;
-  pointer-events: auto;
-  /* Лёгкий градиент для UI, НЕ backdrop-filter */
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.10) 0%,
-    transparent 30%,
-    transparent 60%,
-    rgba(0, 0, 0, 0.12) 100%
-  );
-  transition: background 0.25s ease;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.vp-watermark {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 14;
+  max-width: calc(100% - 24px);
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.95rem;
+  font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
   user-select: none;
-  -webkit-user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Убираем overlay затемнение во время воспроизведения */
-.vp-shell.vp-playing .vp-overlay {
-  background: transparent;
-}
-
-/* ─── Большая кнопка Play ────────────────────────────────────── */
 .vp-big-play {
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 16;
   transform: translate(-50%, -50%);
-  width: clamp(72px, 13vw, 112px);
-  height: clamp(72px, 13vw, 112px);
-  background: rgba(255, 255, 255, 0.95);
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary, #6366f1);
+  font-size: 1.75rem;
+  line-height: 1;
   pointer-events: none;
-  z-index: 25;
-  opacity: 1;
-  transition: opacity 0.22s ease, transform 0.22s ease;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.40),
-    0 0 0 12px rgba(255, 255, 255, 0.10);
-  /* НЕТ: backdrop-filter */
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
-.vp-big-play-icon {
-  display: block;
-  width: 0; height: 0;
-  margin-left: 6px;
-  border-top: clamp(14px, 2.2vw, 22px) solid transparent;
-  border-bottom: clamp(14px, 2.2vw, 22px) solid transparent;
-  border-left: clamp(22px, 3.2vw, 36px) solid var(--primary, #6366f1);
-}
-
-/* Скрыть big play при воспроизведении */
 .vp-shell.vp-playing .vp-big-play {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.88);
-  pointer-events: none;
 }
 
-/* ─── Водяной знак ───────────────────────────────────────────── */
-.vp-watermark {
-  position: absolute;
-  top: 0; left: 0;
-  z-index: 18;
-  pointer-events: none;
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.85);
-  user-select: none;
-  -webkit-user-select: none;
-  transition: transform 1.2s ease-in-out;
-  white-space: nowrap;
-  /* НЕТ: backdrop-filter, filter */
-}
-
-/* ─── Panel Controls ─────────────────────────────────────────── */
-/*
-   КРИТИЧНО:
-   - НЕТ backdrop-filter (вызывает прозрачность в Chrome iOS)
-   - Используем rgba() для тёмного фона
-   - bottom учитывает safe-area (notch снизу в portrait)
-*/
 .vp-controls {
   position: absolute;
-  left: 16px; right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index: 30;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 24;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  min-height: 56px;
-  /* Тёмный фон БЕЗ backdrop-filter — стабильно на всех iOS */
-  background: rgba(8, 10, 20, 0.90);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 18px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  /* Анимация появления */
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.22s ease, transform 0.22s ease;
-  /* touch-action: none — нужен для seek бара */
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Показывать контролы при паузе или hover */
-.vp-shell:not(.vp-playing) .vp-controls,
-.vp-shell:hover .vp-controls,
-.vp-shell.vp-show-controls .vp-controls {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Скрывать при воспроизведении и controls-hidden */
-.vp-shell.vp-playing.vp-controls-hidden .vp-controls {
-  opacity: 0 !important;
-  transform: translateY(8px) !important;
-  pointer-events: none !important;
-  transition: opacity 0.30s ease, transform 0.30s ease;
-}
-
-/* ─── Кнопки управления ──────────────────────────────────────── */
-.vp-btn {
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.08);
-  border: none;
-  color: #fff;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
   border-radius: 12px;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
+  background: rgba(8, 10, 20, 0.92);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.38);
+}
+
+.vp-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  min-height: 40px;
-  transition: background 0.16s ease, transform 0.16s ease;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
   touch-action: manipulation;
 }
 
-.vp-btn:active {
+.vp-btn:hover,
+.vp-btn:focus-visible {
   background: rgba(255, 255, 255, 0.18);
-  transform: scale(0.94);
+  outline: none;
 }
 
-.vp-text-btn {
-  font-size: 0.88rem;
-  font-weight: 700;
-  width: 44px;
-  letter-spacing: -0.02em;
+.vp-btn[hidden] {
+  display: none;
 }
 
-/* ─── Progress bar ───────────────────────────────────────────── */
 .vp-progress {
-  flex: 1;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  cursor: pointer;
+  --vp-progress: 0%;
   position: relative;
-  transition: height 0.18s ease;
-  /* touch-action: none — чтобы scroll не мешал seek */
+  flex: 1 1 auto;
+  min-width: 48px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  cursor: pointer;
   touch-action: none;
 }
 
-.vp-progress:hover,
-.vp-shell.vp-seeking .vp-progress {
-  height: 9px;
+.vp-progress:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 4px;
 }
 
 .vp-progress-fill {
+  width: 0;
   height: 100%;
-  background: linear-gradient(90deg, var(--primary, #6366f1), #22c55e);
   border-radius: inherit;
-  width: 0%;
+  background: linear-gradient(90deg, var(--primary, #6366f1), #22c55e);
   pointer-events: none;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.40);
-  transition: width 0.1s linear;
 }
 
 .vp-progress-handle {
   position: absolute;
   top: 50%;
-  left: var(--vp-progress, 0%);
-  width: 16px; height: 16px;
+  left: var(--vp-progress);
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #fff;
-  border: 2.5px solid var(--primary, #6366f1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  transform: translate(-50%, -50%) scale(0.7);
-  opacity: 0;
+  border: 2px solid var(--primary, #6366f1);
+  transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-.vp-progress:hover .vp-progress-handle,
-.vp-shell.vp-seeking .vp-progress-handle {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-/* ─── Time display ───────────────────────────────────────────── */
 .vp-time {
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.82rem;
-  font-family: 'SF Mono', 'Fira Mono', monospace;
-  min-width: 80px;
+  flex: 0 0 auto;
+  min-width: 82px;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
   text-align: right;
   white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* ─── Speed menu ─────────────────────────────────────────────── */
-.vp-speed-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.vp-speed-menu {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  right: 50%;
-  transform: translateX(50%) translateY(4px);
-  /* НЕТ backdrop-filter! Только тёмный rgba фон */
-  background: rgba(12, 14, 26, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 12px;
-  padding: 6px 0;
-  display: flex;
-  flex-direction: column;
-  min-width: 120px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
-  z-index: 50;
-}
-
-.vp-speed-menu.vp-speed-open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateX(50%) translateY(0);
-}
-
-.vp-speed-opt {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.88);
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.vp-speed-opt:hover,
-.vp-speed-opt:active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.vp-speed-opt.vp-speed-active {
-  color: var(--primary, #6366f1);
-  font-weight: 700;
-}
-
-/* ─── Seek ripple (±10 sec double-tap) ──────────────────────── */
-.vp-ripple {
-  position: absolute;
-  top: 50%;
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.2;
-  pointer-events: none;
-  z-index: 40;
-  animation: vp-ripple-fade 0.65s ease forwards;
-  /* НЕТ backdrop-filter */
-}
-
-.vp-ripple-label {
-  font-size: 0.62rem;
-  opacity: 0.75;
-  font-weight: 500;
-}
-
-@keyframes vp-ripple-fade {
-  0%   { opacity: 0; transform: translateY(-50%) scale(0.68); }
-  22%  { opacity: 1; transform: translateY(-50%) scale(1.04); }
-  72%  { opacity: 1; transform: translateY(-50%) scale(1.0);  }
-  100% { opacity: 0; transform: translateY(-50%) scale(1.08); }
-}
-
-/* ─── Loading spinner ────────────────────────────────────────── */
-.vp-spinner {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 44px; height: 44px;
-  border: 3px solid rgba(255, 255, 255, 0.18);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: vp-spin 0.75s linear infinite;
-  pointer-events: none;
-  z-index: 28;
-  opacity: 0;
-  transition: opacity 0.22s ease;
-}
-
-.vp-shell.vp-loading .vp-spinner {
-  opacity: 1;
 }
 
 .vp-shell.vp-loading .vp-big-play {
   opacity: 0;
 }
 
-@keyframes vp-spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* ─── Error state ────────────────────────────────────────────── */
-.vp-error {
+.vp-shell.vp-error-state::before,
+.vp-unsupported {
+  content: "Video unavailable";
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: rgba(255, 255, 255, 0.80);
-  font-size: 0.95rem;
-  text-align: center;
+  z-index: 30;
+  display: grid;
+  place-items: center;
   padding: 20px;
-  pointer-events: none;
-  z-index: 35;
-  display: none;
+  background: #000;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
 }
 
-.vp-shell.vp-error-state .vp-error { display: flex; }
-.vp-error-icon { font-size: 2.5rem; }
-
-/* ─── Fullscreen: in pseudo-fullscreen controls учитывают safe-area */
-.vp-shell.vp-pseudo-fs .vp-controls {
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: calc(16px + env(safe-area-inset-left, 0px));
-  right: calc(16px + env(safe-area-inset-right, 0px));
+.vp-unsupported {
+  position: relative;
+  min-height: 220px;
+  border-radius: var(--radius, 14px);
 }
 
-/* В landscape в pseudo-fullscreen safe-area снизу = 0 */
-@media (orientation: landscape) {
-  .vp-shell.vp-pseudo-fs {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .vp-shell.vp-pseudo-fs .vp-controls {
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-/* ─── Mobile: <= 768px ───────────────────────────────────────── */
 @media (max-width: 768px) {
-
   .vp-shell {
     border-radius: 0;
-    margin-left: -16px;
-    margin-right: -16px;
-    width: calc(100% + 32px);
-    aspect-ratio: 16 / 9;
   }
 
   .vp-controls {
-    left: 10px; right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    min-height: 52px;
-    padding: 8px 10px;
-    gap: 9px;
-    border-radius: 14px;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    min-height: 46px;
+    gap: 8px;
+    padding: 7px 8px;
   }
 
   .vp-btn {
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 12px;
-    font-size: 1.05rem;
-  }
-
-  .vp-text-btn {
-    width: 44px;
-    font-size: 0.85rem;
-  }
-
-  .vp-progress { height: 8px; }
-
-  .vp-progress-handle {
-    width: 20px; height: 20px;
+    width: 38px;
+    height: 38px;
   }
 
   .vp-time {
-    font-size: 0.73rem;
-    min-width: 52px;
+    min-width: 58px;
+    font-size: 0.7rem;
   }
 
   .vp-big-play {
-    width: 76px; height: 76px;
-  }
-
-  .vp-speed-menu {
-    right: 0;
-    transform: translateX(0) translateY(4px);
-  }
-  .vp-speed-menu.vp-speed-open {
-    transform: translateX(0) translateY(0);
+    width: 64px;
+    height: 64px;
   }
 }
 
-/* ─── Small phones: <= 480px ─────────────────────────────────── */
-@media (max-width: 480px) {
-  .vp-shell {
-    margin-left: -12px;
-    margin-right: -12px;
-    width: calc(100% + 24px);
+@media (max-width: 430px) {
+  .vp-time {
+    display: none;
   }
 
   .vp-controls {
-    left: 6px; right: 6px;
-    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     gap: 6px;
-    padding: 7px 8px;
-    border-radius: 12px;
-    min-height: 48px;
-  }
-
-  .vp-btn {
-    min-width: 40px;
-    min-height: 40px;
-    font-size: 0.96rem;
-    border-radius: 10px;
-  }
-
-  /* Скрываем время на совсем маленьких */
-  .vp-time { display: none; }
-}
-
-/* ─── Landscape mobile: без обрезания ───────────────────────── */
-@media (max-width: 768px) and (orientation: landscape) {
-
-  .vp-shell {
-    /* В landscape занимаем всю ширину */
-    margin-left: -16px;
-    margin-right: -16px;
-    width: calc(100% + 32px);
-    /* Высота = доступный viewport в landscape */
-    aspect-ratio: auto;
-    height: calc(100vw * 9 / 16);
-    max-height: 100svh;
-  }
-
-  /* Pseudo-FS в landscape */
-  .vp-shell.vp-pseudo-fs {
-    padding-bottom: 0;
   }
 }
