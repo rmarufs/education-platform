@@ -66,7 +66,7 @@
         {% endif %}
 
         <!-- Секция: Моя организация -->
-        <section style="margin-bottom: 32px;">
+        <section class="student-org-section" style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="student.my_org">🏢 Мой учебный центр</div>
             {% if student_org_link and student_org_link.status == 'accepted' %}
             <div class="org-card org-card--accepted">
@@ -325,6 +325,9 @@ body.dark .student-analytics-bar {
     box-shadow:
         inset 0 1px 2px rgba(0, 0, 0, 0.42),
         0 1px 0 rgba(255, 255, 255, 0.04);
+}
+@media (max-width: 768px) {
+    .student-org-section { display: none !important; }
 }
 </style>
 {% endblock %}
