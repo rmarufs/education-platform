@@ -121,7 +121,7 @@
 
         <!-- Мои группы -->
         <section style="margin-bottom: 32px;">
-            <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
+            <div class="section-label" data-i18n="{{ 'group.my_group' if student_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if student_groups|length == 1 else 'Мои группы' }}</div>
             <div class="student-analytics-cards">
                 <div class="student-analytics-card">
                     <div class="student-analytics-label" data-i18n="analytics.attendance">Посещаемость</div>
@@ -151,7 +151,32 @@
                 </div>
             </div>
             {% if student_groups %}
-            <div class="courses-grid">
+            <div class="student-groups-mobile">
+                {% for group in student_groups %}
+                <a href="/groups/{{ group.id }}/view" class="student-group-card">
+                    <div class="student-group-card__media">
+                        {% if group.avatar_url %}
+                            <img src="{{ group.avatar_url }}" alt="{{ group.name }}">
+                        {% else %}
+                            <span>{{ group.name[0]|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="student-group-card__body">
+                        <div class="student-group-card__title">{{ group.name }}</div>
+                        <div class="student-group-card__meta">
+                            {% if group.organization %}
+                            <span>{{ group.organization.name }}</span>
+                            {% endif %}
+                            {% if group.teacher %}
+                            <span>👨‍🏫 {{ group.teacher.name }}</span>
+                            {% endif %}
+                            <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="courses-grid student-groups-desktop">
                 {% for group in student_groups %}
                 <div class="course-card fade-in">
                     {% if group.avatar_url %}
@@ -287,6 +312,7 @@
 .student-analytics-bar-fill--good { background: linear-gradient(90deg, var(--success, #22c55e), #86efac); }
 .student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
+.student-groups-mobile { display: none; }
 html[data-theme="dark"] .student-analytics-bar,
 body.dark .student-analytics-bar {
     background:

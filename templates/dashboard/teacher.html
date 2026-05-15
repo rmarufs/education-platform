@@ -90,7 +90,7 @@
         {% if my_groups %}
         <section class="mb-4">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
-                <div class="section-label" data-i18n="group.my_groups">🗂 Мои группы</div>
+                <div class="section-label" data-i18n="{{ 'group.my_group' if my_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if my_groups|length == 1 else 'Мои группы' }}</div>
                 <a href="/groups/analytics" class="btn btn-outline btn-sm">
                     📊 <span data-i18n="analytics.open">Аналитика</span>
                 </a>

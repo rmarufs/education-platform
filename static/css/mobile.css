@@ -297,8 +297,7 @@
   }
 
   .user-dashboard .dashboard-header p {
-    font-size: .94rem;
-    line-height: 1.45;
+    display: none;
   }
 
   .user-dashboard .section-label {
@@ -313,6 +312,9 @@
     padding: 0 16px;
     border-radius: 12px;
     font-size: .88rem;
+    line-height: 1.1;
+    align-items: center;
+    justify-content: center;
   }
 
   .user-dashboard .dashboard-header .btn,
@@ -367,6 +369,10 @@
     box-shadow: var(--shadow-sm);
   }
 
+  .user-dashboard--student .org-card--accepted {
+    min-height: 68px;
+  }
+
   .user-dashboard .org-card__info {
     gap: 12px;
   }
@@ -379,6 +385,11 @@
     width: 40px !important;
     height: 40px !important;
     border-radius: 10px !important;
+  }
+
+  .user-dashboard--student .org-card--accepted .org-card__desc,
+  .user-dashboard--student .org-card--accepted .org-card__actions {
+    display: none;
   }
 
   .user-dashboard .org-card__name {
@@ -461,6 +472,76 @@
     border-top: 0;
   }
 
+  .user-dashboard--student .student-groups-mobile {
+    display: grid !important;
+    gap: 10px;
+  }
+
+  .user-dashboard--student .student-groups-desktop {
+    display: none !important;
+  }
+
+  .user-dashboard--student .student-group-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--bg-card);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+  }
+
+  .user-dashboard--student .student-group-card__media {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,.24), transparent 36%),
+      linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 52%, #22c55e 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+  }
+
+  .user-dashboard--student .student-group-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .user-dashboard--student .student-group-card__body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .user-dashboard--student .student-group-card__title {
+    font-weight: 800;
+    font-size: .98rem;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .user-dashboard--student .student-group-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: .78rem;
+    line-height: 1.25;
+  }
+
   .user-dashboard--teacher .group-teacher-card {
     flex: 1 1 100%;
     min-width: 0 !important;
@@ -503,6 +584,9 @@
   }
 
   .user-dashboard .empty-state .btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
     width: min(100%, 260px) !important;
     margin-top: 4px !important;
   }
