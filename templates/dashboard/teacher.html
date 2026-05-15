@@ -19,17 +19,9 @@
                 </h1>
                 <p data-i18n="teacher.subtitle">Управляйте своими курсами и помогайте студентам учиться</p>
             </div>
-            <button class="btn btn-primary hide-on-mobile" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
+            <button class="btn btn-primary" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
                 + Создать курс
             </button>
-        </div>
-
-        <!-- Блок быстрых действий для мобильной версии -->
-        <div class="quick-actions-mobile">
-            <button class="btn btn-primary" onclick="openCreateModal()" data-i18n="teacher.add_course">+ Создать курс</button>
-            {% if my_groups %}
-            <a href="/groups/analytics" class="btn btn-outline" data-i18n="analytics.open">📊 Аналитика</a>
-            {% endif %}
         </div>
 
         {% if pending_invites %}
@@ -55,7 +47,7 @@
         {% endif %}
 
         {% if teacher_applications %}
-        <section class="mb-4" id="teacher-applications-section">
+        <section class="mb-4">
             <div class="section-label" data-i18n="org.my_applications">🏢 Мои заявки в учебные центры</div>
             <div style="background: var(--bg-card, white); border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); padding: 4px 16px;">
                 {% for app in teacher_applications %}
@@ -68,7 +60,7 @@
                     <button type="button" class="notice-close" style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:0 5px; color:inherit; line-height:1;">×</button>
                 </div>
                 {% endif %}
-                <div class="org-app-row" data-org-id="{{ app.organization_id }}" data-status="{{ app.status }}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; {% if not loop.last %}border-bottom: 1px solid rgba(0,0,0,0.05);{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; {% if not loop.last %}border-bottom: 1px solid rgba(0,0,0,0.05);{% endif %}">
                     <div>
                         {% if app.status == 'accepted' %}
                             <a href="/organization/{{ app.organization_id }}" style="font-size: 1.05rem; font-weight: 600; color: var(--accent, #6366f1); text-decoration: none;">
@@ -99,7 +91,7 @@
         <section class="mb-4">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
                 <div class="section-label" data-i18n="{{ 'group.my_group' if my_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if my_groups|length == 1 else 'Мои группы' }}</div>
-                <a href="/groups/analytics" class="btn btn-outline btn-sm hide-on-mobile">
+                <a href="/groups/analytics" class="btn btn-outline btn-sm">
                     📊 <span data-i18n="analytics.open">Аналитика</span>
                 </a>
             </div>
@@ -354,68 +346,29 @@
 document.querySelectorAll('.org-accept-notice').forEach(notice => {
     const orgId = notice.dataset.orgId;
     const key = `dismissed_org_invite_${orgId}`;
-    const row = document.querySelector(`.org-app-row[data-org-id="${orgId}"][data-status="accepted"]`);
 
-    // Скрываем если уже заходили и видели
+    // Скрываем если уже закрывали
     if (localStorage.getItem(key)) {
         notice.style.display = 'none';
-        if (row) row.style.display = 'none';
         return;
     }
 
-    // Отмечаем, что уведомление показано
-    localStorage.setItem(key, '1');
-
-    // Обработчик кнопки закрытия (чтобы скрыть вручную)
+    // Обработчик кнопки закрытия
     const closeBtn = notice.querySelector('.notice-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             notice.style.transition = 'opacity 0.3s';
             notice.style.opacity = '0';
-            setTimeout(() => {
-                notice.style.display = 'none';
-                if (row) row.style.display = 'none';
-                checkApplicationsSection();
-            }, 300);
+            setTimeout(() => notice.style.display = 'none', 300);
+            localStorage.setItem(key, '1');
         });
     }
 });
-
-function checkApplicationsSection() {
-    const section = document.getElementById('teacher-applications-section');
-    if (!section) return;
-    const visibleRows = section.querySelectorAll('.org-app-row:not([style*="display: none"])');
-    const visibleNotices = section.querySelectorAll('.org-accept-notice:not([style*="display: none"])');
-    if (visibleRows.length === 0 && visibleNotices.length === 0) {
-        section.style.display = 'none';
-    }
-}
-checkApplicationsSection();
 </script>
 <style>
 .group-teacher-card:hover {
     box-shadow: 0 6px 24px rgba(99,102,241,0.15);
     transform: translateY(-2px);
-}
-.quick-actions-mobile {
-    display: none;
-}
-@media (max-width: 768px) {
-    .hide-on-mobile {
-        display: none !important;
-    }
-    .quick-actions-mobile {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 24px;
-    }
-    .quick-actions-mobile .btn {
-        flex: 1;
-        justify-content: center;
-        text-align: center;
-        padding: 12px 8px;
-        font-size: 0.9rem;
-    }
 }
 </style>
 {% endblock %}
