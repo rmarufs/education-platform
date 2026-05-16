@@ -52,7 +52,7 @@
               <td>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
-                    {{ member.student.name[0]|upper if member.student.name else "?" }}
+                    {{ (member.student.name or "F")[0]|upper }}
                   </div>
                   <div>
                     <div style="font-weight:600;color:var(--text);font-size:0.9rem;">{{ member.student.name }}</div>

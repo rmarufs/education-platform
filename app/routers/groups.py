@@ -370,18 +370,14 @@ def group_edit(
 
 @router.post("/{group_id}/avatar")
 def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...), db: Session = Depends(get_db)):
-    result, redirect = _require_org(request, db)
-    if redirect:
-        return redirect
-    user, org = result
-    _, group = _get_org_for_group(group_id, user, db)
+    _, group = _get_manageable_group(group_id, request, db)
 
     if not avatar or not avatar.filename:
         return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
 
     ext = os.path.splitext(avatar.filename)[1].lower()
     if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
-        raise HTTPException(status_code=400, detail="Invalid extension")
+        return RedirectResponse(f"/groups/{group_id}/manage?error=invalid_image", status_code=302)
 
     os.makedirs(GROUP_AVATAR_DIR, exist_ok=True)
     filename = f"{uuid.uuid4().hex}{ext}"

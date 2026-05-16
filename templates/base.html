@@ -76,7 +76,7 @@
                           <img src="{{ user.avatar_url }}" class="avatar" alt="{{ user.name }}"
                                style="width:32px;height:32px;">
                         {% else %}
-                          <div class="avatar avatar-placeholder" style="width:32px;height:32px;font-size:.85rem;">{{ user.name[0]|upper }}</div>
+                          <div class="avatar avatar-placeholder" style="width:32px;height:32px;font-size:.85rem;">{{ (user.name or "F")[0]|upper }}</div>
                         {% endif %}
                         <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
                         <a href="/dashboard" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Кабинет</a>

@@ -13,7 +13,7 @@
                 {% if user.avatar_url %}
                     <img src="{{ user.avatar_url }}" class="avatar" id="sidebar-avatar-img" alt="{{ user.name }}">
                 {% else %}
-                    <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{{ user.name[0]|upper }}</div>
+                    <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{{ (user.name or "F")[0]|upper }}</div>
                 {% endif %}
                 <div class="avatar-upload-overlay" style="display:none">📷</div>
             </div>
@@ -158,7 +158,7 @@
                         {% if group.avatar_url %}
                             <img src="{{ group.avatar_url }}" alt="{{ group.name }}">
                         {% else %}
-                            <span>{{ group.name[0]|upper }}</span>
+                            <span>{{ (group.name or "F")[0]|upper }}</span>
                         {% endif %}
                     </div>
                     <div class="student-group-card__body">
@@ -182,7 +182,7 @@
                     {% if group.avatar_url %}
                         <img src="{{ group.avatar_url }}" class="course-cover" alt="{{ group.name }}">
                     {% else %}
-                        <div class="course-cover course-cover-placeholder">{{ group.name[0]|upper }}</div>
+                        <div class="course-cover course-cover-placeholder">{{ (group.name or "F")[0]|upper }}</div>
                     {% endif %}
                     <div class="course-card-body">
                         <div class="course-card-badges">

@@ -22,7 +22,11 @@
             {% for group in groups %}
             <div class="group-card fade-in">
                 <div class="group-card-header">
-                    <div class="group-icon">{{ group.name[0]|upper }}</div>
+                    {% if group.avatar_url %}
+                    <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-icon group-icon-img">
+                    {% else %}
+                    <div class="group-icon">{{ (group.name or "F")[0]|upper }}</div>
+                    {% endif %}
                     <div class="group-meta">
                         <h3 class="group-name">{{ group.name }}</h3>
                         <span style="font-size:0.8rem; color:var(--text-muted);">{{ group.organization.name }}</span>
@@ -70,6 +74,7 @@
     color: #fff; font-size: 1.4rem; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
 }
+.group-icon-img { object-fit: cover; }
 .group-meta { flex: 1; min-width: 0; }
 .group-name { margin: 0; font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .group-description { font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }

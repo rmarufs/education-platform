@@ -4,7 +4,7 @@
             {% if user.avatar_url %}
                 <img src="{{ user.avatar_url }}" class="avatar" id="sidebar-avatar-img" alt="{{ user.name }}">
             {% else %}
-                <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{% if org and org.name %}{{ org.name[0].upper() }}{% else %}{{ user.name[0].upper() }}{% endif %}</div>
+                <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{% if org and org.name %}{{ org.name[0].upper() }}{% else %}{{ (user.name or "F")[0].upper() }}{% endif %}</div>
             {% endif %}
             <div class="avatar-upload-overlay" style="display:none">📷</div>
         </div>

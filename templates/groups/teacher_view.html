@@ -21,10 +21,21 @@
       <a href="/groups/{{ group.id }}/payments" class="btn btn-outline btn-sm">
         💳 <span data-i18n="payment.open">Журнал оплаты</span>
       </a>
+      <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('avatar-upload-input').click()">
+        🖼
+        {% if group.avatar_url %}
+        <span data-i18n="group.cover_change">Изменить обложку</span>
+        {% else %}
+        <span data-i18n="group.cover_add">Добавить обложку</span>
+        {% endif %}
+      </button>
       {% if group.lessons %}
       <a href="/groups/{{ group.id }}/lessons/{{ (group.lessons|sort(attribute='order'))[0].id }}" class="btn btn-secondary btn-sm" data-i18n="manage.view">👁 Просмотр</a>
       {% endif %}
     </div>
+    <form id="avatar-form" action="/groups/{{ group.id }}/avatar" method="POST" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="avatar-upload-input" name="avatar" accept=".jpg,.jpeg,.png,.webp" onchange="document.getElementById('avatar-form').submit()">
+    </form>
   </div>
 
   {% if success %}
@@ -36,7 +47,13 @@
     {% elif success == "lesson_saved" %}<span data-i18n="group.success_lesson_saved">✅ Урок сохранён.</span>
     {% elif success == "vocab_created" %}<span data-i18n="vocabulary.success_created">✅ Словарь создан.</span>
     {% elif success == "vocab_saved" %}<span data-i18n="vocabulary.success_saved">✅ Словарь сохранён.</span>
+    {% elif success == "avatar" %}<span data-i18n="group.success_cover_saved">✅ Обложка группы сохранена.</span>
     {% else %}<span data-i18n="group.success_done">✅ Готово.</span>{% endif %}
+  </div>
+  {% endif %}
+  {% if error == "invalid_image" %}
+  <div class="alert alert-danger" style="margin-bottom:16px;">
+    <span data-i18n="validation.image_invalid">❌ Разрешены только JPG, JPEG, PNG и WEBP.</span>
   </div>
   {% endif %}
 
@@ -245,7 +262,7 @@
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div class="avatar-xs" style="background:var(--primary-light);color:var(--primary);">
-                  {{ member.student.name[0]|upper }}
+                  {{ (member.student.name or "F")[0]|upper }}
                 </div>
                 <div>
                   <div style="font-weight:500;color:var(--text);font-size:0.9rem;">{{ member.student.name }}</div>

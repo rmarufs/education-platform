@@ -18,7 +18,7 @@
             <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="course-cover-image" loading="lazy">
             {% else %}
             <div class="course-cover-placeholder">
-              <span class="course-cover-letter">{{ group.name[0]|upper }}</span>
+              <span class="course-cover-letter">{{ (group.name or "F")[0]|upper }}</span>
             </div>
             {% endif %}
           </div>
