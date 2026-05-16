@@ -421,6 +421,7 @@ body.dark .logo-copy::after {
 
 .hero-actions {
   display: flex;
+  justify-content: center;
   gap: 14px;
   flex-wrap: wrap;
   animation: fadeInUp .6s .3s ease both;
