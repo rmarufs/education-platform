@@ -302,24 +302,27 @@
 
   .user-dashboard--teacher .teacher-dashboard-intro h1 {
     color: var(--text-muted);
-    font-size: 1.05rem;
+    font-size: 1rem;
     margin-bottom: 0;
   }
 
   .user-dashboard--teacher .teacher-dashboard-actions {
-    width: 100%;
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: nowrap !important;
     justify-content: flex-start;
     gap: 8px;
   }
 
   .user-dashboard--teacher .teacher-dashboard-actions .btn {
-    width: auto;
-    flex: 0 1 auto;
-    min-height: 40px;
-    padding: 0 12px;
+    width: auto !important;
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 10px;
     font-size: .84rem;
+    white-space: nowrap;
   }
 
   .user-dashboard .dashboard-header p {
@@ -767,8 +770,10 @@
     width: 100%;
   }
   .user-dashboard--teacher .teacher-dashboard-actions {
+    align-self: flex-start;
     flex-direction: row;
-    width: 100%;
+    flex-wrap: nowrap !important;
+    width: auto;
   }
   .pending-actions .btn,
   .teacher-actions .btn {
@@ -776,7 +781,8 @@
     justify-content: center;
   }
   .user-dashboard--teacher .teacher-dashboard-actions .btn {
-    width: auto;
+    width: auto !important;
+    flex: 0 0 auto;
   }
 
   /* ══════ Комментарии ═══════════════════════════════ */
@@ -1028,6 +1034,22 @@
   }
   .user-dashboard .dashboard-header h1 {
     font-size: 1.28rem;
+  }
+  .user-dashboard--teacher .teacher-dashboard-intro h1 {
+    font-size: .98rem;
+  }
+  .user-dashboard--teacher .teacher-dashboard-actions {
+    gap: 6px;
+  }
+  .user-dashboard--teacher .teacher-dashboard-actions .btn {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: .8rem;
+  }
+  @media (max-width: 359px) {
+    .user-dashboard--teacher .teacher-dashboard-actions {
+      flex-wrap: wrap !important;
+    }
   }
   .user-dashboard .student-analytics-card {
     min-height: 96px;

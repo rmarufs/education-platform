@@ -1159,10 +1159,11 @@ body.dark .logo-copy::after {
 }
 
 .teacher-dashboard-intro h1 {
-  color: var(--text-secondary, var(--text-muted));
-  font-size: 1.18rem;
-  font-weight: 650;
+  color: var(--text-muted);
+  font-size: 1.02rem;
+  font-weight: 600;
   line-height: 1.25;
+  margin-bottom: 2px;
 }
 
 .teacher-dashboard-intro p {
@@ -3779,6 +3780,17 @@ body { transition: background-color .3s ease, color .3s ease; }
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.teacher-dashboard-header .teacher-dashboard-actions {
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.teacher-dashboard-header .teacher-dashboard-actions .btn {
+  flex: 0 0 auto;
+  width: auto;
 }
 
 /* ── Tooltip (CSS-only) ───────────────────────────── */
