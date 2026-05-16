@@ -87,6 +87,16 @@
                     {% endif %}
                 </div>
 
+                {% if user %}
+                <a href="{% if user.is_admin %}/admin{% else %}/dashboard{% endif %}" class="mobile-nav-avatar" data-i18n="nav.dashboard" data-i18n-prop="aria-label" aria-label="Кабинет">
+                    {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
+                    {% else %}
+                        <span>{{ (user.name or "F")[0]|upper }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+
                 <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme" title="Toggle theme">🌙</button>
 
                 <div class="lang-switcher">

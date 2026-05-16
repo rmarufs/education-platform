@@ -25,6 +25,31 @@
   .nav-container { gap: 8px; padding: 0 16px; }
   .nav-links { gap: 6px; }
 
+  .mobile-nav-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .mobile-nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .mobile-nav-avatar:active {
+    opacity: 0.8;
+  }
+
   /* ══════ Hero секция ═══════════════════════════════ */
   .hero {
     padding: 28px 20px 24px;

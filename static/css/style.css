@@ -276,6 +276,10 @@ body.dark .logo-copy::after {
   flex-wrap: nowrap;
 }
 
+.mobile-nav-avatar {
+  display: none;
+}
+
 .nav-greeting {
   font-size: .8rem;
   color: var(--text-muted);
