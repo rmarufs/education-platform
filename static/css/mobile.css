@@ -25,10 +25,10 @@
   .nav-container { gap: 8px; padding: 0 16px; }
   .nav-links { gap: 6px; }
 
-  .hamburger { order: 1; }
-  .mobile-nav-avatar { order: 2; }
-  .lang-switcher { order: 3; }
-  .theme-toggle { order: 4; }
+  .theme-toggle { order: 1; }
+  .lang-switcher { order: 2; }
+  .mobile-nav-avatar { order: 3; }
+  .hamburger { order: 4; }
 
   .mobile-nav-avatar {
     display: inline-flex;
