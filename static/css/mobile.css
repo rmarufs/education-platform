@@ -84,6 +84,67 @@
   }
   .feature-icon { margin-bottom: 0; font-size: 1.6rem; flex-shrink: 0; }
 
+  /* ══════ Home: Hero chips ═══════════════════════ */
+  .home-hero-chips {
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .home-chip {
+    padding: 5px 10px;
+    font-size: .75rem;
+  }
+  .home-hero-kicker {
+    font-size: .7rem;
+    padding: 4px 10px;
+    margin-bottom: 12px;
+  }
+
+  /* ══════ Home: Role cards — вертикальный стек ══ */
+  .home-roles-section {
+    padding: 40px 0;
+  }
+  .home-section-wrap {
+    padding: 0 16px;
+  }
+  .home-roles-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .home-role-card {
+    padding: 22px 18px;
+    border-radius: var(--radius-md);
+    gap: 10px;
+  }
+  .home-role-icon { font-size: 1.8rem; margin-bottom: 0; }
+  .home-role-card h3 { font-size: 1rem; }
+  .home-role-card p { font-size: .84rem; }
+  .home-role-cta { width: 100%; justify-content: center; }
+
+  /* ══════ Home: Steps — вертикальный стек ═══════ */
+  .home-steps-section {
+    padding: 40px 0;
+  }
+  .home-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .home-step {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .home-step-num {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .home-step-body h3 { font-size: .95rem; margin-bottom: 4px; }
+  .home-step-body p  { font-size: .84rem; }
+
+  /* ══════ Home: Catalog CTA ═════════════════════ */
+  .home-catalog-cta { margin-top: 24px; }
+  .home-catalog-cta .btn { width: 100%; justify-content: center; max-width: 320px; }
+
   /* ══════ Каталог курсов ════════════════════════════ */
   .catalog-layout {
     flex-direction: column;

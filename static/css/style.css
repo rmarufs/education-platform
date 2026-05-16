@@ -466,6 +466,185 @@ body.dark .logo-copy::after {
 .delay-1    { animation-delay: .6s; }
 .delay-2    { animation-delay: 1.2s; }
 
+/* ── Home Hero: kicker + chips ──────────────────────────────── */
+.home-hero {
+  align-items: flex-start;
+  gap: 56px;
+}
+.home-hero-content {
+  max-width: 560px;
+  flex: 1 1 auto;
+}
+.home-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.92);
+  margin-bottom: 18px;
+}
+.home-hero-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74,222,128,.32);
+  flex-shrink: 0;
+}
+.home-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+}
+.home-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.92);
+}
+.home-chip-icon { font-size: .95rem; line-height: 1; }
+.home-cta-primary {
+  background: #fff;
+  color: var(--primary-dark);
+  border-color: #fff;
+}
+.home-cta-primary:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255,255,255,.25);
+}
+
+/* ── Home Sections: общая обёртка ──────────────────────────── */
+.home-section-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Role Cards ─────────────────────────────────────────────── */
+.home-roles-section {
+  padding: 72px 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.home-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.home-role-card {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition);
+}
+.home-role-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 28px rgba(37,99,235,.12);
+  transform: translateY(-3px);
+}
+.home-role-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.home-role-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.home-role-card p {
+  font-size: .875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  flex: 1;
+}
+.home-role-cta {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.home-role-student { border-top: 3px solid var(--primary); }
+.home-role-teacher { border-top: 3px solid #7c3aed; }
+.home-role-org     { border-top: 3px solid #0891b2; }
+
+/* ── Steps Section ──────────────────────────────────────────── */
+.home-steps-section {
+  padding: 72px 0;
+}
+.home-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  position: relative;
+}
+.home-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.home-step-num {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(37,99,235,.28);
+}
+.home-step-body h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.home-step-body p {
+  font-size: .875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Catalog CTA ─────────────────────────────────────────────── */
+.home-catalog-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+/* ── Reveal animation ─────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .5s ease, transform .5s ease;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ── Секция статистики ─────────────────────────────────────── */
 .stats-section {
   background: var(--bg-card);

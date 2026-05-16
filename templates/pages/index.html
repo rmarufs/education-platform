@@ -22,102 +22,176 @@
   }
 </script>
 
-<!-- Hero секция -->
-<section class="hero">
-    <div class="hero-content">
-        <h1 class="hero-title" data-i18n="hero.title">Таджикская образовательная платформа</h1>
-        <div class="hero-actions">
-            <a href="/register" class="btn btn-primary btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
-            {% if user %}
-            <a href="/dashboard" class="btn btn-outline btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
-            {% else %}
-            <a href="/login" class="btn btn-outline btn-lg" data-i18n="hero.cta_login">Войти в аккаунт</a>
-            {% endif %}
-        </div>
+<!-- ── Hero ───────────────────────────────────── -->
+<section class="hero home-hero">
+  <div class="home-hero-content">
+    <div class="home-hero-kicker">
+      <span class="home-hero-dot"></span>
+      <span data-i18n="home.hero_kicker">Образовательная платформа</span>
     </div>
-    <div class="hero-illustration">
-        <div class="hero-card floating">
-            <span class="hero-card-icon">📚</span>
-            <span data-i18n="hero.card1">Качественные курсы</span>
-        </div>
-        <div class="hero-card floating delay-1">
-            <span class="hero-card-icon">🏆</span>
-            <span data-i18n="hero.card2">Достижения</span>
-        </div>
-        <div class="hero-card floating delay-2">
-            <span class="hero-card-icon">👩‍🏫</span>
-            <span data-i18n="hero.card3">Лучшие преподаватели</span>
-        </div>
+    <h1 class="hero-title" data-i18n="home.hero_title">Учитесь, преподавайте и управляйте обучением в одном месте</h1>
+    <p class="hero-subtitle" data-i18n="home.hero_subtitle">Курсы, группы, уроки, тесты и аналитика для учебных центров, преподавателей и студентов.</p>
+    <div class="hero-actions">
+      <a href="/courses/catalog" class="btn btn-primary btn-lg home-cta-primary" data-i18n="home.cta_courses">Найти курс</a>
+      {% if user %}
+      <a href="/dashboard" class="btn btn-outline btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
+      {% else %}
+      <a href="/register" class="btn btn-outline btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
+      {% endif %}
     </div>
+    <div class="home-hero-chips">
+      <span class="home-chip"><span class="home-chip-icon">📚</span><span data-i18n="hero.card1">Качественные курсы</span></span>
+      <span class="home-chip"><span class="home-chip-icon">🏆</span><span data-i18n="hero.card2">Достижения</span></span>
+      <span class="home-chip"><span class="home-chip-icon">👩‍🏫</span><span data-i18n="hero.card3">Лучшие преподаватели</span></span>
+    </div>
+  </div>
+  <div class="hero-illustration" aria-hidden="true">
+    <div class="hero-card floating">
+      <span class="hero-card-icon">📚</span>
+      <span data-i18n="hero.card1">Качественные курсы</span>
+    </div>
+    <div class="hero-card floating delay-1">
+      <span class="hero-card-icon">🏆</span>
+      <span data-i18n="hero.card2">Достижения</span>
+    </div>
+    <div class="hero-card floating delay-2">
+      <span class="hero-card-icon">👩‍🏫</span>
+      <span data-i18n="hero.card3">Лучшие преподаватели</span>
+    </div>
+  </div>
 </section>
 
-
-
-<!-- Популярные курсы -->
-<section class="courses-section">
+<!-- ── Для кого ────────────────────────────────── -->
+<section class="home-roles-section reveal">
+  <div class="home-section-wrap">
     <div class="section-header">
-        <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
+      <h2 data-i18n="home.roles_title">Для кого Furozon</h2>
+      <p data-i18n="home.roles_sub">Платформа создана для трёх ролей — каждому своё</p>
     </div>
-
-    <div class="courses-grid" id="courses-grid">
-        {% if courses %}
-            {% for course in courses %}
-            <div class="course-card fade-in">
-                <div class="course-card-header">
-                    {{ course_cover(course) }}
-                </div>
-                <div class="course-card-body">
-                    <h3 class="course-title">{{ course.title }}</h3>
-                    <p class="course-desc">{{ (course.description or "Нет описания") | striptags | truncate(100) }}</p>
-                    <div class="course-meta">
-                        <span class="course-author" style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                            👨‍🏫 {{ course.teacher.name }}
-                            {% if course.teacher.employer_organizations %}
-                                {% for ot in course.teacher.employer_organizations %}
-                                    {% if ot.status == 'accepted' %}
-                                        &middot; {{ ot.organization.name }}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                        </span>
-                        <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
-                    </div>
-                </div>
-                <div class="course-card-footer">
-                    <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="course.open">Открыть курс</a>
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <span class="empty-icon">📭</span>
-                <p data-i18n="home.no_courses">Курсы пока не добавлены. Зарегистрируйся как преподаватель и создай первый!</p>
-            </div>
-        {% endif %}
+    <div class="home-roles-grid">
+      <div class="home-role-card home-role-student">
+        <div class="home-role-icon">🎓</div>
+        <h3 data-i18n="home.role_student_title">Студент</h3>
+        <p data-i18n="home.role_student_desc">Записывайтесь на курсы, смотрите уроки, проходите тесты и отслеживайте прогресс.</p>
+        <a href="/courses/catalog" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_student_cta">Найти курс</a>
+      </div>
+      <div class="home-role-card home-role-teacher">
+        <div class="home-role-icon">🧑‍💻</div>
+        <h3 data-i18n="home.role_teacher_title">Преподаватель</h3>
+        <p data-i18n="home.role_teacher_desc">Создавайте курсы, добавляйте уроки и материалы, ведите группы и тесты.</p>
+        <a href="/register" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_teacher_cta">Стать преподавателем</a>
+      </div>
+      <div class="home-role-card home-role-org">
+        <div class="home-role-icon">🏫</div>
+        <h3 data-i18n="home.role_org_title">Учебный центр</h3>
+        <p data-i18n="home.role_org_desc">Создавайте группы, принимайте преподавателей, управляйте учениками и аналитикой.</p>
+        <a href="/search" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_org_cta">Для учебных центров</a>
+      </div>
     </div>
+  </div>
 </section>
 
-<!-- О платформе -->
-<section class="features-section">
+<!-- ── Как это работает ───────────────────────── -->
+<section class="home-steps-section reveal">
+  <div class="home-section-wrap">
     <div class="section-header">
-        <h2 data-i18n="home.why_us">Почему Фурузон?</h2>
+      <h2 data-i18n="home.steps_title">Как это работает</h2>
+      <p data-i18n="home.steps_sub">Три простых шага до начала обучения</p>
     </div>
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🚀</div>
-            <h3 data-i18n="feature.fast">Быстрый старт</h3>
-            <p data-i18n="feature.fast_desc">Зарегистрируйся за пару минут и сразу начинай обучение</p>
+    <div class="home-steps-grid">
+      <div class="home-step">
+        <div class="home-step-num">1</div>
+        <div class="home-step-body">
+          <h3 data-i18n="home.step1_title">Зарегистрируйтесь</h3>
+          <p data-i18n="home.step1_desc">Создайте аккаунт за минуту — выберите роль студента, преподавателя или учебного центра.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3 data-i18n="feature.focused">Целевое обучение</h3>
-            <p data-i18n="feature.focused_desc">Чёткие курсы от опытных преподавателей без лишней воды</p>
+      </div>
+      <div class="home-step">
+        <div class="home-step-num">2</div>
+        <div class="home-step-body">
+          <h3 data-i18n="home.step2_title">Найдите курс или группу</h3>
+          <p data-i18n="home.step2_desc">Просмотрите каталог курсов, вступите в учебный центр или создайте свой курс.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">💡</div>
-            <h3 data-i18n="feature.simple">Простой интерфейс</h3>
-            <p data-i18n="feature.simple_desc">Удобная платформа без лишней сложности</p>
+      </div>
+      <div class="home-step">
+        <div class="home-step-num">3</div>
+        <div class="home-step-body">
+          <h3 data-i18n="home.step3_title">Начните обучение</h3>
+          <p data-i18n="home.step3_desc">Смотрите уроки, проходите тесты и отслеживайте прогресс в личном кабинете.</p>
         </div>
+      </div>
     </div>
+  </div>
+</section>
+
+<!-- ── Популярные курсы ────────────────────────── -->
+<section class="courses-section reveal">
+  <div class="section-header">
+    <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
+    <p data-i18n="home.popular_courses_sub">Начни обучение с лучших программ нашей платформы</p>
+  </div>
+  <div class="courses-grid" id="courses-grid">
+    {% if courses %}
+      {% for course in courses %}
+      <div class="course-card fade-in">
+        <div class="course-card-header">
+          {{ course_cover(course) }}
+        </div>
+        <div class="course-card-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">{{ (course.description or "") | striptags | truncate(100) }}</p>
+          <div class="course-meta">
+            <span class="course-author" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+              👨‍🏫 {{ course.teacher.name }}
+              {% if course.teacher.employer_organizations %}
+                {% for ot in course.teacher.employer_organizations %}
+                  {% if ot.status == 'accepted' %}
+                    &middot; {{ ot.organization.name }}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </span>
+            <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
+          </div>
+        </div>
+        <div class="course-card-footer">
+          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm" data-i18n="course.open">Открыть курс</a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p data-i18n="home.no_courses">Курсы пока не добавлены. Зарегистрируйтесь как преподаватель и создайте первый.</p>
+      </div>
+    {% endif %}
+  </div>
+  <div class="home-catalog-cta">
+    <a href="/courses/catalog" class="btn btn-outline" data-i18n="catalog.view_all">Посмотреть все курсы</a>
+  </div>
+</section>
+
+<!-- ── Преимущества ────────────────────────────── -->
+<section class="features-section reveal">
+  <div class="section-header">
+    <h2 data-i18n="home.why_us">Почему Фурузон?</h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🚀</div>
+      <h3 data-i18n="feature.fast">Быстрый старт</h3>
+      <p data-i18n="feature.fast_desc">Зарегистрируйтесь за пару минут и сразу начинайте обучение.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3 data-i18n="feature.focused">Целевое обучение</h3>
+      <p data-i18n="feature.focused_desc">Четкие курсы от опытных преподавателей без лишней воды.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💡</div>
+      <h3 data-i18n="feature.simple">Простой интерфейс</h3>
+      <p data-i18n="feature.simple_desc">Удобная платформа без лишней сложности.</p>
+    </div>
+  </div>
 </section>
 {% endblock %}
