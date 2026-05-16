@@ -20,7 +20,6 @@ from app.utils.group_analytics import build_group_analytics
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
-GROUP_AVATAR_DIR = os.path.join("static", "uploads", "group_avatars")
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
 
 
@@ -379,14 +378,13 @@ def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...)
     if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
         return RedirectResponse(f"/groups/{group_id}/manage?error=invalid_image", status_code=302)
 
-    os.makedirs(GROUP_AVATAR_DIR, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(GROUP_AVATAR_DIR, filename)
-    with open(save_path, "wb") as buffer:
-        shutil.copyfileobj(avatar.file, buffer)
-
-    group.avatar_url = f"/{save_path}"
-    db.commit()
+    avatar_url = compress_and_upload_avatar(
+        avatar.file,
+        public_id=f"groups/group_{group.id}"
+    )
+    if avatar_url:
+        group.avatar_url = avatar_url
+        db.commit()
     return RedirectResponse(f"/groups/{group_id}/manage?success=avatar", status_code=302)
 
 

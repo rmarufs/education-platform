@@ -4,11 +4,13 @@ import io
 import cloudinary.uploader
 
 
-def compress_and_upload_avatar(file_bytes: bytes, user_id: int) -> str:
+def compress_and_upload_avatar(file_bytes, user_id: int = None, public_id: str = None) -> str:
     """
     Сжимает изображение до 400x400 квадрата, оптимизирует до ≤100KB и загружает в Cloudinary.
     Возвращает secure_url загруженного аватара.
     """
+    if hasattr(file_bytes, "read"):
+        file_bytes = file_bytes.read()
     img = Image.open(io.BytesIO(file_bytes))
 
     # Конвертация RGBA / палитровых изображений в RGB
@@ -38,9 +40,10 @@ def compress_and_upload_avatar(file_bytes: bytes, user_id: int) -> str:
 
     output.seek(0)
 
+    pid = public_id or f"avatars/user_{user_id}"
     result = cloudinary.uploader.upload(
         output,
-        public_id=f"avatars/user_{user_id}",
+        public_id=pid,
         overwrite=True,
         resource_type="image",
     )
