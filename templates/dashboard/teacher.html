@@ -11,15 +11,15 @@
 
     <!-- Основной контент -->
     <div class="dashboard-main">
-        <div class="dashboard-header">
-            <div>
+        <div class="dashboard-header teacher-dashboard-header">
+            <div class="teacher-dashboard-intro">
                 <h1>
                     <span data-i18n="teacher.welcome">Добро пожаловать,</span>
                     {{ user.name }}!
                 </h1>
                 <p data-i18n="teacher.subtitle">Управляйте своими курсами и помогайте студентам учиться</p>
             </div>
-            <div class="pending-actions">
+            <div class="pending-actions teacher-dashboard-actions">
                 <a href="/groups/analytics" class="btn btn-outline">
                     📊 <span data-i18n="analytics.open">Аналитика</span>
                 </a>
@@ -73,8 +73,6 @@
                     <div>
                         {% if app.status == 'pending' %}
                             <span style="background: #FFF3CD; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_pending">⏳ Ожидает рассмотрения</span>
-                        {% elif app.status == 'accepted' %}
-                            <span style="background: #D4EDDA; color: #155724; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_accepted">✅ Принят в состав</span>
                         {% elif app.status == 'rejected' %}
                             <span style="background: #F8D7DA; color: #721C24; padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap;" data-i18n="org.status_rejected">❌ Отклонена</span>
                         {% endif %}

@@ -291,7 +291,32 @@
     border-radius: var(--radius-md);
 }
 @media (max-width: 640px) {
+    .dashboard {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    .dashboard-main {
+        width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+    .analytics-header {
+        min-width: 0;
+    }
+    .analytics-header h1 {
+        font-size: 1.25rem;
+        line-height: 1.2;
+    }
+    .analytics-chart-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
     .analytics-chart-card { padding: 14px; }
+    .analytics-chart-card,
+    .analytics-section,
+    .analytics-bars {
+        min-width: 0;
+    }
     .analytics-bar-row {
         grid-template-columns: 1fr 48px;
         gap: 6px 10px;
@@ -299,6 +324,15 @@
     .analytics-bar-label { grid-column: 1 / -1; }
     .analytics-bar-track { grid-column: 1 / 2; }
     .analytics-bar-empty { grid-column: 1 / -1; }
+    .analytics-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .analytics-table {
+        min-width: 620px;
+    }
     .analytics-support-card {
         align-items: flex-start;
         flex-direction: column;
