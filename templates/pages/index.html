@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
-{% block title %}Furozon{% endblock %}
+{% block title %}Furuzon{% endblock %}
 
 {% block content %}
 <!-- Баннер раннего доступа -->
@@ -29,34 +29,29 @@
       <span class="home-hero-dot"></span>
       <span data-i18n="home.hero_kicker">Образовательная платформа</span>
     </div>
-    <h1 class="hero-title" data-i18n="home.hero_title">Учитесь, преподавайте и управляйте обучением в одном месте</h1>
-    <p class="hero-subtitle" data-i18n="home.hero_subtitle">Курсы, группы, уроки, тесты и аналитика для учебных центров, преподавателей и студентов.</p>
+    <h1 class="hero-title" data-i18n="home.hero_title">Учитесь и развивайтесь вместе с Furuzon</h1>
+    <p class="hero-subtitle" data-i18n="home.hero_subtitle">Курсы, преподаватели и учебные центры — всё в одном месте</p>
     <div class="hero-actions">
-      <a href="/courses/catalog" class="btn btn-primary btn-lg home-cta-primary" data-i18n="home.cta_courses">Найти курс</a>
+      <a href="/courses/catalog" class="btn btn-lg home-cta-primary" data-i18n="home.cta_courses">Смотреть курсы</a>
       {% if user %}
-      <a href="/dashboard" class="btn btn-outline btn-lg" data-i18n="hero.cta_dashboard">Перейти в кабинет</a>
+      <a href="/dashboard" class="btn btn-outline btn-lg home-cta-secondary" data-i18n="hero.cta_dashboard">Мой кабинет</a>
       {% else %}
-      <a href="/register" class="btn btn-outline btn-lg" data-i18n="hero.cta_register">Начать бесплатно</a>
+      <a href="/register" class="btn btn-outline btn-lg home-cta-secondary" data-i18n="hero.cta_register">Начать бесплатно</a>
       {% endif %}
     </div>
-    <div class="home-hero-chips">
-      <span class="home-chip"><span class="home-chip-icon">📚</span><span data-i18n="hero.card1">Качественные курсы</span></span>
-      <span class="home-chip"><span class="home-chip-icon">🏆</span><span data-i18n="hero.card2">Достижения</span></span>
-      <span class="home-chip"><span class="home-chip-icon">👩‍🏫</span><span data-i18n="hero.card3">Лучшие преподаватели</span></span>
-    </div>
-  </div>
-  <div class="hero-illustration" aria-hidden="true">
-    <div class="hero-card floating">
-      <span class="hero-card-icon">📚</span>
-      <span data-i18n="hero.card1">Качественные курсы</span>
-    </div>
-    <div class="hero-card floating delay-1">
-      <span class="hero-card-icon">🏆</span>
-      <span data-i18n="hero.card2">Достижения</span>
-    </div>
-    <div class="hero-card floating delay-2">
-      <span class="hero-card-icon">👩‍🏫</span>
-      <span data-i18n="hero.card3">Лучшие преподаватели</span>
+    <div class="home-hero-features">
+      <div class="home-hero-feat">
+        <span class="home-hero-feat-icon">✦</span>
+        <span data-i18n="home.hero_feat1">Бесплатный доступ</span>
+      </div>
+      <div class="home-hero-feat">
+        <span class="home-hero-feat-icon">✦</span>
+        <span data-i18n="home.hero_feat2">Видеоуроки и тесты</span>
+      </div>
+      <div class="home-hero-feat">
+        <span class="home-hero-feat-icon">✦</span>
+        <span data-i18n="home.hero_feat3">Группы и аналитика</span>
+      </div>
     </div>
   </div>
 </section>
@@ -65,7 +60,7 @@
 <section class="home-roles-section reveal">
   <div class="home-section-wrap">
     <div class="section-header">
-      <h2 data-i18n="home.roles_title">Для кого Furozon</h2>
+      <h2 data-i18n="home.roles_title">Для кого Furuzon</h2>
       <p data-i18n="home.roles_sub">Платформа создана для трёх ролей — каждому своё</p>
     </div>
     <div class="home-roles-grid">
@@ -174,7 +169,7 @@
 <!-- ── Преимущества ────────────────────────────── -->
 <section class="features-section reveal">
   <div class="section-header">
-    <h2 data-i18n="home.why_us">Почему Фурузон?</h2>
+    <h2 data-i18n="home.why_us">Почему Furuzon?</h2>
   </div>
   <div class="features-grid">
     <div class="feature-card">

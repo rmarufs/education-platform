@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }, { threshold: 0.1 });
 
-  document.querySelectorAll('.course-card, .feature-card, .stat-item, .reveal-card').forEach((el) => {
+  document.querySelectorAll('.course-card, .feature-card, .stat-item, .reveal-card, .reveal').forEach((el) => {
     observer.observe(el);
   });
 

@@ -466,68 +466,130 @@ body.dark .logo-copy::after {
 .delay-1    { animation-delay: .6s; }
 .delay-2    { animation-delay: 1.2s; }
 
-/* ── Home Hero: kicker + chips ──────────────────────────────── */
+/* ── Home Hero: redesigned ─────────────────────────────────── */
 .home-hero {
-  align-items: flex-start;
-  gap: 56px;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 76px 24px 64px;
+  background:
+    radial-gradient(ellipse at 65% 85%, rgba(96,165,250,.28) 0%, transparent 55%),
+    linear-gradient(145deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
+  overflow: hidden;
+}
+.home-hero::before {
+  content: '';
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.08);
+  top: -80px;
+  right: -60px;
+  pointer-events: none;
+}
+.home-hero::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  bottom: -40px;
+  left: -30px;
+  pointer-events: none;
 }
 .home-hero-content {
-  max-width: 560px;
-  flex: 1 1 auto;
+  max-width: 640px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
+.home-hero .hero-title {
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  margin-bottom: 16px;
+}
+.home-hero .hero-subtitle {
+  font-size: 1.05rem;
+  opacity: .92;
+  margin-bottom: 32px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* ── Home Hero: kicker ─────────────────────────────────────── */
 .home-hero-kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
   border-radius: 999px;
   padding: 5px 14px;
   font-size: .78rem;
   font-weight: 600;
-  letter-spacing: .06em;
+  letter-spacing: .05em;
   text-transform: uppercase;
-  color: rgba(255,255,255,.92);
-  margin-bottom: 18px;
+  color: rgba(255,255,255,.9);
+  margin-bottom: 20px;
 }
 .home-hero-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74,222,128,.32);
+  box-shadow: 0 0 0 3px rgba(74,222,128,.3);
   flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
 }
-.home-hero-chips {
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(74,222,128,.3); }
+  50%      { box-shadow: 0 0 0 6px rgba(74,222,128,.12); }
+}
+/* ── Home Hero: CTA buttons ────────────────────────────────── */
+.home-cta-primary {
+  background: #fff;
+  color: #1e3a8a;
+  border-color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(0,0,0,.1);
+}
+.home-cta-primary:hover {
+  background: #f0f4ff;
+  color: #1e3a8a;
+  border-color: #f0f4ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.14);
+}
+.home-cta-secondary {
+  color: #fff;
+  border-color: rgba(255,255,255,.45);
+}
+.home-cta-secondary:hover {
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  border-color: rgba(255,255,255,.6);
+}
+/* ── Home Hero: feature highlights ─────────────────────────── */
+.home-hero-features {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 28px;
+  gap: 8px 22px;
+  margin-top: 32px;
 }
-.home-chip {
+.home-hero-feat {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 999px;
-  font-size: .8rem;
+  font-size: .82rem;
   font-weight: 500;
-  color: rgba(255,255,255,.92);
+  color: rgba(255,255,255,.8);
 }
-.home-chip-icon { font-size: .95rem; line-height: 1; }
-.home-cta-primary {
-  background: #fff;
-  color: var(--primary-dark);
-  border-color: #fff;
-}
-.home-cta-primary:hover {
-  background: var(--primary-light);
-  border-color: var(--primary-light);
-  color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255,255,255,.25);
+.home-hero-feat-icon {
+  font-size: .55rem;
+  color: rgba(255,255,255,.45);
 }
 
 /* ── Home Sections: общая обёртка ──────────────────────────── */
