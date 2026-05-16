@@ -166,6 +166,31 @@
     this.progressTimer = window.setInterval(function () {
       self.refreshProgress();
     }, 250);
+
+    this.idleTimer = null;
+    this.shell.addEventListener('mousemove', function () { self.resetIdle(); });
+    this.shell.addEventListener('touchstart', function () { self.resetIdle(); }, { passive: true });
+    this.shell.addEventListener('touchmove', function () { self.resetIdle(); }, { passive: true });
+    this.shell.addEventListener('click', function () { self.resetIdle(); });
+    this.shell.addEventListener('mouseleave', function () {
+      if (self.isPlaying() && !self.seeking) {
+        clearTimeout(self.idleTimer);
+        self.idleTimer = setTimeout(function () {
+          self.shell.classList.add('vp-idle');
+        }, 500);
+      }
+    });
+  };
+
+  ProtectedVideoPlayer.prototype.resetIdle = function () {
+    var self = this;
+    this.shell.classList.remove('vp-idle');
+    clearTimeout(this.idleTimer);
+    if (this.isPlaying() && !this.seeking) {
+      this.idleTimer = setTimeout(function () {
+        self.shell.classList.add('vp-idle');
+      }, 2500);
+    }
   };
 
   ProtectedVideoPlayer.prototype.initHtml5 = function () {
@@ -283,6 +308,7 @@
     this.shell.classList.toggle('vp-playing', this.playing);
     if (this.playBtn) this.playBtn.textContent = this.playing ? '\u23f8' : '\u25b6';
     if (this.bigPlay) this.bigPlay.textContent = this.playing ? '' : '\u25b6';
+    this.resetIdle();
   };
 
   ProtectedVideoPlayer.prototype.isPlaying = function () {
@@ -403,6 +429,7 @@
       self.seeking = true;
       self.wasPlayingBeforeSeek = self.isPlaying();
       self.shell.classList.add('vp-seeking');
+      self.resetIdle();
       if (self.wasPlayingBeforeSeek) self.pause();
       preview(event);
     }
@@ -410,6 +437,7 @@
     function move(event) {
       if (!self.seeking) return;
       event.preventDefault();
+      self.resetIdle();
       preview(event);
     }
 
@@ -422,6 +450,7 @@
       self.seeking = false;
       self.shell.classList.remove('vp-seeking');
       if (self.wasPlayingBeforeSeek) self.play();
+      self.resetIdle();
     }
 
     if (window.PointerEvent) {

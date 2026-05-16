@@ -277,6 +277,28 @@ body.vp-theater-open .navbar {
   border-radius: var(--radius, 14px);
 }
 
+.vp-shell {
+  transition: cursor 0.3s ease;
+}
+
+.vp-shell.vp-idle {
+  cursor: none;
+}
+
+.vp-controls,
+.vp-theater-close,
+.vp-watermark {
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.vp-shell.vp-idle .vp-controls,
+.vp-shell.vp-idle .vp-theater-close,
+.vp-shell.vp-idle .vp-watermark {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .vp-shell {
     border-radius: 0;
