@@ -247,7 +247,7 @@
                                         <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/edit" style="color:var(--text);font-size:0.85rem;flex:1;">{{ vocab.title }}</a>
                                         <span style="font-size:0.75rem;color:var(--text-muted);">{{ vocab.items|length }} <span data-i18n="vocabulary.words_short">сл.</span></span>
                                         <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/results" style="color:var(--primary);font-size:0.75rem;" data-i18n="vocabulary.results_link">Результаты</a>
-                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="return confirm(t('vocabulary.confirm_delete'))">
+                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'vocabulary.confirm_delete', 'confirm.action_irreversible')">
                                           <button type="submit" class="btn btn-danger btn-xs" style="padding:2px 6px;">✕</button>
                                         </form>
                                       </div>
@@ -332,7 +332,7 @@
                                         <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/edit" style="color:var(--text);font-size:0.85rem;flex:1;">{{ vocab.title }}</a>
                                         <span style="font-size:0.75rem;color:var(--text-muted);">{{ vocab.items|length }} <span data-i18n="vocabulary.words_short">сл.</span></span>
                                         <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/results" style="color:var(--primary);font-size:0.75rem;" data-i18n="vocabulary.results_link">Результаты</a>
-                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="return confirm(t('vocabulary.confirm_delete'))">
+                                        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'vocabulary.confirm_delete', 'confirm.action_irreversible')">
                                           <button type="submit" class="btn btn-danger btn-xs" style="padding:2px 6px;">✕</button>
                                         </form>
                                       </div>
@@ -718,22 +718,6 @@ function openEditLessonModal(dataset) {
     setRichTextValue('el-desc-input', dataset.lessonDesc || '');
     _openModalOverlay('edit-lesson-modal');
 }
-async function confirmAndSubmit(e, titleKey, descKey, titleParams = {}) {
-    e.preventDefault();
-    const confirmed = await showConfirmModal(
-        t(titleKey, titleParams),
-        t(descKey),
-        t('confirm.confirm'),
-        t('action.cancel'),
-        true
-    );
-    if (confirmed) {
-        const form = e.target || e.currentTarget;
-        form.onsubmit = null;
-        form.submit();
-    }
-}
-
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') ['add-module-modal','edit-module-modal','edit-group-modal','add-student-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
 });

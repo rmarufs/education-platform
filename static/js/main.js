@@ -25,6 +25,15 @@ function showToast(message, type = 'success') {
 /* ── Глобальная кастомная confirm-модалка (заменяет нативный confirm) ── */
 let _confirmResolve = null;
 
+function resolveModalCopy(value, params = {}) {
+  if (typeof value !== 'string' || !value) return '';
+  if (window.t) {
+    const translated = t(value, params);
+    if (translated !== value || value.includes('.')) return translated;
+  }
+  return value;
+}
+
 function showConfirmModal(message, hint = '', confirmText, cancelText, isDanger = true) {
   return new Promise((resolve) => {
     _confirmResolve = resolve;
@@ -72,10 +81,25 @@ function _resolveConfirmModal(result) {
  * Используется в onsubmit форм вместо нативного browser-confirm.
  * onsubmit="confirmAndSubmit(event, 'Сообщение');"
  */
-async function confirmAndSubmit(event, message, hint = '') {
+async function confirmAndSubmit(
+  event,
+  message,
+  hint = '',
+  params = null,
+  confirmText,
+  cancelText,
+  isDanger = true,
+) {
   event.preventDefault();
   const form = event.target || event.currentTarget;
-  const confirmed = await showConfirmModal(message, hint);
+  const resolvedParams = params && typeof params === 'object' && !Array.isArray(params) ? params : {};
+  const confirmed = await showConfirmModal(
+    resolveModalCopy(message, resolvedParams),
+    resolveModalCopy(hint, resolvedParams),
+    resolveModalCopy(confirmText, resolvedParams),
+    resolveModalCopy(cancelText, resolvedParams),
+    isDanger,
+  );
   if (confirmed) {
     form.onsubmit = null;
     form.submit();

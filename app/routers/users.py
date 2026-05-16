@@ -246,10 +246,26 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.teacher_id == user.id,
         OrganizationTeacher.status == "pending"
     ).all()
-    
-    # Все заявки этого преподавателя в организации (все статусы) — для секции "Мои заявки"
-    teacher_applications = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.organization)).filter(
-        OrganizationTeacher.teacher_id == user.id
+
+    accepted_notice_links = db.query(OrganizationTeacher).options(
+        joinedload(OrganizationTeacher.organization)
+    ).filter(
+        OrganizationTeacher.teacher_id == user.id,
+        OrganizationTeacher.status == "accepted",
+        OrganizationTeacher.was_accepted_notification == True,  # noqa: E712
+    ).order_by(OrganizationTeacher.created_at.desc()).all()
+    accepted_application_notice = accepted_notice_links[0] if accepted_notice_links else None
+    if accepted_notice_links:
+        for link in accepted_notice_links:
+            link.was_accepted_notification = False
+        db.commit()
+
+    # Для секции оставляем только реально актуальные ожидающие заявки.
+    teacher_applications = db.query(OrganizationTeacher).options(
+        joinedload(OrganizationTeacher.organization)
+    ).filter(
+        OrganizationTeacher.teacher_id == user.id,
+        OrganizationTeacher.status == "pending",
     ).order_by(OrganizationTeacher.created_at.desc()).all()
 
     # Группы, в которых преподаватель назначен
@@ -271,6 +287,7 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
             "courses": courses,
             "categories": categories,
             "pending_invites": pending_invites,
+            "accepted_application_notice": accepted_application_notice,
             "my_org_applications": teacher_applications,  # backward compat
             "teacher_applications": teacher_applications,
             "my_groups": my_groups,

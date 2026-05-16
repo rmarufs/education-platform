@@ -33,6 +33,7 @@ class OrganizationTeacher(Base):
     organization_id = Column(Integer, ForeignKey("organizations.id"))
     teacher_id = Column(Integer, ForeignKey("users.id"))
     status = Column(String, default="pending")  # pending, accepted, rejected
+    was_accepted_notification = Column(Boolean, default=False, nullable=False)
     cover_letter = Column(Text, nullable=True)   # сопроводительное письмо от преподавателя
     attachment = Column(String(500), nullable=True)  # путь к прикреплённому файлу
     created_at = Column(DateTime, default=datetime.utcnow)

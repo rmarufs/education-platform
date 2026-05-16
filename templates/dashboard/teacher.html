@@ -19,10 +19,24 @@
                 </h1>
                 <p data-i18n="teacher.subtitle">Управляйте своими курсами и помогайте студентам учиться</p>
             </div>
-            <button class="btn btn-primary" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
-                + Создать курс
-            </button>
+            <div class="pending-actions">
+                <a href="/groups/analytics" class="btn btn-outline">
+                    📊 <span data-i18n="analytics.open">Аналитика</span>
+                </a>
+                <button class="btn btn-primary" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
+                    + Создать курс
+                </button>
+            </div>
         </div>
+
+        {% if accepted_application_notice %}
+        <section class="mb-4">
+            <div class="alert alert-success">
+                <span data-i18n="org.congrats">Поздравляем!</span>
+                <span data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ accepted_application_notice.organization.name|escape }}"}'>Вы приняты в учебный центр {{ accepted_application_notice.organization.name }}</span>
+            </div>
+        </section>
+        {% endif %}
 
         {% if pending_invites %}
         <section class="mb-4">
@@ -51,24 +65,9 @@
             <div class="section-label" data-i18n="org.my_applications">🏢 Мои заявки в учебные центры</div>
             <div style="background: var(--bg-card, white); border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); padding: 4px 16px;">
                 {% for app in teacher_applications %}
-                {% if app.status == 'accepted' %}
-                <div class="alert alert-success org-accept-notice" data-org-id="{{ app.organization_id }}" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        🎉 <span data-i18n="org.congrats">Поздравляем!</span> 
-                        <span data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ app.organization.name|escape }}"}'>Вы приняты в учебный центр {{ app.organization.name }}</span>
-                    </div>
-                    <button type="button" class="notice-close" style="background:none; border:none; font-size:1.4rem; cursor:pointer; padding:0 5px; color:inherit; line-height:1;">×</button>
-                </div>
-                {% endif %}
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; {% if not loop.last %}border-bottom: 1px solid rgba(0,0,0,0.05);{% endif %}">
                     <div>
-                        {% if app.status == 'accepted' %}
-                            <a href="/organization/{{ app.organization_id }}" style="font-size: 1.05rem; font-weight: 600; color: var(--accent, #6366f1); text-decoration: none;">
-                                🏢 {{ app.organization.name }}
-                            </a>
-                        {% else %}
-                            <strong style="font-size: 1.05rem;">🏢 {{ app.organization.name }}</strong>
-                        {% endif %}
+                        <strong style="font-size: 1.05rem;">🏢 {{ app.organization.name }}</strong>
                         <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--text-muted);" data-i18n="org.sent_date" data-i18n-params='{"date": "{{ app.created_at.strftime("%d.%m.%Y") }}"}'>Отправлена: {{ app.created_at.strftime("%d.%m.%Y") }}</p>
                     </div>
                     <div>
@@ -91,9 +90,6 @@
         <section class="mb-4">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
                 <div class="section-label" data-i18n="{{ 'group.my_group' if my_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if my_groups|length == 1 else 'Мои группы' }}</div>
-                <a href="/groups/analytics" class="btn btn-outline btn-sm">
-                    📊 <span data-i18n="analytics.open">Аналитика</span>
-                </a>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:12px;">
                 {% for group in my_groups %}
@@ -342,29 +338,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.querySelectorAll('.org-accept-notice').forEach(notice => {
-    const orgId = notice.dataset.orgId;
-    const key = `dismissed_org_invite_${orgId}`;
-
-    // Скрываем если уже закрывали
-    if (localStorage.getItem(key)) {
-        notice.style.display = 'none';
-        return;
-    }
-
-    // Обработчик кнопки закрытия
-    const closeBtn = notice.querySelector('.notice-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            notice.style.transition = 'opacity 0.3s';
-            notice.style.opacity = '0';
-            setTimeout(() => notice.style.display = 'none', 300);
-            localStorage.setItem(key, '1');
-        });
-    }
-});
-</script>
 <style>
 .group-teacher-card:hover {
     box-shadow: 0 6px 24px rgba(99,102,241,0.15);

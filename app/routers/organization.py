@@ -329,6 +329,7 @@ def accept_incoming_teacher(link_id: int, request: Request, db: Session = Depend
     from app.models.user import UserRole
     try:
         org_teacher.status = "accepted"
+        org_teacher.was_accepted_notification = True
         teacher.is_active = True
         teacher.role = UserRole.teacher
         db.commit()
@@ -650,6 +651,7 @@ def accept_invite(invite_id: int, request: Request, db: Session = Depends(get_db
 
     if invite:
         invite.status = "accepted"
+        invite.was_accepted_notification = True
         db.commit()
 
     return RedirectResponse("/dashboard/teacher", status_code=302)

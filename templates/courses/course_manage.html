@@ -84,8 +84,8 @@
                 data-lesson-video-filename="{{ (lesson.video_filename or '') | e }}"
                 data-lesson-desc="{{ (lesson.description or '') | e }}"
                 onclick="openEditLessonModal(this.dataset)">✏️</button>
-              <form action="/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'Удалить урок?', 'Действие нельзя отменить.')">
-                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок">🗑️</button>
+              <form action="/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'manage.confirm_delete_lesson', 'confirm.action_irreversible')">
+                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="action.delete" data-i18n-prop="title">🗑️</button>
               </form>
             </div>
           </div>
@@ -482,9 +482,11 @@ function openEditLessonModal(dataset) {
 }
 async function deleteModule(id) {
   const confirmed = await showConfirmModal(
-    t('manage.confirm_del_mod') || 'Удалить модуль?',
-    'Все уроки модуля будут удалены. Это действие нельзя отменить.',
-    'Удалить', 'Отмена', true
+    t('manage.confirm_del_mod'),
+    t('manage.confirm_del_mod_hint'),
+    t('action.delete'),
+    t('action.cancel'),
+    true
   );
   if (!confirmed) return;
   const r = await fetch(`/modules/${id}/delete`, { method: 'POST' });
@@ -497,8 +499,11 @@ document.addEventListener('DOMContentLoaded', () => {
     f.addEventListener('submit', async function(e) {
       e.preventDefault();
       const confirmed = await showConfirmModal(
-        t('manage.del_file') || 'Удалить файл?',
-        '', 'Удалить', 'Отмена', true
+        t('manage.del_file'),
+        t('confirm.action_irreversible'),
+        t('action.delete'),
+        t('action.cancel'),
+        true
       );
       if (confirmed) { f.onsubmit = null; f.submit(); }
     });
