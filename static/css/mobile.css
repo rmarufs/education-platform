@@ -302,7 +302,7 @@
 
   .user-dashboard--teacher .teacher-dashboard-intro h1 {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 1.08rem;
     margin-bottom: 0;
   }
 
@@ -319,9 +319,9 @@
   .user-dashboard--teacher .teacher-dashboard-actions .btn {
     width: auto !important;
     flex: 0 0 auto;
-    min-height: 38px;
-    padding: 0 10px;
-    font-size: .84rem;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: .88rem;
     white-space: nowrap;
   }
 
@@ -1036,15 +1036,15 @@
     font-size: 1.28rem;
   }
   .user-dashboard--teacher .teacher-dashboard-intro h1 {
-    font-size: .98rem;
+    font-size: 1.02rem;
   }
   .user-dashboard--teacher .teacher-dashboard-actions {
     gap: 6px;
   }
   .user-dashboard--teacher .teacher-dashboard-actions .btn {
-    min-height: 36px;
-    padding: 0 9px;
-    font-size: .8rem;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: .84rem;
   }
   @media (max-width: 359px) {
     .user-dashboard--teacher .teacher-dashboard-actions {

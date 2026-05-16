@@ -19,14 +19,13 @@
                 </h1>
                 <p data-i18n="teacher.subtitle">Управляйте своими курсами и помогайте студентам учиться</p>
             </div>
+            {% if courses %}
             <div class="pending-actions teacher-dashboard-actions">
-                <a href="/groups/analytics" class="btn btn-outline">
-                    📊 <span data-i18n="analytics.open">Аналитика</span>
-                </a>
                 <button class="btn btn-primary" id="btn-create-course" onclick="openCreateModal()" data-i18n="teacher.add_course">
                     + Создать курс
                 </button>
             </div>
+            {% endif %}
         </div>
 
         {% if accepted_application_notice %}
