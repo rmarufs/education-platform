@@ -1627,3 +1627,293 @@
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   Студенческий мобильный UX — улучшения v1
+   Только @media (max-width: 768px). Desktop не затронут.
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── 1. Карточки уроков в содержании курса/группы ── */
+
+  .curriculum-lessons {
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .curriculum-lesson {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid var(--border) !important;
+    min-height: 48px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    background: var(--bg-card);
+  }
+
+  .curriculum-lesson:first-child {
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .curriculum-lesson:last-child {
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .curriculum-lesson a {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .curriculum-lesson > span:first-child {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .curriculum-lesson .badge-quiz {
+    flex-shrink: 0;
+    align-self: center;
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+
+  .curriculum-lesson.done {
+    background: color-mix(in srgb, var(--success, #22c55e) 5%, var(--bg-card));
+  }
+
+  /* ── 2. Кнопки тестов модулей и групп ── */
+
+  .curriculum-module-quiz-link,
+  .group-student-quiz-link {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 10px !important;
+    background: var(--primary-light, rgba(99,102,241,0.08)) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+
+  .curriculum-module-quiz-link.disabled {
+    background: var(--surface-soft) !important;
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+    cursor: not-allowed;
+    font-weight: 500;
+  }
+
+  .curriculum-module-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+  }
+
+  .curriculum-module-main strong {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  .curriculum-module-header {
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
+
+  /* ── 3. Материалы урока — touch-friendly карточки ── */
+
+  .materials-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 !important;
+  }
+
+  .material-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px !important;
+    background: var(--surface-soft, #f8fafc);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 52px;
+  }
+
+  .material-item:last-child {
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  .material-item a {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .material-icon {
+    flex-shrink: 0;
+    font-size: 1.3rem;
+  }
+
+  .material-item .badge {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    padding: 3px 7px;
+    align-self: center;
+  }
+
+  .lesson-materials {
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .lesson-materials h3 {
+    font-size: 0.95rem;
+    margin-bottom: 12px !important;
+  }
+
+  /* ── 4. Словари — улучшенные карточки ── */
+
+  .vocab-card-item {
+    padding: 14px 16px;
+    min-height: 60px;
+    border-radius: 14px;
+  }
+
+  .vocab-card-title {
+    font-size: 0.95rem;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .vocab-card-meta {
+    font-size: 0.78rem;
+    margin-top: 3px;
+  }
+
+  .vocab-card-icon {
+    font-size: 1.6rem;
+  }
+
+  .vocab-card-arrow {
+    font-size: 1.2rem;
+    padding-left: 4px;
+  }
+
+  /* ── 5. Google Forms тест — компактнее на mobile ── */
+
+  .lesson-google-forms-promo {
+    margin: 16px 0;
+  }
+
+  .google-forms-banner {
+    padding: 16px !important;
+    border-radius: 14px !important;
+    gap: 12px !important;
+  }
+
+  .google-forms-banner .banner-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  .google-forms-banner > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .google-forms-banner h3 {
+    font-size: 1rem;
+    margin-bottom: 2px;
+  }
+
+  .google-forms-banner p {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .google-forms-banner .btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    justify-content: center;
+    border-radius: 12px;
+    padding: 0 20px;
+  }
+
+  .google-forms-banner.google-forms-locked {
+    opacity: 0.85;
+  }
+
+  /* ── 6. Блок завершения урока — заметнее, без sticky ── */
+
+  .lesson-complete-bar {
+    margin: 24px 0 8px !important;
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  }
+
+  .lesson-complete-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .lesson-complete-actions .btn,
+  .lesson-complete-actions form .btn {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 1rem !important;
+    font-weight: 700;
+    justify-content: center;
+    border-radius: 12px !important;
+  }
+
+  .complete-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--success, #22c55e) 12%, var(--bg-card));
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  /* ── 7. Мой результат по уроку (журнал группы) ── */
+
+  .group-lesson-journal-result {
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .group-lesson-journal-result h3 {
+    font-size: 0.95rem;
+    margin-bottom: 8px !important;
+  }
+
+}
