@@ -1320,7 +1320,7 @@ const translations = {
     "action.cancel": "Бекор кардан",
     "action.create": "Эҷод кардан",
     "action.save": "Сабт кардан",
-    "action.delete": "Ҳазф кардан",
+    "action.delete": "Ҳазф",
     "action.edit": "Таҳрир кардан",
     "action.close": "Пӯшидан",
     "action.sending": "Ирсол шуда истодааст...",
