@@ -68,6 +68,7 @@
   <!-- Основной контент -->
   <main class="lesson-content">
 
+    {% set lesson_image = lesson.cover_url %}
     <!-- Видео: внешние ссылки (YouTube) или HTML5 -->
     {% if lesson.video_url %}
     <div class="protected-video-container">
@@ -128,6 +129,11 @@
       {% endif %}
     </div>
     
+    {% elif lesson_image is not none and lesson_image|string|trim != '' %}
+    <div class="lesson-cover-main">
+      <img src="{{ lesson_image }}" alt="{{ lesson.title }}"
+           style="display:block;width:100%;height:auto;max-height:720px;object-fit:contain;border-radius:12px;margin-bottom:16px;">
+    </div>
     {% endif %}
 
     <!-- Заголовок и описание -->
@@ -266,9 +272,8 @@
           <input type="url" name="file_url" class="form-input" data-i18n="lesson.mat_link" placeholder="Ссылка на файл" required />
           <select name="file_type" class="form-input">
             <option value="pdf">PDF</option>
-            <option value="ppt">PPT</option>
             <option value="doc">DOC</option>
-            <option value="other" data-i18n="lesson.mat_type_oth">Другое</option>
+            <option value="docx">DOCX</option>
           </select>
           <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.mat_add">Добавить</button>
         </form>

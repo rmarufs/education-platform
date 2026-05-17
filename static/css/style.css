@@ -974,6 +974,52 @@ body.dark .logo-copy::after {
 
 .form-textarea { resize: vertical; min-height: 100px; }
 
+.lesson-media-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.lesson-cover-upload {
+  min-height: 132px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+}
+
+.lesson-cover-upload:hover,
+.lesson-cover-upload.is-dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--text);
+}
+
+.lesson-cover-upload img {
+  width: 100%;
+  max-height: 180px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.lesson-cover-upload small {
+  font-size: .78rem;
+  color: var(--text-subtle);
+}
+
+@media (max-width: 640px) {
+  .lesson-cover-upload {
+    min-height: 118px;
+    padding: 12px;
+  }
+}
+
 .rich-editor {
   display: flex;
   flex-direction: column;

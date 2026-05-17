@@ -15,12 +15,16 @@ from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupPaymentEntry
 from app.ui import templates
-from app.utils.image import compress_and_upload_avatar
+from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
+GROUP_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
+GROUP_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx"}
+GROUP_LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
+GROUP_LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 class BulkAddStudentsPayload(BaseModel):
@@ -82,6 +86,32 @@ def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
     if user.is_teacher:
         return group.teacher_id == user.id
     return False
+
+
+def _validate_group_material_upload(file: UploadFile) -> None:
+    if not file or not file.filename:
+        return
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in GROUP_MATERIAL_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > GROUP_MATERIAL_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
+
+
+def _validate_group_lesson_cover_upload(file: UploadFile) -> None:
+    if not file or not file.filename:
+        return
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in GROUP_LESSON_COVER_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > GROUP_LESSON_COVER_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
 
 
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
@@ -1084,21 +1114,27 @@ async def lesson_create(
         ).first()
         if not module:
             raise HTTPException(status_code=404, detail="Модуль не найден")
+    video_url_value = video_url.strip() if video_url and video_url.strip() else None
+    has_cover_upload = bool(cover and cover.filename)
+    if video_url_value and has_cover_upload:
+        raise HTTPException(status_code=400, detail="Можно добавить либо видео, либо картинку")
+    if has_cover_upload:
+        _validate_group_lesson_cover_upload(cover)
 
     lesson = GroupLesson(
         group_id=group_id,
         group_module_id=module.id if module else None,
         title=title.strip(),
         description=description.strip() if description else None,
-        video_url=video_url.strip() if video_url else None,
+        video_url=video_url_value,
         order=order,
     )
     db.add(lesson)
     db.commit()
     db.refresh(lesson)
 
-    if cover and cover.filename:
-        cover_url = compress_and_upload_avatar(
+    if has_cover_upload:
+        cover_url = upload_lesson_image(
             cover.file,
             public_id=f"group_lessons/lesson_{lesson.id}"
         )
@@ -1113,6 +1149,7 @@ async def lesson_create(
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
             if isinstance(f, UploadFile) and f.filename:
+                _validate_group_material_upload(f)
                 original_name = os.path.basename(f.filename)
                 filename = f"{uuid.uuid4().hex}_{original_name}"
                 save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
@@ -1164,6 +1201,7 @@ async def lesson_edit(
     video_url: Optional[str] = Form(None),
     order: int = Form(0),
     cover: UploadFile = File(None),
+    remove_cover: str = Form("0"),
     db: Session = Depends(get_db),
 ):
     user = _get_user(request, db)
@@ -1193,16 +1231,25 @@ async def lesson_edit(
     lesson.title = title.strip()
     lesson.group_module_id = module.id if module else None
     lesson.description = description.strip() if description else None
-    lesson.video_url = video_url.strip() if video_url else None
+    video_url_value = video_url.strip() if video_url and video_url.strip() else None
+    has_cover_upload = bool(cover and cover.filename)
+    if video_url_value and has_cover_upload:
+        raise HTTPException(status_code=400, detail="Можно добавить либо видео, либо картинку")
+    if has_cover_upload:
+        _validate_group_lesson_cover_upload(cover)
+    lesson.video_url = video_url_value
     lesson.order = order
+    if video_url_value or remove_cover == "1":
+        lesson.cover_url = None
 
-    if cover and cover.filename:
-        cover_url = compress_and_upload_avatar(
+    if has_cover_upload:
+        cover_url = upload_lesson_image(
             cover.file,
             public_id=f"group_lessons/lesson_{lesson.id}"
         )
         if cover_url:
             lesson.cover_url = cover_url
+            lesson.video_url = None
 
     # Process files if any
     form_data = await request.form()
@@ -1211,6 +1258,7 @@ async def lesson_edit(
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
             if isinstance(f, UploadFile) and f.filename:
+                _validate_group_material_upload(f)
                 original_name = os.path.basename(f.filename)
                 filename = f"{uuid.uuid4().hex}_{original_name}"
                 save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
@@ -1279,6 +1327,7 @@ async def lesson_material_add(
 
     material_title = title.strip()
     if file and file.filename:
+        _validate_group_material_upload(file)
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         original_name = os.path.basename(file.filename)
         filename = f"{uuid.uuid4().hex}_{original_name}"

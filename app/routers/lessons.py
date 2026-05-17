@@ -20,12 +20,15 @@ from app.models.comment import Comment
 from app.models.course import Course
 from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
+from app.utils.image import upload_lesson_image
 
 router = APIRouter(prefix="/lessons")
 from app.ui import templates
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
 MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
-MATERIAL_EXTENSIONS = {"pdf", "doc", "docx", "ppt", "pptx"}
+MATERIAL_EXTENSIONS = {"pdf", "doc", "docx"}
+LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
+LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def require_teacher(request: Request, db: Session):
@@ -50,6 +53,20 @@ def _validate_material_upload(file: UploadFile) -> str:
     if size > MATERIAL_UPLOAD_MAX_BYTES:
         raise HTTPException(status_code=400, detail="Файл слишком большой")
     return ext
+
+
+def _validate_lesson_cover_upload(file: UploadFile) -> None:
+    if not file or not file.filename:
+        return
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in LESSON_COVER_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
+
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > LESSON_COVER_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
 
 
 def _save_uploaded_files(files, lesson_id, db):
@@ -84,6 +101,7 @@ async def create_lesson(
     title: str = Form(...),
     video_url: str = Form(""),
     description: str = Form(""),
+    cover: UploadFile = File(None),
     files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
@@ -97,18 +115,33 @@ async def create_lesson(
     course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
+    video_url_value = video_url.strip() if video_url and video_url.strip() else None
+    has_cover_upload = bool(cover and cover.filename)
+    if video_url_value and has_cover_upload:
+        raise HTTPException(status_code=400, detail="Можно добавить либо видео, либо картинку")
+    if has_cover_upload:
+        _validate_lesson_cover_upload(cover)
 
     max_order = db.query(Lesson).filter(Lesson.module_id == module_id).count()
     lesson = Lesson(
         module_id=module_id,
         title=title,
-        video_url=video_url.strip() if video_url and video_url.strip() else None,
+        video_url=video_url_value,
         description=description or None,
         order_index=max_order,
     )
     db.add(lesson)
     db.commit()
     db.refresh(lesson)
+
+    if has_cover_upload:
+        cover_url = upload_lesson_image(
+            cover.file,
+            public_id=f"lessons/lesson_{lesson.id}",
+        )
+        if cover_url:
+            lesson.cover_url = cover_url
+            db.commit()
 
     # Сохраняем загруженные файлы
     _save_uploaded_files(files, lesson.id, db)
@@ -237,6 +270,8 @@ async def edit_lesson(
     title: str = Form(...),
     video_url: str = Form(""),
     description: str = Form(""),
+    cover: UploadFile = File(None),
+    remove_cover: str = Form("0"),
     files: list[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
@@ -250,10 +285,26 @@ async def edit_lesson(
     course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
+    video_url_value = video_url.strip() if video_url and video_url.strip() else None
+    has_cover_upload = bool(cover and cover.filename)
+    if video_url_value and has_cover_upload:
+        raise HTTPException(status_code=400, detail="Можно добавить либо видео, либо картинку")
+    if has_cover_upload:
+        _validate_lesson_cover_upload(cover)
 
     lesson.title = title
-    lesson.video_url = video_url.strip() if video_url and video_url.strip() else None
+    lesson.video_url = video_url_value
     lesson.description = description or None
+    if video_url_value or remove_cover == "1":
+        lesson.cover_url = None
+    if has_cover_upload:
+        cover_url = upload_lesson_image(
+            cover.file,
+            public_id=f"lessons/lesson_{lesson.id}",
+        )
+        if cover_url:
+            lesson.cover_url = cover_url
+            lesson.video_url = None
     db.commit()
 
     # Сохраняем новые загруженные файлы
@@ -296,6 +347,9 @@ def add_material(
     course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
     if not course:
         raise HTTPException(status_code=403)
+    file_type = file_type.lower().strip()
+    if file_type not in MATERIAL_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
 
     material = Material(lesson_id=lesson_id, title=title, file_url=file_url, file_type=file_type)
     db.add(material)
