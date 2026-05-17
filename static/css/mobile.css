@@ -197,7 +197,14 @@
     padding: 12px 14px;
     gap: 10px;
   }
-  .catalog-view-switch { display: none; }
+  .catalog-view-switch {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .catalog-view-btn {
+    width: 34px;
+    height: 34px;
+  }
   .contact-grid { grid-template-columns: 1fr; }
   .contact-grid-resp { grid-template-columns: 1fr !important; }
 
