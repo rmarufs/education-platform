@@ -1386,10 +1386,6 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
             .first()
         )
         group_has_progress = bool(journal_progress or vocab_progress)
-    current_payment = _student_month_payment_entry(db, group_id, user.id, _month_start())
-    payment_current_paid = bool(current_payment and current_payment.is_paid)
-    payment_overdue = _student_payment_overdue(db, group_id, user.id)
-
     return templates.TemplateResponse("groups/student_view.html", {
         "request": request,
         "user": user,
@@ -1398,8 +1394,6 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         "ordered_lessons": ordered_lessons,
         "group_has_progress": group_has_progress,
         "membership": membership,
-        "payment_current_paid": payment_current_paid,
-        "payment_overdue": payment_overdue,
     })
 
 
