@@ -185,27 +185,10 @@
         <img src="{{ lesson_image }}"
              style="width:100%;max-height:480px;object-fit:cover;border-radius:12px;margin-bottom:16px;">
     </div>
-    {% else %}
-    <div class="empty-state" style="margin-bottom: 1.5rem;">
-      <span class="empty-icon">📄</span>
-      <p data-i18n="group.lesson_no_media">В этом уроке пока нет медиа</p>
-    </div>
     {% endif %}
 
     <!-- Заголовок и описание -->
     <div class="lesson-header">
-      <div class="group-lesson-meta">
-        <a href="{{ group_return_url }}" data-i18n="group.back_to_group">← К группе</a>
-        <span>{{ group.name }}</span>
-        {% if lesson.group_module %}
-        <span>·</span>
-        <span data-i18n="group.module">Модуль</span>
-        <span>{{ lesson.group_module.title }}</span>
-        {% else %}
-        <span>·</span>
-        <span data-i18n="group.lessons_without_module">Уроки без модуля</span>
-        {% endif %}
-      </div>
       <h1>{{ lesson.title }}</h1>
       {% if lesson.description %}
       <div class="lesson-description rich-text-content">{{ lesson.description | clean_html }}</div>
@@ -320,22 +303,6 @@
 </div>
 
 <style>
-  .group-lesson-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
-  .group-lesson-meta a {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
   .group-lesson-quiz-nav {
     text-decoration: none;
   }
