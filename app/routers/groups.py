@@ -1378,7 +1378,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         )
         vocab_progress = (
             db.query(VocabularyAttempt.id)
-            .join(VocabularySet, VocabularyAttempt.vocab_id == VocabularySet.id)
+            .join(VocabularySet, VocabularyAttempt.vocab_set_id == VocabularySet.id)
             .filter(
                 VocabularyAttempt.student_id == user.id,
                 VocabularySet.lesson_id.in_(ordered_lesson_ids),
