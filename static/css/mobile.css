@@ -405,13 +405,33 @@
   }
 
   .user-dashboard--teacher .teacher-dashboard-header {
-    gap: 10px;
+    position: relative;
+    gap: 14px;
+    overflow: hidden;
+    padding: 18px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 54%, #16a34a 100%);
+    box-shadow: 0 14px 34px rgba(29,78,216,.18);
   }
 
   .user-dashboard--teacher .teacher-dashboard-intro h1 {
-    color: var(--text-muted);
-    font-size: 1.08rem;
-    margin-bottom: 0;
+    color: #fff;
+    font-size: 1.22rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 6px;
+    text-shadow: 0 1px 12px rgba(15,23,42,.14);
+  }
+
+  .user-dashboard--teacher .teacher-dashboard-intro p {
+    display: block;
+    max-width: 30rem;
+    margin: 0;
+    color: rgba(255,255,255,.86);
+    font-size: .9rem;
+    line-height: 1.45;
   }
 
   .user-dashboard--teacher .teacher-dashboard-actions {
@@ -427,9 +447,13 @@
   .user-dashboard--teacher .teacher-dashboard-actions .btn {
     width: auto !important;
     flex: 0 0 auto;
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: .88rem;
+    min-height: 42px;
+    padding: 0 16px;
+    border-color: rgba(255,255,255,.9);
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 8px 18px rgba(15,23,42,.14);
+    font-size: .9rem;
     white-space: nowrap;
   }
 
@@ -682,24 +706,74 @@
   .user-dashboard--teacher .group-teacher-card {
     flex: 1 1 100%;
     min-width: 0 !important;
-    padding: 12px !important;
-    border-radius: 16px !important;
+    min-height: 70px;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    border-color: color-mix(in srgb, var(--primary) 16%, var(--border)) !important;
+    box-shadow: 0 1px 2px rgba(15,23,42,.06);
+  }
+
+  .user-dashboard--teacher .course-card {
+    border-radius: 20px;
+    border-color: color-mix(in srgb, var(--primary) 12%, var(--border));
+    box-shadow: 0 8px 24px rgba(15,23,42,.07);
+    overflow: hidden;
+  }
+
+  .user-dashboard--teacher .course-card-header {
+    height: 96px;
+  }
+
+  .user-dashboard--teacher .course-card-body {
+    padding: 15px 16px 12px;
+  }
+
+  .user-dashboard--teacher .course-title {
+    font-size: 1.04rem;
+    line-height: 1.28;
+  }
+
+  .user-dashboard--teacher .course-desc {
+    font-size: .86rem;
+    line-height: 1.45;
+  }
+
+  .user-dashboard--teacher .course-meta {
+    margin-top: 2px;
+  }
+
+  .user-dashboard--teacher .course-date {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    font-size: .76rem;
   }
 
   .user-dashboard--teacher .teacher-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    padding: 12px 14px 14px;
+    background: var(--surface-soft);
+    border-top: 1px solid var(--border);
   }
 
   .user-dashboard--teacher .teacher-actions .btn {
     width: 100%;
     min-width: 0;
+    min-height: 42px;
     padding: 0 10px;
+    border-radius: 12px;
   }
 
   .user-dashboard--teacher .teacher-actions .delete-course-btn {
     grid-column: 1 / -1;
+    border-color: #fecaca;
+    background: #fef2f2;
   }
 
   .user-dashboard .empty-state {
@@ -1168,6 +1242,12 @@
   }
   .user-dashboard .course-card-header {
     height: 64px;
+  }
+  .user-dashboard--teacher .teacher-dashboard-intro h1 {
+    font-size: 1.14rem;
+  }
+  .user-dashboard--teacher .course-card-header {
+    height: 86px;
   }
   .user-dashboard .course-card > .course-cover {
     height: 48px;
