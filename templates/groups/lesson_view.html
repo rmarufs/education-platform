@@ -393,17 +393,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("lesson-sidebar-toggle");
   const overlay = document.getElementById("lesson-sidebar-overlay");
   const closeBtn = document.getElementById("lesson-sidebar-close");
+  const desktopMq = window.matchMedia("(min-width: 769px)");
   if (!layout || !toggle || !overlay) return;
+
+  function setPageScrollLocked(locked) {
+    const isLocked = document.body.classList.contains("lesson-sidebar-open");
+    if (locked === isLocked) return;
+
+    if (locked) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.dataset.lessonScrollY = String(scrollY);
+      document.body.classList.add("lesson-sidebar-open");
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.width = "100%";
+      return;
+    }
+
+    const scrollY = Number.parseInt(document.body.dataset.lessonScrollY || "0", 10) || 0;
+    document.body.classList.remove("lesson-sidebar-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    delete document.body.dataset.lessonScrollY;
+    window.scrollTo(0, scrollY);
+  }
 
   function setSidebarOpen(open) {
     layout.classList.toggle("sidebar-open", open);
-    document.body.classList.toggle("lesson-sidebar-open", open);
+    if (desktopMq.matches) {
+      setPageScrollLocked(false);
+    } else {
+      setPageScrollLocked(open);
+    }
     toggle.setAttribute("aria-expanded", String(open));
   }
 
   toggle.addEventListener("click", () => setSidebarOpen(!layout.classList.contains("sidebar-open")));
   if (closeBtn) closeBtn.addEventListener("click", () => setSidebarOpen(false));
   overlay.addEventListener("click", () => setSidebarOpen(false));
+  window.addEventListener("resize", () => {
+    if (desktopMq.matches) {
+      setPageScrollLocked(false);
+    }
+  });
+  window.addEventListener("pagehide", () => setPageScrollLocked(false));
 });
 </script>
 {% endblock %}

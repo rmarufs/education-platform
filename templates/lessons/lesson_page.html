@@ -377,6 +377,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!layout || !sidebar || !toggle || !overlay) return;
 
+  function setPageScrollLocked(locked) {
+    const isLocked = document.body.classList.contains('lesson-sidebar-open');
+    if (locked === isLocked) return;
+
+    if (locked) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.dataset.lessonScrollY = String(scrollY);
+      document.body.classList.add('lesson-sidebar-open');
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      return;
+    }
+
+    const scrollY = Number.parseInt(document.body.dataset.lessonScrollY || '0', 10) || 0;
+    document.body.classList.remove('lesson-sidebar-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    delete document.body.dataset.lessonScrollY;
+    window.scrollTo(0, scrollY);
+  }
+
   function syncSidebarLabel() {
     const isOpen = layout.classList.contains('sidebar-open');
     toggle.setAttribute('aria-expanded', String(isOpen));
@@ -389,9 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function setSidebarOpen(open) {
     layout.classList.toggle('sidebar-open', open);
     if (desktopMq.matches) {
-      document.body.classList.remove('lesson-sidebar-open');
+      setPageScrollLocked(false);
     } else {
-      document.body.classList.toggle('lesson-sidebar-open', open);
+      setPageScrollLocked(open);
     }
     syncSidebarLabel();
   }
@@ -422,9 +449,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('languageChanged', syncSidebarLabel);
   window.addEventListener('resize', () => {
     if (desktopMq.matches) {
-      document.body.classList.remove('lesson-sidebar-open');
+      setPageScrollLocked(false);
     }
   });
+  window.addEventListener('pagehide', () => setPageScrollLocked(false));
 
   syncSidebarLabel();
   initStarPicker();

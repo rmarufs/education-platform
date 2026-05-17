@@ -888,9 +888,28 @@
     opacity: 1;
     pointer-events: auto;
   }
+  body.lesson-sidebar-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   .lesson-sidebar {
     width: min(86vw, 320px);
+    height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
+    max-height: calc(100vh - 64px);
+    max-height: calc(100dvh - 64px);
+    overflow: hidden;
+    overscroll-behavior: contain;
     transform: translateX(calc(-100% - 20px));
+  }
+  .lesson-sidebar-body {
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .lesson-sidebar-overlay {
+    touch-action: none;
   }
   .lesson-layout.sidebar-open .lesson-sidebar-toggle {
     left: 16px;
