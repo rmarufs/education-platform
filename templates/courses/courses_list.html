@@ -47,7 +47,7 @@
     <!-- Toolbar -->
     <div class="catalog-toolbar">
       <div>
-        <h1 style="font-size:1.5rem;font-weight:700;margin:0;" data-i18n="catalog.title">📚 Каталог курсов</h1>
+        <h1 class="catalog-title" style="font-size:1.5rem;font-weight:700;margin:0;" data-i18n="catalog.title">📚 Каталог курсов</h1>
         {% if q %}
         <p style="font-size:.9rem;color:var(--text-muted);margin:4px 0 0;" data-i18n="catalog.results" data-i18n-params='{"q":"{{ q }}","count":{{ courses|length }}}'>
           По запросу «<b>{{ q }}</b>» найдено
@@ -55,7 +55,7 @@
         {% endif %}
       </div>
       
-      <div style="display:flex;align-items:center;gap:12px;">
+      <div class="catalog-view-controls" style="display:flex;align-items:center;gap:12px;">
         <span style="font-size:.9rem;color:var(--text-muted);font-weight:500;" data-i18n="catalog.view">Вид:</span>
         <div class="catalog-view-switch">
           <button id="view-grid" onclick="setViewMode('grid')" class="catalog-view-btn active" title="Сетка" data-i18n="catalog.view_grid" data-i18n-prop="title" type="button">

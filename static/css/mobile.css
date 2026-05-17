@@ -194,16 +194,43 @@
     padding: 16px;
   }
   .catalog-toolbar {
+    align-items: flex-start;
+    justify-content: space-between;
     padding: 12px 14px;
     gap: 10px;
   }
+  .catalog-toolbar .catalog-title {
+    font-size: 1.12rem !important;
+    line-height: 1.25;
+  }
+  .catalog-view-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start;
+    gap: 10px !important;
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .catalog-view-controls > span {
+    flex: 0 0 auto;
+  }
   .catalog-view-switch {
-    display: flex;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     flex-shrink: 0;
+    align-items: center;
+    width: auto;
+    height: auto;
   }
   .catalog-view-btn {
+    display: inline-flex !important;
     width: 34px;
     height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
   }
   .contact-grid { grid-template-columns: 1fr; }
   .contact-grid-resp { grid-template-columns: 1fr !important; }
