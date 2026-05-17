@@ -533,6 +533,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     course_quiz_unlocked = False
     course_quiz_passed = False
     learning_url = None
+    course_has_progress = False
     if is_student(user):
         course_lesson_ids = [lesson.id for module in course.modules for lesson in module.lessons]
         progress_rows = (
@@ -544,6 +545,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
             .all()
         ) if course_lesson_ids else []
         progress_data = {p.lesson_id: p.completed for p in progress_rows}
+        course_has_progress = bool(progress_rows)
 
         total_lessons = sum(len(m.lessons) for m in course.modules)
         done_lessons = sum(
@@ -563,6 +565,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         }
         course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
         course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
+        course_has_progress = course_has_progress or bool(passed_quiz_ids)
         learning_url = course_learning_url(db, user.id, course)
     else:
         learning_url = first_course_lesson_url(course)
@@ -618,6 +621,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "course_quiz_unlocked": course_quiz_unlocked,
         "course_quiz_passed": course_quiz_passed,
         "learning_url": learning_url,
+        "course_has_progress": course_has_progress,
         "user_review": user_review,
         "top_reviews": top_reviews,
         "show_review_prompt": show_review_prompt,

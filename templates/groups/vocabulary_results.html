@@ -5,7 +5,7 @@
 {% block content %}
 <div class="vocab-results-page">
   <a href="/groups/{{ group.id }}/{% if can_manage %}manage{% else %}lessons/{{ lesson.id }}{% endif %}" class="vocab-back-link">
-    ← <span data-i18n="vocabulary.back_to_manage">К управлению</span>
+    <span data-i18n="vocabulary.back_to_manage">← К управлению</span>
   </a>
 
   <div class="vocab-results-header">

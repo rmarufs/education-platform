@@ -59,8 +59,9 @@
             </div>
             {% if learning_url %}
             <a href="{{ learning_url }}"
-               class="btn btn-primary btn-full" style="margin-top: 8px;" data-i18n="course_page.start_continue">
-               ▶ Начать / Продолжить
+               class="btn btn-primary btn-full" style="margin-top: 8px;">
+               <span aria-hidden="true">▶</span>
+               <span data-i18n="{{ 'course_page.continue_learning' if course_has_progress else 'course_page.start_course' }}">{{ 'Продолжить' if course_has_progress else 'Начать' }}</span>
             </a>
             {% endif %}
 

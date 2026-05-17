@@ -231,9 +231,9 @@
                     </div>
                     <div class="course-card-footer" style="display: flex; flex-direction: column; gap: 8px;">
                         {% if item.continue_url %}
-                        <a href="{{ item.continue_url }}" class="btn btn-primary btn-sm btn-full" title="{{ item.last_lesson.title if item.last_lesson else item.course.title }}" data-i18n="course_page.start_continue">▶ Начать / Продолжить</a>
+                        <a href="{{ item.continue_url }}" class="btn btn-primary btn-sm btn-full" title="{{ item.last_lesson.title if item.last_lesson else item.course.title }}"><span aria-hidden="true">▶</span> <span data-i18n="course_page.continue_learning">Продолжить</span></a>
                         {% else %}
-                        <a href="/courses/{{ item.course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="course_page.start_continue">▶ Начать / Продолжить</a>
+                        <a href="/courses/{{ item.course.id }}" class="btn btn-primary btn-sm btn-full"><span aria-hidden="true">▶</span> <span data-i18n="course_page.continue_learning">Продолжить</span></a>
                         {% endif %}
                         <a href="/courses/{{ item.course.id }}" class="btn btn-outline btn-sm btn-full" data-i18n="manage.view">👁 Просмотр</a>
                     </div>

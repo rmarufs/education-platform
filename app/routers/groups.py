@@ -1363,6 +1363,29 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     ordered_lessons = _ordered_group_lessons(group)
+    ordered_lesson_ids = [lesson.id for lesson in ordered_lessons]
+    group_has_progress = False
+    if ordered_lesson_ids:
+        journal_progress = (
+            db.query(GroupJournalEntry.id)
+            .filter(
+                GroupJournalEntry.group_id == group_id,
+                GroupJournalEntry.student_id == user.id,
+                GroupJournalEntry.lesson_id.in_(ordered_lesson_ids),
+                (GroupJournalEntry.present == True) | (GroupJournalEntry.grade.isnot(None)),  # noqa: E712
+            )
+            .first()
+        )
+        vocab_progress = (
+            db.query(VocabularyAttempt.id)
+            .join(VocabularySet, VocabularyAttempt.vocab_id == VocabularySet.id)
+            .filter(
+                VocabularyAttempt.student_id == user.id,
+                VocabularySet.lesson_id.in_(ordered_lesson_ids),
+            )
+            .first()
+        )
+        group_has_progress = bool(journal_progress or vocab_progress)
     current_payment = _student_month_payment_entry(db, group_id, user.id, _month_start())
     payment_current_paid = bool(current_payment and current_payment.is_paid)
     payment_overdue = _student_payment_overdue(db, group_id, user.id)
@@ -1373,6 +1396,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         "group": group,
         "group_modules": group.modules,
         "ordered_lessons": ordered_lessons,
+        "group_has_progress": group_has_progress,
         "membership": membership,
         "payment_current_paid": payment_current_paid,
         "payment_overdue": payment_overdue,
