@@ -1276,42 +1276,42 @@
   }
   .lesson-manage-main {
     display: flex !important;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
   }
-  .lesson-manage-main .lesson-icon {
+  .lesson-manage-main > .lesson-icon {
+    flex: 0 0 auto;
     font-size: 1.1rem;
   }
-  .lesson-manage-main .lesson-title {
-    flex: 1 1 auto;
+  .lesson-manage-main > .lesson-title {
+    flex: 1 1 0;
+    min-width: 0;
     font-size: 0.95rem;
     font-weight: 600;
     line-height: 1.3;
     word-break: break-word;
   }
-  /* Первая строка: иконка + название */
-  .lesson-manage-main > .lesson-icon,
-  .lesson-manage-main > .lesson-title {
-    display: inline-flex;
-    align-items: center;
-  }
-  .lesson-manage-main > .lesson-icon + .lesson-title {
-    margin-left: -4px;
-  }
-  .lesson-meta {
+  .lesson-manage-main > .lesson-meta {
+    flex: 1 0 100%;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    margin: 0;
   }
-  .lesson-meta:empty {
+  .lesson-manage-main > .lesson-meta:empty {
     display: none;
   }
-  .lesson-actions {
-    width: 100%;
+  .lesson-manage-main > .lesson-actions {
+    flex: 1 0 100%;
     display: flex !important;
     gap: 8px !important;
     margin-top: 2px;
+  }
+  .lesson-actions {
+    display: flex !important;
+    gap: 8px !important;
   }
   .lesson-actions .btn,
   .lesson-actions .btn-xs {
@@ -1398,6 +1398,22 @@
     font-size: 0.88rem;
     border-radius: 10px;
     justify-content: center;
+  }
+
+  /* Текстовые метки к icon-кнопкам management — видны только на mobile */
+  .lesson-actions .manage-btn-label,
+  .module-actions .manage-btn-label {
+    display: inline;
+    font-size: 0.8rem;
+    margin-left: 3px;
+  }
+  /* Форма внутри module-actions (delete-button в form) */
+  .module-header .module-actions form {
+    flex: 1 1 0;
+    display: flex;
+  }
+  .module-header .module-actions form .btn {
+    width: 100%;
   }
 
   /* Материалы курса в шапке management — крупнее tap-target у delete */

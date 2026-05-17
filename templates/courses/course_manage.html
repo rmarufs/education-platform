@@ -49,10 +49,10 @@
             data-module-id="{{ module.id }}"
             data-module-title="{{ module.title | e }}"
             data-module-desc="{{ (module.description or '') | e }}"
-            onclick="openEditModuleModal(this.dataset)">✏️</button>
+            onclick="openEditModuleModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
           <button class="btn btn-danger btn-xs"
             data-module-id="{{ module.id }}"
-            onclick="deleteModule(this.dataset.moduleId)">🗑</button>
+            onclick="deleteModule(this.dataset.moduleId)">🗑<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
         </div>
       </div>
 
@@ -76,16 +76,16 @@
               {% endif %}
             </div>
             <div class="lesson-actions" style="display: flex; gap: 4px;">
-              <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁</a>
+              <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁<span class="manage-btn-label" data-i18n="manage.view">Просмотр</span></a>
               <button type="button" class="btn btn-outline btn-xs"
                 data-lesson-id="{{ lesson.id }}"
                 data-lesson-title="{{ lesson.title | e }}"
                 data-lesson-video="{{ (lesson.video_url or '') | e }}"
                 data-lesson-video-filename="{{ (lesson.video_filename or '') | e }}"
                 data-lesson-desc="{{ (lesson.description or '') | e }}"
-                onclick="openEditLessonModal(this.dataset)">✏️</button>
+                onclick="openEditLessonModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
               <form action="/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'manage.confirm_delete_lesson', 'confirm.action_irreversible')">
-                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="action.delete" data-i18n-prop="title">🗑️</button>
+                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="action.delete" data-i18n-prop="title">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
               </form>
             </div>
           </div>

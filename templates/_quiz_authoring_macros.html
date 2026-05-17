@@ -162,23 +162,21 @@
     <p class="google-forms-url" title="{{ quiz_url }}">{{ quiz_url | truncate(60, True, '...') }}</p>
     <span class="text-muted small" data-i18n="manage.google_forms_results_hint">Результаты доступны в вашем Google Forms аккаунте</span>
     <div class="google-forms-actions" style="margin-top: 8px; display: flex; gap: 8px;">
-      <button type="button" 
+      <button type="button"
               class="btn btn-outline btn-xs"
               data-google-forms-action="open"
               data-google-forms-scope-name="{{ scope_name }}"
               data-google-forms-scope-id="{{ scope_id }}"
               data-google-forms-label="{{ label }}"
-              data-google-forms-current-url="{{ quiz_url }}"
-              data-i18n="action.edit">
-        ✏️ Изменить
+              data-google-forms-current-url="{{ quiz_url }}">
+        ✏️ <span data-i18n="course.edit">Изменить</span>
       </button>
-      <button type="button" 
+      <button type="button"
               class="btn btn-danger btn-xs"
               data-google-forms-action="delete"
               data-google-forms-scope-name="{{ scope_name }}"
-              data-google-forms-scope-id="{{ scope_id }}"
-              data-i18n="action.delete">
-        🗑 Удалить
+              data-google-forms-scope-id="{{ scope_id }}">
+        🗑 <span data-i18n="action.delete">Удалить</span>
       </button>
     </div>
   </div>
