@@ -3,25 +3,6 @@
 {% block title %}Фурузон{% endblock %}
 
 {% block content %}
-<!-- Баннер раннего доступа -->
-<div id="early-access-banner" class="page-hero" style="padding:14px 24px;font-size:0.95rem;display:flex;align-items:center;justify-content:center;gap:10px;">
-  <span data-i18n="hero.early_access">Платформа работает в раннем доступе. Спасибо, что вы с нами!</span>
-  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;opacity:0.8;" title="Закрыть" data-i18n="action.close" data-i18n-prop="title" type="button">&times;</button>
-</div>
-<script>
-  (function(){
-    if (sessionStorage.getItem('banner_dismissed')) {
-      var b = document.getElementById('early-access-banner');
-      if (b) b.style.display = 'none';
-    }
-  })();
-  function dismissBanner() {
-    var b = document.getElementById('early-access-banner');
-    if (b) b.style.display = 'none';
-    sessionStorage.setItem('banner_dismissed', '1');
-  }
-</script>
-
 <!-- ── Hero ───────────────────────────────────── -->
 <section class="hero home-hero">
   <div class="home-hero-content">
