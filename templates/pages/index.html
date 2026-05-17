@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
-{% block title %}Furuzon{% endblock %}
+{% block title %}Фурузон{% endblock %}
 
 {% block content %}
 <!-- Баннер раннего доступа -->
 <div id="early-access-banner" class="page-hero" style="padding:14px 24px;font-size:0.95rem;display:flex;align-items:center;justify-content:center;gap:10px;">
-  <span data-i18n="hero.early_access">Платформа находится в стадии раннего доступа. Спасибо, что выбрали нас!</span>
-  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;opacity:0.8;" title="Close" type="button">&times;</button>
+  <span data-i18n="hero.early_access">Платформа работает в раннем доступе. Спасибо, что вы с нами!</span>
+  <button onclick="dismissBanner()" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;line-height:1;opacity:0.8;" title="Закрыть" data-i18n="action.close" data-i18n-prop="title" type="button">&times;</button>
 </div>
 <script>
   (function(){
@@ -29,8 +29,8 @@
       <span class="home-hero-dot"></span>
       <span data-i18n="home.hero_kicker">Образовательная платформа</span>
     </div>
-    <h1 class="hero-title" data-i18n="home.hero_title">Учитесь и развивайтесь вместе с Furuzon</h1>
-    <p class="hero-subtitle" data-i18n="home.hero_subtitle">Курсы, преподаватели и учебные центры — всё в одном месте</p>
+    <h1 class="hero-title" data-i18n="home.hero_title">Учитесь и развивайтесь вместе с Фурузон</h1>
+    <p class="hero-subtitle" data-i18n="home.hero_subtitle">Курсы, преподаватели и учебные центры в одном пространстве</p>
     <div class="hero-actions">
       <a href="/courses/catalog" class="btn btn-lg home-cta-primary" data-i18n="home.cta_courses">Смотреть курсы</a>
       {% if user %}
@@ -60,26 +60,26 @@
 <section class="home-roles-section reveal">
   <div class="home-section-wrap">
     <div class="section-header">
-      <h2 data-i18n="home.roles_title">Для кого Furuzon</h2>
-      <p data-i18n="home.roles_sub">Платформа создана для трёх ролей — каждому своё</p>
+      <h2 data-i18n="home.roles_title">Для кого Фурузон</h2>
+      <p data-i18n="home.roles_sub">Фурузон помогает учиться, преподавать и управлять учебным центром</p>
     </div>
     <div class="home-roles-grid">
       <div class="home-role-card home-role-student">
         <div class="home-role-icon">🎓</div>
         <h3 data-i18n="home.role_student_title">Студент</h3>
-        <p data-i18n="home.role_student_desc">Записывайтесь на курсы, смотрите уроки, проходите тесты и отслеживайте прогресс.</p>
+        <p data-i18n="home.role_student_desc">Выбирайте курсы, смотрите уроки, проходите тесты и следите за прогрессом.</p>
         <a href="/courses/catalog" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_student_cta">Найти курс</a>
       </div>
       <div class="home-role-card home-role-teacher">
         <div class="home-role-icon">🧑‍💻</div>
         <h3 data-i18n="home.role_teacher_title">Преподаватель</h3>
-        <p data-i18n="home.role_teacher_desc">Создавайте курсы, добавляйте уроки и материалы, ведите группы и тесты.</p>
+        <p data-i18n="home.role_teacher_desc">Создавайте курсы, добавляйте уроки и материалы, работайте с группами и тестами.</p>
         <a href="/register" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_teacher_cta">Стать преподавателем</a>
       </div>
       <div class="home-role-card home-role-org">
         <div class="home-role-icon">🏫</div>
         <h3 data-i18n="home.role_org_title">Учебный центр</h3>
-        <p data-i18n="home.role_org_desc">Создавайте группы, принимайте преподавателей, управляйте учениками и аналитикой.</p>
+        <p data-i18n="home.role_org_desc">Организуйте группы, подключайте преподавателей и отслеживайте обучение учеников.</p>
         <a href="/search" class="btn btn-primary btn-sm home-role-cta" data-i18n="home.role_org_cta">Для учебных центров</a>
       </div>
     </div>
@@ -105,7 +105,7 @@
         <div class="home-step-num">2</div>
         <div class="home-step-body">
           <h3 data-i18n="home.step2_title">Найдите курс или группу</h3>
-          <p data-i18n="home.step2_desc">Просмотрите каталог курсов, вступите в учебный центр или создайте свой курс.</p>
+          <p data-i18n="home.step2_desc">Выберите подходящий курс, присоединитесь к учебному центру или подготовьте свою программу.</p>
         </div>
       </div>
       <div class="home-step">
@@ -123,7 +123,7 @@
 <section class="courses-section reveal">
   <div class="section-header">
     <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
-    <p data-i18n="home.popular_courses_sub">Начни обучение с лучших программ нашей платформы</p>
+    <p data-i18n="home.popular_courses_sub">Выберите программу и начните обучение в удобном темпе</p>
   </div>
   <div class="courses-grid" id="courses-grid">
     {% if courses %}
@@ -157,7 +157,7 @@
     {% else %}
       <div class="empty-state">
         <span class="empty-icon">📭</span>
-        <p data-i18n="home.no_courses">Курсы пока не добавлены. Зарегистрируйтесь как преподаватель и создайте первый.</p>
+        <p data-i18n="home.no_courses">На платформе пока нет курсов. Если вы преподаватель, зарегистрируйтесь и создайте первый курс.</p>
       </div>
     {% endif %}
   </div>

@@ -49,9 +49,22 @@
             </h2>
 
             {% if org_students %}
-            <div class="org-staff-grid">
+            <div style="position: relative; margin-bottom: 16px;">
+                <input type="text" id="student-search-input" class="form-input"
+                       placeholder="Введите имя или email ученика..."
+                       data-i18n="org.search_student_placeholder" data-i18n-prop="placeholder"
+                       autocomplete="off" style="padding-right: 44px;" />
+                <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;">🔍</span>
+            </div>
+
+            <div id="student-search-empty" class="empty-state" style="display:none; margin-top: 12px;">
+                <span class="empty-icon">🎓</span>
+                <p data-i18n="org.search_students_empty">По вашему запросу ученики не найдены.</p>
+            </div>
+
+            <div class="org-staff-grid" id="org-students-grid">
                 {% for link in org_students %}
-                <div class="org-staff-card fade-in" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
+                <div class="org-staff-card fade-in" data-student-card data-student-search="{{ (link.student.name ~ ' ' ~ link.student.email) | lower | e }}" style="animation-delay: {{ loop.index0 * 0.04 }}s;">
                     <div class="org-staff-top">
                         <div class="org-teacher-avatar org-teacher-avatar-lg">
                             {% if link.student.avatar_url %}
@@ -87,4 +100,31 @@
         </section>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Поиск учеников текущего учебного центра ─────────────────────────────────
+(function() {
+    const input = document.getElementById('student-search-input');
+    const emptyBox = document.getElementById('student-search-empty');
+    const cards = Array.from(document.querySelectorAll('[data-student-card]'));
+
+    if (!input || !emptyBox || cards.length === 0) return;
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const haystack = card.dataset.studentSearch || '';
+            const isVisible = !q || haystack.includes(q);
+            card.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount += 1;
+        });
+
+        emptyBox.style.display = q && visibleCount === 0 ? '' : 'none';
+    });
+})();
+</script>
 {% endblock %}
