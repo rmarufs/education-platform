@@ -296,6 +296,9 @@
   }
   .dashboard-header h1 { font-size: 1.35rem; }
   .dashboard-header .btn { width: 100%; justify-content: center; }
+  .org-staff-card .org-staff-actions form .btn[style*="color:var(--danger)"] {
+    color: var(--white) !important;
+  }
 
   /* ══════ Кабинет студента/преподавателя: mobile polish ══════ */
   .user-dashboard-page .main-content {
