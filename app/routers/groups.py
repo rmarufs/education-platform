@@ -684,6 +684,35 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
 
+@router.get("/{group_id}/teach", response_class=HTMLResponse)
+def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
+    """Lesson selection for the assigned teacher's in-class mode."""
+    user, redirect = _require_teacher(request, db)
+    if redirect:
+        return redirect
+
+    group = db.query(Group).options(
+        joinedload(Group.organization),
+        joinedload(Group.teacher),
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.lessons).joinedload(GroupLesson.group_module),
+    ).filter(
+        Group.id == group_id,
+        Group.teacher_id == user.id,
+        Group.is_active == True,  # noqa: E712
+    ).first()
+    if not group:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    return templates.TemplateResponse("groups/teach.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "group_modules": group.modules,
+        "ordered_lessons": _ordered_group_lessons(group),
+    })
+
+
 # ═══════════════════════════════════════════════════════════
 # GROUP JOURNAL — ORG & TEACHER
 # ═══════════════════════════════════════════════════════════

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title_key %}group.mode_teach{% endblock %}
+{% block title %}Вести урок{% endblock %}
+
+{% block content %}
+{% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | list %}
+<div class="manage-page group-teach-page">
+  <div class="manage-header group-teach-header">
+    <div>
+      <a href="/dashboard/teacher" class="back-link" data-i18n="nav.dashboard">Кабинет</a>
+      <h1 data-i18n="group.teach_select_title">Выберите урок</h1>
+      <p class="text-muted" data-i18n="group.teach_select_desc">Откройте урок группы для проведения занятия со студентами.</p>
+    </div>
+    <div class="manage-header-actions">
+      <a href="/groups/{{ group.id }}/manage" class="btn btn-outline btn-sm" data-i18n="group.mode_edit">Редактировать группу</a>
+    </div>
+  </div>
+
+  <section class="manage-section">
+    <div class="group-teach-group-card">
+      {% if group.avatar_url %}
+      <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-teach-avatar">
+      {% else %}
+      <div class="group-teach-avatar group-teach-avatar-placeholder">{{ (group.name or "F")[0]|upper }}</div>
+      {% endif %}
+      <div>
+        <h2>{{ group.name }}</h2>
+        {% if group.organization %}
+        <p class="text-muted" data-i18n="group.center_badge" data-i18n-params='{{ {"name": group.organization.name} | tojson }}'>Группа · {{ group.organization.name }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if ordered_lessons %}
+      <div class="group-teach-list">
+        {% for module in group_modules %}
+          {% if module.lessons %}
+          <div class="group-teach-module">
+            <div class="group-teach-module-head">
+              <span class="module-index">{{ loop.index }}</span>
+              <h3>{{ module.title }}</h3>
+              <span class="badge">{{ module.lessons|length }}</span>
+            </div>
+            <div class="group-teach-lessons">
+              {% for lesson in module.lessons %}
+              <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="group-teach-lesson">
+                <span class="group-teach-lesson-icon" aria-hidden="true">{{ "▶" if lesson.video_url else "□" }}</span>
+                <span class="group-teach-lesson-main">
+                  <strong>{{ lesson.title }}</strong>
+                  {% if lesson.description %}
+                  <small>{{ lesson.description | striptags | truncate(120) }}</small>
+                  {% endif %}
+                </span>
+                <span class="btn btn-secondary btn-xs" data-i18n="group.teach_open_lesson">Открыть урок</span>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+
+        {% if unassigned_lessons %}
+        <div class="group-teach-module">
+          <div class="group-teach-module-head">
+            <span class="module-index">-</span>
+            <h3 data-i18n="group.lessons_without_module">Уроки без модуля</h3>
+            <span class="badge">{{ unassigned_lessons|length }}</span>
+          </div>
+          <div class="group-teach-lessons">
+            {% for lesson in unassigned_lessons %}
+            <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="group-teach-lesson">
+              <span class="group-teach-lesson-icon" aria-hidden="true">{{ "▶" if lesson.video_url else "□" }}</span>
+              <span class="group-teach-lesson-main">
+                <strong>{{ lesson.title }}</strong>
+                {% if lesson.description %}
+                <small>{{ lesson.description | striptags | truncate(120) }}</small>
+                {% endif %}
+              </span>
+              <span class="btn btn-secondary btn-xs" data-i18n="group.teach_open_lesson">Открыть урок</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p data-i18n="group.no_lessons">Уроков пока нет</p>
+        <a href="/groups/{{ group.id }}/manage" class="btn btn-primary" data-i18n="group.mode_edit">Редактировать группу</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.group-teach-page {
+  max-width: 980px;
+}
+.group-teach-header .manage-header-actions {
+  align-items: center;
+}
+.group-teach-group-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  background: var(--bg-secondary, #f8fafc);
+  margin-bottom: 18px;
+}
+.group-teach-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.group-teach-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.group-teach-group-card h2,
+.group-teach-group-card p {
+  margin: 0;
+}
+.group-teach-list,
+.group-teach-module,
+.group-teach-lessons {
+  display: grid;
+  gap: 12px;
+}
+.group-teach-module {
+  padding: 16px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  background: var(--bg-card, #fff);
+}
+.group-teach-module-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.group-teach-module-head h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1rem;
+}
+.group-teach-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 12px;
+  color: var(--text, #111);
+  text-decoration: none;
+  background: var(--bg-secondary, #f8fafc);
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+.group-teach-lesson:hover {
+  transform: translateY(-1px);
+  border-color: rgba(99,102,241,0.35);
+  box-shadow: 0 10px 26px rgba(99,102,241,0.12);
+}
+.group-teach-lesson-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--primary, #6366f1);
+  color: #fff;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.group-teach-lesson-main {
+  flex: 1;
+  min-width: 0;
+}
+.group-teach-lesson-main strong,
+.group-teach-lesson-main small {
+  display: block;
+}
+.group-teach-lesson-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-teach-lesson-main small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+@media (max-width: 700px) {
+  .group-teach-header {
+    align-items: stretch;
+  }
+  .group-teach-header .manage-header-actions,
+  .group-teach-header .btn {
+    width: 100%;
+  }
+  .group-teach-lesson {
+    align-items: flex-start;
+  }
+  .group-teach-lesson .btn {
+    align-self: stretch;
+    justify-content: center;
+    min-width: 96px;
+  }
+}
+@media (max-width: 520px) {
+  .group-teach-lesson {
+    flex-wrap: wrap;
+  }
+  .group-teach-lesson-main {
+    flex: 1 1 calc(100% - 48px);
+  }
+  .group-teach-lesson .btn {
+    flex: 1 1 100%;
+  }
+}
+</style>
+{% endblock %}
