@@ -15,9 +15,13 @@
     </div>
   </div>
   <nav class="sidebar-nav">
-    <a href="/dashboard/teacher" class="sidebar-link {{ 'active' if active_page == 'dashboard' else '' }}">
+    <a href="/dashboard/teacher?section=courses" class="sidebar-link {{ 'active' if active_page == 'dashboard' else '' }}">
       <span class="link-icon">📋</span>
       <span data-i18n="nav.my_courses">Мои курсы</span>
+    </a>
+    <a href="/groups/my" class="sidebar-link {{ 'active' if request.url.path == '/groups/my' else '' }}">
+      <span class="link-icon">🗂</span>
+      <span data-i18n="group.my_groups">Мои группы</span>
     </a>
     <a href="/groups/analytics" class="sidebar-link {{ 'active' if request.url.path == '/groups/analytics' else '' }}">
       <span class="link-icon">📊</span>

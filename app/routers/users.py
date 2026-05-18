@@ -233,6 +233,21 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
             return RedirectResponse("/register/pending", status_code=302)
         return RedirectResponse("/dashboard/student", status_code=302)
 
+    from app.models.group import Group
+    from sqlalchemy.orm import joinedload as jl
+
+    # Группы, в которых преподаватель назначен
+    my_groups = db.query(Group).options(
+        jl(Group.members),
+        jl(Group.lessons),
+    ).filter(
+        Group.teacher_id == user.id,
+        Group.is_active == True,  # noqa: E712
+    ).order_by(Group.created_at.desc()).all()
+
+    if user.is_teacher and request.query_params.get("section") != "courses" and my_groups:
+        return RedirectResponse("/groups/my", status_code=302)
+
     # Только курсы этого преподавателя (teacher уже загружен, eager load не нужен)
     courses = db.query(Course).filter(Course.teacher_id == user.id).all()
     
@@ -267,17 +282,6 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.teacher_id == user.id,
         OrganizationTeacher.status == "pending",
     ).order_by(OrganizationTeacher.created_at.desc()).all()
-
-    # Группы, в которых преподаватель назначен
-    from app.models.group import Group, GroupMember, GroupLesson
-    from sqlalchemy.orm import joinedload as jl
-    my_groups = db.query(Group).options(
-        jl(Group.members),
-        jl(Group.lessons),
-    ).filter(
-        Group.teacher_id == user.id,
-        Group.is_active == True,
-    ).order_by(Group.created_at.desc()).all()
 
     return templates.TemplateResponse(
         "dashboard/teacher.html",
