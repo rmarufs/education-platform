@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
-from app.dependencies import get_user, is_student, is_teacher, is_admin
+from app.dependencies import can_access_course_content, get_user, is_student, is_teacher, is_admin
 from app.models.user import User
 from app.models.module import Module
 from app.models.lesson import Lesson
@@ -182,19 +182,11 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     if not user:
         return RedirectResponse("/login", status_code=302)
     
-    if user.is_admin:
-        pass # Администратор имеет полный доступ
-    elif user.is_teacher:
-        if course.teacher_id != user.id:
+    if not can_access_course_content(user, course, db):
+        if user.is_teacher:
             raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не являетесь преподавателем этого курса.")
-    elif user.is_student:
-        # TODO: Здесь должна быть логика проверки записи (Enrollment) на курс.
-        # Поскольку таблица Enrollment пока не создана, мы используем заглушку is_enrolled = True.
-        # После создания таблицы: is_enrolled = db.query(Enrollment).filter(...).first()
-        is_enrolled = True 
-        if not is_enrolled:
+        if user.is_student:
             raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не записаны на этот курс. Перейдите к оплате.")
-    else:
         raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
     course_lesson_ids = [
@@ -387,9 +379,14 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     if not is_student(user):
         raise HTTPException(status_code=403)
 
-    lesson_exists = db.query(Lesson.id).filter(Lesson.id == lesson_id).first()
-    if not lesson_exists:
+    lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
+    if not lesson:
         raise HTTPException(status_code=404, detail="Урок не найден")
+    course = db.query(Course).filter(Course.id == lesson.module.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    if not can_access_course_content(user, course, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
     progress = db.query(Progress).filter(
         Progress.student_id == uid, Progress.lesson_id == lesson_id
@@ -414,6 +411,15 @@ def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     user = db.query(User).filter(User.id == uid).first()
     if not is_student(user):
         raise HTTPException(status_code=403)
+
+    lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+    course = db.query(Course).filter(Course.id == lesson.module.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Курс не найден")
+    if not can_access_course_content(user, course, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
     progress = db.query(Progress).filter(
         Progress.student_id == uid,

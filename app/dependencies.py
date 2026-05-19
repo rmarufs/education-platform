@@ -3,6 +3,8 @@ from fastapi import Request, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.course import Course
+from app.models.organization import Organization, OrganizationTeacher
 from app.models.user import User
 
 
@@ -28,6 +30,31 @@ def is_student(user: User | None) -> bool:
 
 def is_org(user: User | None) -> bool:
     return bool(user and user.role.value == "organization")
+
+
+def can_access_course_content(user: User | None, course: Course | None, db: Session) -> bool:
+    """Returns whether a user may open regular course learning content."""
+    if not user or not course:
+        return False
+    if is_admin(user):
+        return True
+    if is_teacher(user):
+        return course.teacher_id == user.id
+    if is_org(user):
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        if not org:
+            return False
+        return db.query(OrganizationTeacher.id).filter(
+            OrganizationTeacher.organization_id == org.id,
+            OrganizationTeacher.teacher_id == course.teacher_id,
+            OrganizationTeacher.status == "accepted",
+        ).first() is not None
+    if is_student(user):
+        # Product rule: regular courses are currently public/free for all
+        # authenticated students. When private/paid courses are introduced,
+        # add CourseEnrollment/access_mode checks here.
+        return True
+    return False
 
 
 def can(user: User | None, permission: str) -> bool:
