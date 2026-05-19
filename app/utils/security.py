@@ -2,7 +2,8 @@ import bleach
 
 ALLOWED_TAGS = [
     'p', 'b', 'i', 'strong', 'em', 'ul', 'ol', 'li', 
-    'a', 'br', 'span', 'div', 'h1', 'h2', 'h3'
+    'a', 'br', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    's', 'strike'
 ]
 
 ALLOWED_ATTRIBUTES = {
@@ -15,6 +16,8 @@ ALLOWED_STYLES = [
     'color', 'background-color', 'font-size', 'font-weight', 
     'text-align', 'margin', 'padding', 'border'
 ]
+
+ALLOWED_PROTOCOLS = ['http', 'https', 'mailto']
 
 try:
     from bleach.css_sanitizer import CSSSanitizer
@@ -33,6 +36,7 @@ def sanitize_html(html_content: str) -> str:
     kwargs = {
         "tags": ALLOWED_TAGS,
         "attributes": ALLOWED_ATTRIBUTES,
+        "protocols": ALLOWED_PROTOCOLS,
         "strip": True
     }
     if css_sanitizer:

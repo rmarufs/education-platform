@@ -6,13 +6,15 @@
 import base64
 from fastapi.templating import Jinja2Templates
 import markupsafe
+from app.utils.security import sanitize_html
 
 templates = Jinja2Templates(directory="templates")
 
 def clean_html_filter(value):
     if not value:
         return ""
-    return markupsafe.Markup(value)
+    cleaned_value = sanitize_html(value)
+    return markupsafe.Markup(cleaned_value)
 
 templates.env.filters["clean_html"] = clean_html_filter
 
