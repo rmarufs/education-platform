@@ -269,6 +269,7 @@ const translations = {
     "course.no_category": "Без категории",
 
     "action.cancel": "Отмена",
+    "action.actions": "Действия",
     "action.create": "Создать",
     "action.save": "Сохранить",
     "action.delete": "Удалить",
@@ -1323,6 +1324,7 @@ const translations = {
     "course.no_category": "Бе категория",
 
     "action.cancel": "Бекор кардан",
+    "action.actions": "Амалҳо",
     "action.create": "Эҷод кардан",
     "action.save": "Сабт кардан",
     "action.delete": "Ҳазф",
