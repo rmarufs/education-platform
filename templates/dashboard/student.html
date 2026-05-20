@@ -179,11 +179,13 @@
             <div class="courses-grid student-groups-desktop">
                 {% for group in student_groups %}
                 <div class="course-card fade-in">
+                    <div class="course-card-header">
                     {% if group.avatar_url %}
                         <img src="{{ group.avatar_url }}" class="course-cover" alt="{{ group.name }}">
                     {% else %}
                         <div class="course-cover course-cover-placeholder">{{ (group.name or "F")[0]|upper }}</div>
                     {% endif %}
+                    </div>
                     <div class="course-card-body">
                         <div class="course-card-badges">
                             <span class="badge badge-primary" data-i18n="group.badge">Группа</span>
@@ -313,6 +315,23 @@
 .student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
 .student-groups-mobile { display: none; }
+@media (min-width: 769px) {
+    .user-dashboard--student .student-org-section {
+        display: none !important;
+    }
+    .user-dashboard--student .course-card-header {
+        aspect-ratio: 1 / 1;
+        height: auto;
+    }
+    .user-dashboard--student .course-card-header .course-cover,
+    .user-dashboard--student .course-card-header .course-cover-image,
+    .user-dashboard--student .course-card-header .course-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+}
 html[data-theme="dark"] .student-analytics-bar,
 body.dark .student-analytics-bar {
     background:
