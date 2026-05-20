@@ -1,7 +1,7 @@
 """enable rls on public tables
 
 Revision ID: 5b7c9d1e2f03
-Revises: 3f2a1d8c9b7e
+Revises: 9a7f1c2d4e80
 Create Date: 2026-05-20 15:45:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "5b7c9d1e2f03"
-down_revision: Union[str, None] = "3f2a1d8c9b7e"
+down_revision: Union[str, None] = "9a7f1c2d4e80"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
