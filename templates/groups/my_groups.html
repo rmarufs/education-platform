@@ -9,15 +9,17 @@
     {% include "_teacher_sidebar.html" %}
 
     <div class="dashboard-main">
-        <div class="dashboard-header">
-            <div>
-                <h1 data-i18n="group.my_groups">🗂 Мои группы</h1>
+        <div class="dashboard-header teacher-dashboard-header">
+            <div class="teacher-dashboard-intro">
+                <h1>
+                    <span data-i18n="teacher.welcome">Добро пожаловать,</span>
+                    {{ user.name }}!
+                </h1>
                 <p data-i18n="analytics.teacher_groups_subtitle">Группы, в которых вы назначены преподавателем</p>
             </div>
-            <a href="/groups/analytics" class="btn btn-outline">
-                📊 <span data-i18n="analytics.open">Аналитика</span>
-            </a>
         </div>
+
+        <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
 
         {% if groups %}
         <div class="groups-grid">
@@ -125,7 +127,22 @@
 .group-stats { display: flex; flex-direction: column; gap: 6px; }
 .group-stat { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
 .group-stat-icon { width: 20px; text-align: center; }
-.group-card-footer { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border, rgba(0,0,0,0.06)); }
+.group-card-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border, rgba(0,0,0,0.06)); }
+.group-card-footer .btn {
+    width: 100%;
+    min-height: 38px;
+    justify-content: center;
+}
+.user-dashboard .group-card-footer .btn {
+    width: 100%;
+}
+@media (max-width: 768px) {
+    .user-dashboard .group-card-footer .btn {
+        width: 100%;
+        min-height: 44px;
+        padding: 0 16px;
+    }
+}
 .group-mode-modal {
     display: none;
     position: fixed;
