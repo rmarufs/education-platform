@@ -63,9 +63,12 @@
             {% endif %}
             {% for l in module.lessons|sort(attribute='order') %}
             <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
-               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
+               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if group_progress_data and group_progress_data.get(l.id) else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
               <span class="lesson-nav-title">{{ l.title }}</span>
+              {% if group_progress_data and group_progress_data.get(l.id) %}
+              <span class="lesson-nav-check" aria-hidden="true" title="Пройдено" data-i18n="lesson.completed" data-i18n-prop="title">✓</span>
+              {% endif %}
               {% if l.quiz_url %}
               <span class="badge badge-quiz">Google Forms</span>
               {% endif %}
@@ -90,9 +93,12 @@
           <div class="lesson-module-panel-inner">
             {% for l in unassigned_lessons %}
             <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
-               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }}">
+               class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if group_progress_data and group_progress_data.get(l.id) else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
               <span class="lesson-nav-title">{{ l.title }}</span>
+              {% if group_progress_data and group_progress_data.get(l.id) %}
+              <span class="lesson-nav-check" aria-hidden="true" title="Пройдено" data-i18n="lesson.completed" data-i18n-prop="title">✓</span>
+              {% endif %}
               {% if l.quiz_url %}
               <span class="badge badge-quiz">Google Forms</span>
               {% endif %}
@@ -285,6 +291,16 @@
 
     <div class="lesson-complete-bar">
       <div class="lesson-complete-actions">
+        {% if membership and user.is_student and not can_preview_as_owner %}
+          {% if group_progress %}
+          <button type="button" class="btn btn-outline lesson-done-button" disabled data-i18n="lesson.done">Пройдено</button>
+          {% else %}
+          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete" method="POST">
+            <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Готово</button>
+          </form>
+          {% endif %}
+        {% endif %}
+
         {% if previous_lesson %}
         <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
         {% else %}

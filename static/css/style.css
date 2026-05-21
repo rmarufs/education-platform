@@ -2206,7 +2206,24 @@ body.dark .course-detail-hero .course-detail-info {
   width: 20px;
 }
 .lesson-nav-title {
+  flex: 1;
   min-width: 0;
+}
+.lesson-nav-check {
+  align-items: center;
+  background: var(--success-soft);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, var(--border));
+  border-radius: 999px;
+  color: var(--success);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  margin-left: auto;
+  width: 18px;
 }
 .lesson-content {
   width: min(100%, 1120px);
@@ -2243,6 +2260,14 @@ body.dark .course-detail-hero .course-detail-info {
 .quiz-card .btn { margin-left: auto; white-space: nowrap; }
 .lesson-complete-bar { margin: 1.5rem 0; padding: 1rem 1.5rem; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); }
 .lesson-complete-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lesson-complete-actions form { margin: 0; }
+.lesson-done-button:disabled {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  color: var(--success);
+  cursor: default;
+  opacity: 1;
+}
 .complete-badge {
   color: var(--success);
   font-weight: 600;

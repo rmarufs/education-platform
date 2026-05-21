@@ -1157,6 +1157,9 @@
     gap: 10px;
     align-items: stretch;
   }
+  .lesson-complete-actions form {
+    width: 100%;
+  }
   .lesson-complete-actions .btn {
     width: 100%;
     justify-content: center;
@@ -1921,6 +1924,10 @@
     flex-direction: column !important;
     gap: 10px !important;
     align-items: stretch !important;
+  }
+
+  .lesson-complete-actions form {
+    width: 100% !important;
   }
 
   .lesson-complete-actions .btn,

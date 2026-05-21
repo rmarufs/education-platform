@@ -6,6 +6,7 @@ import base64
 from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
@@ -194,6 +195,11 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         for module in course.modules
         for course_lesson in module.lessons
     ]
+    next_lesson_url = f"/courses/{course.id}"
+    for index, course_lesson_id in enumerate(course_lesson_ids):
+        if course_lesson_id == lesson_id and index < len(course_lesson_ids) - 1:
+            next_lesson_url = f"/lessons/{course_lesson_ids[index + 1]}"
+            break
 
     # Прогресс студента
     progress = None
@@ -248,6 +254,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "progress_data": progress_data,
         "lesson_quiz_visible": lesson_quiz_visible,
         "continue_url": continue_url,
+        "next_lesson_url": next_lesson_url,
         "show_review_form": locals().get('show_review_form', False),
         "course": course,
         "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
@@ -395,11 +402,19 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     if not progress:
         progress = Progress(student_id=uid, lesson_id=lesson_id, completed=True, completed_at=datetime.utcnow())
         db.add(progress)
-    else:
+    elif not progress.completed:
         progress.completed = True
         progress.completed_at = datetime.utcnow()
-    db.commit()
-    return RedirectResponse(next_after_lesson(db, user.id, lesson_id), status_code=302)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        progress = db.query(Progress).filter(Progress.student_id == uid, Progress.lesson_id == lesson_id).first()
+        if progress and not progress.completed:
+            progress.completed = True
+            progress.completed_at = datetime.utcnow()
+            db.commit()
+    return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
 
 
 @router.get("/{lesson_id}/continue")

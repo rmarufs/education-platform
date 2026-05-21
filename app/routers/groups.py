@@ -5,6 +5,7 @@ from datetime import date, datetime
 from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional, List
@@ -13,7 +14,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupPaymentEntry
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupPaymentEntry
 from app.ui import templates
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
@@ -1444,6 +1445,15 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     ordered_lesson_ids = [lesson.id for lesson in ordered_lessons]
     group_has_progress = False
     if ordered_lesson_ids:
+        completed_lesson = (
+            db.query(GroupLessonProgress.id)
+            .filter(
+                GroupLessonProgress.group_id == group_id,
+                GroupLessonProgress.student_id == user.id,
+                GroupLessonProgress.lesson_id.in_(ordered_lesson_ids),
+            )
+            .first()
+        )
         journal_progress = (
             db.query(GroupJournalEntry.id)
             .filter(
@@ -1463,7 +1473,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
             )
             .first()
         )
-        group_has_progress = bool(journal_progress or vocab_progress)
+        group_has_progress = bool(completed_lesson or journal_progress or vocab_progress)
     return templates.TemplateResponse("groups/student_view.html", {
         "request": request,
         "user": user,
@@ -1528,12 +1538,29 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         else None
     )
     journal_entry = None
+    group_progress = None
+    group_progress_data = {}
     if membership and user.is_student:
         journal_entry = db.query(GroupJournalEntry).filter(
             GroupJournalEntry.group_id == group_id,
             GroupJournalEntry.lesson_id == lesson_id,
             GroupJournalEntry.student_id == user.id,
         ).first()
+        lesson_ids = [item.id for item in ordered_lessons]
+        progress_rows = (
+            db.query(GroupLessonProgress)
+            .filter(
+                GroupLessonProgress.group_id == group_id,
+                GroupLessonProgress.student_id == user.id,
+                GroupLessonProgress.lesson_id.in_(lesson_ids),
+            )
+            .all()
+        ) if lesson_ids else []
+        group_progress_data = {progress.lesson_id: True for progress in progress_rows}
+        group_progress = next(
+            (progress for progress in progress_rows if progress.lesson_id == lesson_id),
+            None,
+        )
 
     return templates.TemplateResponse("groups/lesson_view.html", {
         "request": request,
@@ -1546,8 +1573,59 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "previous_lesson": previous_lesson,
         "next_lesson": next_lesson,
         "journal_entry": journal_entry,
+        "group_progress": group_progress,
+        "group_progress_data": group_progress_data,
         "can_preview_as_owner": can_preview_as_owner,
     })
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/complete")
+def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+    if not user.is_student:
+        raise HTTPException(status_code=403, detail="Только ученики могут отмечать урок как пройденный")
+
+    group = db.query(Group).filter(
+        Group.id == group_id,
+        Group.is_active == True,  # noqa: E712
+    ).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember.id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
+
+    lesson = db.query(GroupLesson.id).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+
+    progress = db.query(GroupLessonProgress).filter(
+        GroupLessonProgress.group_id == group_id,
+        GroupLessonProgress.lesson_id == lesson_id,
+        GroupLessonProgress.student_id == user.id,
+    ).first()
+    if not progress:
+        db.add(GroupLessonProgress(
+            group_id=group_id,
+            lesson_id=lesson_id,
+            student_id=user.id,
+            completed_at=datetime.utcnow(),
+        ))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+
+    return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}", status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════

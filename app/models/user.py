@@ -35,6 +35,7 @@ class User(Base):
     employer_organizations = relationship("OrganizationTeacher", back_populates="teacher")
     student_organizations = relationship("OrganizationStudent", back_populates="student")
     group_journal_entries = relationship("GroupJournalEntry", back_populates="student")
+    group_lesson_progress = relationship("GroupLessonProgress", back_populates="student")
     group_payment_entries = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.student_id", back_populates="student")
     marked_group_payments = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.marked_by_id", back_populates="marked_by")
 

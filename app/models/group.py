@@ -20,6 +20,7 @@ class Group(Base):
     teacher = relationship("User", foreign_keys=[teacher_id])
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
     journal_entries = relationship("GroupJournalEntry", back_populates="group", cascade="all, delete-orphan")
+    lesson_progress = relationship("GroupLessonProgress", back_populates="group", cascade="all, delete-orphan")
     payment_entries = relationship("GroupPaymentEntry", back_populates="group", cascade="all, delete-orphan")
     modules = relationship(
         "GroupModule",
@@ -76,6 +77,7 @@ class GroupLesson(Base):
     group_module = relationship("GroupModule", back_populates="lessons")
     materials = relationship("GroupMaterial", back_populates="lesson", cascade="all, delete-orphan")
     journal_entries = relationship("GroupJournalEntry", back_populates="lesson", cascade="all, delete-orphan")
+    progress_entries = relationship("GroupLessonProgress", back_populates="lesson", cascade="all, delete-orphan")
     vocabularies = relationship("VocabularySet", back_populates="lesson", cascade="all, delete-orphan")
 
 
@@ -109,6 +111,23 @@ class GroupJournalEntry(Base):
     group = relationship("Group", back_populates="journal_entries")
     lesson = relationship("GroupLesson", back_populates="journal_entries")
     student = relationship("User", foreign_keys=[student_id], back_populates="group_journal_entries")
+
+
+class GroupLessonProgress(Base):
+    __tablename__ = "group_lesson_progress"
+    __table_args__ = (
+        UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_lesson_progress"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("group_lessons.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    completed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    group = relationship("Group", back_populates="lesson_progress")
+    lesson = relationship("GroupLesson", back_populates="progress_entries")
+    student = relationship("User", foreign_keys=[student_id], back_populates="group_lesson_progress")
 
 
 class GroupPaymentEntry(Base):
