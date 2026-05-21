@@ -675,10 +675,6 @@
                            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                     <p class="form-hint" data-i18n="homework.upload_hint">PDF, DOC, изображение или видео до 50MB.</p>
                     <p id="hw-current-material" class="form-hint" hidden></p>
-                    <label class="checkbox-row" id="hw-remove-material-row" hidden>
-                        <input type="checkbox" id="hw-remove-material" name="remove_material" value="1" />
-                        <span data-i18n="homework.remove_material">Удалить текущий материал</span>
-                    </label>
                 </div>
                 <div class="form-group">
                     <label for="hw-deadline" data-i18n="homework.deadline">Дедлайн</label>
@@ -836,18 +832,20 @@ function openHomeworkModal(dataset) {
     const deleteBtn = document.getElementById('homework-delete-btn');
     const title = document.getElementById('homework-modal-title');
     const currentMaterial = document.getElementById('hw-current-material');
-    const removeRow = document.getElementById('hw-remove-material-row');
-    const removeInput = document.getElementById('hw-remove-material');
 
     form.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/save`;
-    deleteForm.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/delete`;
+    if (hasHomework) {
+        deleteForm.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/delete`;
+    } else {
+        deleteForm.removeAttribute('action');
+    }
     document.getElementById('hw-title').value = dataset.homeworkTitle || '';
     document.getElementById('hw-description').value = dataset.homeworkDescription || '';
     document.getElementById('hw-material-url').value = dataset.homeworkMaterialUrl || '';
     document.getElementById('hw-material-file').value = '';
     document.getElementById('hw-deadline').value = dataset.homeworkDeadline || '';
-    removeInput.checked = false;
     deleteBtn.hidden = !hasHomework;
+    deleteBtn.disabled = !hasHomework;
     title.dataset.i18n = hasHomework ? 'homework.edit' : 'homework.add';
     title.textContent = typeof t === 'function'
         ? t(hasHomework ? 'homework.edit' : 'homework.add')
@@ -856,11 +854,9 @@ function openHomeworkModal(dataset) {
     if (dataset.homeworkMaterialUrl) {
         currentMaterial.hidden = false;
         currentMaterial.textContent = `${typeof t === 'function' ? t('homework.current_material') : 'homework.current_material'}: ${dataset.homeworkMaterialFilename || dataset.homeworkMaterialUrl}`;
-        removeRow.hidden = false;
     } else {
         currentMaterial.hidden = true;
         currentMaterial.textContent = '';
-        removeRow.hidden = true;
     }
     _openModalOverlay('homework-modal');
 }

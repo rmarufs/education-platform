@@ -1559,7 +1559,6 @@ async def group_homework_save(
     description: str = Form(...),
     material_url: Optional[str] = Form(None),
     deadline: Optional[str] = Form(None),
-    remove_material: str = Form("0"),
     material_file: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
@@ -1583,11 +1582,6 @@ async def group_homework_save(
     homework.title = title.strip() if title and title.strip() else None
     homework.description = clean_description
     homework.deadline = _parse_homework_deadline(deadline)
-
-    if remove_material == "1":
-        homework.material_url = None
-        homework.material_type = None
-        homework.material_filename = None
 
     if material_file and material_file.filename:
         material_folder = os.path.join(GROUP_HOMEWORK_DIR, "materials")

@@ -50,6 +50,10 @@
   --font:          'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* ── Сброс стилей ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1974,7 +1978,10 @@ body.dark .course-detail-hero .course-detail-info {
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.7rem; background: var(--bg); border: 1px solid var(--border); }
 .badge-quiz { background: rgba(139,92,246,0.15); border-color: var(--primary); color: var(--primary); }
 .btn-xs { padding: 0.2rem 0.5rem; font-size: 0.75rem; }
-.manage-btn-label { display: none; }
+.manage-btn-label {
+  display: inline;
+  margin-left: 3px;
+}
 
 /* ── Lesson Page ─────────────────────────────────── */
 .lesson-layout {
