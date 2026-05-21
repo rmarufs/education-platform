@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupPaymentEntry
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupPaymentEntry
 from app.ui import templates
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
@@ -26,6 +26,17 @@ GROUP_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
 GROUP_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx"}
 GROUP_LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
 GROUP_LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+# TODO(Render): homework uploads currently use local static storage, like group materials.
+# Render's filesystem is ephemeral, so move this to Cloudinary/S3 before relying on persistence.
+GROUP_HOMEWORK_DIR = os.path.join("static", "uploads", "group_homework")
+GROUP_HOMEWORK_MAX_BYTES = 50 * 1024 * 1024
+GROUP_HOMEWORK_EXTENSIONS = {
+    ".pdf", ".doc", ".docx", ".txt",
+    ".jpg", ".jpeg", ".png", ".webp",
+    ".mp4", ".mov", ".webm",
+}
+GROUP_HOMEWORK_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
 
 
 class BulkAddStudentsPayload(BaseModel):
@@ -113,6 +124,72 @@ def _validate_group_lesson_cover_upload(file: UploadFile) -> None:
     file.file.seek(0)
     if size > GROUP_LESSON_COVER_MAX_BYTES:
         raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
+
+
+def _validate_group_homework_upload(file: UploadFile) -> None:
+    if not file or not file.filename:
+        return
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in GROUP_HOMEWORK_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > GROUP_HOMEWORK_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
+
+
+def _homework_file_type(filename: str | None, content_type: str | None = None) -> str:
+    ext = os.path.splitext(filename or "")[1].lower()
+    if ext in GROUP_HOMEWORK_IMAGE_EXTENSIONS or (content_type or "").startswith("image/"):
+        return "image"
+    if ext in GROUP_HOMEWORK_VIDEO_EXTENSIONS or (content_type or "").startswith("video/"):
+        return "video"
+    return "file"
+
+
+def _homework_url_type(url: str) -> str:
+    parsed = urlparse(url)
+    ext = os.path.splitext(parsed.path)[1].lower()
+    if ext in GROUP_HOMEWORK_IMAGE_EXTENSIONS:
+        return "image"
+    if ext in GROUP_HOMEWORK_VIDEO_EXTENSIONS or "youtube.com" in parsed.netloc or "youtu.be" in parsed.netloc:
+        return "video"
+    return "link"
+
+
+def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str, str]:
+    _validate_group_homework_upload(file)
+    os.makedirs(folder, exist_ok=True)
+    original_name = os.path.basename(file.filename)
+    filename = f"{uuid.uuid4().hex}_{original_name}"
+    save_path = os.path.join(folder, filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return "/" + save_path, _homework_file_type(original_name, file.content_type), original_name
+
+
+def _parse_homework_deadline(value: str | None) -> datetime | None:
+    clean_value = (value or "").strip()
+    if not clean_value:
+        return None
+    try:
+        return datetime.fromisoformat(clean_value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Некорректный дедлайн")
+
+
+def _get_group_lesson(group_id: int, lesson_id: int, db: Session) -> GroupLesson:
+    lesson = db.query(GroupLesson).options(
+        joinedload(GroupLesson.group),
+        joinedload(GroupLesson.homework),
+    ).filter(
+        GroupLesson.id == lesson_id,
+        GroupLesson.group_id == group_id,
+    ).first()
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Урок не найден")
+    return lesson
 
 
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
@@ -614,9 +691,11 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
             joinedload(Group.organization),
             joinedload(Group.teacher),
             joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.materials),
+            joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.homework),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
             joinedload(Group.lessons).joinedload(GroupLesson.group_module),
+            joinedload(Group.lessons).joinedload(GroupLesson.homework),
         ).filter(
             Group.id == group_id,
             Group.organization_id == org.id,
@@ -662,9 +741,11 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
             joinedload(Group.organization),
             joinedload(Group.teacher),
             joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.materials),
+            joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.homework),
             joinedload(Group.members).joinedload(GroupMember.student),
             joinedload(Group.lessons).joinedload(GroupLesson.materials),
             joinedload(Group.lessons).joinedload(GroupLesson.group_module),
+            joinedload(Group.lessons).joinedload(GroupLesson.homework),
         ).filter(
             Group.id == group_id,
             Group.teacher_id == user.id,
@@ -695,8 +776,9 @@ def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
     group = db.query(Group).options(
         joinedload(Group.organization),
         joinedload(Group.teacher),
-        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.modules).joinedload(GroupModule.lessons).joinedload(GroupLesson.homework),
         joinedload(Group.lessons).joinedload(GroupLesson.group_module),
+        joinedload(Group.lessons).joinedload(GroupLesson.homework),
     ).filter(
         Group.id == group_id,
         Group.teacher_id == user.id,
@@ -1412,6 +1494,200 @@ def lesson_material_delete(
 
 
 # ═══════════════════════════════════════════════════════════
+# GROUP HOMEWORK — ORG / TEACHER / STUDENT
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/{group_id}/lessons/{lesson_id}/homework", response_class=HTMLResponse)
+def group_homework_view(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    lesson = _get_group_lesson(group_id, lesson_id, db)
+    group = lesson.group
+    homework = lesson.homework
+    mode = request.query_params.get("mode", "").strip()
+    is_teach_mode = mode == "teach" and user.is_teacher and group.teacher_id == user.id
+    can_manage = _can_manage_group_content(user, group, db)
+    if not group.is_active and not can_manage:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = None
+    if user.is_student:
+        membership = db.query(GroupMember).filter(
+            GroupMember.group_id == group_id,
+            GroupMember.student_id == user.id,
+        ).first()
+        if not membership:
+            raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
+    elif not can_manage and not is_teach_mode:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    submission = None
+    if homework and user.is_student:
+        submission = db.query(GroupHomeworkSubmission).filter(
+            GroupHomeworkSubmission.homework_id == homework.id,
+            GroupHomeworkSubmission.student_id == user.id,
+        ).first()
+
+    deadline_passed = bool(homework and homework.deadline and homework.deadline < datetime.utcnow())
+    success = request.query_params.get("success")
+    error = request.query_params.get("error")
+
+    return templates.TemplateResponse("groups/homework.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "lesson": lesson,
+        "homework": homework,
+        "submission": submission,
+        "deadline_passed": deadline_passed,
+        "can_manage": can_manage,
+        "is_teach_mode": is_teach_mode,
+        "can_submit": bool(homework and user.is_student and membership),
+        "success": success,
+        "error": error,
+    })
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/homework/save")
+async def group_homework_save(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    title: Optional[str] = Form(None),
+    description: str = Form(...),
+    material_url: Optional[str] = Form(None),
+    deadline: Optional[str] = Form(None),
+    remove_material: str = Form("0"),
+    material_file: UploadFile = File(None),
+    db: Session = Depends(get_db),
+):
+    user, group = _get_manageable_group(group_id, request, db)
+    lesson = _get_group_lesson(group.id, lesson_id, db)
+
+    clean_description = description.strip()
+    if not clean_description:
+        raise HTTPException(status_code=400, detail="Добавьте описание домашнего задания")
+
+    homework = lesson.homework
+    if not homework:
+        homework = GroupHomework(
+            group_id=group.id,
+            lesson_id=lesson.id,
+            created_by_id=user.id,
+            description=clean_description,
+        )
+        db.add(homework)
+
+    homework.title = title.strip() if title and title.strip() else None
+    homework.description = clean_description
+    homework.deadline = _parse_homework_deadline(deadline)
+
+    if remove_material == "1":
+        homework.material_url = None
+        homework.material_type = None
+        homework.material_filename = None
+
+    if material_file and material_file.filename:
+        material_folder = os.path.join(GROUP_HOMEWORK_DIR, "materials")
+        file_url, file_type, filename = _save_group_homework_upload(material_file, material_folder)
+        homework.material_url = file_url
+        homework.material_type = file_type
+        homework.material_filename = filename
+    elif material_url and material_url.strip():
+        clean_url = material_url.strip()
+        parsed = urlparse(clean_url)
+        if not all([parsed.scheme, parsed.netloc]):
+            raise HTTPException(status_code=400, detail="Некорректная ссылка на материал")
+        homework.material_url = clean_url
+        homework.material_type = _homework_url_type(clean_url)
+        homework.material_filename = clean_url.split("/")[-1] or clean_url
+
+    db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/homework/delete")
+def group_homework_delete(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
+    _, group = _get_manageable_group(group_id, request, db)
+    lesson = _get_group_lesson(group.id, lesson_id, db)
+    if lesson.homework:
+        db.delete(lesson.homework)
+        db.commit()
+    return RedirectResponse(f"/groups/{group_id}/manage?success=homework_deleted", status_code=302)
+
+
+@router.post("/{group_id}/lessons/{lesson_id}/homework/submit")
+async def group_homework_submit(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    answer_file: UploadFile = File(...),
+    comment: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+    if not user.is_student:
+        raise HTTPException(status_code=403, detail="Только ученики могут отправлять ответы")
+
+    lesson = _get_group_lesson(group_id, lesson_id, db)
+    homework = lesson.homework
+    if not homework:
+        raise HTTPException(status_code=404, detail="Домашнее задание не найдено")
+    if not lesson.group.is_active:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember.id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
+
+    if homework.deadline and homework.deadline < datetime.utcnow():
+        return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=deadline_passed", status_code=302)
+    if not answer_file or not answer_file.filename:
+        return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=submit_error", status_code=302)
+
+    answer_folder = os.path.join(GROUP_HOMEWORK_DIR, "submissions")
+    file_url, file_type, filename = _save_group_homework_upload(answer_file, answer_folder)
+    submission = db.query(GroupHomeworkSubmission).filter(
+        GroupHomeworkSubmission.homework_id == homework.id,
+        GroupHomeworkSubmission.student_id == user.id,
+    ).first()
+    now = datetime.utcnow()
+    if submission:
+        submission.file_url = file_url
+        submission.file_type = file_type
+        submission.filename = filename
+        submission.comment = comment.strip() if comment and comment.strip() else None
+        submission.updated_at = now
+    else:
+        submission = GroupHomeworkSubmission(
+            homework_id=homework.id,
+            student_id=user.id,
+            file_url=file_url,
+            file_type=file_type,
+            filename=filename,
+            comment=comment.strip() if comment and comment.strip() else None,
+            submitted_at=now,
+            updated_at=now,
+        )
+        db.add(submission)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=submit_error", status_code=302)
+
+    return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?success=submit_success", status_code=302)
+
+
+# ═══════════════════════════════════════════════════════════
 # STUDENT VIEW
 # ═══════════════════════════════════════════════════════════
 
@@ -1503,6 +1779,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
     can_preview_as_owner = _can_manage_lessons(user, group, db)
+    is_teach_mode = request.query_params.get("mode", "").strip() == "teach" and user.is_teacher and group.teacher_id == user.id
     if not group.is_active and not can_preview_as_owner:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
@@ -1517,6 +1794,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     lesson = db.query(GroupLesson).options(
         joinedload(GroupLesson.materials),
         joinedload(GroupLesson.group_module),
+        joinedload(GroupLesson.homework),
         joinedload(GroupLesson.vocabularies).joinedload(VocabularySet.items),
     ).filter(
         GroupLesson.id == lesson_id,
@@ -1576,6 +1854,8 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "group_progress": group_progress,
         "group_progress_data": group_progress_data,
         "can_preview_as_owner": can_preview_as_owner,
+        "is_teach_mode": is_teach_mode,
+        "lesson_mode_suffix": "?mode=teach" if is_teach_mode else "",
     })
 
 

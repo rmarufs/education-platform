@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title_key %}homework.title{% endblock %}
+{% block title %}Домашнее задание{% endblock %}
+
+{% block content %}
+{% set back_url = "/groups/" ~ group.id ~ ("/teach" if is_teach_mode else ("/manage" if can_manage else "/lessons/" ~ lesson.id)) %}
+<div class="manage-page homework-page">
+  <div class="manage-header homework-header">
+    <div>
+      <a href="{{ back_url }}" class="back-link" data-i18n="group.back_to_group">← К группе</a>
+      <h1 data-i18n="homework.title">Домашнее задание</h1>
+      <p class="text-muted">{{ lesson.title }}</p>
+    </div>
+    <div class="manage-header-actions">
+      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}{% if is_teach_mode %}?mode=teach{% endif %}"
+         class="btn btn-outline btn-sm" data-i18n="group.teach_open_lesson">Открыть урок</a>
+    </div>
+  </div>
+
+  {% if success == "submit_success" %}
+  <div class="alert alert-success" data-i18n="homework.submit_success">Ответ отправлен.</div>
+  {% endif %}
+  {% if error == "deadline_passed" %}
+  <div class="alert alert-danger" data-i18n="homework.deadline_passed">Дедлайн уже прошёл.</div>
+  {% elif error == "submit_error" %}
+  <div class="alert alert-danger" data-i18n="homework.submit_error">Не удалось отправить ответ.</div>
+  {% endif %}
+
+  {% if not homework %}
+  <section class="homework-card homework-empty">
+    <h2 data-i18n="homework.no_homework">Домашнего задания нет</h2>
+    <p class="text-muted" data-i18n="homework.no_homework_hint">Преподаватель пока не добавил домашнее задание к этому уроку.</p>
+  </section>
+  {% else %}
+  <section class="homework-card">
+    <div class="homework-card-head">
+      <div>
+        <span class="section-label" data-i18n="homework.title">Домашнее задание</span>
+        <h2>{{ homework.title or lesson.title }}</h2>
+      </div>
+      {% if homework.deadline %}
+      <span class="badge {{ 'badge-danger' if deadline_passed else 'badge-secondary' }}">
+        {% if deadline_passed %}
+        <span data-i18n="homework.deadline_passed">Дедлайн прошёл</span>
+        {% else %}
+        <span data-i18n="homework.deadline_active">До дедлайна</span>
+        {% endif %}
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="homework-meta">
+      {% if homework.deadline %}
+      <div>
+        <strong data-i18n="homework.deadline">Дедлайн</strong>
+        <span>{{ homework.deadline.strftime("%d.%m.%Y %H:%M") }}</span>
+      </div>
+      {% else %}
+      <div>
+        <strong data-i18n="homework.deadline">Дедлайн</strong>
+        <span data-i18n="homework.no_deadline">Без дедлайна</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="homework-description">
+      <h3 data-i18n="homework.description">Описание задания</h3>
+      <div class="rich-text-content">{{ homework.description | e | replace('\n', '<br>') | safe }}</div>
+    </div>
+
+    {% if homework.material_url %}
+    <div class="homework-material">
+      <h3 data-i18n="homework.material">Материал</h3>
+      {% if homework.material_type == "image" %}
+      <a href="{{ homework.material_url }}" target="_blank" rel="noopener" class="homework-image-link">
+        <img src="{{ homework.material_url }}" alt="{{ homework.material_filename or '' }}">
+      </a>
+      {% elif homework.material_type == "video" and homework.material_url.startswith('/') %}
+      <video src="{{ homework.material_url }}" controls playsinline class="homework-video"></video>
+      {% endif %}
+      <a href="{{ homework.material_url }}" target="_blank" rel="noopener" class="homework-file-link">
+        <span aria-hidden="true">📎</span>
+        <span>{{ homework.material_filename or homework.material_url }}</span>
+      </a>
+    </div>
+    {% endif %}
+  </section>
+
+  {% if can_submit %}
+  <section class="homework-card">
+    <div class="homework-card-head">
+      <div>
+        <span class="section-label" data-i18n="homework.your_answer">Ваш ответ</span>
+        {% if submission %}
+        <h2 data-i18n="homework.replace_answer">Заменить ответ</h2>
+        {% else %}
+        <h2 data-i18n="homework.submit_answer">Отправить ответ</h2>
+        {% endif %}
+      </div>
+      {% if submission %}
+      <span class="badge badge-secondary" data-i18n="homework.submitted">Отправлено</span>
+      {% endif %}
+    </div>
+
+    {% if submission %}
+    <div class="homework-submission">
+      <a href="{{ submission.file_url }}" target="_blank" rel="noopener" class="homework-file-link">
+        <span aria-hidden="true">📎</span>
+        <span>{{ submission.filename or submission.file_url }}</span>
+      </a>
+      <p class="text-muted">
+        <span data-i18n="homework.submitted">Отправлено</span>:
+        {{ (submission.updated_at or submission.submitted_at).strftime("%d.%m.%Y %H:%M") }}
+      </p>
+      {% if submission.comment %}
+      <p>{{ submission.comment }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if deadline_passed %}
+    <p class="text-muted" data-i18n="homework.deadline_passed">Дедлайн уже прошёл.</p>
+    {% else %}
+    <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework/submit" method="POST" enctype="multipart/form-data" class="homework-submit-form">
+      <div class="form-group">
+        <label for="answer-file" data-i18n="homework.upload_file">Загрузить файл</label>
+        <input type="file" id="answer-file" name="answer_file" class="form-input" required
+               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+      </div>
+      <div class="form-group">
+        <label for="answer-comment" data-i18n="homework.comment">Комментарий</label>
+        <textarea id="answer-comment" name="comment" class="form-input" rows="3" data-i18n="homework.comment_ph" data-i18n-prop="placeholder" placeholder="Можно оставить комментарий к ответу"></textarea>
+      </div>
+      {% if submission %}
+      <button type="submit" class="btn btn-primary" data-i18n="homework.replace_answer">Заменить ответ</button>
+      {% else %}
+      <button type="submit" class="btn btn-primary" data-i18n="homework.submit_answer">Отправить ответ</button>
+      {% endif %}
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+
+<style>
+.homework-page {
+  max-width: 920px;
+}
+.homework-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-top: 16px;
+  padding: 20px;
+}
+.homework-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.homework-card-head h2 {
+  margin: 4px 0 0;
+}
+.homework-meta {
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 12px 0;
+}
+.homework-meta div {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+.homework-meta strong,
+.homework-description h3,
+.homework-material h3 {
+  color: var(--muted-text, var(--text-muted));
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  margin: 0 0 8px;
+}
+.homework-description,
+.homework-material,
+.homework-submission {
+  margin-top: 16px;
+}
+.homework-image-link img,
+.homework-video {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: block;
+  max-height: 420px;
+  object-fit: contain;
+  width: 100%;
+}
+.homework-file-link {
+  align-items: center;
+  color: var(--primary);
+  display: inline-flex;
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.homework-submit-form {
+  display: grid;
+  gap: 14px;
+}
+.homework-empty {
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .homework-header {
+    align-items: stretch;
+  }
+  .homework-header .manage-header-actions,
+  .homework-header .btn,
+  .homework-submit-form .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .homework-card {
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .homework-card-head,
+  .homework-meta div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+</style>
+{% endblock %}

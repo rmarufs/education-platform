@@ -1241,6 +1241,13 @@ body.dark .logo-copy::after {
   font-size: .8rem;
   color: var(--text-muted);
 }
+.checkbox-row {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
 
 .course-cover-field {
   display: flex;

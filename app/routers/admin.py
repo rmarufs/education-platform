@@ -20,6 +20,8 @@ from app.models.assessment import AssessmentResponse
 from app.models.comment import Comment
 from app.models.group import (
     Group,
+    GroupHomework,
+    GroupHomeworkSubmission,
     GroupJournalEntry,
     GroupLesson,
     GroupMaterial,
@@ -111,6 +113,15 @@ def _delete_organization_dependencies(db: Session, org: Organization) -> None:
         db.query(GroupMember).filter(GroupMember.group_id.in_(group_ids)).delete(synchronize_session=False)
 
         if lesson_ids:
+            homework_ids = [
+                row[0]
+                for row in db.query(GroupHomework.id)
+                .filter(GroupHomework.lesson_id.in_(lesson_ids))
+                .all()
+            ]
+            if homework_ids:
+                db.query(GroupHomeworkSubmission).filter(GroupHomeworkSubmission.homework_id.in_(homework_ids)).delete(synchronize_session=False)
+                db.query(GroupHomework).filter(GroupHomework.id.in_(homework_ids)).delete(synchronize_session=False)
             db.query(GroupMaterial).filter(GroupMaterial.lesson_id.in_(lesson_ids)).delete(synchronize_session=False)
 
         db.query(GroupLesson).filter(GroupLesson.group_id.in_(group_ids)).delete(synchronize_session=False)
@@ -132,6 +143,11 @@ def _delete_user_dependencies(db: Session, user: User, delete_owned_organization
         (Review.student_id == user.id) | (Review.teacher_id == user.id)
     ).delete(synchronize_session=False)
     db.query(GroupJournalEntry).filter(GroupJournalEntry.student_id == user.id).delete(synchronize_session=False)
+    db.query(GroupHomeworkSubmission).filter(GroupHomeworkSubmission.student_id == user.id).delete(synchronize_session=False)
+    db.query(GroupHomework).filter(GroupHomework.created_by_id == user.id).update(
+        {GroupHomework.created_by_id: None},
+        synchronize_session=False,
+    )
     db.query(GroupPaymentEntry).filter(GroupPaymentEntry.student_id == user.id).delete(synchronize_session=False)
     db.query(GroupPaymentEntry).filter(GroupPaymentEntry.marked_by_id == user.id).update(
         {GroupPaymentEntry.marked_by_id: None},

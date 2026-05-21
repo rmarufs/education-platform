@@ -45,6 +45,8 @@
     {% elif success == "module_deleted" %}<span data-i18n="group.success_module_deleted">✅ Модуль удалён.</span>
     {% elif success == "lesson_created" %}<span data-i18n="group.success_lesson_created">✅ Урок создан.</span>
     {% elif success == "lesson_saved" %}<span data-i18n="group.success_lesson_saved">✅ Урок сохранён.</span>
+    {% elif success == "homework_saved" %}<span data-i18n="homework.saved">✅ Домашнее задание сохранено.</span>
+    {% elif success == "homework_deleted" %}<span data-i18n="homework.deleted">✅ Домашнее задание удалено.</span>
     {% elif success == "vocab_created" %}<span data-i18n="vocabulary.success_created">✅ Словарь создан.</span>
     {% elif success == "vocab_saved" %}<span data-i18n="vocabulary.success_saved">✅ Словарь сохранён.</span>
     {% elif success == "avatar" %}<span data-i18n="group.success_cover_saved">✅ Обложка группы сохранена.</span>
@@ -108,6 +110,15 @@
                   data-lesson-order="{{ lesson.order }}"
                   data-lesson-module-id="{{ lesson.group_module_id or '' }}"
                   onclick="openEditLessonModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
+                <button type="button" class="btn btn-outline btn-xs"
+                  data-lesson-id="{{ lesson.id }}"
+                  data-homework-title="{{ (lesson.homework.title if lesson.homework else '') | e }}"
+                  data-homework-description="{{ (lesson.homework.description if lesson.homework else '') | e }}"
+                  data-homework-material-url="{{ (lesson.homework.material_url if lesson.homework else '') | e }}"
+                  data-homework-material-filename="{{ (lesson.homework.material_filename if lesson.homework else '') | e }}"
+                  data-homework-deadline="{{ lesson.homework.deadline.strftime('%Y-%m-%dT%H:%M') if lesson.homework and lesson.homework.deadline else '' }}"
+                  data-has-homework="{{ '1' if lesson.homework else '0' }}"
+                  onclick="openHomeworkModal(this.dataset)">📌{% if lesson.homework %}<span class="manage-btn-label" data-i18n="homework.edit">Редактировать домашнее задание</span>{% else %}<span class="manage-btn-label" data-i18n="homework.add">Добавить домашнее задание</span>{% endif %}</button>
                 <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
                   <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="group.confirm_delete_lesson" data-i18n-prop="title">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
                 </form>
@@ -193,6 +204,15 @@
                   data-lesson-order="{{ lesson.order }}"
                   data-lesson-module-id=""
                   onclick="openEditLessonModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
+                <button type="button" class="btn btn-outline btn-xs"
+                  data-lesson-id="{{ lesson.id }}"
+                  data-homework-title="{{ (lesson.homework.title if lesson.homework else '') | e }}"
+                  data-homework-description="{{ (lesson.homework.description if lesson.homework else '') | e }}"
+                  data-homework-material-url="{{ (lesson.homework.material_url if lesson.homework else '') | e }}"
+                  data-homework-material-filename="{{ (lesson.homework.material_filename if lesson.homework else '') | e }}"
+                  data-homework-deadline="{{ lesson.homework.deadline.strftime('%Y-%m-%dT%H:%M') if lesson.homework and lesson.homework.deadline else '' }}"
+                  data-has-homework="{{ '1' if lesson.homework else '0' }}"
+                  onclick="openHomeworkModal(this.dataset)">📌{% if lesson.homework %}<span class="manage-btn-label" data-i18n="homework.edit">Редактировать домашнее задание</span>{% else %}<span class="manage-btn-label" data-i18n="homework.add">Добавить домашнее задание</span>{% endif %}</button>
                 <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
                   <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="group.confirm_delete_lesson" data-i18n-prop="title">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
                 </form>
@@ -481,6 +501,52 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="homework-modal" onclick="if(event.target===this) closeModal('homework-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="homework-modal-title" data-i18n="homework.add">Добавить домашнее задание</h2>
+      <button class="modal-close" onclick="closeModal('homework-modal')">✕</button>
+    </div>
+    <form id="homework-form" method="POST" enctype="multipart/form-data">
+      <div class="modal-scroll-body">
+        <div class="form-group">
+          <label for="hw-title" data-i18n="homework.short_title">Короткое название</label>
+          <input type="text" id="hw-title" name="title" class="form-input" data-i18n="homework.short_title_ph" data-i18n-prop="placeholder" placeholder="Например: Практика к уроку" />
+        </div>
+        <div class="form-group">
+          <label for="hw-description" data-i18n="homework.description">Описание задания</label>
+          <textarea id="hw-description" name="description" class="form-input" rows="6" required data-i18n="homework.description_ph" data-i18n-prop="placeholder" placeholder="Что нужно сделать ученику?"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="hw-material-url" data-i18n="homework.material_url">Ссылка на видео или материал</label>
+          <input type="url" id="hw-material-url" name="material_url" class="form-input" data-i18n="homework.material_url_ph" data-i18n-prop="placeholder" placeholder="https://..." />
+        </div>
+        <div class="form-group">
+          <label for="hw-material-file" data-i18n="homework.upload_file">Загрузить материал</label>
+          <input type="file" id="hw-material-file" name="material_file" class="form-input"
+                 accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+          <p class="form-hint" data-i18n="homework.upload_hint">PDF, DOC, изображение или видео до 50MB.</p>
+          <p id="hw-current-material" class="form-hint" hidden></p>
+          <label class="checkbox-row" id="hw-remove-material-row" hidden>
+            <input type="checkbox" id="hw-remove-material" name="remove_material" value="1" />
+            <span data-i18n="homework.remove_material">Удалить текущий материал</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="hw-deadline" data-i18n="homework.deadline">Дедлайн</label>
+          <input type="datetime-local" id="hw-deadline" name="deadline" class="form-input" />
+        </div>
+      </div>
+    </form>
+    <form id="homework-delete-form" method="POST"></form>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" onclick="closeModal('homework-modal')" data-i18n="group.cancel">Отмена</button>
+      <button type="submit" form="homework-delete-form" id="homework-delete-btn" class="btn btn-outline" style="color: var(--error); border-color: var(--error);" hidden data-i18n="homework.delete">Удалить домашнее задание</button>
+      <button type="submit" form="homework-form" class="btn btn-primary" data-i18n="homework.save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <style>
 .manage-group-quiz { margin-bottom: 16px; }
 .manage-quiz-block { padding: 0 16px 16px; }
@@ -544,8 +610,44 @@ function openEditLessonModal(dataset) {
   resetLessonMediaEditor(document.querySelector('#edit-lesson-modal [data-lesson-media-editor]'), dataset.lessonCover || '');
   _openModalOverlay('edit-lesson-modal');
 }
+function openHomeworkModal(dataset) {
+  const lessonId = dataset.lessonId;
+  const hasHomework = dataset.hasHomework === '1';
+  const form = document.getElementById('homework-form');
+  const deleteForm = document.getElementById('homework-delete-form');
+  const deleteBtn = document.getElementById('homework-delete-btn');
+  const title = document.getElementById('homework-modal-title');
+  const currentMaterial = document.getElementById('hw-current-material');
+  const removeRow = document.getElementById('hw-remove-material-row');
+  const removeInput = document.getElementById('hw-remove-material');
+
+  form.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/save`;
+  deleteForm.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/delete`;
+  document.getElementById('hw-title').value = dataset.homeworkTitle || '';
+  document.getElementById('hw-description').value = dataset.homeworkDescription || '';
+  document.getElementById('hw-material-url').value = dataset.homeworkMaterialUrl || '';
+  document.getElementById('hw-material-file').value = '';
+  document.getElementById('hw-deadline').value = dataset.homeworkDeadline || '';
+  removeInput.checked = false;
+  deleteBtn.hidden = !hasHomework;
+  title.dataset.i18n = hasHomework ? 'homework.edit' : 'homework.add';
+  title.textContent = typeof t === 'function'
+    ? t(hasHomework ? 'homework.edit' : 'homework.add')
+    : (hasHomework ? 'homework.edit' : 'homework.add');
+
+  if (dataset.homeworkMaterialUrl) {
+    currentMaterial.hidden = false;
+    currentMaterial.textContent = `${typeof t === 'function' ? t('homework.current_material') : 'homework.current_material'}: ${dataset.homeworkMaterialFilename || dataset.homeworkMaterialUrl}`;
+    removeRow.hidden = false;
+  } else {
+    currentMaterial.hidden = true;
+    currentMaterial.textContent = '';
+    removeRow.hidden = true;
+  }
+  _openModalOverlay('homework-modal');
+}
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') ['add-module-modal','edit-module-modal','add-lesson-modal','edit-lesson-modal'].forEach(closeModal);
+  if (e.key === 'Escape') ['add-module-modal','edit-module-modal','add-lesson-modal','edit-lesson-modal','homework-modal'].forEach(closeModal);
 });
 </script>
 

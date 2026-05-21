@@ -2,7 +2,7 @@
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}
-{% set group_return_url = "/groups/" ~ group.id ~ ("/manage" if can_preview_as_owner else "/view") %}
+{% set group_return_url = "/groups/" ~ group.id ~ ("/teach" if is_teach_mode else ("/manage" if can_preview_as_owner else "/view")) %}
 {% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | sort(attribute="order") | list %}
 <div class="lesson-layout" id="lesson-layout">
   <button type="button"
@@ -62,7 +62,7 @@
             </a>
             {% endif %}
             {% for l in module.lessons|sort(attribute='order') %}
-            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
+            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}{{ lesson_mode_suffix }}"
                class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if group_progress_data and group_progress_data.get(l.id) else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
               <span class="lesson-nav-title">{{ l.title }}</span>
@@ -92,7 +92,7 @@
         <div class="lesson-module-panel" style="height: auto;">
           <div class="lesson-module-panel-inner">
             {% for l in unassigned_lessons %}
-            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}"
+            <a href="/groups/{{ group.id }}/lessons/{{ l.id }}{{ lesson_mode_suffix }}"
                class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if group_progress_data and group_progress_data.get(l.id) else '' }}">
               <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
               <span class="lesson-nav-title">{{ l.title }}</span>
@@ -289,6 +289,14 @@
     </section>
     {% endif %}
 
+    {% if lesson.homework %}
+    <section class="lesson-materials group-lesson-homework-section">
+      <h3 data-i18n="homework.title">Домашнее задание</h3>
+      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
+         class="btn btn-primary" data-i18n="homework.view">Домашнее задание</a>
+    </section>
+    {% endif %}
+
     <div class="lesson-complete-bar">
       <div class="lesson-complete-actions">
         {% if membership and user.is_student and not can_preview_as_owner %}
@@ -302,13 +310,13 @@
         {% endif %}
 
         {% if previous_lesson %}
-        <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
+        <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
         {% else %}
         <a href="{{ group_return_url }}" class="btn btn-outline" data-i18n="group.back_to_group">← К группе</a>
         {% endif %}
 
         {% if next_lesson %}
-        <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+        <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
         {% else %}
         <a href="{{ group_return_url }}" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
         {% endif %}
@@ -323,7 +331,8 @@
     text-decoration: none;
   }
 
-  .group-lesson-quiz-section {
+  .group-lesson-quiz-section,
+  .group-lesson-homework-section {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -355,12 +364,14 @@
   .vocab-card-arrow { font-size: 1.1rem; color: var(--primary); font-weight: 700; flex-shrink: 0; }
 
   @media (max-width: 768px) {
-    .group-lesson-quiz-section {
+    .group-lesson-quiz-section,
+    .group-lesson-homework-section {
       align-items: stretch;
       flex-direction: column;
     }
 
-    .group-lesson-quiz-section .btn {
+    .group-lesson-quiz-section .btn,
+    .group-lesson-homework-section .btn {
       width: 100%;
       justify-content: center;
     }

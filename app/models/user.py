@@ -36,6 +36,8 @@ class User(Base):
     student_organizations = relationship("OrganizationStudent", back_populates="student")
     group_journal_entries = relationship("GroupJournalEntry", back_populates="student")
     group_lesson_progress = relationship("GroupLessonProgress", back_populates="student")
+    created_group_homeworks = relationship("GroupHomework", back_populates="created_by")
+    group_homework_submissions = relationship("GroupHomeworkSubmission", back_populates="student")
     group_payment_entries = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.student_id", back_populates="student")
     marked_group_payments = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.marked_by_id", back_populates="marked_by")
 
