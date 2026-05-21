@@ -296,7 +296,7 @@
           <button type="button" class="btn btn-outline lesson-done-button" disabled data-i18n="lesson.done">Пройдено</button>
           {% else %}
           <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete" method="POST">
-            <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Готово</button>
+            <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Завершить</button>
           </form>
           {% endif %}
         {% endif %}
