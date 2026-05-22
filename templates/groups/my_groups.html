@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_announcement_cards.html" import render_announcement_cards %}
 {% block title_key %}group.my_groups{% endblock %}
 {% block title %}Мои группы — Фурузон{% endblock %}
 {% block body_class %}user-dashboard-page{% endblock %}
@@ -18,6 +19,8 @@
                 <p data-i18n="analytics.teacher_groups_subtitle">Группы, в которых вы назначены преподавателем</p>
             </div>
         </div>
+
+        {{ render_announcement_cards(visible_announcements) }}
 
         <div class="section-label" data-i18n="group.my_groups">Мои группы</div>
 

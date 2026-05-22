@@ -1,3 +1,5 @@
+from datetime import datetime
+from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
@@ -5,9 +7,16 @@ from typing import Optional
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
+from app.models.organization import (
+    Organization,
+    OrganizationAnnouncement,
+    OrganizationAnnouncementDismissal,
+    OrganizationTeacher,
+    OrganizationStudent,
+)
 from app.models.course import Course
 from app.models.group import Group, GroupMember
+from app.utils.announcements import VALID_AUDIENCES, get_visible_announcement
 
 router = APIRouter()
 from app.ui import templates
@@ -25,6 +34,46 @@ def require_org(request: Request, db: Session):
     if not user.is_active:
         return None, RedirectResponse("/register/pending-org", status_code=302)
     return user, None
+
+
+def require_user(request: Request, db: Session):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return None, RedirectResponse("/login", status_code=302)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        request.session.clear()
+        return None, RedirectResponse("/login", status_code=302)
+    return user, None
+
+
+def _parse_optional_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    try:
+        return datetime.fromisoformat(cleaned)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid expires_at")
+
+
+def _organization_for_user(db: Session, user: User) -> Organization:
+    org = db.query(Organization).filter(Organization.user_id == user.id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org
+
+
+def _get_owned_announcement(db: Session, org_id: int, announcement_id: int) -> OrganizationAnnouncement:
+    announcement = db.query(OrganizationAnnouncement).filter(
+        OrganizationAnnouncement.id == announcement_id,
+        OrganizationAnnouncement.organization_id == org_id,
+    ).first()
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
 
 
 # ── API: список одобренных организаций для регистрации преподавателя ──────────
@@ -169,6 +218,164 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
             "groups_count": groups_count,
         }
     )
+
+
+# ── Объявления учебного центра ───────────────────────────────────────────────
+
+@router.get("/organization/announcements", response_class=HTMLResponse)
+def organization_announcements(request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = _organization_for_user(db, user)
+    announcements = db.query(OrganizationAnnouncement).filter(
+        OrganizationAnnouncement.organization_id == org.id
+    ).order_by(OrganizationAnnouncement.created_at.desc()).all()
+
+    return templates.TemplateResponse(
+        "organization/announcements.html",
+        {
+            "request": request,
+            "user": user,
+            "org": org,
+            "announcements": announcements,
+        },
+    )
+
+
+@router.post("/organization/announcements/create")
+def create_organization_announcement(
+    request: Request,
+    title: str = Form(...),
+    body: str = Form(...),
+    audience: str = Form("all"),
+    expires_at: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+    if audience not in VALID_AUDIENCES:
+        raise HTTPException(status_code=400, detail="Invalid audience")
+
+    org = _organization_for_user(db, user)
+    announcement = OrganizationAnnouncement(
+        organization_id=org.id,
+        title=title.strip(),
+        body=body.strip(),
+        audience=audience,
+        created_by_id=user.id,
+        expires_at=_parse_optional_datetime(expires_at),
+    )
+    if not announcement.title or not announcement.body:
+        raise HTTPException(status_code=400, detail="Title and body are required")
+
+    db.add(announcement)
+    db.commit()
+    return RedirectResponse("/organization/announcements?success=created", status_code=302)
+
+
+@router.post("/organization/announcements/{announcement_id}/update")
+def update_organization_announcement(
+    announcement_id: int,
+    request: Request,
+    title: str = Form(...),
+    body: str = Form(...),
+    audience: str = Form("all"),
+    expires_at: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+    if audience not in VALID_AUDIENCES:
+        raise HTTPException(status_code=400, detail="Invalid audience")
+
+    org = _organization_for_user(db, user)
+    announcement = _get_owned_announcement(db, org.id, announcement_id)
+    clean_title = title.strip()
+    clean_body = body.strip()
+    if not clean_title or not clean_body:
+        raise HTTPException(status_code=400, detail="Title and body are required")
+
+    announcement.title = clean_title
+    announcement.body = clean_body
+    announcement.audience = audience
+    announcement.expires_at = _parse_optional_datetime(expires_at)
+    announcement.updated_at = datetime.utcnow()
+    db.commit()
+    return RedirectResponse("/organization/announcements?success=updated", status_code=302)
+
+
+@router.post("/organization/announcements/{announcement_id}/toggle")
+def toggle_organization_announcement(
+    announcement_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = _organization_for_user(db, user)
+    announcement = _get_owned_announcement(db, org.id, announcement_id)
+    announcement.is_active = not announcement.is_active
+    announcement.updated_at = datetime.utcnow()
+    db.commit()
+    return RedirectResponse("/organization/announcements?success=updated", status_code=302)
+
+
+@router.post("/organization/announcements/{announcement_id}/delete")
+def delete_organization_announcement(
+    announcement_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = require_org(request, db)
+    if redirect:
+        return redirect
+
+    org = _organization_for_user(db, user)
+    announcement = _get_owned_announcement(db, org.id, announcement_id)
+    db.delete(announcement)
+    db.commit()
+    return RedirectResponse("/organization/announcements?success=deleted", status_code=302)
+
+
+@router.post("/announcements/{announcement_id}/dismiss")
+def dismiss_organization_announcement(
+    announcement_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = require_user(request, db)
+    if redirect:
+        return redirect
+
+    announcement = get_visible_announcement(db, user, announcement_id)
+    if not announcement:
+        raise HTTPException(status_code=403, detail="Announcement is not available")
+
+    existing = db.query(OrganizationAnnouncementDismissal).filter(
+        OrganizationAnnouncementDismissal.announcement_id == announcement.id,
+        OrganizationAnnouncementDismissal.user_id == user.id,
+    ).first()
+    if not existing:
+        db.add(OrganizationAnnouncementDismissal(
+            announcement_id=announcement.id,
+            user_id=user.id,
+        ))
+        db.commit()
+
+    referer = request.headers.get("referer") or ""
+    parsed_referer = urlparse(referer)
+    next_url = parsed_referer.path or "/dashboard"
+    if not next_url.startswith("/"):
+        next_url = "/dashboard"
+    if parsed_referer.query:
+        next_url = f"{next_url}?{parsed_referer.query}"
+    return RedirectResponse(next_url, status_code=302)
 
 
 # ── Список преподавателей + входящие заявки ────────────────────────────────

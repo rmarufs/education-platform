@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}announcements.section{% endblock %}
+{% block title_key %}announcements.section{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    {% set active_page = "announcements" %}
+    {% include "_org_sidebar.html" %}
+
+    <div class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1><span aria-hidden="true">📣</span> <span data-i18n="announcements.section">announcements.section</span></h1>
+                <p data-i18n="announcements.subtitle">announcements.subtitle</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAnnouncementCreateModal()">
+                <span aria-hidden="true">+</span>
+                <span data-i18n="announcements.create">announcements.create</span>
+            </button>
+        </div>
+
+        {% if request.query_params.get('success') %}
+        <div class="alert alert-success">
+            {% if request.query_params.get('success') == 'created' %}
+            <span data-i18n="announcements.created">announcements.created</span>
+            {% elif request.query_params.get('success') == 'updated' %}
+            <span data-i18n="announcements.updated">announcements.updated</span>
+            {% elif request.query_params.get('success') == 'deleted' %}
+            <span data-i18n="announcements.deleted">announcements.deleted</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <section class="org-panel">
+            <div class="org-panel-head">
+                <h2 class="org-panel-title" data-i18n="announcements.list">announcements.list</h2>
+                <span class="org-count-badge">{{ announcements|length }}</span>
+            </div>
+
+            {% if announcements %}
+            <div class="org-announcement-list">
+                {% for announcement in announcements %}
+                <article class="org-announcement-row">
+                    <div class="org-announcement-row__main">
+                        <div class="org-announcement-row__badges">
+                            {% if announcement.is_active %}
+                            <span class="org-announcement-badge is-active" data-i18n="announcements.active">announcements.active</span>
+                            {% else %}
+                            <span class="org-announcement-badge is-inactive" data-i18n="announcements.inactive">announcements.inactive</span>
+                            {% endif %}
+                            {% if announcement.audience == "teachers" %}
+                            <span class="org-announcement-badge" data-i18n="announcements.audience_teachers">announcements.audience_teachers</span>
+                            {% elif announcement.audience == "students" %}
+                            <span class="org-announcement-badge" data-i18n="announcements.audience_students">announcements.audience_students</span>
+                            {% else %}
+                            <span class="org-announcement-badge" data-i18n="announcements.audience_all">announcements.audience_all</span>
+                            {% endif %}
+                        </div>
+                        <h3 class="org-announcement-row__title">{{ announcement.title }}</h3>
+                        <p class="org-announcement-row__body">{{ announcement.body }}</p>
+                        <div class="org-announcement-row__meta">
+                            <span data-i18n="announcements.published_at">announcements.published_at</span>
+                            <time datetime="{{ announcement.created_at.isoformat() }}">{{ announcement.created_at.strftime("%d.%m.%Y") }}</time>
+                            {% if announcement.expires_at %}
+                            <span aria-hidden="true">·</span>
+                            <span data-i18n="announcements.expires_at">announcements.expires_at</span>
+                            <time datetime="{{ announcement.expires_at.isoformat() }}">{{ announcement.expires_at.strftime("%d.%m.%Y %H:%M") }}</time>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="org-announcement-row__actions">
+                        <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            data-announcement-edit
+                            data-announcement-id="{{ announcement.id }}"
+                            data-announcement-title="{{ announcement.title | e }}"
+                            data-announcement-body="{{ announcement.body | e }}"
+                            data-announcement-audience="{{ announcement.audience }}"
+                            data-announcement-expires="{{ announcement.expires_at.strftime('%Y-%m-%dT%H:%M') if announcement.expires_at else '' }}"
+                            data-i18n="announcements.edit"
+                        >announcements.edit</button>
+                        <form action="/organization/announcements/{{ announcement.id }}/toggle" method="POST">
+                            {% if announcement.is_active %}
+                            <button type="submit" class="btn btn-outline btn-sm" data-i18n="announcements.deactivate">announcements.deactivate</button>
+                            {% else %}
+                            <button type="submit" class="btn btn-outline btn-sm" data-i18n="announcements.activate">announcements.activate</button>
+                            {% endif %}
+                        </form>
+                        <form action="/organization/announcements/{{ announcement.id }}/delete" method="POST"
+                              onsubmit="confirmAndSubmit(event, 'announcements.delete_confirm', 'confirm.action_irreversible', null, 'announcements.delete')">
+                            <button type="submit" class="btn btn-sm btn-danger" data-i18n="announcements.delete">announcements.delete</button>
+                        </form>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-icon" aria-hidden="true">📣</span>
+                <p data-i18n="announcements.no_announcements">announcements.no_announcements</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<div class="modal-overlay" id="announcement-modal" onclick="closeModal('announcement-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="announcement-modal-title" data-i18n="announcements.create">announcements.create</h2>
+            <button class="modal-close" type="button" onclick="closeModal('announcement-modal')" data-i18n="action.close" data-i18n-prop="aria-label" aria-label="action.close">✕</button>
+        </div>
+        <form id="announcement-form" action="/organization/announcements/create" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="announcement-title" data-i18n="announcements.title">announcements.title</label>
+                    <input type="text" id="announcement-title" name="title" class="form-input" maxlength="200" required>
+                </div>
+                <div class="form-group">
+                    <label for="announcement-body" data-i18n="announcements.body">announcements.body</label>
+                    <textarea id="announcement-body" name="body" class="form-input org-announcement-textarea" rows="6" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="announcement-audience" data-i18n="announcements.audience">announcements.audience</label>
+                    <select id="announcement-audience" name="audience" class="form-input" required>
+                        <option value="teachers" data-i18n="announcements.audience_teachers">announcements.audience_teachers</option>
+                        <option value="students" data-i18n="announcements.audience_students">announcements.audience_students</option>
+                        <option value="all" data-i18n="announcements.audience_all" selected>announcements.audience_all</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="announcement-expires" data-i18n="announcements.expires_at">announcements.expires_at</label>
+                    <input type="datetime-local" id="announcement-expires" name="expires_at" class="form-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('announcement-modal')" data-i18n="action.cancel">action.cancel</button>
+                <button type="submit" class="btn btn-primary" id="announcement-submit" data-i18n="announcements.publish">announcements.publish</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openAnnouncementCreateModal() {
+    const form = document.getElementById('announcement-form');
+    form.action = '/organization/announcements/create';
+    form.reset();
+    document.getElementById('announcement-modal-title').dataset.i18n = 'announcements.create';
+    document.getElementById('announcement-modal-title').textContent = window.t ? t('announcements.create') : 'announcements.create';
+    document.getElementById('announcement-submit').dataset.i18n = 'announcements.publish';
+    document.getElementById('announcement-submit').textContent = window.t ? t('announcements.publish') : 'announcements.publish';
+    openModal('announcement-modal');
+}
+
+function openAnnouncementEditModal(dataset) {
+    const form = document.getElementById('announcement-form');
+    form.action = `/organization/announcements/${dataset.announcementId}/update`;
+    document.getElementById('announcement-title').value = dataset.announcementTitle || '';
+    document.getElementById('announcement-body').value = dataset.announcementBody || '';
+    document.getElementById('announcement-audience').value = dataset.announcementAudience || 'all';
+    document.getElementById('announcement-expires').value = dataset.announcementExpires || '';
+    document.getElementById('announcement-modal-title').dataset.i18n = 'announcements.edit';
+    document.getElementById('announcement-modal-title').textContent = window.t ? t('announcements.edit') : 'announcements.edit';
+    document.getElementById('announcement-submit').dataset.i18n = 'announcements.update';
+    document.getElementById('announcement-submit').textContent = window.t ? t('announcements.update') : 'announcements.update';
+    openModal('announcement-modal');
+}
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-announcement-edit]').forEach((button) => {
+        button.addEventListener('click', () => openAnnouncementEditModal(button.dataset));
+    });
+});
+</script>
+{% endblock %}

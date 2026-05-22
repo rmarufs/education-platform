@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
+{% from "_announcement_cards.html" import render_announcement_cards %}
 {% block title_key %}nav.dashboard{% endblock %}
 {% block title %}Кабинет преподавателя — Фурузон{% endblock %}
 {% block body_class %}user-dashboard-page{% endblock %}
@@ -27,6 +28,8 @@
             </div>
             {% endif %}
         </div>
+
+        {{ render_announcement_cards(visible_announcements) }}
 
         {% if accepted_application_notice %}
         <section class="mb-4">

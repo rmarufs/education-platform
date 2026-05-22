@@ -1,6 +1,6 @@
 # Модель организации
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -24,6 +24,7 @@ class Organization(Base):
     teachers = relationship("OrganizationTeacher", back_populates="organization")
     students = relationship("OrganizationStudent", back_populates="organization")
     groups = relationship("Group", back_populates="organization", cascade="all, delete-orphan")
+    announcements = relationship("OrganizationAnnouncement", back_populates="organization", cascade="all, delete-orphan")
 
 
 class OrganizationTeacher(Base):
@@ -68,3 +69,44 @@ class OrganizationStudent(Base):
     # Relationships
     organization = relationship("Organization", back_populates="students")
     student = relationship("User", back_populates="student_organizations")
+
+
+class OrganizationAnnouncement(Base):
+    __tablename__ = "organization_announcements"
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=False)
+    body = Column(Text, nullable=False)
+    audience = Column(String(20), nullable=False, default="all")  # teachers, students, all
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_org_announcements_org_active_created", "organization_id", "is_active", "created_at"),
+        Index("ix_org_announcements_audience_expires", "audience", "expires_at"),
+    )
+
+    organization = relationship("Organization", back_populates="announcements")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    dismissals = relationship("OrganizationAnnouncementDismissal", back_populates="announcement", cascade="all, delete-orphan")
+
+
+class OrganizationAnnouncementDismissal(Base):
+    __tablename__ = "organization_announcement_dismissals"
+
+    id = Column(Integer, primary_key=True)
+    announcement_id = Column(Integer, ForeignKey("organization_announcements.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    dismissed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("announcement_id", "user_id", name="uq_announcement_user_dismissal"),
+        Index("ix_org_announcement_dismissals_user", "user_id"),
+    )
+
+    announcement = relationship("OrganizationAnnouncement", back_populates="dismissals")
+    user = relationship("User", foreign_keys=[user_id])

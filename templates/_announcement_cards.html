@@ -1,0 +1,22 @@
+{% macro render_announcement_cards(announcements) %}
+{% if announcements %}
+<section class="announcement-stack" data-i18n="announcements.section" data-i18n-prop="aria-label" aria-label="announcements.section">
+    {% for announcement in announcements %}
+    <article class="announcement-card">
+        <div class="announcement-card__body">
+            <div class="announcement-card__meta">
+                <span data-i18n="announcements.from_org" data-i18n-params='{{ {"name": announcement.organization.name if announcement.organization else ""} | tojson }}'>announcements.from_org</span>
+                <span aria-hidden="true">·</span>
+                <time datetime="{{ announcement.created_at.isoformat() }}">{{ announcement.created_at.strftime("%d.%m.%Y") }}</time>
+            </div>
+            <h2 class="announcement-card__title">{{ announcement.title }}</h2>
+            <p class="announcement-card__text">{{ announcement.body }}</p>
+        </div>
+        <form action="/announcements/{{ announcement.id }}/dismiss" method="POST" class="announcement-card__dismiss-form">
+            <button type="submit" class="announcement-card__dismiss" data-i18n="announcements.dismiss" data-i18n-prop="aria-label" aria-label="announcements.dismiss">×</button>
+        </form>
+    </article>
+    {% endfor %}
+</section>
+{% endif %}
+{% endmacro %}

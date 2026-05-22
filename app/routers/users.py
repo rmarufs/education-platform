@@ -9,6 +9,7 @@ from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember
 from app.quiz_flow import course_learning_url
+from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
 
 router = APIRouter()
@@ -208,6 +209,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
     student_analytics = build_student_analytics(db, user.id)
+    visible_announcements = get_visible_announcements(db, user, limit=3)
 
     return templates.TemplateResponse(
         "dashboard/student.html",
@@ -219,6 +221,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "show_removed_notification": show_removed_notification,
             "student_groups": student_groups,
             "student_analytics": student_analytics,
+            "visible_announcements": visible_announcements,
         },
     )
 
@@ -282,6 +285,7 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.teacher_id == user.id,
         OrganizationTeacher.status == "pending",
     ).order_by(OrganizationTeacher.created_at.desc()).all()
+    visible_announcements = get_visible_announcements(db, user, limit=3)
 
     return templates.TemplateResponse(
         "dashboard/teacher.html",
@@ -295,5 +299,6 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
             "my_org_applications": teacher_applications,  # backward compat
             "teacher_applications": teacher_applications,
             "my_groups": my_groups,
+            "visible_announcements": visible_announcements,
         },
     )

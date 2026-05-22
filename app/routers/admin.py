@@ -29,7 +29,13 @@ from app.models.group import (
     GroupModule,
     GroupPaymentEntry,
 )
-from app.models.organization import Organization, OrganizationStudent, OrganizationTeacher
+from app.models.organization import (
+    Organization,
+    OrganizationAnnouncement,
+    OrganizationAnnouncementDismissal,
+    OrganizationStudent,
+    OrganizationTeacher,
+)
 from app.models.quiz import QuizAttempt, QuizResult
 from app.models.review import Review
 
@@ -128,6 +134,20 @@ def _delete_organization_dependencies(db: Session, org: Organization) -> None:
         db.query(GroupModule).filter(GroupModule.group_id.in_(group_ids)).delete(synchronize_session=False)
         db.query(Group).filter(Group.id.in_(group_ids)).delete(synchronize_session=False)
 
+    announcement_ids = [
+        row[0]
+        for row in db.query(OrganizationAnnouncement.id)
+        .filter(OrganizationAnnouncement.organization_id == org.id)
+        .all()
+    ]
+    if announcement_ids:
+        db.query(OrganizationAnnouncementDismissal).filter(
+            OrganizationAnnouncementDismissal.announcement_id.in_(announcement_ids)
+        ).delete(synchronize_session=False)
+        db.query(OrganizationAnnouncement).filter(
+            OrganizationAnnouncement.id.in_(announcement_ids)
+        ).delete(synchronize_session=False)
+
     db.query(OrganizationTeacher).filter(OrganizationTeacher.organization_id == org.id).delete(synchronize_session=False)
     db.query(OrganizationStudent).filter(OrganizationStudent.organization_id == org.id).delete(synchronize_session=False)
 
@@ -156,6 +176,11 @@ def _delete_user_dependencies(db: Session, user: User, delete_owned_organization
     db.query(GroupMember).filter(GroupMember.student_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationTeacher).filter(OrganizationTeacher.teacher_id == user.id).delete(synchronize_session=False)
     db.query(OrganizationStudent).filter(OrganizationStudent.student_id == user.id).delete(synchronize_session=False)
+    db.query(OrganizationAnnouncementDismissal).filter(OrganizationAnnouncementDismissal.user_id == user.id).delete(synchronize_session=False)
+    db.query(OrganizationAnnouncement).filter(OrganizationAnnouncement.created_by_id == user.id).update(
+        {OrganizationAnnouncement.created_by_id: None},
+        synchronize_session=False,
+    )
     db.query(Group).filter(Group.teacher_id == user.id).update(
         {Group.teacher_id: None},
         synchronize_session=False,

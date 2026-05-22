@@ -17,6 +17,7 @@ from app.models.organization import Organization, OrganizationTeacher, Organizat
 from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupPaymentEntry
 from app.ui import templates
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+from app.utils.announcements import get_visible_announcements
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
 
@@ -377,6 +378,7 @@ def my_groups(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user": user,
         "groups": groups,
+        "visible_announcements": get_visible_announcements(db, user, limit=3),
     })
 
 

@@ -5164,6 +5164,168 @@ body.dark .org-pub-teacher-card:hover {
   text-align: center;
 }
 
+/* ── Organization Announcements ──────────────────────────────────────────── */
+.announcement-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: -4px 0 24px;
+}
+.announcement-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 16px 16px 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+.announcement-card__body {
+  min-width: 0;
+  flex: 1;
+}
+.announcement-card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-muted, var(--muted-text));
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+.announcement-card__title {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+.announcement-card__text {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.announcement-card__dismiss-form {
+  margin: 0;
+  flex-shrink: 0;
+}
+.announcement-card__dismiss {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted, var(--muted-text));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.announcement-card__dismiss:hover {
+  background: var(--bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.org-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+.org-announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.org-announcement-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.org-announcement-row__main {
+  min-width: 0;
+  flex: 1;
+}
+.org-announcement-row__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.org-announcement-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text-muted, var(--muted-text));
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.org-announcement-badge.is-active {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+.org-announcement-badge.is-inactive {
+  background: var(--surface-soft);
+  color: var(--text-muted, var(--muted-text));
+}
+.org-announcement-row__title {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+.org-announcement-row__body {
+  color: var(--text-muted, var(--muted-text));
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 72ch;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.org-announcement-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-subtle, var(--text-muted));
+  font-size: 0.78rem;
+  margin-top: 12px;
+}
+.org-announcement-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.org-announcement-row__actions form {
+  margin: 0;
+}
+.org-announcement-textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
 /* ── Teacher Avatar (shared) ──────────────────────────────────────────────── */
 .org-teacher-avatar {
   width: 40px; height: 40px;
@@ -5453,6 +5615,15 @@ html[data-theme="dark"] .org-staff-badge {
   background: rgba(16,185,129,0.15);
   color: #34d399;
 }
+html[data-theme="dark"] .announcement-card,
+html[data-theme="dark"] .org-announcement-row {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .announcement-card__dismiss {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
 
 /* ── Mobile Responsive ────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -5498,6 +5669,56 @@ html[data-theme="dark"] .org-staff-badge {
   }
   .org-teacher-hero {
     flex-wrap: wrap;
+  }
+  .announcement-card {
+    padding: 14px;
+  }
+  .org-announcement-row {
+    flex-direction: column;
+  }
+  .org-announcement-row__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .org-announcement-row__actions .btn,
+  .org-announcement-row__actions form {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .announcement-card {
+    gap: 10px;
+    border-left-width: 3px;
+  }
+  .announcement-card__dismiss {
+    width: 32px;
+    height: 32px;
+  }
+  .org-announcement-row {
+    padding: 14px;
+  }
+  .org-announcement-row__actions {
+    flex-direction: column;
+  }
+  .org-announcement-row__actions .btn,
+  .org-announcement-row__actions form,
+  .org-announcement-row__actions form .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .announcement-card {
+    padding: 12px;
+  }
+  .announcement-card__title,
+  .org-announcement-row__title {
+    font-size: 0.95rem;
+  }
+  .announcement-card__text,
+  .org-announcement-row__body {
+    font-size: 0.84rem;
   }
 }
 
