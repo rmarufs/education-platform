@@ -100,7 +100,11 @@
         {% endif %}
       </div>
       {% if submission %}
+      {% if submission.reviewed_at %}
+      <span class="badge badge-success" data-i18n="homework.checked">Проверено</span>
+      {% else %}
       <span class="badge badge-secondary" data-i18n="homework.submitted">Отправлено</span>
+      {% endif %}
       {% endif %}
     </div>
 
@@ -118,6 +122,17 @@
       </p>
       {% if submission.comment %}
       <p>{{ submission.comment }}</p>
+      {% endif %}
+      {% if submission.reviewed_at %}
+      <div class="homework-review-note">
+        <span class="badge badge-success" data-i18n="homework.checked">Проверено</span>
+        {% if submission.teacher_comment %}
+        <div>
+          <strong data-i18n="homework.teacher_comment">Комментарий преподавателя</strong>
+          <p>{{ submission.teacher_comment }}</p>
+        </div>
+        {% endif %}
+      </div>
       {% endif %}
     </div>
     {% endif %}
@@ -195,6 +210,19 @@
 .homework-material,
 .homework-submission {
   margin-top: 16px;
+}
+.homework-review-note {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.homework-review-note strong {
+  color: var(--muted-text, var(--text-muted));
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
 }
 .homework-image-link img,
 .homework-video {

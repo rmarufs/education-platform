@@ -170,11 +170,15 @@ class GroupHomeworkSubmission(Base):
     file_type = Column(String(50), nullable=True)
     filename = Column(String(255), nullable=True)
     comment = Column(Text, nullable=True)
+    teacher_comment = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     homework = relationship("GroupHomework", back_populates="submissions")
     student = relationship("User", foreign_keys=[student_id], back_populates="group_homework_submissions")
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], back_populates="reviewed_group_homework_submissions")
 
 
 class GroupPaymentEntry(Base):

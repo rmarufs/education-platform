@@ -1,7 +1,11 @@
 """Утилита для сжатия и загрузки аватаров пользователей в Cloudinary."""
 from PIL import Image
 import io
-import cloudinary.uploader
+
+try:
+    import cloudinary.uploader
+except ModuleNotFoundError:
+    cloudinary = None
 
 
 def compress_and_upload_avatar(file_bytes, user_id: int = None, public_id: str = None) -> str:
@@ -9,6 +13,8 @@ def compress_and_upload_avatar(file_bytes, user_id: int = None, public_id: str =
     Сжимает изображение до 400x400 квадрата, оптимизирует до ≤100KB и загружает в Cloudinary.
     Возвращает secure_url загруженного аватара.
     """
+    if not cloudinary:
+        raise RuntimeError("Cloudinary недоступен для загрузки аватара")
     if hasattr(file_bytes, "read"):
         file_bytes = file_bytes.read()
     img = Image.open(io.BytesIO(file_bytes))
@@ -55,6 +61,8 @@ def upload_lesson_image(file_bytes, public_id: str) -> str:
     Загружает основную картинку урока в Cloudinary без crop/resize,
     чтобы сохранить исходный формат и соотношение сторон.
     """
+    if not cloudinary:
+        raise RuntimeError("Cloudinary недоступен для загрузки изображения урока")
     if hasattr(file_bytes, "seek"):
         file_bytes.seek(0)
     result = cloudinary.uploader.upload(

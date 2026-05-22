@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title_key %}homework.review_submissions{% endblock %}
+{% block title %}Проверка домашних заданий{% endblock %}
+
+{% block content %}
+<div class="manage-page homework-review-page">
+  <div class="manage-header homework-review-header">
+    <div>
+      <a href="{% if user.is_teacher %}/groups/my{% else %}/groups/{% endif %}" class="back-link" data-i18n="group.back_my_groups">← Мои группы</a>
+      <h1 data-i18n="homework.review_submissions">Проверка домашних заданий</h1>
+      <p class="text-muted">{{ group.name }}</p>
+    </div>
+    <div class="manage-header-actions">
+      <a href="/groups/{{ group.id }}/teach" class="btn btn-outline btn-sm" data-i18n="group.mode_teach">Вести урок</a>
+      <a href="/groups/{{ group.id }}/manage" class="btn btn-outline btn-sm" data-i18n="group.mode_edit">Редактировать группу</a>
+    </div>
+  </div>
+
+  {% if success == "review_saved" %}
+  <div class="alert alert-success" data-i18n="homework.review_saved">Проверка сохранена.</div>
+  {% endif %}
+
+  {% if not homework_items %}
+  <section class="homework-review-empty">
+    <h2 data-i18n="homework.no_homework">Домашнего задания нет</h2>
+    <p class="text-muted" data-i18n="homework.no_homework_hint">Преподаватель пока не добавил домашнее задание к этому уроку.</p>
+  </section>
+  {% else %}
+  <div class="homework-review-layout">
+    <aside class="homework-review-list" aria-label="Домашние задания" data-i18n="homework.review_homeworks" data-i18n-prop="aria-label">
+      <div class="section-label" data-i18n="homework.review_homeworks">Проверить домашки</div>
+      {% for item in homework_items %}
+      <a href="/groups/{{ group.id }}/homework/review?lesson_id={{ item.lesson.id }}"
+         class="homework-review-lesson {% if selected_item and selected_item.lesson.id == item.lesson.id %}active{% endif %}">
+        <div class="homework-review-lesson-head">
+          <strong>{{ item.lesson.title }}</strong>
+          {% if item.homework.deadline %}
+          <span class="badge {{ 'badge-danger' if item.deadline_passed else 'badge-secondary' }}">
+            {{ item.homework.deadline.strftime("%d.%m %H:%M") }}
+          </span>
+          {% endif %}
+        </div>
+        <div class="homework-review-stats">
+          <span data-i18n="homework.submitted_count" data-i18n-params='{{ {"count": item.submitted_count} | tojson }}'>Сдали: {{ item.submitted_count }}</span>
+          <span data-i18n="homework.unsubmitted_count" data-i18n-params='{{ {"count": item.unsubmitted_count} | tojson }}'>Не сдали: {{ item.unsubmitted_count }}</span>
+          <span data-i18n="homework.checked_count" data-i18n-params='{{ {"count": item.checked_count} | tojson }}'>Проверено: {{ item.checked_count }}</span>
+          <span data-i18n="homework.pending_count" data-i18n-params='{{ {"count": item.pending_count} | tojson }}'>Ожидают: {{ item.pending_count }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </aside>
+
+    <section class="homework-review-detail">
+      {% if selected_item %}
+      <div class="homework-review-detail-head">
+        <div>
+          <span class="section-label" data-i18n="homework.review_dashboard">Проверка ответов студентов по всем домашним заданиям группы</span>
+          <h2>{{ selected_item.homework.title or selected_item.lesson.title }}</h2>
+          {% if selected_item.homework.deadline %}
+          <p class="text-muted">
+            <span data-i18n="homework.deadline">Дедлайн</span>:
+            {{ selected_item.homework.deadline.strftime("%d.%m.%Y %H:%M") }}
+          </p>
+          {% endif %}
+        </div>
+        <a href="/groups/{{ group.id }}/lessons/{{ selected_item.lesson.id }}/homework?mode=teach"
+           class="btn btn-outline btn-sm" data-i18n="homework.view">Домашнее задание</a>
+      </div>
+
+      <div class="homework-review-students">
+        {% for row in review_rows %}
+        <article class="homework-review-student-card status-{{ row.status }}">
+          <div class="homework-review-student-head">
+            <div class="homework-review-student-main">
+              {% if row.student.avatar_url %}
+              <img src="{{ row.student.avatar_url }}" alt="{{ row.student.name }}" class="homework-review-avatar">
+              {% else %}
+              <div class="homework-review-avatar homework-review-avatar-placeholder">{{ (row.student.name or "F")[0]|upper }}</div>
+              {% endif %}
+              <div>
+                <h3>{{ row.student.name }}</h3>
+                {% if row.submission %}
+                <p class="text-muted">
+                  <span data-i18n="homework.submitted">Отправлено</span>:
+                  {{ (row.submission.updated_at or row.submission.submitted_at).strftime("%d.%m.%Y %H:%M") }}
+                </p>
+                {% endif %}
+              </div>
+            </div>
+            {% if row.status == "checked" %}
+            <span class="badge badge-success" data-i18n="homework.checked">Проверено</span>
+            {% elif row.status == "pending_review" %}
+            <span class="badge badge-secondary" data-i18n="homework.pending_review">Ожидает проверки</span>
+            {% elif row.status == "overdue" %}
+            <span class="badge badge-danger" data-i18n="homework.overdue">Просрочено</span>
+            {% else %}
+            <span class="badge badge-secondary" data-i18n="homework.not_submitted">Не сдано</span>
+            {% endif %}
+          </div>
+
+          {% if row.submission %}
+          <div class="homework-review-answer">
+            {% if row.submission.comment %}
+            <div>
+              <strong data-i18n="homework.your_answer">Ваш ответ</strong>
+              <p>{{ row.submission.comment }}</p>
+            </div>
+            {% endif %}
+
+            {% if row.submission.file_url %}
+            <div class="homework-review-file">
+              {% if row.submission.file_type == "image" %}
+              <a href="{{ row.submission.file_url }}" target="_blank" rel="noopener" class="homework-review-image-link">
+                <img src="{{ row.submission.file_url }}" alt="{{ row.submission.filename or '' }}">
+              </a>
+              {% elif row.submission.file_type == "video" %}
+              <video src="{{ row.submission.file_url }}" controls playsinline class="homework-review-video"></video>
+              {% endif %}
+              <a href="{{ row.submission.file_url }}" target="_blank" rel="noopener" class="homework-file-link">
+                <span aria-hidden="true">📎</span>
+                <span>{{ row.submission.filename or row.submission.file_url }}</span>
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <form action="/groups/{{ group.id }}/homework/review/{{ row.submission.id }}" method="POST" class="homework-review-form">
+            <label for="teacher-comment-{{ row.submission.id }}" data-i18n="homework.teacher_comment">Комментарий преподавателя</label>
+            <textarea id="teacher-comment-{{ row.submission.id }}"
+                      name="teacher_comment"
+                      class="form-input"
+                      rows="3">{{ row.submission.teacher_comment or '' }}</textarea>
+            <button type="submit" class="btn btn-primary btn-sm" data-i18n="homework.mark_checked">Отметить как проверено</button>
+          </form>
+          {% else %}
+          <p class="text-muted" data-i18n="homework.not_submitted">Не сдано</p>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.homework-review-page {
+  max-width: 1180px;
+}
+.homework-review-layout {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+}
+.homework-review-list,
+.homework-review-detail,
+.homework-review-empty,
+.homework-review-student-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.homework-review-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  position: sticky;
+  top: 88px;
+}
+.homework-review-lesson {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  text-decoration: none;
+}
+.homework-review-lesson.active,
+.homework-review-lesson:hover {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+}
+.homework-review-lesson-head,
+.homework-review-detail-head,
+.homework-review-student-head,
+.homework-review-student-main {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+}
+.homework-review-lesson-head,
+.homework-review-detail-head,
+.homework-review-student-head {
+  justify-content: space-between;
+}
+.homework-review-stats {
+  color: var(--muted-text, var(--text-muted));
+  display: grid;
+  font-size: 0.82rem;
+  gap: 4px;
+}
+.homework-review-detail {
+  padding: 18px;
+}
+.homework-review-detail-head {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+}
+.homework-review-detail-head h2,
+.homework-review-student-main h3 {
+  margin: 0;
+}
+.homework-review-students {
+  display: grid;
+  gap: 14px;
+}
+.homework-review-student-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+.homework-review-avatar {
+  border-radius: 50%;
+  height: 42px;
+  object-fit: cover;
+  width: 42px;
+}
+.homework-review-avatar-placeholder {
+  align-items: center;
+  background: var(--primary);
+  color: var(--white);
+  display: flex;
+  font-weight: 700;
+  justify-content: center;
+}
+.homework-review-answer {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+}
+.homework-review-answer strong,
+.homework-review-form label {
+  color: var(--muted-text, var(--text-muted));
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+}
+.homework-review-image-link img,
+.homework-review-video {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: block;
+  max-height: 320px;
+  object-fit: contain;
+  width: 100%;
+}
+.homework-review-form {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+}
+.homework-review-form .btn {
+  justify-self: start;
+}
+.homework-review-empty {
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .homework-review-header,
+  .homework-review-detail-head,
+  .homework-review-student-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .homework-review-header .manage-header-actions,
+  .homework-review-header .btn,
+  .homework-review-detail-head .btn,
+  .homework-review-form .btn {
+    justify-content: center;
+    width: 100%;
+  }
+  .homework-review-layout {
+    grid-template-columns: 1fr;
+  }
+  .homework-review-list {
+    position: static;
+  }
+  .homework-review-detail,
+  .homework-review-student-card {
+    padding: 14px;
+  }
+}
+</style>
+{% endblock %}

@@ -28,6 +28,7 @@
                     data-group-name="{{ group.name | e }}"
                     data-manage-url="/groups/{{ group.id }}/manage"
                     data-teach-url="/groups/{{ group.id }}/teach"
+                    data-review-url="/groups/{{ group.id }}/homework/review"
                     onclick="openGroupModeModal(this)">
                 <div class="group-card-header">
                     {% if group.avatar_url %}
@@ -86,6 +87,13 @@
                 <span>
                     <strong data-i18n="group.mode_teach">Вести урок</strong>
                     <small data-i18n="group.mode_teach_desc">Откройте урок для проведения занятия со студентами</small>
+                </span>
+            </a>
+            <a href="#" class="group-mode-option" id="group-mode-review">
+                <span class="group-mode-icon" aria-hidden="true">✓</span>
+                <span>
+                    <strong data-i18n="homework.review_homeworks">Проверить домашки</strong>
+                    <small data-i18n="homework.review_dashboard">Проверка ответов студентов по всем домашним заданиям группы</small>
                 </span>
             </a>
         </div>
@@ -335,12 +343,14 @@ const groupModeModal = document.getElementById("group-mode-modal");
 const groupModeName = document.getElementById("group-mode-name");
 const groupModeManage = document.getElementById("group-mode-manage");
 const groupModeTeach = document.getElementById("group-mode-teach");
+const groupModeReview = document.getElementById("group-mode-review");
 
 function openGroupModeModal(trigger) {
     if (!groupModeModal || !trigger) return;
     groupModeName.textContent = trigger.dataset.groupName || "";
     groupModeManage.href = trigger.dataset.manageUrl || "#";
     groupModeTeach.href = trigger.dataset.teachUrl || "#";
+    groupModeReview.href = trigger.dataset.reviewUrl || "#";
     groupModeModal.classList.add("is-open");
     groupModeModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("group-mode-lock");

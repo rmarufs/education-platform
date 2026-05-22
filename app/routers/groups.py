@@ -3,8 +3,6 @@ import shutil
 import uuid
 from datetime import date, datetime
 from urllib.parse import urlparse
-import cloudinary
-import cloudinary.uploader
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.exc import IntegrityError
@@ -21,6 +19,12 @@ from app.ui import templates
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+except ModuleNotFoundError:
+    cloudinary = None
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -41,12 +45,13 @@ GROUP_HOMEWORK_EXTENSIONS = {
 GROUP_HOMEWORK_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
 
-cloudinary.config(
-    cloud_name=CLOUDINARY_CLOUD_NAME,
-    api_key=CLOUDINARY_API_KEY,
-    api_secret=CLOUDINARY_API_SECRET,
-    secure=True,
-)
+if cloudinary:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True,
+    )
 
 
 class BulkAddStudentsPayload(BaseModel):
@@ -171,6 +176,8 @@ def _homework_url_type(url: str) -> str:
 def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str, str]:
     _validate_group_homework_upload(file)
     original_name = os.path.basename(file.filename)
+    if not cloudinary:
+        raise HTTPException(status_code=500, detail="Cloudinary недоступен для загрузки файла")
     if hasattr(file.file, "seek"):
         file.file.seek(0)
 
@@ -1708,6 +1715,130 @@ async def group_homework_submit(
         return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=submit_error", status_code=302)
 
     return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?success=submit_success", status_code=302)
+
+
+@router.get("/{group_id}/homework/review", response_class=HTMLResponse)
+def group_homework_review(group_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    group = db.query(Group).options(
+        joinedload(Group.organization),
+        joinedload(Group.members).joinedload(GroupMember.student),
+        joinedload(Group.modules)
+            .joinedload(GroupModule.lessons)
+            .joinedload(GroupLesson.homework)
+            .joinedload(GroupHomework.submissions)
+            .joinedload(GroupHomeworkSubmission.student),
+        joinedload(Group.lessons)
+            .joinedload(GroupLesson.homework)
+            .joinedload(GroupHomework.submissions)
+            .joinedload(GroupHomeworkSubmission.student),
+    ).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+    if not _can_manage_group_content(user, group, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    members = sorted(
+        [member for member in group.members if member.student],
+        key=lambda member: (member.student.name or "").lower(),
+    )
+    ordered_lessons = _ordered_group_lessons(group)
+    now = datetime.utcnow()
+    selected_lesson_id = request.query_params.get("lesson_id")
+    try:
+        selected_lesson_id_int = int(selected_lesson_id) if selected_lesson_id else None
+    except ValueError:
+        selected_lesson_id_int = None
+
+    homework_items = []
+    selected_item = None
+    for lesson in ordered_lessons:
+        homework = lesson.homework
+        if not homework:
+            continue
+
+        submissions = homework.submissions or []
+        submitted_student_ids = {submission.student_id for submission in submissions}
+        checked_student_ids = {submission.student_id for submission in submissions if submission.reviewed_at}
+        item = {
+            "lesson": lesson,
+            "homework": homework,
+            "deadline_passed": bool(homework.deadline and homework.deadline < now),
+            "submitted_count": len(submitted_student_ids),
+            "unsubmitted_count": max(len(members) - len(submitted_student_ids), 0),
+            "checked_count": len(checked_student_ids),
+            "pending_count": max(len(submitted_student_ids) - len(checked_student_ids), 0),
+        }
+        homework_items.append(item)
+        if selected_lesson_id_int == lesson.id:
+            selected_item = item
+
+    if not selected_item and homework_items:
+        selected_item = homework_items[0]
+
+    review_rows = []
+    if selected_item:
+        submissions_by_student = {
+            submission.student_id: submission
+            for submission in selected_item["homework"].submissions or []
+        }
+        deadline_passed = selected_item["deadline_passed"]
+        for member in members:
+            submission = submissions_by_student.get(member.student_id)
+            if submission and submission.reviewed_at:
+                status = "checked"
+            elif submission:
+                status = "pending_review"
+            elif deadline_passed:
+                status = "overdue"
+            else:
+                status = "not_submitted"
+            review_rows.append({
+                "member": member,
+                "student": member.student,
+                "submission": submission,
+                "status": status,
+            })
+
+    success = request.query_params.get("success")
+
+    return templates.TemplateResponse("groups/homework_review.html", {
+        "request": request,
+        "user": user,
+        "group": group,
+        "homework_items": homework_items,
+        "selected_item": selected_item,
+        "review_rows": review_rows,
+        "success": success,
+    })
+
+
+@router.post("/{group_id}/homework/review/{submission_id}")
+def group_homework_review_save(
+    group_id: int,
+    submission_id: int,
+    request: Request,
+    teacher_comment: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    user, group = _get_manageable_group(group_id, request, db)
+    submission = db.query(GroupHomeworkSubmission).join(GroupHomework).filter(
+        GroupHomeworkSubmission.id == submission_id,
+        GroupHomework.group_id == group.id,
+    ).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Ответ не найден")
+
+    submission.teacher_comment = teacher_comment.strip() if teacher_comment and teacher_comment.strip() else None
+    submission.reviewed_at = datetime.utcnow()
+    submission.reviewed_by_id = user.id
+    db.commit()
+
+    lesson_id = submission.homework.lesson_id
+    return RedirectResponse(f"/groups/{group_id}/homework/review?lesson_id={lesson_id}&success=review_saved", status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════
