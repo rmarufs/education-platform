@@ -2202,8 +2202,21 @@ const serverMessageKeyMap = {
 
 let currentLang = localStorage.getItem('lang') || 'tj';
 
-function getTranslation(lang, key) {
-  return translations[lang]?.[key] || translations.ru[key] || key;
+function hasTranslation(lang, key) {
+  return Boolean(
+    Object.prototype.hasOwnProperty.call(translations[lang] || {}, key) ||
+    Object.prototype.hasOwnProperty.call(translations.ru || {}, key)
+  );
+}
+
+function getTranslation(lang, key, fallback = key) {
+  if (Object.prototype.hasOwnProperty.call(translations[lang] || {}, key)) {
+    return translations[lang][key];
+  }
+  if (Object.prototype.hasOwnProperty.call(translations.ru || {}, key)) {
+    return translations.ru[key];
+  }
+  return fallback;
 }
 
 function interpolate(text, params = {}) {
@@ -2226,12 +2239,13 @@ function parseParams(el) {
 
 function translateServerMessage(message, lang) {
   const key = serverMessageKeyMap[message];
-  return key ? getTranslation(lang, key) : message;
+  return key ? getTranslation(lang, key, message) : message;
 }
 
 function applyTranslationToElement(el, lang) {
   const key = el.getAttribute('data-i18n');
   if (!key) return;
+  if (!hasTranslation(lang, key)) return;
 
   const params = parseParams(el);
   const text = interpolate(getTranslation(lang, key), params);
@@ -2269,7 +2283,7 @@ function applySpecialTranslations(lang) {
   document.querySelectorAll('[data-level]').forEach((el) => {
     const level = (el.getAttribute('data-level') || '').toLowerCase();
     if (!level) return;
-    el.textContent = t(`level.${level}`);
+    el.textContent = t(`level.${level}`, {}, el.textContent || level);
   });
 }
 
@@ -2292,7 +2306,7 @@ function setLang(lang) {
   const titleEl = document.querySelector('title[data-i18n-title]');
   if (titleEl) {
     const key = titleEl.getAttribute('data-i18n-title');
-    if (!key) {
+    if (!key || !hasTranslation(lang, key)) {
       applySpecialTranslations(lang);
       return;
     }
@@ -2311,8 +2325,8 @@ function setLang(lang) {
   }));
 }
 
-function t(key, params = {}) {
-  return interpolate(getTranslation(currentLang, key), params);
+function t(key, params = {}, fallback = '') {
+  return interpolate(getTranslation(currentLang, key, fallback), params);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -848,12 +848,16 @@ function openHomeworkModal(dataset) {
     deleteBtn.disabled = !hasHomework;
     title.dataset.i18n = hasHomework ? 'homework.edit' : 'homework.add';
     title.textContent = typeof t === 'function'
-        ? t(hasHomework ? 'homework.edit' : 'homework.add')
-        : (hasHomework ? 'homework.edit' : 'homework.add');
+        ? t(
+            hasHomework ? 'homework.edit' : 'homework.add',
+            {},
+            hasHomework ? 'Редактировать домашнее задание' : 'Добавить домашнее задание'
+        )
+        : (hasHomework ? 'Редактировать домашнее задание' : 'Добавить домашнее задание');
 
     if (dataset.homeworkMaterialUrl) {
         currentMaterial.hidden = false;
-        currentMaterial.textContent = `${typeof t === 'function' ? t('homework.current_material') : 'homework.current_material'}: ${dataset.homeworkMaterialFilename || dataset.homeworkMaterialUrl}`;
+        currentMaterial.textContent = `${typeof t === 'function' ? t('homework.current_material', {}, 'Текущий материал') : 'Текущий материал'}: ${dataset.homeworkMaterialFilename || dataset.homeworkMaterialUrl}`;
     } else {
         currentMaterial.hidden = true;
         currentMaterial.textContent = '';
