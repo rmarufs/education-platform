@@ -3,6 +3,8 @@ import shutil
 import uuid
 from datetime import date, datetime
 from urllib.parse import urlparse
+import cloudinary
+import cloudinary.uploader
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +18,7 @@ from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupPaymentEntry
 from app.ui import templates
+from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
 
@@ -26,9 +29,9 @@ GROUP_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
 GROUP_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx"}
 GROUP_LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
 GROUP_LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-# TODO(Render): homework uploads currently use local static storage, like group materials.
-# Render's filesystem is ephemeral, so move this to Cloudinary/S3 before relying on persistence.
-GROUP_HOMEWORK_DIR = os.path.join("static", "uploads", "group_homework")
+# Homework uploads use Cloudinary because Render's local filesystem is ephemeral.
+# TODO(Render): group materials still use local static storage and have the same persistence risk.
+GROUP_HOMEWORK_CLOUDINARY_FOLDER = "group_homework"
 GROUP_HOMEWORK_MAX_BYTES = 50 * 1024 * 1024
 GROUP_HOMEWORK_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".txt",
@@ -37,6 +40,13 @@ GROUP_HOMEWORK_EXTENSIONS = {
 }
 GROUP_HOMEWORK_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True,
+)
 
 
 class BulkAddStudentsPayload(BaseModel):
@@ -160,13 +170,25 @@ def _homework_url_type(url: str) -> str:
 
 def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str, str]:
     _validate_group_homework_upload(file)
-    os.makedirs(folder, exist_ok=True)
     original_name = os.path.basename(file.filename)
-    filename = f"{uuid.uuid4().hex}_{original_name}"
-    save_path = os.path.join(folder, filename)
-    with open(save_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return "/" + save_path, _homework_file_type(original_name, file.content_type), original_name
+    if hasattr(file.file, "seek"):
+        file.file.seek(0)
+
+    try:
+        upload_result = cloudinary.uploader.upload(
+            file.file,
+            folder=f"{GROUP_HOMEWORK_CLOUDINARY_FOLDER}/{folder}",
+            resource_type="auto",
+            use_filename=True,
+            unique_filename=True,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Не удалось загрузить файл домашнего задания") from exc
+
+    file_url = upload_result.get("secure_url")
+    if not file_url:
+        raise HTTPException(status_code=500, detail="Cloudinary не вернул ссылку на файл")
+    return file_url, _homework_file_type(original_name, file.content_type), original_name
 
 
 def _parse_homework_deadline(value: str | None) -> datetime | None:
@@ -1584,8 +1606,7 @@ async def group_homework_save(
     homework.deadline = _parse_homework_deadline(deadline)
 
     if material_file and material_file.filename:
-        material_folder = os.path.join(GROUP_HOMEWORK_DIR, "materials")
-        file_url, file_type, filename = _save_group_homework_upload(material_file, material_folder)
+        file_url, file_type, filename = _save_group_homework_upload(material_file, "materials")
         homework.material_url = file_url
         homework.material_type = file_type
         homework.material_filename = filename
@@ -1653,8 +1674,7 @@ async def group_homework_submit(
     file_type = None
     filename = None
     if has_file:
-        answer_folder = os.path.join(GROUP_HOMEWORK_DIR, "submissions")
-        file_url, file_type, filename = _save_group_homework_upload(answer_file, answer_folder)
+        file_url, file_type, filename = _save_group_homework_upload(answer_file, "submissions")
 
     submission = db.query(GroupHomeworkSubmission).filter(
         GroupHomeworkSubmission.homework_id == homework.id,
