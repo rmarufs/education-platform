@@ -166,7 +166,7 @@ class GroupHomeworkSubmission(Base):
     id = Column(Integer, primary_key=True)
     homework_id = Column(Integer, ForeignKey("group_homeworks.id", ondelete="CASCADE"), nullable=False)
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    file_url = Column(String, nullable=False)
+    file_url = Column(String, nullable=True)
     file_type = Column(String(50), nullable=True)
     filename = Column(String(255), nullable=True)
     comment = Column(Text, nullable=True)

@@ -24,6 +24,8 @@
   <div class="alert alert-danger" data-i18n="homework.deadline_passed">Дедлайн уже прошёл.</div>
   {% elif error == "submit_error" %}
   <div class="alert alert-danger" data-i18n="homework.submit_error">Не удалось отправить ответ.</div>
+  {% elif error == "answer_required" %}
+  <div class="alert alert-danger" data-i18n="homework.answer_required">Напишите ответ или прикрепите файл.</div>
   {% endif %}
 
   {% if not homework %}
@@ -104,10 +106,12 @@
 
     {% if submission %}
     <div class="homework-submission">
+      {% if submission.file_url %}
       <a href="{{ submission.file_url }}" target="_blank" rel="noopener" class="homework-file-link">
         <span aria-hidden="true">📎</span>
         <span>{{ submission.filename or submission.file_url }}</span>
       </a>
+      {% endif %}
       <p class="text-muted">
         <span data-i18n="homework.submitted">Отправлено</span>:
         {{ (submission.updated_at or submission.submitted_at).strftime("%d.%m.%Y %H:%M") }}
@@ -123,13 +127,13 @@
     {% else %}
     <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework/submit" method="POST" enctype="multipart/form-data" class="homework-submit-form">
       <div class="form-group">
-        <label for="answer-file" data-i18n="homework.upload_file">Загрузить файл</label>
-        <input type="file" id="answer-file" name="answer_file" class="form-input" required
-               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+        <label for="answer-comment" data-i18n="homework.your_answer">Ваш ответ</label>
+        <textarea id="answer-comment" name="comment" class="form-input" rows="4" data-i18n="homework.answer_placeholder" data-i18n-prop="placeholder" placeholder="Напишите ответ к домашнему заданию">{{ submission.comment if submission and submission.comment else '' }}</textarea>
       </div>
       <div class="form-group">
-        <label for="answer-comment" data-i18n="homework.comment">Комментарий</label>
-        <textarea id="answer-comment" name="comment" class="form-input" rows="3" data-i18n="homework.comment_ph" data-i18n-prop="placeholder" placeholder="Можно оставить комментарий к ответу"></textarea>
+        <label for="answer-file" data-i18n="homework.attach_file_optional">Прикрепить файл (необязательно)</label>
+        <input type="file" id="answer-file" name="answer_file" class="form-input"
+               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
       </div>
       {% if submission %}
       <button type="submit" class="btn btn-primary" data-i18n="homework.replace_answer">Заменить ответ</button>

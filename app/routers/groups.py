@@ -1617,7 +1617,7 @@ async def group_homework_submit(
     group_id: int,
     lesson_id: int,
     request: Request,
-    answer_file: UploadFile = File(...),
+    answer_file: Optional[UploadFile] = File(None),
     comment: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -1643,21 +1643,30 @@ async def group_homework_submit(
 
     if homework.deadline and homework.deadline < datetime.utcnow():
         return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=deadline_passed", status_code=302)
-    if not answer_file or not answer_file.filename:
-        return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=submit_error", status_code=302)
 
-    answer_folder = os.path.join(GROUP_HOMEWORK_DIR, "submissions")
-    file_url, file_type, filename = _save_group_homework_upload(answer_file, answer_folder)
+    clean_comment = comment.strip() if comment and comment.strip() else None
+    has_file = bool(answer_file and answer_file.filename)
+    if not has_file and not clean_comment:
+        return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=answer_required", status_code=302)
+
+    file_url = None
+    file_type = None
+    filename = None
+    if has_file:
+        answer_folder = os.path.join(GROUP_HOMEWORK_DIR, "submissions")
+        file_url, file_type, filename = _save_group_homework_upload(answer_file, answer_folder)
+
     submission = db.query(GroupHomeworkSubmission).filter(
         GroupHomeworkSubmission.homework_id == homework.id,
         GroupHomeworkSubmission.student_id == user.id,
     ).first()
     now = datetime.utcnow()
     if submission:
-        submission.file_url = file_url
-        submission.file_type = file_type
-        submission.filename = filename
-        submission.comment = comment.strip() if comment and comment.strip() else None
+        if has_file:
+            submission.file_url = file_url
+            submission.file_type = file_type
+            submission.filename = filename
+        submission.comment = clean_comment
         submission.updated_at = now
     else:
         submission = GroupHomeworkSubmission(
@@ -1666,7 +1675,7 @@ async def group_homework_submit(
             file_url=file_url,
             file_type=file_type,
             filename=filename,
-            comment=comment.strip() if comment and comment.strip() else None,
+            comment=clean_comment,
             submitted_at=now,
             updated_at=now,
         )
