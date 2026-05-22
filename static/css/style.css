@@ -1927,6 +1927,10 @@ body.dark .course-detail-hero .course-detail-info {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes announcementEnter {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -5178,10 +5182,24 @@ body.dark .org-pub-teacher-card:hover {
   gap: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--primary);
+  border-left: 4px solid color-mix(in srgb, var(--danger) 72%, var(--bg-card));
   border-radius: var(--radius-md);
   padding: 16px 16px 16px 18px;
   box-shadow: var(--shadow-sm);
+  animation: announcementEnter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: opacity, transform;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.announcement-card:nth-child(2) {
+  animation-delay: 55ms;
+}
+.announcement-card:nth-child(3) {
+  animation-delay: 110ms;
+}
+.announcement-card.is-dismissing {
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
 }
 .announcement-card__body {
   min-width: 0;
@@ -5620,6 +5638,9 @@ html[data-theme="dark"] .org-announcement-row {
   background: var(--bg-card);
   border-color: var(--border);
 }
+html[data-theme="dark"] .announcement-card {
+  border-left-color: color-mix(in srgb, var(--danger) 54%, var(--bg-card));
+}
 html[data-theme="dark"] .announcement-card__dismiss {
   background: var(--surface-soft);
   color: var(--text-muted);
@@ -5719,6 +5740,14 @@ html[data-theme="dark"] .announcement-card__dismiss {
   .announcement-card__text,
   .org-announcement-row__body {
     font-size: 0.84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-card {
+    animation: none;
+    transition: none;
+    will-change: auto;
   }
 }
 

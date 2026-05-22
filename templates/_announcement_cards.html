@@ -12,11 +12,24 @@
             <h2 class="announcement-card__title">{{ announcement.title }}</h2>
             <p class="announcement-card__text">{{ announcement.body }}</p>
         </div>
-        <form action="/announcements/{{ announcement.id }}/dismiss" method="POST" class="announcement-card__dismiss-form">
+        <form action="/announcements/{{ announcement.id }}/dismiss" method="POST" class="announcement-card__dismiss-form" data-announcement-dismiss-form>
             <button type="submit" class="announcement-card__dismiss" data-i18n="announcements.dismiss" data-i18n-prop="aria-label" aria-label="announcements.dismiss">×</button>
         </form>
     </article>
     {% endfor %}
 </section>
+<script>
+document.addEventListener('submit', function(event) {
+    const form = event.target.closest('[data-announcement-dismiss-form]');
+    if (!form) return;
+    const card = form.closest('.announcement-card');
+    if (!card || card.classList.contains('is-dismissing')) return;
+    event.preventDefault();
+    card.classList.add('is-dismissing');
+    setTimeout(function() {
+        form.submit();
+    }, 170);
+});
+</script>
 {% endif %}
 {% endmacro %}
