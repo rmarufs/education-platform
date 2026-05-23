@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('register-form');
   if (registerForm) {
     registerForm.addEventListener('submit', function (e) {
+      if (e.defaultPrevented) return;
       clearFormErrors(this);
       let valid = true;
 

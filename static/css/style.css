@@ -1387,6 +1387,259 @@ body.dark .logo-copy::after {
 .role-option input[type="radio"] { display: none; }
 .role-icon { font-size: 1.75rem; }
 
+.register-page {
+  align-items: flex-start;
+}
+.register-card {
+  max-width: 520px;
+}
+.register-role-panel {
+  display: grid;
+  gap: 18px;
+}
+.register-role-panel h2,
+.student-wizard-step h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+.register-role-grid {
+  display: grid;
+  gap: 12px;
+}
+.register-role-card {
+  width: 100%;
+  min-height: 94px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon title"
+    "icon desc";
+  align-items: center;
+  gap: 4px 14px;
+  padding: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color .2s ease, background-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.register-role-card:hover,
+.register-role-card:focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background: color-mix(in srgb, var(--primary) 7%, var(--bg-card));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+  outline: none;
+}
+.register-role-icon {
+  grid-area: icon;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft);
+  font-size: 1.55rem;
+}
+.register-role-title {
+  grid-area: title;
+  font-weight: 700;
+  min-width: 0;
+}
+.register-role-desc {
+  grid-area: desc;
+  color: var(--text-muted);
+  font-size: .82rem;
+  line-height: 1.4;
+  min-width: 0;
+}
+.register-form-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.register-change-role {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.register-selected-role {
+  color: var(--text-muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.student-wizard {
+  display: grid;
+  gap: 8px;
+}
+.student-wizard-progress {
+  display: flex;
+  gap: 8px;
+}
+.student-step-dot {
+  height: 6px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color .2s ease;
+}
+.student-step-dot.is-active {
+  background: var(--primary);
+}
+.student-step-count {
+  color: var(--text-muted);
+  font-size: .8rem;
+  font-weight: 700;
+}
+.student-wizard-step {
+  display: grid;
+  gap: 16px;
+  animation: fadeInUp .22s ease both;
+}
+.register-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.student-wizard-actions {
+  display: flex;
+  gap: 10px;
+}
+.student-wizard-actions--split .btn {
+  flex: 1;
+}
+.register-step-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+.register-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.register-choice-btn {
+  min-height: 44px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+.register-choice-btn.is-active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.student-org-picker {
+  display: grid;
+  gap: 10px;
+}
+.student-org-list {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.student-org-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.student-org-option.is-selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+}
+.student-org-option__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.student-org-option__badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .register-card {
+    max-width: 100%;
+  }
+  .register-role-card {
+    min-height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-page {
+    padding: 22px 14px;
+  }
+  .register-card {
+    padding: 24px 16px;
+  }
+  .register-two-col,
+  .register-choice-row {
+    grid-template-columns: 1fr;
+  }
+  .student-wizard-actions {
+    flex-direction: column;
+  }
+  .student-wizard-actions .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+  .register-role-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .register-role-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "icon"
+      "title"
+      "desc";
+  }
+  .register-role-icon {
+    width: 46px;
+    height: 46px;
+  }
+}
+
 .auth-footer {
   text-align: center;
   margin-top: 24px;

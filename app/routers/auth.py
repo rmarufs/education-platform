@@ -95,7 +95,7 @@ async def register(
     if existing:
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Пользователь с таким email уже существует"},
+            {"request": request, "error": "Пользователь с таким email уже существует", "selected_role": role},
             status_code=400,
         )
 
@@ -106,23 +106,36 @@ async def register(
     if role == "organization" and not org_name.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Введите название учебного центра"},
+            {"request": request, "error": "Введите название учебного центра", "selected_role": role},
             status_code=400,
         )
 
     if role == "organization" and not org_phone.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Введите номер телефона"},
+            {"request": request, "error": "Введите номер телефона", "selected_role": role},
             status_code=400,
         )
 
     if role == "organization" and not org_description.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Добавьте краткое описание учебного центра"},
+            {"request": request, "error": "Добавьте краткое описание учебного центра", "selected_role": role},
             status_code=400,
         )
+
+    selected_student_org = None
+    if role == "student" and student_org_id:
+        selected_student_org = db.query(Organization).filter(
+            Organization.id == student_org_id,
+            Organization.status == "approved"
+        ).first()
+        if not selected_student_org:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                {"request": request, "error": "Учебный центр не найден", "selected_role": role},
+                status_code=400,
+            )
 
     # Определяем реальную роль и сохраняем документ
     actual_role = UserRole.student
@@ -209,15 +222,21 @@ async def register(
         return RedirectResponse("/register/pending", status_code=302)
 
     # Студент → добавляем в организацию если выбрана
-    if actual_role == UserRole.student and student_org_id:
-        target_org = db.query(Organization).filter(
-            Organization.id == student_org_id,
-            Organization.status == "approved"
+    if actual_role == UserRole.student and selected_student_org:
+        org_student = db.query(OrganizationStudent).filter(
+            OrganizationStudent.organization_id == selected_student_org.id,
+            OrganizationStudent.student_id == user.id,
         ).first()
-        if target_org:
+        join_status = "accepted" if selected_student_org.is_open else "pending"
+        if org_student:
+            org_student.status = join_status
+            org_student.was_removed_notification = False
+        else:
             org_student = OrganizationStudent(
-                organization_id=target_org.id,
+                organization_id=selected_student_org.id,
                 student_id=user.id,
+                status=join_status,
+                was_removed_notification=False,
             )
             db.add(org_student)
             db.commit()

@@ -89,7 +89,12 @@ def list_organizations_api(db: Session = Depends(get_db)):
     )
     return JSONResponse({
         "organizations": [
-            {"id": o.id, "name": o.name, "logo_url": o.logo_url or (o.user.avatar_url if o.user else None)}
+            {
+                "id": o.id,
+                "name": o.name,
+                "logo_url": o.logo_url or (o.user.avatar_url if o.user else None),
+                "is_open": o.is_open,
+            }
             for o in orgs
         ]
     })

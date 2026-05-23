@@ -1,166 +1,213 @@
 {% extends "base.html" %}
 {% block title_key %}register.title_page{% endblock %}
-{% block title %}Регистрация — Фурузон{% endblock %}
+{% block title %}register.title_page{% endblock %}
 
 {% block content %}
-<div class="auth-page">
-    <div class="auth-card">
+<div class="auth-page register-page">
+    <div class="auth-card register-card">
         <div class="auth-header">
             <span class="auth-icon">✨</span>
-            <h1 data-i18n="register.title">Создать аккаунт</h1>
-            <p data-i18n="register.subtitle">Присоединяйтесь к тысячам учеников и преподавателей</p>
+            <h1 data-i18n="register.title">register.title</h1>
+            <p data-i18n="register.subtitle">register.subtitle</p>
         </div>
 
         {% if error %}
         <div class="alert alert-error" id="error-msg" data-server-msg="{{ error }}">{{ error }}</div>
         {% endif %}
 
-        <form id="register-form" action="/register" method="POST" class="auth-form" enctype="multipart/form-data" novalidate>
-            <div class="form-group">
-                <label for="name" data-i18n="form.name">Ваше имя</label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    class="form-input"
-                    data-i18n="form.name_ph"
-                    placeholder="Иван Иванов"
-                    required
-                    autocomplete="name"
-                />
-                <span class="form-error" id="name-error"></span>
+        <section class="register-role-panel" id="register-role-panel" {% if selected_role %}hidden{% endif %}>
+            <h2 data-i18n="auth.choose_role">auth.choose_role</h2>
+            <div class="register-role-grid">
+                <button type="button" class="register-role-card" data-register-role="student">
+                    <span class="register-role-icon">🎓</span>
+                    <span class="register-role-title" data-i18n="auth.role_student">auth.role_student</span>
+                    <span class="register-role-desc" data-i18n="auth.role_student_desc">auth.role_student_desc</span>
+                </button>
+                <button type="button" class="register-role-card" data-register-role="teacher">
+                    <span class="register-role-icon">👨‍🏫</span>
+                    <span class="register-role-title" data-i18n="auth.role_teacher">auth.role_teacher</span>
+                    <span class="register-role-desc" data-i18n="auth.role_teacher_desc">auth.role_teacher_desc</span>
+                </button>
+                <button type="button" class="register-role-card" data-register-role="organization">
+                    <span class="register-role-icon">🏢</span>
+                    <span class="register-role-title" data-i18n="auth.role_organization">auth.role_organization</span>
+                    <span class="register-role-desc" data-i18n="auth.role_organization_desc">auth.role_organization_desc</span>
+                </button>
+            </div>
+        </section>
+
+        <form id="register-form" action="/register" method="POST" class="auth-form register-form" enctype="multipart/form-data" novalidate {% if not selected_role %}hidden{% endif %}>
+            <input type="hidden" name="role" id="selected-role" value="{{ selected_role or '' }}">
+
+            <div class="register-form-top">
+                <button type="button" class="register-change-role" id="register-change-role" data-i18n="auth.change_role">auth.change_role</button>
+                <div class="register-selected-role" id="register-selected-role"></div>
             </div>
 
-            <div class="form-group">
-                <label for="email" data-i18n="form.email">Email</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    class="form-input"
-                    data-i18n="form.email_ph"
-                    placeholder="you@example.com"
-                    required
-                    autocomplete="email"
-                />
-                <span class="form-error" id="email-error"></span>
+            <div class="student-wizard" id="student-wizard" hidden>
+                <div class="student-wizard-progress" aria-hidden="true">
+                    <span class="student-step-dot is-active" data-step-dot="1"></span>
+                    <span class="student-step-dot" data-step-dot="2"></span>
+                    <span class="student-step-dot" data-step-dot="3"></span>
+                </div>
+                <div class="student-step-count" id="student-step-count" data-i18n="auth.step_count" data-i18n-params='{"current":1,"total":3}'>auth.step_count</div>
             </div>
 
-            <div class="form-group">
-                <label for="password" data-i18n="form.password">Пароль</label>
-                <div class="input-with-icon">
+            <section class="student-wizard-step" data-student-step="1" hidden>
+                <h2 data-i18n="auth.step_personal">auth.step_personal</h2>
+                <div class="register-two-col">
+                    <div class="form-group">
+                        <label for="first_name" data-i18n="auth.first_name">auth.first_name</label>
+                        <input type="text" id="first_name" class="form-input" autocomplete="given-name">
+                        <span class="form-error" id="first_name-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name" data-i18n="auth.last_name">auth.last_name</label>
+                        <input type="text" id="last_name" class="form-input" autocomplete="family-name">
+                        <span class="form-error" id="last_name-error"></span>
+                    </div>
+                </div>
+                <div class="student-wizard-actions">
+                    <button type="button" class="btn btn-primary btn-full" data-student-next data-i18n="auth.next">auth.next</button>
+                </div>
+            </section>
+
+            <section class="student-wizard-step" data-student-step="2" hidden>
+                <h2 data-i18n="auth.step_account">auth.step_account</h2>
+            </section>
+
+            <section class="student-wizard-step" data-student-step="3" hidden>
+                <h2 data-i18n="auth.step_organization">auth.step_organization</h2>
+                <p class="register-step-copy" data-i18n="auth.join_org_question">auth.join_org_question</p>
+                <div class="register-choice-row">
+                    <button type="button" class="register-choice-btn is-active" data-student-org-mode="skip" data-i18n="auth.skip">auth.skip</button>
+                    <button type="button" class="register-choice-btn" data-student-org-mode="choose" data-i18n="auth.choose_org">auth.choose_org</button>
+                </div>
+                <div class="student-org-picker" id="student-org-picker" hidden>
+                    <input type="search" id="student-org-search" class="form-input" data-i18n="auth.search_org" data-i18n-prop="placeholder" placeholder="auth.search_org" autocomplete="off">
+                    <div class="student-org-list" id="student-org-list"></div>
+                    <input type="hidden" id="student_org_id" name="student_org_id" value="">
+                    <p class="form-error" id="student-org-error"></p>
+                    <p class="form-hint" id="student-org-hint" data-i18n="auth.application_will_be_sent">auth.application_will_be_sent</p>
+                </div>
+                <div class="student-wizard-actions student-wizard-actions--split">
+                    <button type="button" class="btn btn-outline" data-student-back data-i18n="auth.back">auth.back</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="auth.register">auth.register</button>
+                </div>
+            </section>
+
+            <div class="standard-register-fields">
+                <div class="form-group" id="name-group">
+                    <label for="name" data-i18n="form.name">form.name</label>
                     <input
-                        type="password"
-                        id="password"
-                        name="password"
+                        type="text"
+                        id="name"
+                        name="name"
                         class="form-input"
-                        data-i18n="form.pass_min_ph"
-                        placeholder="Минимум 6 символов"
+                        data-i18n="form.name_ph"
+                        data-i18n-prop="placeholder"
+                        placeholder="form.name_ph"
                         required
-                        minlength="6"
-                        autocomplete="new-password"
+                        autocomplete="name"
                     />
-                    <button type="button" class="toggle-password" onclick="togglePassword('password')">👁</button>
+                    <span class="form-error" id="name-error"></span>
                 </div>
-                <span class="form-error" id="password-error"></span>
+
+                <div class="form-group" data-account-field>
+                    <label for="email" data-i18n="form.email">form.email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-input"
+                        data-i18n="form.email_ph"
+                        data-i18n-prop="placeholder"
+                        placeholder="form.email_ph"
+                        required
+                        autocomplete="email"
+                    />
+                    <span class="form-error" id="email-error"></span>
+                </div>
+
+                <div class="form-group" data-account-field>
+                    <label for="password" data-i18n="form.password">form.password</label>
+                    <div class="input-with-icon">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            data-i18n="form.pass_min_ph"
+                            data-i18n-prop="placeholder"
+                            placeholder="form.pass_min_ph"
+                            required
+                            minlength="6"
+                            autocomplete="new-password"
+                        />
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')" data-i18n="form.password" data-i18n-prop="aria-label" aria-label="form.password">👁</button>
+                    </div>
+                    <span class="form-error" id="password-error"></span>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label data-i18n="form.role">Я являюсь</label>
-                <div class="role-selector">
-                    <label class="role-option" id="role-student-label">
-                        <input type="radio" name="role" value="student" id="role-student" checked onchange="toggleRoleFields()" />
-                        <span class="role-icon">👨‍🎓</span>
-                        <span data-i18n="role.student">Студент</span>
-                    </label>
-                    <label class="role-option" id="role-teacher-label">
-                        <input type="radio" name="role" value="teacher" id="role-teacher" onchange="toggleRoleFields()" />
-                        <span class="role-icon">👨‍🏫</span>
-                        <span data-i18n="role.teacher">Преподаватель</span>
-                    </label>
-                    <label class="role-option" id="role-organization-label">
-                        <input type="radio" name="role" value="organization" id="role-organization" onchange="toggleRoleFields()" />
-                        <span class="role-icon">🏢</span>
-                        <span data-i18n="role.organization">Организация</span>
-                    </label>
-                </div>
+            <div class="student-wizard-actions student-wizard-actions--split" id="student-step2-actions" hidden>
+                <button type="button" class="btn btn-outline" data-student-back data-i18n="auth.back">auth.back</button>
+                <button type="button" class="btn btn-primary" data-student-next data-i18n="auth.next">auth.next</button>
             </div>
 
-            <!-- Дополнительные поля для преподавателей -->
-            <div id="teacher-extra-fields" style="display:none;">
+            <div id="teacher-extra-fields" hidden>
                 <div class="form-group">
-                    <label for="document" data-i18n="register.teacher_docs">📎 Прикрепите ваши сертификаты или дипломы (необязательно)</label>
+                    <label for="document" data-i18n="register.teacher_docs">register.teacher_docs</label>
                     <input
                         type="file"
                         id="document"
                         name="document"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         class="form-input"
-                        style="padding:10px;cursor:pointer;"
                     />
                     <span class="form-error" id="document-error"></span>
                 </div>
 
                 <div class="form-group">
-                    <label for="bio" data-i18n="register.teacher_bio">✍️ Расскажите о себе</label>
+                    <label for="bio" data-i18n="register.teacher_bio">register.teacher_bio</label>
                     <textarea
                         id="bio"
                         name="bio"
                         class="form-input form-textarea"
                         rows="3"
-                        placeholder="Расскажите о себе и почему хотите стать преподавателем..."
                         data-i18n="register.teacher_bio_ph"
                         data-i18n-prop="placeholder"
-                        style="resize:vertical;"
+                        placeholder="register.teacher_bio_ph"
                     ></textarea>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="register.teacher_bio_hint">
-                        Расскажите о себе и почему хотите стать преподавателем (необязательно)
-                    </p>
+                    <p class="form-hint" data-i18n="register.teacher_bio_hint">register.teacher_bio_hint</p>
                 </div>
 
-                <!-- Выбор организации при регистрации -->
                 <div class="form-group">
-                    <label for="teacher_org_id">🏢 <span data-i18n="org.label">Учебный центр</span> <span data-i18n="org.optional">(необязательно)</span></label>
+                    <label for="teacher_org_id"><span data-i18n="org.label">org.label</span> <span data-i18n="org.optional">org.optional</span></label>
                     <select id="teacher_org_id" name="org_id" class="form-input" disabled>
-                        <option value="" data-i18n="org.independent">— Без учебного центра (независимый преподаватель) —</option>
+                        <option value="" data-i18n="org.independent">org.independent</option>
                     </select>
-                    <p class="form-hint" data-i18n="org.join_hint">
-                        Если вы преподаватель учебного центра, выберите его из списка.
-                    </p>
+                    <p class="form-hint" data-i18n="org.join_hint">org.join_hint</p>
                 </div>
             </div>
 
-            <!-- Дополнительные поля для студентов -->
-            <div id="student-extra-fields" style="display:none;">
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label for="student_org_id">🏢 <span data-i18n="org.join_btn">Вступить в учебный центр</span> <span style="font-weight:400;color:var(--text-muted);" data-i18n="org.optional">(необязательно)</span></label>
-                    <select id="student_org_id" name="student_org_id" class="form-input" disabled>
-                        <option value="" data-i18n="org.independent">— Без учебного центра —</option>
-                    </select>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin:6px 0 0;" data-i18n="org.student_join_hint">
-                        Если вы учитесь в образовательном центре, выберите его из списка и сразу станете его студентом.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Дополнительные поля для организаций -->
-            <div id="organization-extra-fields" style="display:none;">
+            <div id="organization-extra-fields" hidden>
                 <div class="form-group">
-                    <label data-i18n="org.name_label">Название учебного центра</label>
+                    <label for="org_name" data-i18n="org.name_label">org.name_label</label>
                     <input
                         type="text"
                         id="org_name"
                         name="org_name"
                         class="form-input"
-                        placeholder="Например, IT Академия"
                         data-i18n="org.name_ph"
                         data-i18n-prop="placeholder"
+                        placeholder="org.name_ph"
                     />
                     <span class="form-error" id="org-name-error"></span>
                 </div>
 
                 <div class="form-group">
-                    <label data-i18n="org.phone_label">Номер телефона</label>
+                    <label for="org_phone" data-i18n="org.phone_label">org.phone_label</label>
                     <input
                         type="tel"
                         id="org_phone"
@@ -172,104 +219,298 @@
                 </div>
 
                 <div class="form-group">
-                    <label data-i18n="org.description_label">Описание учебного центра</label>
+                    <label for="org_description" data-i18n="org.description_label">org.description_label</label>
                     <textarea
                         id="org_description"
                         name="org_description"
                         class="form-input form-textarea"
                         rows="4"
-                        placeholder="Опишите ваш учебный центр, направление деятельности..."
                         data-i18n="org.description_ph"
                         data-i18n-prop="placeholder"
-                        style="resize:vertical;"
+                        placeholder="org.description_ph"
                     ></textarea>
                     <span class="form-error" id="org-desc-error"></span>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full" data-i18n="register.submit">
-                Зарегистрироваться
-            </button>
+            <div class="standard-submit-row">
+                <button type="submit" class="btn btn-primary btn-full" data-i18n="register.submit">register.submit</button>
+            </div>
         </form>
 
         <div class="auth-footer">
             <p>
-                <span data-i18n="register.have_account">Уже есть аккаунт?</span>
-                <a href="/login" data-i18n="register.login_link">Войти</a>
+                <span data-i18n="register.have_account">register.have_account</span>
+                <a href="/login" data-i18n="register.login_link">register.login_link</a>
             </p>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
-function toggleRoleFields() {
-    const teacherRadio = document.getElementById('role-teacher');
-    const orgRadio = document.getElementById('role-organization');
-    const studentRadio = document.getElementById('role-student');
+(function() {
+    const initialRole = {{ (selected_role or "") | tojson }};
+    const form = document.getElementById('register-form');
+    const rolePanel = document.getElementById('register-role-panel');
+    const selectedRoleInput = document.getElementById('selected-role');
+    const selectedRoleLabel = document.getElementById('register-selected-role');
+    const studentWizard = document.getElementById('student-wizard');
+    const studentSteps = Array.from(document.querySelectorAll('[data-student-step]'));
+    const standardSubmit = document.querySelector('.standard-submit-row');
     const teacherFields = document.getElementById('teacher-extra-fields');
     const orgFields = document.getElementById('organization-extra-fields');
-    const studentFields = document.getElementById('student-extra-fields');
+    const nameGroup = document.getElementById('name-group');
+    const accountFields = Array.from(document.querySelectorAll('[data-account-field]'));
+    const studentStep2Actions = document.getElementById('student-step2-actions');
     const teacherOrgSelect = document.getElementById('teacher_org_id');
-    const studentOrgSelect = document.getElementById('student_org_id');
+    const studentOrgPicker = document.getElementById('student-org-picker');
+    const studentOrgList = document.getElementById('student-org-list');
+    const studentOrgSearch = document.getElementById('student-org-search');
+    const studentOrgInput = document.getElementById('student_org_id');
+    const studentOrgHint = document.getElementById('student-org-hint');
+    let studentStep = 1;
+    let studentOrgMode = 'skip';
+    let organizations = [];
+    let orgsLoaded = false;
 
-    if (teacherRadio.checked) {
-        teacherFields.style.display = 'block';
-        studentFields.style.display = 'none';
-        teacherOrgSelect.disabled = false;
-        studentOrgSelect.disabled = true;
-        // Загружаем список учебных центров при первом открытии
-        loadOrganizations('teacher_org_id');
-    } else {
-        teacherFields.style.display = 'none';
-        teacherOrgSelect.disabled = true;
+    const roleLabels = {
+        student: 'auth.role_student',
+        teacher: 'auth.role_teacher',
+        organization: 'auth.role_organization',
+    };
+
+    function tr(key, params) {
+        return window.t ? t(key, params) : key;
     }
 
-    if (studentRadio.checked) {
-        studentFields.style.display = 'block';
-        studentOrgSelect.disabled = false;
-        teacherOrgSelect.disabled = true;
-        loadOrganizations('student_org_id');
-    } else {
-        studentFields.style.display = 'none';
-        studentOrgSelect.disabled = true;
+    function showRole(role) {
+        const roleKey = roleLabels[role] || role;
+        selectedRoleInput.value = role;
+        selectedRoleLabel.setAttribute('data-i18n', roleKey);
+        selectedRoleLabel.textContent = tr(roleKey);
+        rolePanel.hidden = true;
+        form.hidden = false;
+        const isStudent = role === 'student';
+        const isTeacher = role === 'teacher';
+        const isOrg = role === 'organization';
+
+        studentWizard.hidden = !isStudent;
+        teacherFields.hidden = !isTeacher;
+        orgFields.hidden = !isOrg;
+        standardSubmit.hidden = isStudent;
+        studentStep2Actions.hidden = !isStudent || studentStep !== 2;
+        nameGroup.hidden = isStudent;
+        accountFields.forEach((field) => field.hidden = isStudent && studentStep !== 2);
+        teacherOrgSelect.disabled = !isTeacher;
+
+        document.getElementById('org_name').toggleAttribute('required', isOrg);
+        document.getElementById('org_phone').toggleAttribute('required', isOrg);
+        document.getElementById('org_description').toggleAttribute('required', isOrg);
+
+        if (isTeacher) loadOrganizationsForTeacher();
+        if (isStudent) {
+            studentStep = 1;
+            showStudentStep(1);
+        } else {
+            studentSteps.forEach((step) => step.hidden = true);
+        }
     }
 
-    if (orgRadio.checked) {
-        orgFields.style.display = 'block';
-        orgFields.querySelectorAll('[data-i18n]').forEach(el => applyTranslationToElement(el, currentLang));
-        document.getElementById('org_name').setAttribute('required', 'required');
-        document.getElementById('org_phone').setAttribute('required', 'required');
-        document.getElementById('org_description').setAttribute('required', 'required');
-    } else {
-        orgFields.style.display = 'none';
-        document.getElementById('org_name').removeAttribute('required');
-        document.getElementById('org_phone').removeAttribute('required');
-        document.getElementById('org_description').removeAttribute('required');
+    function showStudentStep(step) {
+        studentStep = step;
+        studentSteps.forEach((section) => {
+            section.hidden = section.dataset.studentStep !== String(step);
+        });
+        accountFields.forEach((field) => field.hidden = step !== 2);
+        studentStep2Actions.hidden = step !== 2;
+        document.querySelectorAll('[data-step-dot]').forEach((dot) => {
+            dot.classList.toggle('is-active', Number(dot.dataset.stepDot) <= step);
+        });
+        const count = document.getElementById('student-step-count');
+        count.textContent = tr('auth.step_count', {current: step, total: 3});
+        count.setAttribute('data-i18n-params', JSON.stringify({current: step, total: 3}));
     }
-}
 
-const _orgsLoaded = {};
-function loadOrganizations(selectId) {
-    if (_orgsLoaded[selectId]) return;
-    _orgsLoaded[selectId] = true;
+    function setStudentName() {
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        document.getElementById('name').value = [firstName, lastName].filter(Boolean).join(' ');
+    }
 
-    const select = document.getElementById(selectId);
-    fetch('/api/organizations/list')
-        .then(r => r.json())
-        .then(data => {
-            if (data.organizations && data.organizations.length > 0) {
-                data.organizations.forEach(org => {
-                    const opt = document.createElement('option');
-                    opt.value = org.id;
-                    opt.textContent = org.name;
-                    select.appendChild(opt);
-                });
+    function validateStudentStep(step) {
+        clearFormErrors(form);
+        if (step === 1) {
+            const firstName = document.getElementById('first_name');
+            const lastName = document.getElementById('last_name');
+            let valid = true;
+            if (!firstName.value.trim()) {
+                showFieldError('first_name', tr('validation.first_name_required'));
+                valid = false;
             }
-        })
-        .catch(() => {/* тихо игнорируем ошибки */});
-}
+            if (!lastName.value.trim()) {
+                showFieldError('last_name', tr('validation.last_name_required'));
+                valid = false;
+            }
+            if (valid) setStudentName();
+            return valid;
+        }
+        if (step === 2) {
+            return validateAccountFields();
+        }
+        if (step === 3 && studentOrgMode === 'choose' && !studentOrgInput.value) {
+            document.getElementById('student-org-error').textContent = tr('validation.organization_required');
+            return false;
+        }
+        return true;
+    }
 
-toggleRoleFields();
+    function validateAccountFields() {
+        let valid = true;
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        if (!email.value.trim()) {
+            showFieldError('email', tr('validation.email_required'));
+            valid = false;
+        } else if (!isValidEmail(email.value)) {
+            showFieldError('email', tr('validation.email_invalid'));
+            valid = false;
+        }
+        if (!password.value) {
+            showFieldError('password', tr('validation.password_required'));
+            valid = false;
+        } else if (password.value.length < 6) {
+            showFieldError('password', tr('validation.password_short'));
+            valid = false;
+        }
+        return valid;
+    }
+
+    function loadOrganizations() {
+        if (orgsLoaded) return Promise.resolve(organizations);
+        orgsLoaded = true;
+        return fetch('/api/organizations/list')
+            .then((response) => response.json())
+            .then((data) => {
+                organizations = data.organizations || [];
+                return organizations;
+            })
+            .catch(() => {
+                organizations = [];
+                return organizations;
+            });
+    }
+
+    function loadOrganizationsForTeacher() {
+        if (teacherOrgSelect.dataset.loaded) return;
+        teacherOrgSelect.dataset.loaded = 'true';
+        loadOrganizations().then((items) => {
+            items.forEach((org) => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = org.name;
+                teacherOrgSelect.appendChild(option);
+            });
+        });
+    }
+
+    function renderStudentOrganizations(filterValue) {
+        const normalized = (filterValue || '').trim().toLowerCase();
+        const filtered = organizations.filter((org) => org.name.toLowerCase().includes(normalized));
+        studentOrgList.innerHTML = '';
+        filtered.forEach((org) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'student-org-option';
+            button.dataset.orgId = org.id;
+            button.innerHTML = `
+                <span class="student-org-option__name"></span>
+                <span class="student-org-option__badge"></span>
+            `;
+            const badgeKey = org.is_open ? 'auth.open_org' : 'auth.closed_org';
+            button.querySelector('.student-org-option__name').textContent = org.name;
+            button.querySelector('.student-org-option__badge').setAttribute('data-i18n', badgeKey);
+            button.querySelector('.student-org-option__badge').textContent = tr(badgeKey);
+            button.addEventListener('click', () => selectStudentOrg(org));
+            studentOrgList.appendChild(button);
+        });
+    }
+
+    function selectStudentOrg(org) {
+        studentOrgInput.value = org.id;
+        document.querySelectorAll('.student-org-option').forEach((button) => {
+            button.classList.toggle('is-selected', button.dataset.orgId === String(org.id));
+        });
+        const hintKey = org.is_open ? 'auth.joined_org_success' : 'auth.org_request_sent';
+        studentOrgHint.setAttribute('data-i18n', hintKey);
+        studentOrgHint.textContent = tr(hintKey);
+        document.getElementById('student-org-error').textContent = '';
+    }
+
+    function setStudentOrgMode(mode) {
+        studentOrgMode = mode;
+        document.querySelectorAll('[data-student-org-mode]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.studentOrgMode === mode);
+        });
+        studentOrgPicker.hidden = mode !== 'choose';
+        if (mode === 'skip') {
+            studentOrgInput.value = '';
+            document.getElementById('student-org-error').textContent = '';
+            studentOrgHint.setAttribute('data-i18n', 'auth.application_will_be_sent');
+            studentOrgHint.textContent = tr('auth.application_will_be_sent');
+        } else {
+            loadOrganizations().then(() => renderStudentOrganizations(studentOrgSearch.value));
+        }
+    }
+
+    document.querySelectorAll('[data-register-role]').forEach((button) => {
+        button.addEventListener('click', () => showRole(button.dataset.registerRole));
+    });
+
+    document.getElementById('register-change-role').addEventListener('click', () => {
+        form.hidden = true;
+        rolePanel.hidden = false;
+        selectedRoleInput.value = '';
+    });
+
+    document.querySelectorAll('[data-student-next]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (validateStudentStep(studentStep)) showStudentStep(studentStep + 1);
+        });
+    });
+
+    document.querySelectorAll('[data-student-back]').forEach((button) => {
+        button.addEventListener('click', () => showStudentStep(Math.max(1, studentStep - 1)));
+    });
+
+    document.querySelectorAll('[data-student-org-mode]').forEach((button) => {
+        button.addEventListener('click', () => setStudentOrgMode(button.dataset.studentOrgMode));
+    });
+
+    studentOrgSearch.addEventListener('input', () => renderStudentOrganizations(studentOrgSearch.value));
+    document.getElementById('first_name').addEventListener('input', setStudentName);
+    document.getElementById('last_name').addEventListener('input', setStudentName);
+
+    form.addEventListener('submit', (event) => {
+        const role = selectedRoleInput.value;
+        if (!role) {
+            event.preventDefault();
+            rolePanel.hidden = false;
+            form.hidden = true;
+            return;
+        }
+        if (role === 'student') {
+            setStudentName();
+            if (!validateStudentStep(3) || !validateAccountFields()) {
+                event.preventDefault();
+                return;
+            }
+        }
+    });
+
+    if (initialRole) showRole(initialRole);
+})();
 </script>
-
 {% endblock %}
