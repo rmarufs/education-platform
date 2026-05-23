@@ -1589,6 +1589,7 @@ async def group_homework_save(
     title: Optional[str] = Form(None),
     description: str = Form(...),
     material_url: Optional[str] = Form(None),
+    deadline_enabled: Optional[str] = Form(None),
     deadline: Optional[str] = Form(None),
     material_file: UploadFile = File(None),
     db: Session = Depends(get_db),
@@ -1612,7 +1613,10 @@ async def group_homework_save(
 
     homework.title = title.strip() if title and title.strip() else None
     homework.description = clean_description
-    homework.deadline = _parse_homework_deadline(deadline)
+    deadline_is_enabled = deadline_enabled == "1"
+    if deadline_is_enabled and not (deadline or "").strip():
+        raise HTTPException(status_code=400, detail="homework.deadline_required")
+    homework.deadline = _parse_homework_deadline(deadline) if deadline_is_enabled else None
 
     if material_file and material_file.filename:
         file_url, file_type, filename = _save_group_homework_upload(material_file, "materials")

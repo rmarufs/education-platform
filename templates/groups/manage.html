@@ -677,15 +677,24 @@
                     <p id="hw-current-material" class="form-hint" hidden></p>
                 </div>
                 <div class="form-group">
-                    <label for="hw-deadline" data-i18n="homework.deadline">Дедлайн</label>
-                    <input type="datetime-local" id="hw-deadline" name="deadline" class="form-input" />
+                    <label class="homework-deadline-toggle" for="hw-deadline-enabled">
+                        <input type="checkbox" id="hw-deadline-enabled" name="deadline_enabled" value="1" />
+                        <span data-i18n="homework.set_deadline">homework.set_deadline</span>
+                    </label>
+                    <div class="homework-deadline-field" id="hw-deadline-field" hidden>
+                        <label for="hw-deadline" data-i18n="homework.deadline">Дедлайн</label>
+                        <input type="datetime-local" id="hw-deadline" name="deadline" class="form-input" disabled />
+                        <span class="form-error" id="hw-deadline-error"></span>
+                    </div>
                 </div>
             </div>
         </form>
-        <form id="homework-delete-form" method="POST"></form>
+        <form id="homework-delete-form" method="POST" onsubmit="confirmAndSubmit(event, 'homework.delete', 'confirm.action_irreversible', null, 'homework.delete')"></form>
         <div class="modal-footer">
             <button type="button" class="btn btn-outline" onclick="closeModal('homework-modal')" data-i18n="group.cancel">Отмена</button>
-            <button type="submit" form="homework-delete-form" id="homework-delete-btn" class="btn btn-outline" style="color: var(--error); border-color: var(--error);" hidden data-i18n="homework.delete">Удалить домашнее задание</button>
+            <button type="submit" form="homework-delete-form" id="homework-delete-btn" class="btn btn-outline homework-delete-icon-btn" hidden data-i18n="homework.delete_aria" data-i18n-prop="title" aria-label="homework.delete_aria">
+                <span class="homework-delete-icon" aria-hidden="true">🗑️</span>
+            </button>
             <button type="submit" form="homework-form" class="btn btn-primary" data-i18n="homework.save">Сохранить</button>
         </div>
     </div>
@@ -832,6 +841,9 @@ function openHomeworkModal(dataset) {
     const deleteBtn = document.getElementById('homework-delete-btn');
     const title = document.getElementById('homework-modal-title');
     const currentMaterial = document.getElementById('hw-current-material');
+    const deadlineEnabled = document.getElementById('hw-deadline-enabled');
+    const deadlineInput = document.getElementById('hw-deadline');
+    const deadlineError = document.getElementById('hw-deadline-error');
 
     form.action = `/groups/{{ group.id }}/lessons/${lessonId}/homework/save`;
     if (hasHomework) {
@@ -843,9 +855,13 @@ function openHomeworkModal(dataset) {
     document.getElementById('hw-description').value = dataset.homeworkDescription || '';
     document.getElementById('hw-material-url').value = dataset.homeworkMaterialUrl || '';
     document.getElementById('hw-material-file').value = '';
-    document.getElementById('hw-deadline').value = dataset.homeworkDeadline || '';
+    deadlineInput.value = dataset.homeworkDeadline || '';
+    deadlineEnabled.checked = Boolean(dataset.homeworkDeadline);
+    updateHomeworkDeadlineField();
+    if (deadlineError) deadlineError.textContent = '';
     deleteBtn.hidden = !hasHomework;
     deleteBtn.disabled = !hasHomework;
+    deleteBtn.setAttribute('aria-label', typeof t === 'function' ? t('homework.delete_aria') : 'homework.delete_aria');
     title.dataset.i18n = hasHomework ? 'homework.edit' : 'homework.add';
     title.textContent = typeof t === 'function'
         ? t(
@@ -864,6 +880,30 @@ function openHomeworkModal(dataset) {
     }
     _openModalOverlay('homework-modal');
 }
+function updateHomeworkDeadlineField() {
+    const deadlineEnabled = document.getElementById('hw-deadline-enabled');
+    const deadlineField = document.getElementById('hw-deadline-field');
+    const deadlineInput = document.getElementById('hw-deadline');
+    const enabled = Boolean(deadlineEnabled?.checked);
+    if (deadlineField) deadlineField.hidden = !enabled;
+    if (deadlineInput) {
+        deadlineInput.disabled = !enabled;
+        deadlineInput.required = enabled;
+        if (!enabled) deadlineInput.value = '';
+    }
+}
+document.getElementById('hw-deadline-enabled')?.addEventListener('change', updateHomeworkDeadlineField);
+document.getElementById('homework-form')?.addEventListener('submit', (event) => {
+    const enabled = document.getElementById('hw-deadline-enabled')?.checked;
+    const input = document.getElementById('hw-deadline');
+    const error = document.getElementById('hw-deadline-error');
+    if (error) error.textContent = '';
+    if (enabled && input && !input.value) {
+        event.preventDefault();
+        if (error) error.textContent = typeof t === 'function' ? t('homework.deadline_required') : 'homework.deadline_required';
+        input.focus();
+    }
+});
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') ['add-module-modal','edit-module-modal','edit-group-modal','add-student-modal','add-lesson-modal','edit-lesson-modal','homework-modal'].forEach(closeModal);
 });

@@ -3598,6 +3598,46 @@ html[data-theme="dark"] img,
 body.dark img { opacity: .94; }
 body { transition: background-color .3s ease, color .3s ease; }
 
+.homework-deadline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.homework-deadline-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+.homework-deadline-field[hidden] {
+  display: none;
+}
+.homework-delete-icon-btn {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 45%, var(--border));
+  background: var(--bg-card);
+}
+.homework-delete-icon-btn:hover,
+.homework-delete-icon-btn:focus-visible {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 8%, var(--bg-card));
+}
+.homework-delete-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 /* ── Навигация: центральные ссылки ────────────────── */
 .nav-center-links {
   display: flex;
