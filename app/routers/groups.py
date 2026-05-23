@@ -2065,6 +2065,14 @@ def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: S
         except IntegrityError:
             db.rollback()
 
+    next_url = request.query_params.get("next")
+    allowed_prefixes = (
+        f"/groups/{group_id}/lessons/",
+        f"/groups/{group_id}/view",
+    )
+    if next_url and next_url.startswith(allowed_prefixes):
+        return RedirectResponse(next_url, status_code=302)
+
     return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}", status_code=302)
 
 

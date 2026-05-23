@@ -299,16 +299,6 @@
 
     <div class="lesson-complete-bar">
       <div class="lesson-complete-actions">
-        {% if membership and user.is_student and not can_preview_as_owner %}
-          {% if group_progress %}
-          <button type="button" class="btn btn-outline lesson-done-button" disabled data-i18n="lesson.done">Пройдено</button>
-          {% else %}
-          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete" method="POST">
-            <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Завершить</button>
-          </form>
-          {% endif %}
-        {% endif %}
-
         {% if previous_lesson %}
         <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
         {% else %}
@@ -316,9 +306,22 @@
         {% endif %}
 
         {% if next_lesson %}
-        <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+          {% if membership and user.is_student and not can_preview_as_owner %}
+          {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
+          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form">
+            <button type="submit" class="btn btn-primary" data-i18n="lesson.next">Далее</button>
+          </form>
+          {% else %}
+          <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+          {% endif %}
         {% else %}
-        <a href="{{ group_return_url }}" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
+          {% if membership and user.is_student and not can_preview_as_owner %}
+          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form">
+            <button type="submit" class="btn btn-primary" data-i18n="group.finish">Завершить</button>
+          </form>
+          {% else %}
+          <a href="{{ group_return_url }}" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
+          {% endif %}
         {% endif %}
       </div>
     </div>
@@ -436,6 +439,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   window.addEventListener("pagehide", () => setPageScrollLocked(false));
+
+  document.querySelectorAll(".group-lesson-complete-nav-form").forEach((form) => {
+    form.addEventListener("submit", () => {
+      const button = form.querySelector("button[type='submit']");
+      if (button) button.disabled = true;
+    });
+  });
 });
 </script>
 {% endblock %}
