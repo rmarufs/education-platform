@@ -1112,6 +1112,9 @@
     text-align: center;
     gap: 20px;
   }
+  .tp-hero-kicker {
+    justify-content: center;
+  }
   .tp-hero-avatar,
   .tp-hero-avatar-placeholder {
     width: 88px;
