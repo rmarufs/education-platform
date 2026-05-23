@@ -23,8 +23,6 @@ class User(Base):
     email = Column(String(150), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.student, nullable=False)
-    level = Column(String(50), nullable=True)
-    assessment_completed = Column(Boolean, default=False)
     documents = Column(String(500), nullable=True)   # путь к PDF-файлу преподавателя
     bio = Column(Text, nullable=True)                 # рассказ о себе (для преподавателей)
     avatar_url = Column(String, nullable=True)         # URL фото профиля

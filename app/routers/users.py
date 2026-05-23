@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from collections import defaultdict
@@ -44,65 +44,6 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     if user.is_org:
         return RedirectResponse("/dashboard/organization", status_code=302)
     return RedirectResponse("/dashboard/student", status_code=302)
-
-
-@router.get("/assessment", response_class=HTMLResponse)
-def assessment_page(request: Request, db: Session = Depends(get_db)):
-    """Страница оценки уровня."""
-    user, redirect = require_login(request, db)
-    if redirect:
-        return redirect
-    
-    # Если уже прошел - редирект в дашборд
-    if user.assessment_completed:
-        return RedirectResponse("/dashboard", status_code=302)
-        
-    return templates.TemplateResponse("pages/assessment.html", {"request": request, "user": user})
-
-
-@router.post("/assessment")
-def process_assessment(
-    request: Request,
-    q1: int = Form(...),
-    q2: int = Form(...),
-    q3: int = Form(...),
-    q4: int = Form(...),
-    q5: int = Form(...),
-    db: Session = Depends(get_db)
-):
-    """Обработка результатов оценки."""
-    user, redirect = require_login(request, db)
-    if redirect:
-        return redirect
-        
-    from app.models.assessment import AssessmentResponse
-    
-    # Сохраняем ответы в отдельную таблицу
-    response = db.query(AssessmentResponse).filter(AssessmentResponse.user_id == user.id).first()
-    if not response:
-        response = AssessmentResponse(user_id=user.id)
-        db.add(response)
-        
-    response.q1_answer = q1
-    response.q2_answer = q2
-    response.q3_answer = q3
-    response.q4_answer = q4
-    response.q5_answer = q5
-    
-    score = q1 + q2 + q3 + q4 + q5
-    
-    if score <= 6:
-        user_level = "Beginner"
-    elif score <= 11:
-        user_level = "Intermediate"
-    else:
-        user_level = "Advanced"
-        
-    user.level = user_level
-    user.assessment_completed = True
-    db.commit()
-    
-    return RedirectResponse("/courses/catalog", status_code=302)
 
 
 @router.get("/dashboard/student", response_class=HTMLResponse)

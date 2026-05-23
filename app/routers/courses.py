@@ -291,34 +291,6 @@ def list_courses_api(q: str = "", db: Session = Depends(get_db)):
     ]
 
 
-# ── Рекомендованные курсы ────────────────────────────────────────────────────
-
-@router.get("/recommended", response_class=HTMLResponse)
-def recommended_courses(request: Request, db: Session = Depends(get_db)):
-    user = get_user(request, db)
-    if not user or user.role.value != "student":
-        return RedirectResponse("/login", status_code=302)
-        
-    if not user.assessment_completed:
-        return RedirectResponse("/assessment", status_code=302)
-        
-    query = db.query(Course).options(joinedload(Course.teacher), joinedload(Course.category))
-    
-    if user.level == "Beginner":
-        query = query.filter(Course.level == "Beginner")
-    elif user.level == "Intermediate":
-        query = query.filter(Course.level.in_(["Beginner", "Intermediate"]))
-    # Advanced gets everything, so no filter needed
-    
-    recommended = query.order_by(Course.rating.desc()).all()
-    
-    return templates.TemplateResponse("pages/recommended_courses.html", {
-        "request": request,
-        "courses": recommended,
-        "user": user
-    })
-
-
 # ── Создание курса ───────────────────────────────────────────────────────────
 
 @router.post("/create")

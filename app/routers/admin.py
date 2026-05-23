@@ -6,9 +6,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
-import csv
-import io
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -16,7 +13,6 @@ from app.models.course import Course
 from app.models.progress import Progress
 from app.models.module import Module
 from app.models.lesson import Lesson
-from app.models.assessment import AssessmentResponse
 from app.models.comment import Comment
 from app.models.group import (
     Group,
@@ -158,7 +154,6 @@ def _delete_user_dependencies(db: Session, user: User, delete_owned_organization
     db.query(QuizResult).filter(QuizResult.student_id == user.id).delete(synchronize_session=False)
     db.query(Progress).filter(Progress.student_id == user.id).delete(synchronize_session=False)
     db.query(Comment).filter(Comment.user_id == user.id).delete(synchronize_session=False)
-    db.query(AssessmentResponse).filter(AssessmentResponse.user_id == user.id).delete(synchronize_session=False)
     db.query(Review).filter(
         (Review.student_id == user.id) | (Review.teacher_id == user.id)
     ).delete(synchronize_session=False)
@@ -545,50 +540,3 @@ def admin_delete_course(course_id: int, request: Request, db: Session = Depends(
     from main import invalidate_courses_cache
     invalidate_courses_cache()
     return RedirectResponse("/admin/courses", status_code=302)
-
-
-# ── Экспорт данных ──────────────────────────────────────────────────────────
-
-@router.get("/export-assessments")
-def export_assessments(request: Request, db: Session = Depends(get_db)):
-    admin = get_admin(request, db)
-    
-    from app.models.assessment import AssessmentResponse
-    responses = db.query(AssessmentResponse).options(joinedload(AssessmentResponse.user)).all()
-    
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Заголовки CSV
-    writer.writerow([
-        "ID пользователя", 
-        "Имя", 
-        "Email", 
-        "Q1: Опыт онлайн-курсов (1-Да,много; 2-Да,1-2; 3-Нет)", 
-        "Q2: Частота самообучения (1-Часто; 2-Иногда; 3-Редко)", 
-        "Q3: Доводит до конца (1-Всегда; 2-Иногда; 3-Редко)", 
-        "Q4: Комфорт без наставника (1-Комфортно; 2-Нормально; 3-Сложно)", 
-        "Q5: Трудности (1-Мотивация; 2-Сложность; 3-Нет трудностей)",
-        "Дата ответа"
-    ])
-    
-    for r in responses:
-        writer.writerow([
-            r.user.id if r.user else "",
-            r.user.name if r.user else "Удален",
-            r.user.email if r.user else "",
-            r.q1_answer,
-            r.q2_answer,
-            r.q3_answer,
-            r.q4_answer,
-            r.q5_answer,
-            r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else ""
-        ])
-    
-    # Возвращаем файл
-    output.seek(0)
-    return StreamingResponse(
-        iter([output.getvalue()]), 
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=assessments.csv"}
-    )

@@ -20,7 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 RLS_TABLES = (
     "contact_messages",
     "categories",
-    "assessment_responses",
     "comments",
     "quiz_attempts",
     "answers",

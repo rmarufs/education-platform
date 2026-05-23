@@ -239,11 +239,7 @@ async def register(
                 was_removed_notification=False,
             )
             db.add(org_student)
-            db.commit()
-
-    # Студент → ассессмент или дашборд
-    if user.is_student and not user.assessment_completed:
-        return RedirectResponse("/assessment", status_code=302)
+        db.commit()
 
     return RedirectResponse("/dashboard", status_code=302)
 
@@ -333,9 +329,6 @@ def login(
     # teacher_pending → страница ожидания
     if user.role == UserRole.teacher_pending:
         return RedirectResponse("/register/pending", status_code=302)
-
-    if user.is_student and not user.assessment_completed:
-        return RedirectResponse("/assessment", status_code=302)
 
     return RedirectResponse("/dashboard", status_code=302)
 
