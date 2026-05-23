@@ -1782,9 +1782,6 @@ def group_homework_review(group_id: int, request: Request, db: Session = Depends
         if selected_lesson_id_int == lesson.id:
             selected_item = item
 
-    if not selected_item and homework_items:
-        selected_item = homework_items[0]
-
     review_rows = []
     if selected_item:
         submissions_by_student = {
