@@ -1783,6 +1783,52 @@ body.dark .logo-copy::after {
   white-space: nowrap;
 }
 
+@media (min-width: 769px) {
+  .dashboard-main > .dashboard-header {
+    position: relative;
+    align-items: center;
+    overflow: hidden;
+    padding: 22px 24px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 54%, #16a34a 100%);
+    box-shadow: 0 14px 34px rgba(29,78,216,.16);
+  }
+
+  .dashboard-main > .dashboard-header h1 {
+    color: #fff;
+    font-size: 1.42rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 7px;
+    text-shadow: 0 1px 12px rgba(15,23,42,.14);
+  }
+
+  .dashboard-main > .dashboard-header p {
+    display: block;
+    max-width: 42rem;
+    margin: 0;
+    color: rgba(255,255,255,.86);
+    font-size: .94rem;
+    line-height: 1.45;
+  }
+
+  .dashboard-main > .dashboard-header > .btn,
+  .dashboard-main > .dashboard-header .teacher-dashboard-actions .btn {
+    border-color: rgba(255,255,255,.9);
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 8px 18px rgba(15,23,42,.14);
+  }
+
+  .dashboard-main > .dashboard-header > .btn:hover,
+  .dashboard-main > .dashboard-header .teacher-dashboard-actions .btn:hover {
+    background: rgba(255,255,255,.94);
+    color: var(--primary-dark);
+  }
+}
+
 /* ── Пустое состояние ──────────────────────────────────────── */
 .empty-state {
   text-align: center;
