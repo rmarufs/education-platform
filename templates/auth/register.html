@@ -3,6 +3,7 @@
 {% block title %}register.title_page{% endblock %}
 
 {% block content %}
+{% set fv = form_values or {} %}
 <div class="auth-page register-page">
     <div class="auth-card register-card">
         <div class="auth-header">
@@ -11,8 +12,22 @@
             <p data-i18n="register.subtitle">register.subtitle</p>
         </div>
 
-        {% if error %}
-        <div class="alert alert-error" id="error-msg" data-server-msg="{{ error }}">{{ error }}</div>
+        {% if error_key %}
+        <div
+            class="alert alert-error"
+            id="error-msg"
+            data-error-key="{{ error_key }}"
+            data-error-field="{{ error_field or '' }}"
+            data-error-step="{{ error_step or '' }}"
+        >{{ error_key }}</div>
+        {% elif error %}
+        <div
+            class="alert alert-error"
+            id="error-msg"
+            data-server-msg="{{ error }}"
+            data-error-field="{{ error_field or '' }}"
+            data-error-step="{{ error_step or '' }}"
+        >{{ error }}</div>
         {% endif %}
 
         <section class="register-role-panel" id="register-role-panel" {% if selected_role %}hidden{% endif %}>
@@ -49,21 +64,23 @@
                     <span class="student-step-dot is-active" data-step-dot="1"></span>
                     <span class="student-step-dot" data-step-dot="2"></span>
                     <span class="student-step-dot" data-step-dot="3"></span>
+                    <span class="student-step-dot" data-step-dot="4"></span>
+                    <span class="student-step-dot" data-step-dot="5"></span>
                 </div>
-                <div class="student-step-count" id="student-step-count" data-i18n="auth.step_count" data-i18n-params='{"current":1,"total":3}'>auth.step_count</div>
+                <div class="student-step-count" id="student-step-count" data-i18n="auth.step_count" data-i18n-params='{"current":1,"total":5}'>auth.step_count</div>
             </div>
 
             <section class="student-wizard-step" data-student-step="1" hidden>
-                <h2 data-i18n="auth.step_personal">auth.step_personal</h2>
+                <h2 data-i18n="auth.registration_step_personal">auth.registration_step_personal</h2>
                 <div class="register-two-col">
                     <div class="form-group">
                         <label for="first_name" data-i18n="auth.first_name">auth.first_name</label>
-                        <input type="text" id="first_name" class="form-input" autocomplete="given-name">
+                        <input type="text" id="first_name" name="first_name" class="form-input" autocomplete="given-name" value="{{ fv.get('first_name', '') }}">
                         <span class="form-error" id="first_name-error"></span>
                     </div>
                     <div class="form-group">
                         <label for="last_name" data-i18n="auth.last_name">auth.last_name</label>
-                        <input type="text" id="last_name" class="form-input" autocomplete="family-name">
+                        <input type="text" id="last_name" name="last_name" class="form-input" autocomplete="family-name" value="{{ fv.get('last_name', '') }}">
                         <span class="form-error" id="last_name-error"></span>
                     </div>
                 </div>
@@ -73,10 +90,50 @@
             </section>
 
             <section class="student-wizard-step" data-student-step="2" hidden>
-                <h2 data-i18n="auth.step_account">auth.step_account</h2>
+                <h2 data-i18n="auth.registration_step_contact">auth.registration_step_contact</h2>
+                <div class="register-two-col">
+                    <div class="form-group">
+                        <label for="birth_date" data-i18n="auth.birth_date">auth.birth_date</label>
+                        <input type="date" id="birth_date" name="birth_date" class="form-input" value="{{ fv.get('birth_date', '') }}" autocomplete="bday">
+                        <span class="form-error" id="birth_date-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone_number" data-i18n="auth.student_phone">auth.student_phone</label>
+                        <input type="tel" id="phone_number" name="phone_number" class="form-input" value="{{ fv.get('phone_number', '') }}" placeholder="+992 XX XXX XXXX" autocomplete="tel">
+                        <span class="form-error" id="phone_number-error"></span>
+                    </div>
+                </div>
+                <div class="student-wizard-actions student-wizard-actions--split">
+                    <button type="button" class="btn btn-outline" data-student-back data-i18n="auth.back">auth.back</button>
+                    <button type="button" class="btn btn-primary" data-student-next data-i18n="auth.next">auth.next</button>
+                </div>
             </section>
 
             <section class="student-wizard-step" data-student-step="3" hidden>
+                <h2 data-i18n="auth.parent_contact">auth.parent_contact</h2>
+                <div class="register-two-col">
+                    <div class="form-group">
+                        <label for="parent_contact_name" data-i18n="auth.parent_name">auth.parent_name</label>
+                        <input type="text" id="parent_contact_name" name="parent_contact_name" class="form-input" value="{{ fv.get('parent_contact_name', '') }}" autocomplete="name">
+                        <span class="form-error" id="parent_contact_name-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="parent_contact_phone" data-i18n="auth.parent_phone">auth.parent_phone</label>
+                        <input type="tel" id="parent_contact_phone" name="parent_contact_phone" class="form-input" value="{{ fv.get('parent_contact_phone', '') }}" placeholder="+992 XX XXX XXXX" autocomplete="tel">
+                        <span class="form-error" id="parent_contact_phone-error"></span>
+                    </div>
+                </div>
+                <div class="student-wizard-actions student-wizard-actions--split">
+                    <button type="button" class="btn btn-outline" data-student-back data-i18n="auth.back">auth.back</button>
+                    <button type="button" class="btn btn-primary" data-student-next data-i18n="auth.next">auth.next</button>
+                </div>
+            </section>
+
+            <section class="student-wizard-step" data-student-step="4" hidden>
+                <h2 data-i18n="auth.registration_step_account">auth.registration_step_account</h2>
+            </section>
+
+            <section class="student-wizard-step" data-student-step="5" hidden>
                 <h2 data-i18n="auth.step_organization">auth.step_organization</h2>
                 <p class="register-step-copy" data-i18n="auth.join_org_question">auth.join_org_question</p>
                 <div class="register-choice-row">
@@ -86,7 +143,7 @@
                 <div class="student-org-picker" id="student-org-picker" hidden>
                     <input type="search" id="student-org-search" class="form-input" data-i18n="auth.search_org" data-i18n-prop="placeholder" placeholder="auth.search_org" autocomplete="off">
                     <div class="student-org-list" id="student-org-list"></div>
-                    <input type="hidden" id="student_org_id" name="student_org_id" value="">
+                    <input type="hidden" id="student_org_id" name="student_org_id" value="{{ fv.get('student_org_id', '') }}">
                     <p class="form-error" id="student-org-error"></p>
                     <p class="form-hint" id="student-org-hint" data-i18n="auth.application_will_be_sent">auth.application_will_be_sent</p>
                 </div>
@@ -109,6 +166,7 @@
                         placeholder="form.name_ph"
                         required
                         autocomplete="name"
+                        value="{{ fv.get('name', '') }}"
                     />
                     <span class="form-error" id="name-error"></span>
                 </div>
@@ -125,6 +183,7 @@
                         placeholder="form.email_ph"
                         required
                         autocomplete="email"
+                        value="{{ fv.get('email', '') }}"
                     />
                     <span class="form-error" id="email-error"></span>
                 </div>
@@ -178,7 +237,7 @@
                         data-i18n="register.teacher_bio_ph"
                         data-i18n-prop="placeholder"
                         placeholder="register.teacher_bio_ph"
-                    ></textarea>
+                    >{{ fv.get('bio', '') }}</textarea>
                     <p class="form-hint" data-i18n="register.teacher_bio_hint">register.teacher_bio_hint</p>
                 </div>
 
@@ -202,6 +261,7 @@
                         data-i18n="org.name_ph"
                         data-i18n-prop="placeholder"
                         placeholder="org.name_ph"
+                        value="{{ fv.get('org_name', '') }}"
                     />
                     <span class="form-error" id="org-name-error"></span>
                 </div>
@@ -214,6 +274,7 @@
                         name="org_phone"
                         class="form-input"
                         placeholder="+992 XX XXX XXXX"
+                        value="{{ fv.get('org_phone', '') }}"
                     />
                     <span class="form-error" id="org-phone-error"></span>
                 </div>
@@ -228,7 +289,7 @@
                         data-i18n="org.description_ph"
                         data-i18n-prop="placeholder"
                         placeholder="org.description_ph"
-                    ></textarea>
+                    >{{ fv.get('org_description', '') }}</textarea>
                     <span class="form-error" id="org-desc-error"></span>
                 </div>
             </div>
@@ -271,6 +332,7 @@
     const studentOrgSearch = document.getElementById('student-org-search');
     const studentOrgInput = document.getElementById('student_org_id');
     const studentOrgHint = document.getElementById('student-org-hint');
+    const totalStudentSteps = 5;
     let studentStep = 1;
     let studentOrgMode = 'skip';
     let organizations = [];
@@ -285,6 +347,8 @@
     function tr(key, params) {
         return window.t ? t(key, params) : key;
     }
+
+    const serverError = document.getElementById('error-msg');
 
     function showRole(role) {
         const roleKey = roleLabels[role] || role;
@@ -301,9 +365,9 @@
         teacherFields.hidden = !isTeacher;
         orgFields.hidden = !isOrg;
         standardSubmit.hidden = isStudent;
-        studentStep2Actions.hidden = !isStudent || studentStep !== 2;
+        studentStep2Actions.hidden = !isStudent || studentStep !== 4;
         nameGroup.hidden = isStudent;
-        accountFields.forEach((field) => field.hidden = isStudent && studentStep !== 2);
+        accountFields.forEach((field) => field.hidden = isStudent && studentStep !== 4);
         teacherOrgSelect.disabled = !isTeacher;
 
         document.getElementById('org_name').toggleAttribute('required', isOrg);
@@ -313,6 +377,10 @@
         if (isTeacher) loadOrganizationsForTeacher();
         if (isStudent) {
             studentStep = 1;
+            if (studentOrgInput.value) {
+                studentOrgMode = 'choose';
+                setStudentOrgMode('choose');
+            }
             showStudentStep(1);
         } else {
             studentSteps.forEach((step) => step.hidden = true);
@@ -324,14 +392,14 @@
         studentSteps.forEach((section) => {
             section.hidden = section.dataset.studentStep !== String(step);
         });
-        accountFields.forEach((field) => field.hidden = step !== 2);
-        studentStep2Actions.hidden = step !== 2;
+        accountFields.forEach((field) => field.hidden = step !== 4);
+        studentStep2Actions.hidden = step !== 4;
         document.querySelectorAll('[data-step-dot]').forEach((dot) => {
             dot.classList.toggle('is-active', Number(dot.dataset.stepDot) <= step);
         });
         const count = document.getElementById('student-step-count');
-        count.textContent = tr('auth.step_count', {current: step, total: 3});
-        count.setAttribute('data-i18n-params', JSON.stringify({current: step, total: 3}));
+        count.textContent = tr('auth.step_count', {current: step, total: totalStudentSteps});
+        count.setAttribute('data-i18n-params', JSON.stringify({current: step, total: totalStudentSteps}));
     }
 
     function setStudentName() {
@@ -358,13 +426,68 @@
             return valid;
         }
         if (step === 2) {
+            return validateStudentContactFields();
+        }
+        if (step === 3) {
+            return validateParentContactFields();
+        }
+        if (step === 4) {
             return validateAccountFields();
         }
-        if (step === 3 && studentOrgMode === 'choose' && !studentOrgInput.value) {
+        if (step === 5 && studentOrgMode === 'choose' && !studentOrgInput.value) {
             document.getElementById('student-org-error').textContent = tr('validation.organization_required');
             return false;
         }
         return true;
+    }
+
+    function isValidPhone(value) {
+        return /^\+?[0-9][0-9\s().-]{6,24}$/.test((value || '').trim());
+    }
+
+    function validateStudentContactFields() {
+        let valid = true;
+        const birthDate = document.getElementById('birth_date');
+        const phone = document.getElementById('phone_number');
+        if (!birthDate.value) {
+            showFieldError('birth_date', tr('validation.birth_date_required'));
+            valid = false;
+        } else {
+            const selectedDate = new Date(`${birthDate.value}T00:00:00`);
+            const minDate = new Date('1900-01-01T00:00:00');
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            if (Number.isNaN(selectedDate.getTime()) || selectedDate < minDate || selectedDate > today) {
+                showFieldError('birth_date', tr('validation.birth_date_invalid'));
+                valid = false;
+            }
+        }
+        if (!phone.value.trim()) {
+            showFieldError('phone_number', tr('validation.student_phone_required'));
+            valid = false;
+        } else if (!isValidPhone(phone.value)) {
+            showFieldError('phone_number', tr('auth.invalid_phone'));
+            valid = false;
+        }
+        return valid;
+    }
+
+    function validateParentContactFields() {
+        let valid = true;
+        const parentName = document.getElementById('parent_contact_name');
+        const parentPhone = document.getElementById('parent_contact_phone');
+        if (!parentName.value.trim()) {
+            showFieldError('parent_contact_name', tr('validation.parent_name_required'));
+            valid = false;
+        }
+        if (!parentPhone.value.trim()) {
+            showFieldError('parent_contact_phone', tr('validation.parent_phone_required'));
+            valid = false;
+        } else if (!isValidPhone(parentPhone.value)) {
+            showFieldError('parent_contact_phone', tr('auth.invalid_phone'));
+            valid = false;
+        }
+        return valid;
     }
 
     function validateAccountFields() {
@@ -433,8 +556,14 @@
             button.querySelector('.student-org-option__name').textContent = org.name;
             button.querySelector('.student-org-option__badge').setAttribute('data-i18n', badgeKey);
             button.querySelector('.student-org-option__badge').textContent = tr(badgeKey);
+            button.classList.toggle('is-selected', studentOrgInput.value === String(org.id));
             button.addEventListener('click', () => selectStudentOrg(org));
             studentOrgList.appendChild(button);
+            if (studentOrgInput.value === String(org.id)) {
+                const hintKey = org.is_open ? 'auth.joined_org_success' : 'auth.org_request_sent';
+                studentOrgHint.setAttribute('data-i18n', hintKey);
+                studentOrgHint.textContent = tr(hintKey);
+            }
         });
     }
 
@@ -503,14 +632,34 @@
         }
         if (role === 'student') {
             setStudentName();
-            if (!validateStudentStep(3) || !validateAccountFields()) {
-                event.preventDefault();
-                return;
+            for (let step = 1; step <= totalStudentSteps; step += 1) {
+                if (!validateStudentStep(step)) {
+                    event.preventDefault();
+                    showStudentStep(step);
+                    return;
+                }
             }
         }
     });
 
+    function applyServerError() {
+        if (!serverError) return;
+        const key = serverError.dataset.errorKey;
+        const message = key ? tr(key) : serverError.textContent;
+        if (key) serverError.textContent = message;
+        const step = Number(serverError.dataset.errorStep);
+        if (selectedRoleInput.value === 'student' && step) showStudentStep(step);
+        const field = serverError.dataset.errorField;
+        if (!field) return;
+        if (field === 'student_org_id') {
+            document.getElementById('student-org-error').textContent = message;
+        } else {
+            showFieldError(field, message);
+        }
+    }
+
     if (initialRole) showRole(initialRole);
+    applyServerError();
 })();
 </script>
 {% endblock %}

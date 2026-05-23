@@ -1,7 +1,9 @@
 # Роутер авторизации: регистрация, логин, выход
 import os
+import re
 import uuid
 import shutil
+from datetime import date
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -17,6 +19,7 @@ router = APIRouter()
 from app.ui import templates
 DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{6,24}$")
 
 
 def hash_password(password: str) -> str:
@@ -52,6 +55,35 @@ def _validate_teacher_document(document: UploadFile | None) -> None:
         raise HTTPException(status_code=400, detail="Файл слишком большой")
 
 
+def _is_valid_phone(value: str) -> bool:
+    return bool(PHONE_RE.fullmatch(value.strip()))
+
+
+def _register_context(
+    request: Request,
+    role: str,
+    form_values: dict | None = None,
+    error_key: str | None = None,
+    error: str | None = None,
+    error_field: str | None = None,
+    error_step: int | None = None,
+) -> dict:
+    context = {
+        "request": request,
+        "selected_role": role,
+        "form_values": form_values or {},
+    }
+    if error_key:
+        context["error_key"] = error_key
+    if error:
+        context["error"] = error
+    if error_field:
+        context["error_field"] = error_field
+    if error_step:
+        context["error_step"] = error_step
+    return context
+
+
 # ── Страница регистрации ────────────────────────────────────────────────────
 
 @router.get("/register", response_class=HTMLResponse)
@@ -66,10 +98,16 @@ def register_page(request: Request):
 @limiter.limit("5/minute")
 async def register(
     request: Request,
-    name: str = Form(...),
+    name: str = Form(""),
+    first_name: str = Form(""),
+    last_name: str = Form(""),
     email: str = Form(...),
     password: str = Form(...),
     role: str = Form(...),
+    birth_date: str = Form(""),
+    phone_number: str = Form(""),
+    parent_contact_name: str = Form(""),
+    parent_contact_phone: str = Form(""),
     bio: str = Form(""),
     org_name: str = Form(""),
     org_phone: str = Form(""),
@@ -79,10 +117,61 @@ async def register(
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
+    first_name = first_name.strip()
+    last_name = last_name.strip()
     name = name.strip()
+    if role == "student":
+        name = " ".join(part for part in (first_name, last_name) if part)
     email = email.strip().lower()
     password = password.strip()
+    birth_date = birth_date.strip()
+    phone_number = phone_number.strip()
+    parent_contact_name = parent_contact_name.strip()
+    parent_contact_phone = parent_contact_phone.strip()
+    form_values = {
+        "name": name,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "role": role,
+        "birth_date": birth_date,
+        "phone_number": phone_number,
+        "parent_contact_name": parent_contact_name,
+        "parent_contact_phone": parent_contact_phone,
+        "bio": bio,
+        "org_name": org_name,
+        "org_phone": org_phone,
+        "org_description": org_description,
+        "org_id": org_id or "",
+        "student_org_id": student_org_id or "",
+    }
 
+    if role == "student" and not first_name:
+        return templates.TemplateResponse(
+            "auth/register.html",
+            _register_context(
+                request,
+                role,
+                form_values,
+                error_key="validation.first_name_required",
+                error_field="first_name",
+                error_step=1,
+            ),
+            status_code=400,
+        )
+    if role == "student" and not last_name:
+        return templates.TemplateResponse(
+            "auth/register.html",
+            _register_context(
+                request,
+                role,
+                form_values,
+                error_key="validation.last_name_required",
+                error_field="last_name",
+                error_step=1,
+            ),
+            status_code=400,
+        )
     if not name:
         raise HTTPException(status_code=400, detail="Введите имя")
     if not email:
@@ -95,7 +184,14 @@ async def register(
     if existing:
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Пользователь с таким email уже существует", "selected_role": role},
+            _register_context(
+                request,
+                role,
+                form_values,
+                error="Пользователь с таким email уже существует",
+                error_field="email" if role == "student" else None,
+                error_step=4 if role == "student" else None,
+            ),
             status_code=400,
         )
 
@@ -106,23 +202,132 @@ async def register(
     if role == "organization" and not org_name.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Введите название учебного центра", "selected_role": role},
+            _register_context(request, role, form_values, error="Введите название учебного центра"),
             status_code=400,
         )
 
     if role == "organization" and not org_phone.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Введите номер телефона", "selected_role": role},
+            _register_context(request, role, form_values, error="Введите номер телефона"),
             status_code=400,
         )
 
     if role == "organization" and not org_description.strip():
         return templates.TemplateResponse(
             "auth/register.html",
-            {"request": request, "error": "Добавьте краткое описание учебного центра", "selected_role": role},
+            _register_context(request, role, form_values, error="Добавьте краткое описание учебного центра"),
             status_code=400,
         )
+
+    parsed_birth_date = None
+    if role == "student":
+        if not birth_date:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.birth_date_required",
+                    error_field="birth_date",
+                    error_step=2,
+                ),
+                status_code=400,
+            )
+        try:
+            parsed_birth_date = date.fromisoformat(birth_date)
+        except ValueError:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.birth_date_invalid",
+                    error_field="birth_date",
+                    error_step=2,
+                ),
+                status_code=400,
+            )
+        if parsed_birth_date > date.today() or parsed_birth_date.year < 1900:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.birth_date_invalid",
+                    error_field="birth_date",
+                    error_step=2,
+                ),
+                status_code=400,
+            )
+        if not phone_number:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.student_phone_required",
+                    error_field="phone_number",
+                    error_step=2,
+                ),
+                status_code=400,
+            )
+        if not _is_valid_phone(phone_number):
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="auth.invalid_phone",
+                    error_field="phone_number",
+                    error_step=2,
+                ),
+                status_code=400,
+            )
+        if not parent_contact_name:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.parent_name_required",
+                    error_field="parent_contact_name",
+                    error_step=3,
+                ),
+                status_code=400,
+            )
+        if not parent_contact_phone:
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="validation.parent_phone_required",
+                    error_field="parent_contact_phone",
+                    error_step=3,
+                ),
+                status_code=400,
+            )
+        if not _is_valid_phone(parent_contact_phone):
+            return templates.TemplateResponse(
+                "auth/register.html",
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error_key="auth.invalid_phone",
+                    error_field="parent_contact_phone",
+                    error_step=3,
+                ),
+                status_code=400,
+            )
 
     selected_student_org = None
     if role == "student" and student_org_id:
@@ -133,7 +338,14 @@ async def register(
         if not selected_student_org:
             return templates.TemplateResponse(
                 "auth/register.html",
-                {"request": request, "error": "Учебный центр не найден", "selected_role": role},
+                _register_context(
+                    request,
+                    role,
+                    form_values,
+                    error="Учебный центр не найден",
+                    error_field="student_org_id",
+                    error_step=5,
+                ),
                 status_code=400,
             )
 
@@ -175,6 +387,10 @@ async def register(
         role=actual_role,
         documents=doc_path,
         bio=user_bio,
+        birth_date=parsed_birth_date if role == "student" else None,
+        phone_number=phone_number if role == "student" else None,
+        parent_contact_name=parent_contact_name if role == "student" else None,
+        parent_contact_phone=parent_contact_phone if role == "student" else None,
         is_active=is_active,
     )
     db.add(user)

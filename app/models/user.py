@@ -1,6 +1,6 @@
 # Модель пользователя
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Enum, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
@@ -26,6 +26,10 @@ class User(Base):
     documents = Column(String(500), nullable=True)   # путь к PDF-файлу преподавателя
     bio = Column(Text, nullable=True)                 # рассказ о себе (для преподавателей)
     avatar_url = Column(String, nullable=True)         # URL фото профиля
+    birth_date = Column(Date, nullable=True)
+    phone_number = Column(String(32), nullable=True)
+    parent_contact_name = Column(String(150), nullable=True)
+    parent_contact_phone = Column(String(32), nullable=True)
     is_active = Column(Boolean, default=True)         # для блокировки пользователей
     created_at = Column(DateTime, default=datetime.utcnow)
 
