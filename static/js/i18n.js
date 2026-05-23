@@ -770,6 +770,9 @@ const translations = {
     "teacher_profile.courses_title": "Курсы преподавателя",
     "teacher_profile.no_courses": "У преподавателя пока нет курсов.",
     "teacher_profile.open_course": "Открыть курс →",
+    "teacher_profile.browse_courses": "Смотреть курсы",
+    "teacher_profile.search_courses": "Найти курсы",
+
 
     "admin.layout.panel": "Панель управления",
     "admin.layout.back_site": "Вернуться на сайт",
@@ -1910,6 +1913,9 @@ const translations = {
     "teacher_profile.courses_title": "Курсҳои омӯзгор",
     "teacher_profile.no_courses": "Ин омӯзгор ҳоло курс надорад.",
     "teacher_profile.open_course": "Кушодани курс →",
+    "teacher_profile.browse_courses": "Дидани курсҳо",
+    "teacher_profile.search_courses": "Ҷустуҷӯи курсҳо",
+
 
     "admin.layout.panel": "Панели идоракунӣ",
     "admin.layout.back_site": "Бозгашт ба сайт",

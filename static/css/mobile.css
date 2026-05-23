@@ -1093,6 +1093,71 @@
   .teacher-profile-stats { grid-template-columns: 1fr !important; }
   .course-cover-dropzone { grid-template-columns: 1fr; }
   table { display: block; overflow-x: auto; white-space: nowrap; width: 100%; }
+
+  /* ══════ Teacher Public Profile (tp-*) ══════════════ */
+  .teacher-profile-shell {
+    padding: 20px 16px 60px;
+    gap: 32px;
+  }
+  .tp-hero {
+    padding: 24px 20px 28px;
+    border-radius: 16px;
+  }
+  .tp-hero::before {
+    border-radius: 16px 16px 0 0;
+  }
+  .tp-hero-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+  .tp-hero-avatar,
+  .tp-hero-avatar-placeholder {
+    width: 88px;
+    height: 88px;
+    font-size: 2.2rem;
+  }
+  .tp-hero-text {
+    min-width: 0;
+    width: 100%;
+  }
+  .tp-hero-name {
+    font-size: 1.45rem;
+  }
+  .tp-hero-bio {
+    font-size: .9rem;
+  }
+  .tp-hero-metrics {
+    width: 100%;
+    justify-content: space-around;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+  .tp-metric {
+    padding: 0 12px;
+  }
+  .tp-metric-val {
+    font-size: 1.3rem;
+  }
+  .tp-hero-actions {
+    justify-content: center;
+    width: 100%;
+  }
+  .tp-hero-actions .btn {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .tp-section-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tp-section-title {
+    font-size: 1.15rem;
+  }
+
   /* ══════ Оптимизированный Footer ═══════════════════ */
   .footer-shell {
     padding: 12px 10px calc(8px + env(safe-area-inset-bottom));

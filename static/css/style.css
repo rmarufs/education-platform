@@ -4391,8 +4391,12 @@ body { transition: background-color .3s ease, color .3s ease; }
   max-width: 960px;
   margin: 0 auto;
   padding: 32px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
 }
 
+/* ── (Legacy) Old teacher-profile classes — kept for backward compat ── */
 .teacher-profile-header {
   display: flex;
   align-items: center;
@@ -4410,6 +4414,195 @@ body { transition: background-color .3s ease, color .3s ease; }
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 40px;
+}
+
+/* ── Teacher Public Profile: Hero ─────────────────────────────── */
+.tp-hero {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 48px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  position: relative;
+}
+
+.tp-hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), #8b5cf6, #06b6d4);
+  border-radius: 20px 20px 0 0;
+}
+
+.tp-hero-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.tp-hero-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.tp-hero-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.tp-hero-avatar-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  border: 3px solid var(--border);
+}
+
+.tp-hero-text {
+  flex: 1;
+  min-width: 220px;
+}
+
+.tp-hero-kicker {
+  margin-bottom: 10px;
+}
+
+.tp-hero-name {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.tp-hero-bio {
+  font-size: .975rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+  max-width: 560px;
+}
+
+.tp-hero-since {
+  font-size: .82rem;
+  color: var(--text-subtle);
+  margin-bottom: 22px;
+}
+
+/* Metrics bar */
+.tp-hero-metrics {
+  display: flex;
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 24px;
+  width: fit-content;
+  gap: 0;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.tp-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 20px;
+}
+
+.tp-metric:first-child { padding-left: 0; }
+.tp-metric:last-child  { padding-right: 0; }
+
+.tp-metric-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.tp-metric-lbl {
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tp-metric-sep {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.tp-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Teacher Public Profile: Section ───────────────────────────── */
+.tp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.tp-section-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tp-section-icon {
+  font-size: 1.25rem;
+}
+
+.tp-count {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: .8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────── */
+html[data-theme="dark"] .tp-hero,
+body.dark .tp-hero {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] .tp-hero-metrics,
+body.dark .tp-hero-metrics {
+  background: var(--surface-soft);
+  border-color: var(--border);
 }
 
 .pending-card {
