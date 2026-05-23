@@ -181,31 +181,31 @@
             </div>
             <div class="student-groups-desktop">
                 {% for group in student_groups %}
-                <div class="student-group-desktop-card fade-in">
-                    <div class="student-group-desktop-head">
+                <div class="group-card student-group-card-desktop fade-in">
+                    <div class="group-card-header">
                         {% if group.avatar_url %}
-                        <img src="{{ group.avatar_url }}" class="student-group-desktop-media" alt="{{ group.name }}">
+                        <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-icon group-icon-img">
                         {% else %}
-                        <div class="student-group-desktop-media student-group-desktop-media-placeholder">{{ (group.name or "F")[0]|upper }}</div>
+                        <div class="group-icon">{{ (group.name or "F")[0]|upper }}</div>
                         {% endif %}
-                        <div class="student-group-desktop-title">
-                            <h3 class="course-title">{{ group.name }}</h3>
+                        <div class="group-meta">
+                            <h3 class="group-name">{{ group.name }}</h3>
                             {% if group.organization %}
-                            <p>{{ group.organization.name }}</p>
+                            <span>{{ group.organization.name }}</span>
                             {% endif %}
                         </div>
                     </div>
                     {% if group.description %}
-                    <p class="student-group-desktop-description">{{ group.description | striptags | truncate(120) }}</p>
+                    <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
                     {% endif %}
-                    <div class="student-group-desktop-stats">
+                    <div class="group-stats">
                         {% if group.teacher %}
-                        <p>👨‍🏫 <span>{{ group.teacher.name }}</span></p>
+                        <div class="group-stat"><span class="group-stat-icon">👨‍🏫</span><span>{{ group.teacher.name }}</span></div>
                         {% endif %}
-                        <p>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></p>
+                        <div class="group-stat"><span class="group-stat-icon">📚</span><span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></div>
                     </div>
-                    <div class="student-group-desktop-footer">
-                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm btn-full" data-i18n="catalog.open">Открыть →</a>
+                    <div class="group-card-footer">
+                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm" data-i18n="org.open_btn">Открыть</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -341,100 +341,90 @@
     .user-dashboard--student .student-groups-desktop {
         display: grid;
         gap: 18px;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
-    .user-dashboard--student .student-group-desktop-card {
+    .user-dashboard--student .student-group-card-desktop {
         background: var(--bg-card, #fff);
         border: 1px solid var(--border, rgba(0,0,0,0.08));
-        border-radius: 18px;
+        border-radius: 16px;
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        min-height: 260px;
+        gap: 12px;
         padding: 20px;
         transition: box-shadow 0.2s, transform 0.2s;
     }
-    .user-dashboard--student .student-group-desktop-card:hover {
+    .user-dashboard--student .student-group-card-desktop:hover {
         box-shadow: 0 8px 32px rgba(99,102,241,0.12);
         transform: translateY(-2px);
     }
-    .user-dashboard--student .student-group-desktop-head {
-        align-items: center;
+    .user-dashboard--student .student-group-card-desktop .group-card-header {
         display: flex;
-        gap: 14px;
-        min-width: 0;
-    }
-    .user-dashboard--student .student-group-desktop-media {
-        border-radius: 16px;
-        flex: 0 0 64px;
-        height: 64px;
-        object-fit: cover;
-        overflow: hidden;
-        width: 64px;
-    }
-    .user-dashboard--student .student-group-desktop-media-placeholder {
         align-items: center;
+        gap: 14px;
+    }
+    .user-dashboard--student .student-group-card-desktop .group-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        flex-shrink: 0;
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
         color: #fff;
-        display: flex;
-        font-size: 1.35rem;
+        font-size: 1.4rem;
         font-weight: 700;
+        display: flex;
+        align-items: center;
         justify-content: center;
     }
-    .user-dashboard--student .student-group-desktop-title {
+    .user-dashboard--student .student-group-card-desktop .group-icon-img {
+        object-fit: cover;
+    }
+    .user-dashboard--student .student-group-card-desktop .group-meta {
         flex: 1;
         min-width: 0;
     }
-    .user-dashboard--student .student-group-desktop-title .course-title {
-        font-size: 1.08rem;
-        line-height: 1.25;
+    .user-dashboard--student .student-group-card-desktop .group-name {
         margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
     }
-    .user-dashboard--student .student-group-desktop-title p {
+    .user-dashboard--student .student-group-card-desktop .group-meta span {
         color: var(--text-muted);
-        font-size: .9rem;
-        font-weight: 600;
-        line-height: 1.35;
-        margin: 5px 0 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        font-size: .8rem;
     }
-    .user-dashboard--student .student-group-desktop-description {
+    .user-dashboard--student .student-group-card-desktop .group-description {
         color: var(--text-muted);
-        display: -webkit-box;
-        font-size: .95rem;
-        line-height: 1.45;
+        font-size: .875rem;
+        line-height: 1.5;
         margin: 0;
-        min-height: 2.8em;
-        overflow: hidden;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
     }
-    .user-dashboard--student .student-group-desktop-stats {
-        display: grid;
-        gap: 8px;
-    }
-    .user-dashboard--student .student-group-desktop-stats p {
-        align-items: center;
-        color: var(--text-muted);
+    .user-dashboard--student .student-group-card-desktop .group-stats {
         display: flex;
-        font-size: .9rem;
-        font-weight: 600;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .user-dashboard--student .student-group-card-desktop .group-stat {
+        display: flex;
+        align-items: center;
         gap: 8px;
-        line-height: 1.35;
-        margin: 0;
+        font-size: .85rem;
+        color: var(--text-muted);
     }
-    .user-dashboard--student .student-group-desktop-footer {
-        border-top: 1px solid var(--border, rgba(0,0,0,0.06));
+    .user-dashboard--student .student-group-card-desktop .group-stat-icon {
+        width: 20px;
+        text-align: center;
+    }
+    .user-dashboard--student .student-group-card-desktop .group-card-footer {
         margin-top: auto;
-        padding-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border, rgba(0,0,0,0.06));
     }
-    .user-dashboard--student .student-group-desktop-footer .btn {
-        min-height: 42px;
+    .user-dashboard--student .student-group-card-desktop .group-card-footer .btn {
+        width: 100%;
+        min-height: 38px;
+        justify-content: center;
     }
 }
 html[data-theme="dark"] .student-analytics-bar,
