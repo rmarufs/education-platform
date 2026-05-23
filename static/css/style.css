@@ -4476,6 +4476,10 @@ body { transition: background-color .3s ease, color .3s ease; }
 }
 
 .tp-hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
 }
 
@@ -5092,170 +5096,159 @@ body.dark .rich-text-content :where(p, div, span, li, strong, em, s, u, blockquo
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Публичная страница организации  (.org-pub-*)
+   Публичная страница организации — op-* (Organization Public)
+   Переиспользует tp-hero, tp-section, tp-metric, tp-count
    ══════════════════════════════════════════════════════════════ */
 
-.org-pub-shell {
+/* ── Shell — идентичен teacher-profile-shell ── */
+.op-shell {
   max-width: 1100px;
-  margin: 0 auto;
-  padding: 40px 24px 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 56px;
 }
 
-/* ── Hero ── */
-.org-pub-hero {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 40px 48px;
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-  position: relative;
+/* ── Лого организации (квадратный, в отличие от круглого аватара учителя) ── */
+.op-logo-wrap {
+  flex-shrink: 0;
 }
 
-.org-pub-hero::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary), #8b5cf6, #06b6d4);
-  border-radius: 20px 20px 0 0;
-}
-
-.org-pub-hero-inner {
-  display: flex;
-  align-items: flex-start;
-  gap: 36px;
-  flex-wrap: wrap;
-}
-
-.org-pub-logo {
+.op-logo-img {
   width: 100px;
   height: 100px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--primary-light), var(--surface-muted));
-  border: 1px solid var(--border);
+  border-radius: 18px !important;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.op-logo-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.org-pub-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.org-pub-logo-placeholder {
-  font-size: 3rem;
+  font-size: 2.5rem;
+  font-weight: 800;
+  border: 2px solid var(--border);
   line-height: 1;
 }
 
-.org-pub-hero-text {
-  flex: 1;
-  min-width: 240px;
-}
-
-.org-pub-name {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.2;
-  margin-bottom: 10px;
-}
-
-.org-pub-desc {
-  font-size: .975rem;
-  color: var(--text-muted);
-  line-height: 1.65;
-  margin-bottom: 24px;
-  max-width: 640px;
-}
-
-/* Метрики */
-.org-pub-metrics {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px 24px;
-  flex-wrap: wrap;
-  width: fit-content;
-}
-
-.org-pub-metric {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 0 24px;
-}
-
-.org-pub-metric:first-child { padding-left: 0; }
-.org-pub-metric:last-child  { padding-right: 0; }
-
-.org-pub-metric-val {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1;
-}
-
-.org-pub-metric-lbl {
-  font-size: .75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.org-pub-metric-sep {
-  width: 1px;
-  height: 40px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-/* ── Секции ── */
-.org-pub-section {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.org-pub-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border);
-}
-
-.org-pub-section-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.org-pub-count {
+/* ── Org badge (рядом с role-badge) ── */
+.op-org-badge {
   background: var(--primary-light);
   color: var(--primary);
-  font-size: .8rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
   border: 1px solid #bfdbfe;
 }
 
-/* ── Карточки преподавателей ── */
+/* ── Статус open/closed ── */
+.op-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.op-status-open {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: rgba(22,163,74,.2);
+}
+
+.op-status-closed {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: rgba(220,38,38,.2);
+}
+
+/* ── Контактные данные в hero ── */
+.op-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.op-contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+a.op-contact-link:hover {
+  color: var(--primary);
+}
+
+.op-contact-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.op-contact-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+/* ── Форма заявки в hero ── */
+.op-join-form {
+  margin-top: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 520px;
+}
+
+.op-join-form .form-group {
+  margin-bottom: 16px;
+}
+
+.op-join-form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .875rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.op-optional {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: .8rem;
+}
+
+.op-char-counter {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.op-file-hint {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.op-join-form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* ── Карточки преподавателей (переиспользуем org-pub-teacher-*) ── */
 .org-pub-teachers-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5348,22 +5341,16 @@ body.dark .rich-text-content :where(p, div, span, li, strong, em, s, u, blockquo
   color: var(--primary);
 }
 
-/* ── Сетка курсов (переопределяем под 3 колонки) ── */
+/* ── Сетка курсов ── */
 .org-pub-courses-grid {
   grid-template-columns: repeat(3, 1fr) !important;
   justify-content: start !important;
 }
 
 /* ── Dark mode ── */
-html[data-theme="dark"] .org-pub-hero,
-body.dark .org-pub-hero {
+html[data-theme="dark"] .op-join-form,
+body.dark .op-join-form {
   background: var(--bg-card);
-  border-color: rgba(255,255,255,.08);
-}
-
-html[data-theme="dark"] .org-pub-metrics,
-body.dark .org-pub-metrics {
-  background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.08);
 }
 
@@ -5385,48 +5372,6 @@ body.dark .org-pub-teacher-card:hover {
   }
   .org-pub-courses-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-/* ── Адаптив мобилка ── */
-@media (max-width: 600px) {
-  .org-pub-shell {
-    padding: 24px 16px 60px;
-    gap: 36px;
-  }
-  .org-pub-hero {
-    padding: 24px 20px 28px;
-  }
-  .org-pub-hero-inner {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 20px;
-  }
-  .org-pub-name {
-    font-size: 1.5rem;
-  }
-  .org-pub-metrics {
-    flex-direction: row;
-    width: 100%;
-    justify-content: center;
-    padding: 14px 12px;
-  }
-  .org-pub-metric {
-    padding: 0 12px;
-  }
-  .org-pub-metric-val {
-    font-size: 1.3rem;
-  }
-  .org-pub-teachers-grid {
-    grid-template-columns: 1fr;
-  }
-  .org-pub-courses-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .org-pub-logo {
-    width: 80px;
-    height: 80px;
   }
 }
 

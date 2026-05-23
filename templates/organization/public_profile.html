@@ -3,215 +3,282 @@
 {% block title %}{{ org.name }} — Фурузон{% endblock %}
 
 {% block content %}
+<div class="teacher-profile-shell op-shell">
 
-{# ── Вычисляем флаги для кнопки вступления ── #}
-<div class="org-pub-shell">
+  {# ══════════════════════ HERO ══════════════════════════ #}
+  <div class="tp-hero reveal">
+    <div class="tp-hero-inner">
 
-    {# ══════════════════ HERO ══════════════════ #}
-    <section class="org-pub-hero reveal">
-        <div class="org-pub-hero-inner">
-
-            {# Логотип / заглушка #}
-            <div class="org-pub-logo">
-                {% set org_logo_url = org.logo_url or (org.user.avatar_url if org.user else None) %}
-                {% if org_logo_url %}
-                    <img src="{{ org_logo_url }}" alt="{{ org.name }}" class="org-pub-logo-img">
-                {% else %}
-                    <span class="org-pub-logo-placeholder">🏢</span>
-                {% endif %}
-            </div>
-
-            {# Текст #}
-            <div class="org-pub-hero-text">
-                <h1 class="org-pub-name">{{ org.name }}</h1>
-                {% if org.description %}
-                <p class="org-pub-desc">{{ org.description | striptags | truncate(220) }}</p>
-                {% endif %}
-
-                {# Метрики #}
-                <div class="org-pub-metrics">
-                    <div class="org-pub-metric">
-                        <span class="org-pub-metric-val">{{ org_teachers | length }}</span>
-                        <span class="org-pub-metric-lbl" data-i18n="org.stats_teachers">Преподавателей</span>
-                    </div>
-                    <div class="org-pub-metric-sep"></div>
-                    <div class="org-pub-metric">
-                        <span class="org-pub-metric-val">{{ courses | length }}</span>
-                        <span class="org-pub-metric-lbl" data-i18n="org.stats_courses">Курсов</span>
-                    </div>
-                    <div class="org-pub-metric-sep"></div>
-                    <div class="org-pub-metric">
-                        <span class="org-pub-metric-val">{{ students_count }}</span>
-                        <span class="org-pub-metric-lbl" data-i18n="org.stats_students">Учеников</span>
-                    </div>
-                    <div class="org-pub-metric-sep"></div>
-                    <div class="org-pub-metric">
-                        <span class="org-pub-metric-val rating-text">
-                            {% if avg_rating > 0 %}⭐ {{ avg_rating }}{% else %}—{% endif %}
-                        </span>
-                        <span class="org-pub-metric-lbl" data-i18n="org.stats.rating">Средний рейтинг</span>
-                    </div>
-                </div>
-
-                {# Блок вступления — только для авторизованных преподавателей #}
-                {% if user and user.is_teacher %}
-                <div style="margin-top: 24px;">
-                    {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.already_member">
-                            Вы участник другой организации
-                        </button>
-                    {% elif user_application and user_application.status == 'accepted' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
-                            Вы приняты
-                        </button>
-                    {% elif user_application and user_application.status == 'pending' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.pending_review" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
-                            Заявка на рассмотрении в центре {{ org.name }}
-                        </button>
-                    {% elif user_application and user_application.status == 'rejected' %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;" data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
-                            Заявка в учебный центр {{ org.name }} отклонена
-                        </button>
-                    {% else %}
-                        <button id="join-org-btn" class="btn btn-primary btn-lg" onclick="showJoinForm()">
-                            <span data-i18n="org.join_btn">➕ Вступить в учебный центр</span>
-                        </button>
-                        {# Форма заявки #}
-                        <div id="join-form-block" style="display:none; margin-top:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:540px;">
-                            <div class="form-group" style="margin-bottom:14px;">
-                                <label for="cover-letter-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Сопроводительное письмо <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
-                                <textarea id="cover-letter-input" class="form-input form-textarea" maxlength="500" rows="4" 
-                                          placeholder="Расскажите о себе, своём опыте и почему хотите вступить в учебный центр..."
-                                          data-i18n="org.cover_letter_ph" data-i18n-prop="placeholder"></textarea>
-                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;"><span id="letter-counter">0</span>/500</div>
-                            </div>
-                            <div class="form-group" style="margin-bottom:18px;">
-                                <label for="attach-input" style="font-size:.875rem;font-weight:600;margin-bottom:6px;display:block;">Резюме / сертификат <span style="color:var(--text-muted);font-weight:400;">необязательно</span></label>
-                                <input type="file" id="attach-input" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                                <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
-                            </div>
-                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                                <button id="submit-join-btn" class="btn btn-primary" onclick="submitJoin({{ org.id }})" data-i18n="org.join_send">Отправить заявку</button>
-                                <button class="btn btn-outline" onclick="hideJoinForm()" data-i18n="action.cancel">Отмена</button>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                {# Блок вступления — только для авторизованных студентов #}
-                {% if user and user.is_student %}
-                <div style="margin-top: 24px;">
-                    {% if user_student_membership %}
-                        <button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">
-                            {% if user_student_membership.status == 'accepted' %}
-                                <span data-i18n="student.is_member">Вы приняты</span>
-                            {% elif user_student_membership.status == 'pending' %}
-                                <span data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка на рассмотрении в центре {{ org.name }}</span>
-                            {% elif user_student_membership.status == 'rejected' %}
-                                <span data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка в учебный центр {{ org.name }} отклонена</span>
-                            {% endif %}
-                        </button>
-                    {% else %}
-                        <button id="join-student-btn" class="btn btn-primary btn-lg" onclick="joinOrganization({{ org.id }})">
-                            <span data-i18n="org.join_btn">🎓 Вступить в учебный центр</span>
-                        </button>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </section>
-
-    {# ══════════════════ ПРЕПОДАВАТЕЛИ ══════════════════ #}
-    <section class="org-pub-section">
-        <div class="org-pub-section-head">
-            <h2 class="org-pub-section-title">👨‍🏫 Наши преподаватели
-                <span class="org-pub-count">{{ org_teachers | length }}</span>
-            </h2>
-        </div>
-
-        {% if org_teachers %}
-        <div class="org-pub-teachers-grid">
-            {% for teacher in org_teachers %}
-            {% set teacher_courses_count = courses | selectattr('teacher_id', 'equalto', teacher.id) | list | length %}
-            <a href="/teachers/{{ teacher.id }}" class="org-pub-teacher-card reveal" style="animation-delay: {{ loop.index0 * 0.06 }}s;">
-                <div class="org-pub-teacher-avatar">
-                    {% if teacher.avatar_url %}
-                        <img src="{{ teacher.avatar_url }}" alt="{{ teacher.name }}">
-                    {% else %}
-                        {{ teacher.name[0] | upper }}
-                    {% endif %}
-                </div>
-                <div class="org-pub-teacher-info">
-                    <div class="org-pub-teacher-name">{{ teacher.name }}</div>
-                    {% if teacher.bio %}
-                    <div class="org-pub-teacher-bio">{{ teacher.bio | striptags | truncate(80) }}</div>
-                    {% endif %}
-                    <div class="org-pub-teacher-meta">
-                        <span>📚 {{ teacher_courses_count }} курс{% if teacher_courses_count % 10 == 1 and teacher_courses_count % 100 != 11 %}{% elif teacher_courses_count % 10 in [2,3,4] and teacher_courses_count % 100 not in [12,13,14] %}а{% else %}ов{% endif %}</span>
-                    </div>
-                </div>
-                <span class="org-pub-teacher-arrow">→</span>
-            </a>
-            {% endfor %}
-        </div>
+      {# Логотип организации #}
+      <div class="tp-hero-avatar-wrap op-logo-wrap">
+        {% set org_logo_url = org.logo_url or (org.user.avatar_url if org.user else None) %}
+        {% if org_logo_url %}
+          <img src="{{ org_logo_url }}" class="tp-hero-avatar op-logo-img" alt="{{ org.name }}">
         {% else %}
-        <div class="empty-state">
-            <span class="empty-icon">👨‍🏫</span>
-            <p data-i18n="org.no_teachers">В учебном центре пока нет преподавателей.</p>
+          <div class="tp-hero-avatar op-logo-placeholder">
+            {{ org.name[0].upper() if org.name else '🏢' }}
+          </div>
+        {% endif %}
+      </div>
+
+      {# Информация #}
+      <div class="tp-hero-text">
+
+        {# Kicker: бейдж организации + статус open/closed #}
+        <div class="tp-hero-kicker">
+          <span class="role-badge op-org-badge" data-i18n="nav.org">Учебный центр</span>
+          {% if org.is_open %}
+            <span class="op-status-badge op-status-open" data-i18n="org.status_open">Открытый набор</span>
+          {% else %}
+            <span class="op-status-badge op-status-closed" data-i18n="org.status_closed">Закрытый набор</span>
+          {% endif %}
+        </div>
+
+        <h1 class="tp-hero-name">{{ org.name }}</h1>
+
+        {% if org.description %}
+          <p class="tp-hero-bio">{{ org.description | striptags | truncate(240) }}</p>
+        {% endif %}
+
+        {# Контактная информация #}
+        {% if org.website or org.phone %}
+          <div class="op-contact-row">
+            {% if org.website %}
+              <a href="{{ org.website }}" class="op-contact-link" target="_blank" rel="noopener noreferrer">
+                <span class="op-contact-icon">🌐</span>
+                <span class="op-contact-text">{{ org.website | replace('https://', '') | replace('http://', '') | truncate(40) }}</span>
+              </a>
+            {% endif %}
+            {% if org.phone %}
+              <span class="op-contact-link">
+                <span class="op-contact-icon">📞</span>
+                <span class="op-contact-text">{{ org.phone }}</span>
+              </span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {# Метрики inline #}
+        <div class="tp-hero-metrics">
+          <div class="tp-metric">
+            <span class="tp-metric-val">{{ org_teachers | length }}</span>
+            <span class="tp-metric-lbl" data-i18n="org.stats_teachers">Преподавателей</span>
+          </div>
+          <div class="tp-metric-sep"></div>
+          <div class="tp-metric">
+            <span class="tp-metric-val">{{ courses | length }}</span>
+            <span class="tp-metric-lbl" data-i18n="org.stats_courses">Курсов</span>
+          </div>
+          <div class="tp-metric-sep"></div>
+          <div class="tp-metric">
+            <span class="tp-metric-val">{{ students_count }}</span>
+            <span class="tp-metric-lbl" data-i18n="org.stats_students">Учеников</span>
+          </div>
+          {% if avg_rating > 0 %}
+          <div class="tp-metric-sep"></div>
+          <div class="tp-metric">
+            <span class="tp-metric-val rating-text">⭐ {{ avg_rating }}</span>
+            <span class="tp-metric-lbl" data-i18n="org.stats.rating">Рейтинг</span>
+          </div>
+          {% endif %}
+        </div>
+
+        {# ── Блок вступления для преподавателей ── #}
+        {% if user and user.is_teacher %}
+        <div class="tp-hero-actions">
+          {% if user_in_any_org and (not user_application or user_application.status != 'accepted') %}
+            <button class="btn btn-outline btn-sm" disabled data-i18n="org.already_member">
+              Вы участник другой организации
+            </button>
+          {% elif user_application and user_application.status == 'accepted' %}
+            <button class="btn btn-outline btn-sm" disabled data-i18n="org.accepted_into" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+              Вы приняты
+            </button>
+          {% elif user_application and user_application.status == 'pending' %}
+            <button class="btn btn-outline btn-sm" disabled data-i18n="org.pending_review" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+              Заявка на рассмотрении
+            </button>
+          {% elif user_application and user_application.status == 'rejected' %}
+            <button class="btn btn-outline btn-sm" disabled data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>
+              Заявка отклонена
+            </button>
+          {% else %}
+            <button id="join-org-btn" class="btn btn-primary btn-sm" onclick="showJoinForm()">
+              <span data-i18n="org.join_btn">➕ Вступить в учебный центр</span>
+            </button>
+            <a href="/courses/catalog" class="btn btn-outline btn-sm" data-i18n="teacher_profile.browse_courses">Смотреть курсы</a>
+          {% endif %}
+        </div>
+
+        {# Форма заявки #}
+        <div id="join-form-block" hidden class="op-join-form">
+          <div class="form-group">
+            <label for="cover-letter-input">
+              <span data-i18n="org.cover_letter">Сопроводительное письмо</span>
+              <span class="op-optional" data-i18n="common.optional">необязательно</span>
+            </label>
+            <textarea id="cover-letter-input" class="form-input form-textarea" maxlength="500" rows="4"
+                      placeholder="Расскажите о себе, своём опыте и почему хотите вступить..."
+                      data-i18n="org.cover_letter_ph" data-i18n-prop="placeholder"></textarea>
+            <div class="op-char-counter"><span id="letter-counter">0</span>/500</div>
+          </div>
+          <div class="form-group">
+            <label for="attach-input">
+              <span data-i18n="org.attach_label">Резюме / сертификат</span>
+              <span class="op-optional" data-i18n="common.optional">необязательно</span>
+            </label>
+            <input type="file" id="attach-input" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+            <div class="op-file-hint">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
+          </div>
+          <div class="op-join-form-actions">
+            <button id="submit-join-btn" class="btn btn-primary btn-sm" onclick="submitJoin({{ org.id }})" data-i18n="org.join_send">Отправить заявку</button>
+            <button class="btn btn-outline btn-sm" onclick="hideJoinForm()" data-i18n="action.cancel">Отмена</button>
+          </div>
         </div>
         {% endif %}
-    </section>
 
-    {# ══════════════════ КУРСЫ ══════════════════ #}
-    <section class="org-pub-section">
-        <div class="org-pub-section-head">
-            <h2 class="org-pub-section-title" data-i18n="org.courses_title">📚 Курсы учебного центра <span style="font-weight: 400; color: var(--text-muted); font-size: 0.9rem;">({{ courses|length }})</span></h2>
-        </div>
-
-        {% if courses %}
-        <div class="courses-grid org-pub-courses-grid">
-            {% for course in courses %}
-            <div class="course-card reveal" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
-                <div class="course-card-header">
-                    {{ course_cover(course) }}
-                </div>
-                <div class="course-card-body">
-                    <h3 class="course-title">{{ course.title }}</h3>
-                    <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span>Нет описания</span>{% endif %}</p>
-                    <div class="course-meta">
-                        <span class="course-teacher">{{ course.teacher.name }}</span>
-                        <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f" | format(course.rating) }}{% endif %}</span>
-                    </div>
-                </div>
-                <div class="course-card-footer">
-                    <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full">Открыть курс →</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <span class="empty-icon">📭</span>
-            <p>Организация пока не добавила курсы.</p>
+        {# ── Блок вступления для студентов ── #}
+        {% if user and user.is_student %}
+        <div class="tp-hero-actions">
+          {% if user_student_membership %}
+            <button class="btn btn-outline btn-sm" disabled>
+              {% if user_student_membership.status == 'accepted' %}
+                <span data-i18n="student.is_member">Вы приняты</span>
+              {% elif user_student_membership.status == 'pending' %}
+                <span data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка на рассмотрении</span>
+              {% elif user_student_membership.status == 'rejected' %}
+                <span data-i18n="org.rejected_from" data-i18n-params='{"name": "{{ org.name|escape }}"}'>Заявка отклонена</span>
+              {% endif %}
+            </button>
+          {% else %}
+            <button id="join-student-btn" class="btn btn-primary btn-sm" onclick="joinOrganization({{ org.id }})">
+              <span data-i18n="org.join_btn">🎓 Вступить в учебный центр</span>
+            </button>
+            <a href="/courses/catalog" class="btn btn-outline btn-sm" data-i18n="teacher_profile.browse_courses">Смотреть курсы</a>
+          {% endif %}
         </div>
         {% endif %}
-    </section>
 
-</div>
+        {# ── Кнопки для незалогиненного пользователя ── #}
+        {% if not user %}
+        <div class="tp-hero-actions">
+          <a href="/courses/catalog" class="btn btn-primary btn-sm" data-i18n="teacher_profile.browse_courses">Смотреть курсы</a>
+          <a href="/login" class="btn btn-outline btn-sm" data-i18n="nav.login">Войти</a>
+        </div>
+        {% endif %}
+
+      </div>{# /.tp-hero-text #}
+    </div>{# /.tp-hero-inner #}
+  </div>{# /.tp-hero #}
+
+
+  {# ══════════════════════ ПРЕПОДАВАТЕЛИ ══════════════════════════ #}
+  <div class="tp-section reveal">
+    <div class="tp-section-head">
+      <h2 class="tp-section-title">
+        <span class="tp-section-icon" aria-hidden="true">👨‍🏫</span>
+        <span data-i18n="org.teachers_title">Наши преподаватели</span>
+      </h2>
+      {% if org_teachers %}
+        <span class="tp-count">{{ org_teachers | length }}</span>
+      {% endif %}
+    </div>
+
+    {% if org_teachers %}
+    <div class="org-pub-teachers-grid">
+      {% for teacher in org_teachers %}
+      {% set teacher_courses_count = courses | selectattr('teacher_id', 'equalto', teacher.id) | list | length %}
+      <a href="/teachers/{{ teacher.id }}" class="org-pub-teacher-card reveal" style="animation-delay: {{ loop.index0 * 0.06 }}s;">
+        <div class="org-pub-teacher-avatar">
+          {% if teacher.avatar_url %}
+            <img src="{{ teacher.avatar_url }}" alt="{{ teacher.name }}">
+          {% else %}
+            {{ teacher.name[0] | upper }}
+          {% endif %}
+        </div>
+        <div class="org-pub-teacher-info">
+          <div class="org-pub-teacher-name">{{ teacher.name }}</div>
+          {% if teacher.bio %}
+          <div class="org-pub-teacher-bio">{{ teacher.bio | striptags | truncate(80) }}</div>
+          {% endif %}
+          <div class="org-pub-teacher-meta">
+            <span>📚
+              {{ teacher_courses_count }}
+              {% if teacher_courses_count % 10 == 1 and teacher_courses_count % 100 != 11 %}курс
+              {% elif teacher_courses_count % 10 in [2,3,4] and teacher_courses_count % 100 not in [12,13,14] %}курса
+              {% else %}курсов{% endif %}
+            </span>
+          </div>
+        </div>
+        <span class="org-pub-teacher-arrow">→</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">👨‍🏫</span>
+      <p data-i18n="org.no_teachers">В учебном центре пока нет преподавателей.</p>
+    </div>
+    {% endif %}
+  </div>
+
+
+  {# ══════════════════════ КУРСЫ ══════════════════════════ #}
+  <div class="tp-section reveal">
+    <div class="tp-section-head">
+      <h2 class="tp-section-title">
+        <span class="tp-section-icon" aria-hidden="true">📚</span>
+        <span data-i18n="org.courses_title">Курсы учебного центра</span>
+      </h2>
+      {% if courses %}
+        <span class="tp-count">{{ courses | length }}</span>
+      {% endif %}
+    </div>
+
+    {% if courses %}
+    <div class="courses-grid org-pub-courses-grid">
+      {% for course in courses %}
+      <div class="course-card reveal" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+        <div class="course-card-header">
+          {{ course_cover(course) }}
+        </div>
+        <div class="course-card-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+          <div class="course-meta">
+            <span class="course-teacher">{{ course.teacher.name }}</span>
+            <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f" | format(course.rating) }}{% endif %}</span>
+          </div>
+        </div>
+        <div class="course-card-footer">
+          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="teacher_profile.open_course">Открыть курс →</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">📭</span>
+      <p data-i18n="org.no_courses">Организация пока не добавила курсы.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>{# /.teacher-profile-shell #}
 {% endblock %}
 
 {% block scripts %}
 <script>
 function showJoinForm() {
     document.getElementById('join-org-btn').style.display = 'none';
-    document.getElementById('join-form-block').style.display = 'block';
+    const block = document.getElementById('join-form-block');
+    block.hidden = false;
+    block.removeAttribute('hidden');
 }
 
 function hideJoinForm() {
-    document.getElementById('join-form-block').style.display = 'none';
-    document.getElementById('join-org-btn').style.display = 'inline-flex';
+    document.getElementById('join-form-block').hidden = true;
+    document.getElementById('join-org-btn').style.display = '';
 }
 
 const letterInput = document.getElementById('cover-letter-input');
@@ -239,9 +306,9 @@ async function submitJoin(orgId) {
         const data = await r.json();
 
         if (r.ok && data.success) {
-            document.getElementById('join-form-block').style.display = 'none';
+            document.getElementById('join-form-block').hidden = true;
             const wrap = document.getElementById('join-org-btn').parentElement;
-            wrap.innerHTML = `<button class="btn btn-outline btn-lg" disabled style="opacity:.65;cursor:default;">⏳ ${t('org.pending_review', {name: '{{ org.name|escape }}'})}</button>`;
+            wrap.innerHTML = `<button class="btn btn-outline btn-sm" disabled>⏳ ${t('org.pending_review', {name: '{{ org.name|escape }}'})}</button>`;
             showToast(t('org.join_sent') || 'Заявка успешно отправлена!', 'success');
         } else if (r.status === 400) {
             submitBtn.disabled = false;
