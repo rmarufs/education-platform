@@ -67,6 +67,57 @@
   let debounceTimer;
   let currentPage = 1;
 
+  function clearNode(node) {
+    if (node) node.replaceChildren();
+  }
+
+  function setInlineStyle(node, cssText) {
+    node.style.cssText = cssText;
+    return node;
+  }
+
+  function createTextElement(tag, text, className, cssText) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (cssText) node.style.cssText = cssText;
+    node.textContent = text || '';
+    return node;
+  }
+
+  function createSafeImage(src, alt, className, cssText) {
+    const img = document.createElement('img');
+    img.setAttribute('src', src || '');
+    img.setAttribute('alt', alt || '');
+    if (className) img.className = className;
+    if (cssText) img.style.cssText = cssText;
+    return img;
+  }
+
+  function createCourseCover(course) {
+    const cover = document.createElement('div');
+    cover.className = 'course-cover';
+
+    if (course.image) {
+      const img = createSafeImage(
+        course.image,
+        `${t('course.cover_alt') || 'Обложка курса'} ${course.title || ''}`,
+        'course-cover-image'
+      );
+      img.setAttribute('loading', 'lazy');
+      cover.appendChild(img);
+      return cover;
+    }
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'course-cover-placeholder';
+    const letter = document.createElement('span');
+    letter.className = 'course-cover-letter';
+    letter.textContent = (course.title || '?').trim().charAt(0).toUpperCase() || '?';
+    placeholder.appendChild(letter);
+    cover.appendChild(placeholder);
+    return cover;
+  }
+
   function doSearch(page) {
     currentPage = page || 1;
     const params = new URLSearchParams({
@@ -81,12 +132,12 @@
     fetch('/api/search?' + params)
       .then(r => r.json())
       .then(data => {
-        results.innerHTML = '';
+        clearNode(results);
         emptyEl.style.display = 'none';
 
         // ── Организации ──────────────────────────────────────────────────────
         const orgsContainer = document.getElementById('search-organizations');
-        orgsContainer.innerHTML = '';
+        clearNode(orgsContainer);
         if (data.organizations && data.organizations.length > 0) {
           const h = document.createElement('h2');
           h.setAttribute('data-i18n', 'search.orgs_title');
@@ -99,20 +150,36 @@
             card.className = 'course-card';
             card.style.cssText = 'display:flex;flex-direction:column;';
 
-            const logoHtml = o.logo_url
-              ? `<img src="${o.logo_url}" alt="${o.name}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;">`
-              : `<div style="width:56px;height:56px;border-radius:12px;background:var(--surface-soft,#f0f2f5);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">&#127970;</div>`;
+            const body = setInlineStyle(document.createElement('div'), 'text-align:center;flex:1;');
+            body.className = 'course-card-body';
 
-            card.innerHTML = `
-              <div class="course-card-body" style="text-align:center;flex:1;">
-                <div style="margin:0 auto 12px;width:56px;height:56px;">${logoHtml}</div>
-                <h3 class="course-title" style="font-size:1rem;margin-bottom:6px;">${o.name}</h3>
-                <p class="course-desc" style="font-size:.85rem;">${o.description}</p>
-              </div>
-              <div class="course-card-footer" style="display:flex;flex-direction:column;gap:8px;padding:14px 16px;">
-                <a href="/organization/${o.id}" class="btn btn-outline" style="width:100%;text-align:center;">${t('org.open_btn')}</a>
-              </div>
-            `;
+            const logoWrap = setInlineStyle(document.createElement('div'), 'margin:0 auto 12px;width:56px;height:56px;');
+            if (o.logo_url) {
+              logoWrap.appendChild(createSafeImage(
+                o.logo_url,
+                o.name || '',
+                '',
+                'width:56px;height:56px;border-radius:12px;object-fit:cover;'
+              ));
+            } else {
+              const fallback = setInlineStyle(document.createElement('div'), 'width:56px;height:56px;border-radius:12px;background:var(--surface-soft,#f0f2f5);display:flex;align-items:center;justify-content:center;font-size:1.6rem;');
+              fallback.textContent = '🏢';
+              logoWrap.appendChild(fallback);
+            }
+            body.appendChild(logoWrap);
+            body.appendChild(createTextElement('h3', o.name, 'course-title', 'font-size:1rem;margin-bottom:6px;'));
+            body.appendChild(createTextElement('p', o.description, 'course-desc', 'font-size:.85rem;'));
+
+            const footer = setInlineStyle(document.createElement('div'), 'display:flex;flex-direction:column;gap:8px;padding:14px 16px;');
+            footer.className = 'course-card-footer';
+            const openLink = setInlineStyle(document.createElement('a'), 'width:100%;text-align:center;');
+            openLink.className = 'btn btn-outline';
+            openLink.setAttribute('href', `/organization/${encodeURIComponent(o.id)}`);
+            openLink.textContent = t('org.open_btn') || 'Открыть';
+            footer.appendChild(openLink);
+
+            card.appendChild(body);
+            card.appendChild(footer);
             orgsContainer.appendChild(card);
           });
 
@@ -122,28 +189,37 @@
         // ── Преподаватели ────────────────────────────────────────
         const teachersSection = document.getElementById('search-teachers-section');
         const teachersContainer = document.getElementById('search-teachers');
-        teachersContainer.innerHTML = '';
+        clearNode(teachersContainer);
         if (data.teachers && data.teachers.length > 0) {
           teachersSection.style.display = 'block';
-          data.teachers.forEach(t => {
+          data.teachers.forEach(teacher => {
             const card = document.createElement('a');
-            card.href = `/teachers/${t.id}`;
+            card.setAttribute('href', `/teachers/${encodeURIComponent(teacher.id)}`);
             card.style.cssText = 'display:flex;align-items:center;gap:12px;background:var(--bg-card,white);border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:14px 18px;text-decoration:none;color:inherit;transition:box-shadow .2s;min-width:200px;flex:1;max-width:320px;';
             card.onmouseenter = () => card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
             card.onmouseleave = () => card.style.boxShadow = '';
-            const avatarHtml = t.avatar
-              ? `<img src="${t.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" alt="${t.name}">`
-              : `<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;flex-shrink:0;">${t.name[0].toUpperCase()}</div>`;
-            const orgLabel = t.org_name
-              ? `<span style="font-size:0.78rem;color:var(--text-muted);">🏢 ${t.org_name}</span>`
-              : `<span style="font-size:0.78rem;color:var(--text-muted);">Независимый</span>`;
-            card.innerHTML = `
-              ${avatarHtml}
-              <div>
-                <div style="font-weight:600;font-size:0.95rem;">👨‍🏫 ${t.name}${t.org_name ? ' · ' + t.org_name : ''}</div>
-                ${t.bio ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-top:2px;">${t.bio}</div>` : ''}
-              </div>
-            `;
+
+            if (teacher.avatar) {
+              card.appendChild(createSafeImage(
+                teacher.avatar,
+                teacher.name || '',
+                '',
+                'width:44px;height:44px;border-radius:50%;object-fit:cover;'
+              ));
+            } else {
+              const avatar = setInlineStyle(document.createElement('div'), 'width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;flex-shrink:0;');
+              avatar.textContent = (teacher.name || '?').charAt(0).toUpperCase() || '?';
+              card.appendChild(avatar);
+            }
+
+            const info = document.createElement('div');
+            const nameLine = setInlineStyle(document.createElement('div'), 'font-weight:600;font-size:0.95rem;');
+            nameLine.textContent = `👨‍🏫 ${teacher.name || ''}${teacher.org_name ? ' · ' + teacher.org_name : ''}`;
+            info.appendChild(nameLine);
+            if (teacher.bio) {
+              info.appendChild(createTextElement('div', teacher.bio, '', 'font-size:0.82rem;color:var(--text-muted);margin-top:2px;'));
+            }
+            card.appendChild(info);
             teachersContainer.appendChild(card);
           });
         } else {
@@ -169,7 +245,7 @@
         if (data.courses.length === 0 && (!data.organizations || data.organizations.length === 0) && (!data.teachers || data.teachers.length === 0)) {
           emptyEl.style.display = 'block';
           infoEl.textContent = '';
-          pagEl.innerHTML = '';
+          clearNode(pagEl);
           return;
         }
 
@@ -181,36 +257,60 @@
           const card = document.createElement('div');
           card.className = 'course-card';
           card.style.animation = 'fadeInUp .4s ' + (i * 0.05) + 's ease both';
-          const stars = '★'.repeat(Math.round(c.rating)) + '☆'.repeat(5 - Math.round(c.rating));
-          card.innerHTML = `
-            <div class="course-card-header">
-              ${renderCourseCoverMarkup(c)}
-              ${c.category ? '<span class="category-badge">' + c.category + '</span>' : ''}
-            </div>
-            <div class="course-card-body">
-              <h3 class="course-title">${c.title}</h3>
-              <p class="course-desc">${c.description || t('common.no_desc')}</p>
-              <div class="course-meta">
-                <span class="course-teacher" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-                  👨‍🏫 ${c.teacher_name}
-                  ${c.teacher_orgs ? c.teacher_orgs.map(ot => `&middot; ${ot.name}`).join('') : ''}
-                </span>
-                <span class="rating-text" style="font-size:.85rem;">${stars} ${c.rating.toFixed(1)}</span>
-              </div>
-              <div style="display:flex;gap:8px;margin-top:4px;">
-                ${c.level ? `<span class="level-badge">${t('level.' + c.level.toLowerCase())}</span>` : ''}
-              </div>
-            </div>
-            <div class="course-card-footer">
-              <a href="/courses/${c.id}" class="btn btn-primary btn-sm">${t('common.more')} →</a>
-            </div>
-          `;
+          const rating = Number(c.rating) || 0;
+          const roundedRating = Math.max(0, Math.min(5, Math.round(rating)));
+          const stars = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
+
+          const header = document.createElement('div');
+          header.className = 'course-card-header';
+          header.appendChild(createCourseCover(c));
+          if (c.category) {
+            header.appendChild(createTextElement('span', c.category, 'category-badge'));
+          }
+
+          const body = document.createElement('div');
+          body.className = 'course-card-body';
+          body.appendChild(createTextElement('h3', c.title, 'course-title'));
+          body.appendChild(createTextElement('p', c.description || t('common.no_desc'), 'course-desc'));
+
+          const meta = document.createElement('div');
+          meta.className = 'course-meta';
+          const teacher = setInlineStyle(document.createElement('span'), 'display:flex;align-items:center;gap:5px;flex-wrap:wrap;');
+          teacher.className = 'course-teacher';
+          teacher.appendChild(document.createTextNode(`👨‍🏫 ${c.teacher_name || ''}`));
+          if (Array.isArray(c.teacher_orgs)) {
+            c.teacher_orgs.forEach(orgTeacher => {
+              teacher.appendChild(document.createTextNode(' · '));
+              teacher.appendChild(document.createTextNode(orgTeacher.name || ''));
+            });
+          }
+          meta.appendChild(teacher);
+          meta.appendChild(createTextElement('span', `${stars} ${rating.toFixed(1)}`, 'rating-text', 'font-size:.85rem;'));
+          body.appendChild(meta);
+
+          const badges = setInlineStyle(document.createElement('div'), 'display:flex;gap:8px;margin-top:4px;');
+          if (c.level) {
+            badges.appendChild(createTextElement('span', t('level.' + c.level.toLowerCase()), 'level-badge'));
+          }
+          body.appendChild(badges);
+
+          const footer = document.createElement('div');
+          footer.className = 'course-card-footer';
+          const moreLink = document.createElement('a');
+          moreLink.className = 'btn btn-primary btn-sm';
+          moreLink.setAttribute('href', `/courses/${encodeURIComponent(c.id)}`);
+          moreLink.textContent = `${t('common.more')} →`;
+          footer.appendChild(moreLink);
+
+          card.appendChild(header);
+          card.appendChild(body);
+          card.appendChild(footer);
           results.appendChild(card);
         });
 
         // Пагинация
         const totalPages = Math.ceil(data.total / data.per_page);
-        pagEl.innerHTML = '';
+        clearNode(pagEl);
         for (let p = 1; p <= totalPages; p++) {
           const btn = document.createElement('button');
           btn.textContent = p;

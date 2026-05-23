@@ -80,7 +80,7 @@
                         {% endif %}
                         <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
                         <a href="/dashboard" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Кабинет</a>
-                        <a href="/logout" class="btn btn-outline btn-sm" data-logout-link data-i18n="nav.logout">Баромадан</a>
+                        <a href="#" class="btn btn-outline btn-sm" data-logout-link data-logout-url="/logout" data-i18n="nav.logout">Баромадан</a>
                     {% else %}
                         <a href="/login" class="btn btn-secondary btn-sm" data-i18n="nav.login">Вуруд</a>
                         <a href="/register" class="btn btn-primary btn-sm" data-i18n="nav.register">Сабти ном</a>
@@ -125,7 +125,7 @@
             <a href="/admin" class="mobile-menu-link {% if request and request.url.path == '/admin' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔧</span><span data-i18n="nav.admin">Панели мудир</span></a>
             {% endif %}
             <a href="/dashboard" class="mobile-menu-link {% if request and request.url.path == '/dashboard' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📊</span><span data-i18n="nav.dashboard">Кабинет</span></a>
-            <a href="/logout" class="mobile-menu-link" data-logout-link><span class="mobile-menu-icon" aria-hidden="true">🚪</span><span data-i18n="nav.logout">Баромадан</span></a>
+            <a href="#" class="mobile-menu-link" data-logout-link data-logout-url="/logout"><span class="mobile-menu-icon" aria-hidden="true">🚪</span><span data-i18n="nav.logout">Баромадан</span></a>
             {% else %}
             <a href="/login" class="mobile-menu-link {% if request and request.url.path == '/login' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔑</span><span data-i18n="nav.login">Вуруд</span></a>
             <a href="/register" class="mobile-menu-link {% if request and request.url.path == '/register' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">✍️</span><span data-i18n="nav.register">Сабти ном</span></a>
@@ -161,6 +161,8 @@
             </div>
         </div>
     </div>
+
+    <form id="logout-form" method="post" action="/logout" hidden></form>
 
     <main class="main-content">
         {% block content %}{% endblock %}
@@ -211,7 +213,7 @@
       pendingLogoutUrl = url || '/logout';
       const modal = document.getElementById('logout-modal');
       if (!modal) {
-        window.location.href = pendingLogoutUrl;
+        performLogout();
         return;
       }
       modal.classList.add('open');
@@ -229,7 +231,15 @@
     }
 
     function performLogout() {
-      window.location.href = pendingLogoutUrl || '/logout';
+      let form = document.getElementById('logout-form');
+      if (!form) {
+        form = document.createElement('form');
+        form.method = 'post';
+        form.hidden = true;
+        document.body.appendChild(form);
+      }
+      form.action = pendingLogoutUrl || '/logout';
+      form.submit();
     }
 
     function toggleTheme() {
@@ -263,7 +273,7 @@
         if (logoutLink) {
           event.preventDefault();
           toggleMobileMenu(false);
-          confirmLogout(logoutLink.getAttribute('href'));
+          confirmLogout(logoutLink.getAttribute('data-logout-url') || logoutLink.getAttribute('href'));
           return;
         }
 
