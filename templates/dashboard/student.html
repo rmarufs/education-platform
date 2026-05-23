@@ -179,29 +179,33 @@
                 </a>
                 {% endfor %}
             </div>
-            <div class="courses-grid student-groups-desktop">
+            <div class="student-groups-desktop">
                 {% for group in student_groups %}
-                <div class="course-card fade-in">
-                    <div class="course-card-header">
-                    {% if group.avatar_url %}
-                        <img src="{{ group.avatar_url }}" class="course-cover" alt="{{ group.name }}">
-                    {% else %}
-                        <div class="course-cover course-cover-placeholder">{{ (group.name or "F")[0]|upper }}</div>
-                    {% endif %}
-                    </div>
-                    <div class="course-card-body">
-                        <div class="course-card-badges">
-                            <span class="badge badge-primary" data-i18n="group.badge">Группа</span>
+                <div class="student-group-desktop-card fade-in">
+                    <div class="student-group-desktop-head">
+                        {% if group.avatar_url %}
+                        <img src="{{ group.avatar_url }}" class="student-group-desktop-media" alt="{{ group.name }}">
+                        {% else %}
+                        <div class="student-group-desktop-media student-group-desktop-media-placeholder">{{ (group.name or "F")[0]|upper }}</div>
+                        {% endif %}
+                        <div class="student-group-desktop-title">
+                            <h3 class="course-title">{{ group.name }}</h3>
                             {% if group.organization %}
-                            <span class="badge badge-secondary">{{ group.organization.name }}</span>
+                            <p>{{ group.organization.name }}</p>
                             {% endif %}
                         </div>
-                        <h3 class="course-title">{{ group.name }}</h3>
+                    </div>
+                    {% if group.description %}
+                    <p class="student-group-desktop-description">{{ group.description | striptags | truncate(120) }}</p>
+                    {% endif %}
+                    <div class="student-group-desktop-stats">
                         {% if group.teacher %}
-                        <p class="course-teacher">👨‍🏫 {{ group.teacher.name }}</p>
+                        <p>👨‍🏫 <span>{{ group.teacher.name }}</span></p>
                         {% endif %}
-                        <p class="course-meta">📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></p>
-                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-full" data-i18n="catalog.open">Открыть →</a>
+                        <p>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></p>
+                    </div>
+                    <div class="student-group-desktop-footer">
+                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm btn-full" data-i18n="catalog.open">Открыть →</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -333,6 +337,104 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
+    }
+    .user-dashboard--student .student-groups-desktop {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+    }
+    .user-dashboard--student .student-group-desktop-card {
+        background: var(--bg-card, #fff);
+        border: 1px solid var(--border, rgba(0,0,0,0.08));
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 260px;
+        padding: 20px;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .user-dashboard--student .student-group-desktop-card:hover {
+        box-shadow: 0 8px 32px rgba(99,102,241,0.12);
+        transform: translateY(-2px);
+    }
+    .user-dashboard--student .student-group-desktop-head {
+        align-items: center;
+        display: flex;
+        gap: 14px;
+        min-width: 0;
+    }
+    .user-dashboard--student .student-group-desktop-media {
+        border-radius: 16px;
+        flex: 0 0 64px;
+        height: 64px;
+        object-fit: cover;
+        overflow: hidden;
+        width: 64px;
+    }
+    .user-dashboard--student .student-group-desktop-media-placeholder {
+        align-items: center;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        display: flex;
+        font-size: 1.35rem;
+        font-weight: 700;
+        justify-content: center;
+    }
+    .user-dashboard--student .student-group-desktop-title {
+        flex: 1;
+        min-width: 0;
+    }
+    .user-dashboard--student .student-group-desktop-title .course-title {
+        font-size: 1.08rem;
+        line-height: 1.25;
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .user-dashboard--student .student-group-desktop-title p {
+        color: var(--text-muted);
+        font-size: .9rem;
+        font-weight: 600;
+        line-height: 1.35;
+        margin: 5px 0 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .user-dashboard--student .student-group-desktop-description {
+        color: var(--text-muted);
+        display: -webkit-box;
+        font-size: .95rem;
+        line-height: 1.45;
+        margin: 0;
+        min-height: 2.8em;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    .user-dashboard--student .student-group-desktop-stats {
+        display: grid;
+        gap: 8px;
+    }
+    .user-dashboard--student .student-group-desktop-stats p {
+        align-items: center;
+        color: var(--text-muted);
+        display: flex;
+        font-size: .9rem;
+        font-weight: 600;
+        gap: 8px;
+        line-height: 1.35;
+        margin: 0;
+    }
+    .user-dashboard--student .student-group-desktop-footer {
+        border-top: 1px solid var(--border, rgba(0,0,0,0.06));
+        margin-top: auto;
+        padding-top: 14px;
+    }
+    .user-dashboard--student .student-group-desktop-footer .btn {
+        min-height: 42px;
     }
 }
 html[data-theme="dark"] .student-analytics-bar,
