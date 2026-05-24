@@ -1534,7 +1534,7 @@
 /* ── Small phones: <= 480px ──────────────────────────── */
 @media (max-width: 480px) {
   body { font-size: 14px; }
-  .nav-container { padding: 0 12px; height: 56px; }
+  .nav-container { padding: 0 12px; height: 52px; }
   .nav-logo {
     min-height: 38px;
     padding-right: 6px;
@@ -1710,7 +1710,7 @@
 
 /* ── Touch phones in landscape: keep header in mobile mode ── */
 @media (max-width: 1024px) and (max-height: 520px) and (orientation: landscape) and (pointer: coarse) {
-  body { padding-top: 49px; }
+  body { padding-top: 45px; }
 
   .nav-center-links,
   .nav-auth-links {
@@ -1718,7 +1718,7 @@
   }
 
   .nav-container {
-    height: 48px;
+    height: 44px;
     padding: 0 14px;
     gap: 8px;
   }
