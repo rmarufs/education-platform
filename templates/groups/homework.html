@@ -80,7 +80,7 @@
       {% elif homework.material_type == "video" and (homework.material_url.startswith('/') or 'res.cloudinary.com' in homework.material_url) %}
       <video src="{{ homework.material_url }}" controls playsinline class="homework-video"></video>
       {% endif %}
-      <a href="{{ homework.material_url }}" target="_blank" rel="noopener" class="homework-file-link">
+      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework/material/download" class="homework-file-link">
         <span aria-hidden="true">📎</span>
         <span>{{ homework.material_filename or homework.material_url }}</span>
       </a>
@@ -111,7 +111,7 @@
     {% if submission %}
     <div class="homework-submission">
       {% if submission.file_url %}
-      <a href="{{ submission.file_url }}" target="_blank" rel="noopener" class="homework-file-link">
+      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework/submissions/{{ submission.id }}/download" class="homework-file-link">
         <span aria-hidden="true">📎</span>
         <span>{{ submission.filename or submission.file_url }}</span>
       </a>

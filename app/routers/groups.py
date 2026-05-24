@@ -1,10 +1,12 @@
 import os
 import shutil
 import uuid
+import mimetypes
 from datetime import date, datetime
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
+from urllib.request import urlopen
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -171,6 +173,7 @@ def _homework_url_type(url: str) -> str:
 def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str, str]:
     upload = _validate_group_homework_upload(file)
     original_name = upload.original_filename
+    public_name = f"{uuid.uuid4().hex}_{upload.safe_filename}"
     if not cloudinary:
         raise HTTPException(status_code=500, detail="Cloudinary недоступен для загрузки файла")
     if hasattr(file.file, "seek"):
@@ -179,10 +182,10 @@ def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str
     try:
         upload_result = cloudinary.uploader.upload(
             file.file,
-            folder=f"{GROUP_HOMEWORK_CLOUDINARY_FOLDER}/{folder}",
+            public_id=f"{GROUP_HOMEWORK_CLOUDINARY_FOLDER}/{folder}/{public_name}",
             resource_type="auto",
-            use_filename=True,
-            unique_filename=True,
+            use_filename=False,
+            unique_filename=False,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Не удалось загрузить файл домашнего задания") from exc
@@ -191,6 +194,35 @@ def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str
     if not file_url:
         raise HTTPException(status_code=500, detail="Cloudinary не вернул ссылку на файл")
     return file_url, _homework_file_type(original_name, file.content_type), original_name
+
+
+def _is_uploaded_file(value) -> bool:
+    return bool(getattr(value, "filename", None) and getattr(value, "file", None))
+
+
+def _download_remote_file(file_url: str, filename: str):
+    parsed = urlparse(file_url or "")
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Некорректная ссылка на файл")
+
+    content_type = mimetypes.guess_type(filename or "")[0] or "application/octet-stream"
+    quoted_filename = quote(filename or "file")
+
+    def iter_file():
+        with urlopen(file_url, timeout=20) as response:
+            while True:
+                chunk = response.read(1024 * 64)
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(
+        iter_file(),
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quoted_filename}",
+        },
+    )
 
 
 def _parse_homework_deadline(value: str | None) -> datetime | None:
@@ -1292,7 +1324,7 @@ async def lesson_create(
     if files:
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
-            if isinstance(f, UploadFile) and f.filename:
+            if _is_uploaded_file(f):
                 upload = _validate_group_material_upload(f)
                 original_name = upload.original_filename
                 filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
@@ -1401,7 +1433,7 @@ async def lesson_edit(
     if files:
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
-            if isinstance(f, UploadFile) and f.filename:
+            if _is_uploaded_file(f):
                 upload = _validate_group_material_upload(f)
                 original_name = upload.original_filename
                 filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
@@ -1722,6 +1754,59 @@ async def group_homework_submit(
         return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=submit_error", status_code=302)
 
     return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?success=submit_success", status_code=302)
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/homework/material/download")
+def group_homework_material_download(
+    group_id: int,
+    lesson_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    lesson = _get_group_lesson(group_id, lesson_id, db)
+    homework = lesson.homework
+    if not homework or not homework.material_url:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    is_member = db.query(GroupMember.id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first() is not None
+    if not (_can_manage_group_content(user, lesson.group, db) or is_member):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    return _download_remote_file(homework.material_url, homework.material_filename or "homework-file")
+
+
+@router.get("/{group_id}/lessons/{lesson_id}/homework/submissions/{submission_id}/download")
+def group_homework_submission_download(
+    group_id: int,
+    lesson_id: int,
+    submission_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    lesson = _get_group_lesson(group_id, lesson_id, db)
+    submission = db.query(GroupHomeworkSubmission).join(GroupHomework).filter(
+        GroupHomeworkSubmission.id == submission_id,
+        GroupHomework.lesson_id == lesson.id,
+        GroupHomework.group_id == group_id,
+    ).first()
+    if not submission or not submission.file_url:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    if not (_can_manage_group_content(user, lesson.group, db) or submission.student_id == user.id):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    return _download_remote_file(submission.file_url, submission.filename or "homework-submission")
 
 
 @router.get("/{group_id}/homework/review", response_class=HTMLResponse)

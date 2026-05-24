@@ -116,7 +116,7 @@
               {% elif row.submission.file_type == "video" %}
               <video src="{{ row.submission.file_url }}" controls playsinline class="homework-review-video"></video>
               {% endif %}
-              <a href="{{ row.submission.file_url }}" target="_blank" rel="noopener" class="homework-file-link">
+              <a href="/groups/{{ group.id }}/lessons/{{ selected_item.lesson.id }}/homework/submissions/{{ row.submission.id }}/download" class="homework-file-link">
                 <span aria-hidden="true">📎</span>
                 <span>{{ row.submission.filename or row.submission.file_url }}</span>
               </a>

@@ -16,9 +16,17 @@ IMAGE_CONTENT_TYPES = {
 DOCUMENT_CONTENT_TYPES = {
     ".pdf": {"application/pdf"},
     ".doc": {"application/msword"},
-    ".docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    ".docx": {
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/zip",
+        "application/x-zip-compressed",
+    },
     ".ppt": {"application/vnd.ms-powerpoint"},
-    ".pptx": {"application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    ".pptx": {
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/zip",
+        "application/x-zip-compressed",
+    },
     ".txt": {"text/plain"},
 }
 
@@ -33,6 +41,8 @@ UPLOAD_CONTENT_TYPES = {
     **DOCUMENT_CONTENT_TYPES,
     **MEDIA_CONTENT_TYPES,
 }
+
+GENERIC_BINARY_CONTENT_TYPES = {"application/octet-stream", "binary/octet-stream"}
 
 
 @dataclass(frozen=True)
@@ -73,6 +83,37 @@ def _upload_size(file: UploadFile) -> int:
     return size
 
 
+def _read_file_header(file: UploadFile, length: int = 512) -> bytes:
+    try:
+        file.file.seek(0)
+        return file.file.read(length)
+    finally:
+        file.file.seek(0)
+
+
+def _content_matches_extension(file: UploadFile, extension: str) -> bool:
+    header = _read_file_header(file)
+    if extension in {".jpg", ".jpeg"}:
+        return header.startswith(b"\xff\xd8\xff")
+    if extension == ".png":
+        return header.startswith(b"\x89PNG\r\n\x1a\n")
+    if extension == ".webp":
+        return header.startswith(b"RIFF") and header[8:12] == b"WEBP"
+    if extension == ".pdf":
+        return header.startswith(b"%PDF")
+    if extension in {".docx", ".pptx"}:
+        return header.startswith(b"PK\x03\x04") or header.startswith(b"PK\x05\x06") or header.startswith(b"PK\x07\x08")
+    if extension in {".doc", ".ppt"}:
+        return header.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
+    if extension == ".txt":
+        return b"\x00" not in header
+    if extension in {".mp4", ".mov"}:
+        return b"ftyp" in header[:16]
+    if extension == ".webm":
+        return header.startswith(b"\x1a\x45\xdf\xa3")
+    return False
+
+
 def validate_upload_file(
     file: UploadFile,
     *,
@@ -93,7 +134,12 @@ def validate_upload_file(
         raise HTTPException(status_code=400, detail=invalid_type_message)
 
     content_type = (file.content_type or "").split(";", 1)[0].lower().strip()
-    if content_type not in UPLOAD_CONTENT_TYPES.get(extension, set()):
+    allowed_content_types = UPLOAD_CONTENT_TYPES.get(extension, set())
+    if content_type not in allowed_content_types:
+        if content_type not in GENERIC_BINARY_CONTENT_TYPES or not _content_matches_extension(file, extension):
+            raise HTTPException(status_code=400, detail=invalid_type_message)
+
+    if not _content_matches_extension(file, extension):
         raise HTTPException(status_code=400, detail=invalid_type_message)
 
     size = _upload_size(file)
