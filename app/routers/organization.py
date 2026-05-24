@@ -901,6 +901,8 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
+    if org.status != "approved" and not (user and (user.is_admin or org.user_id == user.id)):
+        raise HTTPException(status_code=404, detail="Организация не найдена")
 
     org_teachers = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.teacher)).filter(
         OrganizationTeacher.organization_id == org.id,

@@ -857,7 +857,7 @@ def delete_course_material(
     course_id = None
     if material.course_id:
         course = material.course
-        if not course or course.teacher_id != user.id:
+        if not course or (not is_admin(user) and course.teacher_id != user.id):
             raise HTTPException(status_code=403)
         course_id = course.id
     elif material.lesson_id:
@@ -865,7 +865,7 @@ def delete_course_material(
         if not lesson or not lesson.module:
             raise HTTPException(status_code=404)
         course = db.query(Course).filter(Course.id == lesson.module.course_id).first()
-        if not course or course.teacher_id != user.id:
+        if not course or (not is_admin(user) and course.teacher_id != user.id):
             raise HTTPException(status_code=403)
         course_id = course.id
 
@@ -889,7 +889,9 @@ def get_course_api(course_id: int, request: Request, db: Session = Depends(get_d
     user = get_user(request, db)
     if not user:
         raise HTTPException(status_code=401)
-    course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == user.id).first()
+    course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404)
+    if not _can_manage_course_quiz_url(user, course, db):
+        raise HTTPException(status_code=403)
     return {"id": course.id, "title": course.title, "description": course.description, "level": course.level}

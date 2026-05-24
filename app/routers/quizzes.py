@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
-from app.dependencies import get_user, is_student, is_teacher, is_admin
+from app.dependencies import can_access_course_content, get_user, is_student, is_teacher, is_admin
 from app.models.course import Course
 from app.models.lesson import Lesson
 from app.models.module import Module
@@ -35,6 +35,17 @@ def require_teacher(request, db):
     if not (is_teacher(user) or is_admin(user)):
         raise HTTPException(status_code=403)
     return user
+
+
+def _get_manageable_course(course_id: int | None, user: User, db: Session) -> Course | None:
+    if not course_id:
+        return None
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        return None
+    if is_admin(user) or course.teacher_id == user.id:
+        return course
+    return None
 
 
 def _quiz_editor_target(quiz: Quiz) -> str:
@@ -118,7 +129,7 @@ def _resolve_quiz_scope(
         lesson = db.query(Lesson).options(joinedload(Lesson.module), joinedload(Lesson.quiz)).filter(Lesson.id == lesson_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Урок не найден")
-        course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+        course = _get_manageable_course(lesson.module.course_id, teacher, db)
         if not course:
             raise HTTPException(status_code=403)
         if lesson.quiz:
@@ -129,14 +140,14 @@ def _resolve_quiz_scope(
         module = db.query(Module).options(joinedload(Module.quiz)).filter(Module.id == module_id).first()
         if not module:
             raise HTTPException(status_code=404, detail="Модуль не найден")
-        course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
+        course = _get_manageable_course(module.course_id, teacher, db)
         if not course:
             raise HTTPException(status_code=403)
         if module.quiz:
             raise HTTPException(status_code=400, detail="Квиз для этого модуля уже существует")
         return {"module_id": module_id}, course
 
-    course = db.query(Course).options(joinedload(Course.quiz)).filter(Course.id == course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
     if course.quiz:
@@ -234,6 +245,14 @@ def quiz_page(quiz_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     back_url, back_i18n = quiz_back_target(quiz)
 
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    owner_course_id = quiz_owner_course_id(quiz)
+    owner_course = db.query(Course).filter(Course.id == owner_course_id).first()
+    if not can_access_course_content(user, owner_course, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
     if is_student(user) and not quiz_is_unlocked(db, user.id, quiz):
         return RedirectResponse(back_url, status_code=302)
 
@@ -271,6 +290,10 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
     quiz = _load_quiz(db, quiz_id)
     if not quiz:
         raise HTTPException(status_code=404)
+    owner_course_id = quiz_owner_course_id(quiz)
+    owner_course = db.query(Course).filter(Course.id == owner_course_id).first()
+    if not can_access_course_content(user, owner_course, db):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
     if not quiz_is_unlocked(db, user.id, quiz):
         back_url, _ = quiz_back_target(quiz)
         return RedirectResponse(back_url, status_code=302)
@@ -364,7 +387,7 @@ def update_quiz_settings(
         raise HTTPException(status_code=404)
 
     owner_course_id = quiz_owner_course_id(quiz)
-    course = db.query(Course).filter(Course.id == owner_course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(owner_course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 
@@ -400,7 +423,7 @@ async def add_question(
         raise HTTPException(status_code=404)
 
     owner_course_id = quiz_owner_course_id(quiz)
-    course = db.query(Course).filter(Course.id == owner_course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(owner_course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 
@@ -491,7 +514,7 @@ def teacher_quiz_results_detail(quiz_id: int, request: Request, db: Session = De
         raise HTTPException(status_code=404)
 
     owner_course_id = quiz_owner_course_id(quiz)
-    course = db.query(Course).filter(Course.id == owner_course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(owner_course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 

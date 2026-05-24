@@ -21,6 +21,15 @@ def get_teacher(request: Request, db: Session) -> User:
     return user
 
 
+def _get_manageable_course(course_id: int, user: User, db: Session) -> Course | None:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        return None
+    if user.is_admin or course.teacher_id == user.id:
+        return course
+    return None
+
+
 # ── Создать модуль ─────────────────────────────────────────────
 @router.post("/create")
 def create_module(
@@ -35,7 +44,7 @@ def create_module(
         raise HTTPException(status_code=400, detail="Введите название курса")
 
     teacher = get_teacher(request, db)
-    course = db.query(Course).filter(Course.id == course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
@@ -70,7 +79,7 @@ def edit_module(
     if not module:
         raise HTTPException(status_code=404)
     # Проверяем что это курс этого преподавателя
-    course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 
@@ -91,7 +100,7 @@ def delete_module(
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 

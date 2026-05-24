@@ -42,6 +42,15 @@ def require_teacher(request: Request, db: Session):
     return user
 
 
+def _get_manageable_course(course_id: int, user: User, db: Session) -> Course | None:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        return None
+    if is_admin(user) or course.teacher_id == user.id:
+        return course
+    return None
+
+
 def _validate_material_upload(file: UploadFile) -> str:
     upload = validate_upload_file(
         file,
@@ -113,7 +122,7 @@ async def create_lesson(
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
     video_url_value = video_url.strip() if video_url and video_url.strip() else None
@@ -281,7 +290,7 @@ async def edit_lesson(
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(lesson.module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
     video_url_value = video_url.strip() if video_url and video_url.strip() else None
@@ -319,7 +328,7 @@ def delete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(lesson.module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403, detail="Not authorized to delete this lesson")
     
@@ -343,7 +352,7 @@ def add_material(
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(lesson.module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
     file_type = file_type.lower().strip()
@@ -368,7 +377,7 @@ async def upload_lesson_material(
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=404)
-    course = db.query(Course).filter(Course.id == lesson.module.course_id, Course.teacher_id == teacher.id).first()
+    course = _get_manageable_course(lesson.module.course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=403)
 
