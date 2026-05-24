@@ -142,32 +142,62 @@ a:hover { color: var(--primary-dark); }
 
 .logo-mark {
   position: relative;
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 2.6rem;
+  height: 2.6rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 12px;
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.28)),
-    color-mix(in srgb, var(--primary) 11%, var(--bg-card));
-  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-  box-shadow: 0 8px 20px rgba(37,99,235,.12), inset 0 1px 0 rgba(255,255,255,.55);
-  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease, background .22s ease;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition: transform .22s ease;
 }
 
 .logo-mark::before {
+  /* glow reserved — currently invisible */
   content: "";
   position: absolute;
-  inset: 16% 12% 4%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(37,99,235,.26) 0%, rgba(37,99,235,0) 72%);
-  filter: blur(7px);
-  opacity: .72;
-  transition: opacity .22s ease, transform .22s ease;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
 }
 
+/* picture tag: block-level reset so no descender gap */
+.logo-mark picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 0;
+}
+
+.logo-icon-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transform-origin: 50% 55%;
+  filter: none;
+  transition: transform .22s ease, filter .22s ease;
+  animation: logo-fade-in .45s ease both;
+}
+
+@keyframes logo-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Kept: .logo-cap fallback — no longer in DOM, but safe ── */
 .logo-cap {
   width: 78%;
   height: 78%;
@@ -203,7 +233,7 @@ a:hover { color: var(--primary-dark); }
 
 .logo-text {
   display: inline-block;
-  font-size: 1.31rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;
@@ -228,20 +258,19 @@ a:hover { color: var(--primary-dark); }
 
 .nav-logo:hover .logo-mark,
 .nav-logo:focus-visible .logo-mark {
-  border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
-  box-shadow: 0 12px 26px rgba(37,99,235,.18), inset 0 1px 0 rgba(255,255,255,.72);
+  box-shadow: none;
+}
+
+.nav-logo:hover .logo-icon-img,
+.nav-logo:focus-visible .logo-icon-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 3px 8px rgba(37,99,235,.20));
 }
 
 .nav-logo:hover .logo-cap,
 .nav-logo:focus-visible .logo-cap {
   transform: translateY(-1px) rotate(-5deg) scale(1.04);
   filter: drop-shadow(0 10px 16px rgba(37,99,235,.24));
-}
-
-.nav-logo:hover .logo-mark::before,
-.nav-logo:focus-visible .logo-mark::before {
-  opacity: 1;
-  transform: scale(1.08);
 }
 
 .nav-logo:hover .logo-copy::after,
@@ -264,11 +293,20 @@ body.dark .nav-logo::before {
 
 html[data-theme="dark"] .logo-mark,
 body.dark .logo-mark {
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.02)),
-    color-mix(in srgb, var(--primary) 18%, var(--bg-card));
-  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
-  box-shadow: 0 10px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Dark mode: no brightness boost — just a soft glow shadow */
+html[data-theme="dark"] .logo-icon-img,
+body.dark .logo-icon-img {
+  filter: drop-shadow(0 0 12px rgba(37,99,235,.25));
+}
+
+html[data-theme="dark"] .nav-logo:hover .logo-icon-img,
+body.dark .nav-logo:hover .logo-icon-img {
+  filter: drop-shadow(0 0 16px rgba(37,99,235,.35)) drop-shadow(0 3px 8px rgba(37,99,235,.18));
 }
 
 html[data-theme="dark"] .logo-cap,
@@ -279,15 +317,14 @@ body.dark .logo-cap {
 
 html[data-theme="dark"] .logo-mark::before,
 body.dark .logo-mark::before {
-  background: radial-gradient(circle, rgba(147,197,253,.3) 0%, rgba(147,197,253,0) 74%);
+  background: radial-gradient(circle, rgba(147,197,253,.2) 0%, rgba(147,197,253,0) 74%);
 }
 
 html[data-theme="dark"] .nav-logo:hover .logo-mark,
 html[data-theme="dark"] .nav-logo:focus-visible .logo-mark,
 body.dark .nav-logo:hover .logo-mark,
 body.dark .nav-logo:focus-visible .logo-mark {
-  border-color: color-mix(in srgb, #93c5fd 44%, var(--border));
-  box-shadow: 0 12px 28px rgba(99,102,241,.22), inset 0 1px 0 rgba(255,255,255,.12);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .logo-text,
@@ -306,6 +343,7 @@ body.dark .logo-copy::after {
   .nav-logo::before,
   .logo-mark,
   .logo-mark::before,
+  .logo-icon-img,
   .logo-cap,
   .logo-copy::after,
   .logo-text {

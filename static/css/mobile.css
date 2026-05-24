@@ -30,12 +30,12 @@
     gap: 7px;
   }
   .logo-mark {
-    width: 1.86rem;
-    height: 1.86rem;
+    width: 2.3rem;
+    height: 2.3rem;
     border-radius: 11px;
   }
   .logo-text {
-    font-size: 1.2rem;
+    font-size: 1.38rem;
   }
 
   .theme-toggle { order: 1; }
@@ -1540,10 +1540,10 @@
     padding-right: 6px;
   }
   .logo-mark {
-    width: 1.72rem;
-    height: 1.72rem;
+    width: 2.0rem;
+    height: 2.0rem;
   }
-  .logo-text { font-size: 1.08rem; }
+  .logo-text { font-size: 1.25rem; }
 
   /* Hero */
   .hero { padding: 20px 14px; }
@@ -1737,12 +1737,12 @@
   }
 
   .logo-mark {
-    width: 1.72rem;
-    height: 1.72rem;
+    width: 2.0rem;
+    height: 2.0rem;
   }
 
   .logo-text {
-    font-size: 1.08rem;
+    font-size: 1.25rem;
   }
 
   .theme-toggle { order: 1; }

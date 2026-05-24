@@ -28,8 +28,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/style.css?v=29" />
-    <link rel="stylesheet" href="/static/css/mobile.css?v=16" />
+    <link rel="stylesheet" href="/static/css/style.css?v=32" />
+    <link rel="stylesheet" href="/static/css/mobile.css?v=18" />
     <link rel="stylesheet" href="/static/css/video_player.css?v=3" />
 
 </head>
@@ -37,24 +37,15 @@
 
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="nav-logo" aria-label="Фурузон">
+            <a href="/" class="nav-logo" aria-label="Furuzon">
                 <span class="logo-mark" aria-hidden="true">
-                    <svg class="logo-cap" viewBox="0 0 64 64" role="presentation" focusable="false">
-                        <defs>
-                            <linearGradient id="logo-cap-fill" x1="10%" y1="10%" x2="90%" y2="90%">
-                                <stop offset="0%" stop-color="currentColor" stop-opacity="1" />
-                                <stop offset="100%" stop-color="currentColor" stop-opacity=".82" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M32 10 8 22l24 12 24-12-24-12Z" fill="url(#logo-cap-fill)" />
-                        <path d="M18 28v10c0 3 7 8 14 8s14-5 14-8V28" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M48 26v12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-                        <circle cx="48" cy="41" r="3.5" fill="currentColor" />
-                        <path d="M48 38.5c0 0 4 4.5 4 8.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
-                    </svg>
+                    <picture>
+                        <source srcset="/static/images/logo-furuzon-mark.webp" type="image/webp" />
+                        <img class="logo-icon-img" src="/static/images/logo-furuzon-mark.png" alt="" width="40" height="40" loading="eager" decoding="async" />
+                    </picture>
                 </span>
                 <span class="logo-copy">
-                    <span class="logo-text">Фурузон</span>
+                    <span class="logo-text">Furuzon</span>
                 </span>
             </a>
 
