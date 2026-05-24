@@ -184,7 +184,7 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
         OrganizationTeacher.status == "accepted"
     ).count() if org else 0
 
-    teacher_ids = [t.teacher_id for t in db.query(OrganizationTeacher).filter(
+    teacher_ids = [teacher_id for (teacher_id,) in db.query(OrganizationTeacher.teacher_id).filter(
         OrganizationTeacher.organization_id == org.id,
         OrganizationTeacher.status == "accepted"
     ).all()] if org else []
@@ -898,7 +898,12 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
     user_id = request.session.get("user_id")
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
 
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (
+        db.query(Organization)
+        .options(joinedload(Organization.user))
+        .filter(Organization.id == org_id)
+        .first()
+    )
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
     if org.status != "approved" and not (user and (user.is_admin or org.user_id == user.id)):

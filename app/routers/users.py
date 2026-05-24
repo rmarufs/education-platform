@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from collections import defaultdict
 
 from app.database import get_db
@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember
-from app.course_flow import course_learning_url
+from app.course_flow import first_course_lesson_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
 
@@ -26,6 +26,27 @@ def require_login(request: Request, db: Session):
         request.session.clear()
         return None, RedirectResponse("/login", status_code=302)
     return user, None
+
+
+def _course_continue_url(course: Course, lesson_id: int | None) -> str | None:
+    if not lesson_id:
+        return first_course_lesson_url(course)
+
+    modules = list(course.modules)
+    for module_index, module in enumerate(modules):
+        lessons = list(module.lessons)
+        for lesson_index, lesson in enumerate(lessons):
+            if lesson.id != lesson_id:
+                continue
+            if lesson_index < len(lessons) - 1:
+                return f"/lessons/{lessons[lesson_index + 1].id}"
+            for next_module in modules[module_index + 1:]:
+                next_lessons = list(next_module.lessons)
+                if next_lessons:
+                    return f"/lessons/{next_lessons[0].id}"
+            return f"/courses/{course.id}/completed"
+
+    return f"/courses/{course.id}"
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -92,6 +113,9 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         "completed_lessons": set(),
         "last_accessed_lesson_id": None,
         "last_accessed_time": datetime.min,
+        "last_completed_lesson_id": None,
+        "last_completed_time": datetime.min,
+        "last_completed_progress_id": 0,
     })
     course_ids = set()
     last_lesson_ids = set()
@@ -105,6 +129,11 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         data = course_progress_data[course_id]
         if progress.completed:
             data["completed_lessons"].add(progress.lesson_id)
+            completed_at = progress.completed_at or datetime.min
+            if (completed_at, progress.id) >= (data["last_completed_time"], data["last_completed_progress_id"]):
+                data["last_completed_time"] = completed_at
+                data["last_completed_progress_id"] = progress.id
+                data["last_completed_lesson_id"] = progress.lesson_id
 
         if pt_time >= data["last_accessed_time"]:
             data["last_accessed_time"] = pt_time
@@ -113,7 +142,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
 
     all_courses = (
         db.query(Course)
-        .options(joinedload(Course.teacher), joinedload(Course.modules).joinedload(Module.lessons))
+        .options(joinedload(Course.teacher), selectinload(Course.modules).selectinload(Module.lessons))
         .filter(Course.id.in_(course_ids))
         .all()
     ) if course_ids else []
@@ -134,7 +163,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
                 "course": c,
                 "progress_pct": pct,
                 "last_lesson": last_lessons.get(data["last_accessed_lesson_id"]),
-                "continue_url": course_learning_url(db, user.id, c),
+                "continue_url": _course_continue_url(c, data["last_completed_lesson_id"]),
             })
 
     # Группы студента
@@ -143,7 +172,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         .options(
             joinedload(Group.organization),
             joinedload(Group.teacher),
-            joinedload(Group.lessons),
+            selectinload(Group.lessons),
         )
         .join(GroupMember, GroupMember.group_id == Group.id)
         .filter(GroupMember.student_id == user.id)
@@ -178,18 +207,14 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/dashboard/student", status_code=302)
 
     from app.models.group import Group
-    from sqlalchemy.orm import joinedload as jl
 
-    # Группы, в которых преподаватель назначен
-    my_groups = db.query(Group).options(
-        jl(Group.members),
-        jl(Group.lessons),
-    ).filter(
+    my_groups = []
+    has_active_groups = db.query(Group.id).filter(
         Group.teacher_id == user.id,
         Group.is_active == True,  # noqa: E712
-    ).order_by(Group.created_at.desc()).all()
+    ).first()
 
-    if user.is_teacher and request.query_params.get("section") != "courses" and my_groups:
+    if user.is_teacher and request.query_params.get("section") != "courses" and has_active_groups:
         return RedirectResponse("/groups/my", status_code=302)
 
     # Только курсы этого преподавателя (teacher уже загружен, eager load не нужен)

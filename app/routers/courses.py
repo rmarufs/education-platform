@@ -56,15 +56,16 @@ def _plain_text(value: str | None) -> str:
 
 
 def get_teacher_org(teacher_id, db):
-    org_teacher = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.teacher_id == teacher_id,
-        OrganizationTeacher.status == "accepted"
-    ).first()
-    if org_teacher:
-        return db.query(Organization).filter(
-            Organization.id == org_teacher.organization_id
-        ).first()
-    return None
+    org_teacher = (
+        db.query(OrganizationTeacher)
+        .options(joinedload(OrganizationTeacher.organization))
+        .filter(
+            OrganizationTeacher.teacher_id == teacher_id,
+            OrganizationTeacher.status == "accepted",
+        )
+        .first()
+    )
+    return org_teacher.organization if org_teacher else None
 
 
 def _can_manage_google_forms_url(user: User, course: Course, db: Session) -> bool:
@@ -483,7 +484,6 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
             joinedload(Course.teacher),
             joinedload(Course.category),
             selectinload(Course.modules).selectinload(Module.lessons),
-            selectinload(Course.reviews).joinedload(Review.student),
             selectinload(Course.materials),
         )
         .filter(Course.id == course_id)
@@ -531,8 +531,10 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         ).first()
 
     # \u0422\u043e\u043f-4 \u043e\u0442\u0437\u044b\u0432\u0430 \u043a\u0443\u0440\u0441\u0430 (\u0432\u0438\u0434\u043d\u044b \u0432\u0441\u0435\u043c)
+    reviews_count = db.query(func.count(Review.id)).filter(Review.course_id == course_id).scalar() or 0
     top_reviews = (
         db.query(Review)
+        .options(joinedload(Review.student))
         .filter(Review.course_id == course_id)
         .order_by(Review.rating.desc(), Review.created_at.desc())
         .limit(4)
@@ -572,6 +574,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "learning_url": learning_url,
         "course_has_progress": course_has_progress,
         "user_review": user_review,
+        "reviews_count": reviews_count,
         "top_reviews": top_reviews,
         "show_review_prompt": show_review_prompt,
         "teacher_org": teacher_org,

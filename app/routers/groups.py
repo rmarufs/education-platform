@@ -8,7 +8,7 @@ from urllib.request import urlopen
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 from typing import Optional, List
 from pydantic import BaseModel
@@ -871,9 +871,9 @@ def group_journal(group_id: int, request: Request, db: Session = Depends(get_db)
     group = db.query(Group).options(
         joinedload(Group.organization),
         joinedload(Group.teacher),
-        joinedload(Group.modules).joinedload(GroupModule.lessons),
-        joinedload(Group.lessons),
-        joinedload(Group.members).joinedload(GroupMember.student),
+        selectinload(Group.modules).selectinload(GroupModule.lessons),
+        selectinload(Group.lessons),
+        selectinload(Group.members).joinedload(GroupMember.student),
     ).filter(Group.id == group.id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
@@ -926,9 +926,9 @@ async def group_journal_save(group_id: int, request: Request, db: Session = Depe
     _, group = _get_manageable_group(group_id, request, db)
 
     group = db.query(Group).options(
-        joinedload(Group.modules).joinedload(GroupModule.lessons),
-        joinedload(Group.lessons),
-        joinedload(Group.members),
+        selectinload(Group.modules).selectinload(GroupModule.lessons),
+        selectinload(Group.lessons),
+        selectinload(Group.members),
     ).filter(Group.id == group.id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
@@ -993,7 +993,7 @@ def group_payments(group_id: int, request: Request, month: Optional[str] = None,
     group = db.query(Group).options(
         joinedload(Group.organization),
         joinedload(Group.teacher),
-        joinedload(Group.members).joinedload(GroupMember.student),
+        selectinload(Group.members).joinedload(GroupMember.student),
     ).filter(Group.id == group.id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
@@ -1042,7 +1042,7 @@ async def group_payments_save(group_id: int, request: Request, db: Session = Dep
     form_data = await request.form()
     selected_month = _parse_month(form_data.get("month"))
 
-    group = db.query(Group).options(joinedload(Group.members)).filter(
+    group = db.query(Group).options(selectinload(Group.members)).filter(
         Group.id == group.id,
     ).first()
     if not group:

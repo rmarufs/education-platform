@@ -27,7 +27,7 @@
               <span>👨‍🏫 {{ course.teacher.name }}{% if teacher_org %} &middot; {{ teacher_org.name }}{% endif %}</span>
               <span>📅 {{ course.created_at.strftime("%d.%m.%Y") }}</span>
               {% if course.rating > 0 %}
-              <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ course.reviews|length }}}'>({{ course.reviews|length }} отзыв(ов))</span></span>
+              <span>⭐ {{ "%.1f"|format(course.rating) }} <span data-i18n="course_page.reviews_count" data-i18n-params='{"count":{{ reviews_count }}}'>({{ reviews_count }} отзыв(ов))</span></span>
               {% endif %}
             </div>
           </div>
@@ -101,7 +101,7 @@
             {% for i in range(r) %}<span class="star-filled">★</span>{% endfor %}
             {% for i in range(5 - r) %}<span class="star-empty">☆</span>{% endfor %}
           </div>
-          <span class="course-reviews-count">{{ course.reviews|length }} отзыв(ов)</span>
+          <span class="course-reviews-count">{{ reviews_count }} отзыв(ов)</span>
         </div>
         {% endif %}
       </div>

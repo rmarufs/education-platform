@@ -21,6 +21,7 @@ from app.config import (
 )
 from app.database import SessionLocal, get_db
 from app.models.course import Course
+from app.models.organization import OrganizationTeacher
 from app.models.user import User
 from app.models.category import Category
 from app.routers import auth, users, courses
@@ -186,7 +187,12 @@ def _get_popular_courses_cached(db):
     """Получить популярные курсы из БД."""
     return (
         db.query(Course)
-        .options(joinedload(Course.teacher), joinedload(Course.category))
+        .options(
+            joinedload(Course.teacher)
+                .selectinload(User.employer_organizations)
+                .joinedload(OrganizationTeacher.organization),
+            joinedload(Course.category),
+        )
         .order_by(Course.rating.desc())
         .limit(10)
         .all()

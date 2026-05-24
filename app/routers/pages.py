@@ -104,7 +104,9 @@ def search_api(
             user_org_id = student_org_link.organization_id
 
     query = db.query(Course).options(
-        joinedload(Course.teacher),
+        joinedload(Course.teacher)
+            .selectinload(User.employer_organizations)
+            .joinedload(OrganizationTeacher.organization),
         joinedload(Course.category),
         selectinload(Course.modules),
     )
