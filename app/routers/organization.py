@@ -17,9 +17,13 @@ from app.models.organization import (
 from app.models.course import Course
 from app.models.group import Group, GroupMember
 from app.utils.announcements import VALID_AUDIENCES, get_visible_announcement
+from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
 from app.ui import templates
+
+APPLICATION_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
+APPLICATION_ATTACHMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp"}
 
 
 def require_org(request: Request, db: Session):
@@ -1040,10 +1044,15 @@ async def join_organization(
     attachment_path = None
     if attachment and attachment.filename:
         import os, uuid, shutil
+        upload = validate_upload_file(
+            attachment,
+            allowed_extensions=APPLICATION_ATTACHMENT_EXTENSIONS,
+            max_bytes=APPLICATION_ATTACHMENT_MAX_BYTES,
+            invalid_type_message="Недопустимый тип файла вложения",
+        )
         upload_dir = "static/uploads/applications"
         os.makedirs(upload_dir, exist_ok=True)
-        ext = os.path.splitext(attachment.filename)[-1].lower()
-        safe_name = f"{uuid.uuid4().hex}{ext}"
+        safe_name = f"{uuid.uuid4().hex}_{upload.safe_filename}"
         dest = os.path.join(upload_dir, safe_name)
         with open(dest, "wb") as f:
             shutil.copyfileobj(attachment.file, f)

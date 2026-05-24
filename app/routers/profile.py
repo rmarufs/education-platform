@@ -1,11 +1,10 @@
 # Роутер профиля пользователя
-import os
 import logging
 
 logger = logging.getLogger(__name__)
 
 import cloudinary
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
 
@@ -19,12 +18,12 @@ from app.models.lesson import Lesson
 from app.models.module import Module
 from app.models.organization import Organization
 from app.utils.image import compress_and_upload_avatar
+from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
 from app.ui import templates
 
 AVATAR_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-AVATAR_ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 AVATAR_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 cloudinary.config(
@@ -51,25 +50,22 @@ async def upload_avatar(
 
     logger.info(f"Avatar upload started for user {user.id}")
 
-    # Проверка типа файла
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    content_type = (file.content_type or "").lower()
-    if ext not in AVATAR_ALLOWED_EXTS and content_type not in AVATAR_ALLOWED_TYPES:
-        logger.warning(f"Invalid avatar type: {ext}, {content_type}")
+    try:
+        validate_upload_file(
+            file,
+            allowed_extensions=AVATAR_ALLOWED_EXTS,
+            max_bytes=AVATAR_MAX_BYTES,
+            invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
+            too_large_message="Файл не должен превышать 10 МБ",
+        )
+    except HTTPException as exc:
+        logger.warning(f"Invalid avatar upload: {file.filename}, {file.content_type}, {exc.detail}")
         return JSONResponse(
-            {"success": False, "error": "Разрешены только JPG, JPEG, PNG и WEBP"},
+            {"success": False, "error": exc.detail},
             status_code=400,
         )
 
     file_bytes = await file.read()
-
-    # Проверка размера
-    if len(file_bytes) > AVATAR_MAX_BYTES:
-        logger.warning("Avatar file too large")
-        return JSONResponse(
-            {"success": False, "error": "Файл не должен превышать 10 МБ"},
-            status_code=400,
-        )
 
     try:
         avatar_url = compress_and_upload_avatar(file_bytes, uid)

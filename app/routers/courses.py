@@ -23,6 +23,7 @@ from app.models.review import Review
 from app.models.quiz import Quiz, Question
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.quiz_flow import course_learning_url, course_progress_state, course_progress_state_from_obj, first_course_lesson_url, is_course_ready_for_quiz, is_module_ready_for_quiz
+from app.utils.uploads import validate_upload_file
 
 try:
     import cloudinary
@@ -137,15 +138,13 @@ def _save_course_image(image: UploadFile | None) -> str | None:
     if not image or not image.filename:
         return None
 
-    ext = os.path.splitext(image.filename)[1].lower()
-    if ext not in COURSE_IMAGE_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
-
-    image.file.seek(0, os.SEEK_END)
-    size = image.file.tell()
-    image.file.seek(0)
-    if size > COURSE_IMAGE_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
+    upload = validate_upload_file(
+        image,
+        allowed_extensions=COURSE_IMAGE_EXTENSIONS,
+        max_bytes=COURSE_IMAGE_MAX_BYTES,
+        invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
+        too_large_message="Изображение должно быть не больше 5MB",
+    )
 
     if cloudinary and CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         try:
@@ -164,7 +163,7 @@ def _save_course_image(image: UploadFile | None) -> str | None:
 
     os.makedirs(COURSE_IMAGE_DIR, exist_ok=True)
     image.file.seek(0)
-    filename = f"{uuid.uuid4().hex}{ext}"
+    filename = f"{uuid.uuid4().hex}{upload.extension}"
     save_path = os.path.join(COURSE_IMAGE_DIR, filename)
     with open(save_path, "wb") as buffer:
         shutil.copyfileobj(image.file, buffer)
@@ -172,19 +171,13 @@ def _save_course_image(image: UploadFile | None) -> str | None:
 
 
 def _validate_course_material_upload(file: UploadFile) -> str:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Не выбран файл")
-
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in COURSE_MATERIAL_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
-
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > COURSE_MATERIAL_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Файл слишком большой")
-    return ext
+    upload = validate_upload_file(
+        file,
+        allowed_extensions=COURSE_MATERIAL_EXTENSIONS,
+        max_bytes=COURSE_MATERIAL_MAX_BYTES,
+        missing_message="Не выбран файл",
+    )
+    return upload.extension
 
 
 def _save_course_materials(files: list[UploadFile] | None, course_id: int, db: Session) -> None:
@@ -196,16 +189,22 @@ def _save_course_materials(files: list[UploadFile] | None, course_id: int, db: S
         if not file.filename:
             continue
 
-        ext = _validate_course_material_upload(file)
-        original_name = os.path.basename(file.filename)
-        filename = f"{uuid.uuid4().hex}_{original_name}"
+        upload = validate_upload_file(
+            file,
+            allowed_extensions=COURSE_MATERIAL_EXTENSIONS,
+            max_bytes=COURSE_MATERIAL_MAX_BYTES,
+            missing_message="Не выбран файл",
+        )
+        ext = upload.extension
+        stored_name = upload.safe_filename
+        filename = f"{uuid.uuid4().hex}_{stored_name}"
         save_path = os.path.join(COURSE_MATERIAL_DIR, filename)
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         db.add(Material(
             course_id=course_id,
-            title=original_name,
+            title=upload.original_filename,
             file_url="/" + save_path,
             file_type=ext.lstrip("."),
         ))

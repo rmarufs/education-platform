@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.utils.rate_limit import limiter
+from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
 from app.ui import templates
@@ -40,19 +41,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     return db.query(User).filter(User.id == user_id).first()
 
 
-def _validate_teacher_document(document: UploadFile | None) -> None:
+def _validate_teacher_document(document: UploadFile | None):
     if not document or not document.filename:
-        return
+        return None
 
-    ext = os.path.splitext(document.filename)[1].lower()
-    if ext not in DOCUMENT_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Неверный формат документа")
-
-    document.file.seek(0, os.SEEK_END)
-    size = document.file.tell()
-    document.file.seek(0)
-    if size > DOCUMENT_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Файл слишком большой")
+    return validate_upload_file(
+        document,
+        allowed_extensions=DOCUMENT_EXTENSIONS,
+        max_bytes=DOCUMENT_MAX_BYTES,
+        invalid_type_message="Неверный формат документа",
+    )
 
 
 def _is_valid_phone(value: str) -> bool:
@@ -362,9 +360,9 @@ async def register(
 
         # Документ необязателен — сохраняем если есть
         if document and document.filename:
-            _validate_teacher_document(document)
+            upload = _validate_teacher_document(document)
             os.makedirs("static/documents", exist_ok=True)
-            filename = f"{uuid.uuid4().hex}_{document.filename}"
+            filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
             save_path = f"static/documents/{filename}"
             with open(save_path, "wb") as buffer:
                 shutil.copyfileobj(document.file, buffer)

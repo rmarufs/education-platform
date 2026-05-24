@@ -20,6 +20,7 @@ from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API
 from app.utils.announcements import get_visible_announcements
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
+from app.utils.uploads import validate_upload_file
 
 try:
     import cloudinary
@@ -116,43 +117,36 @@ def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
     return False
 
 
-def _validate_group_material_upload(file: UploadFile) -> None:
+def _validate_group_material_upload(file: UploadFile):
     if not file or not file.filename:
         return
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in GROUP_MATERIAL_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > GROUP_MATERIAL_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Файл слишком большой")
+    return validate_upload_file(
+        file,
+        allowed_extensions=GROUP_MATERIAL_EXTENSIONS,
+        max_bytes=GROUP_MATERIAL_MAX_BYTES,
+    )
 
 
 def _validate_group_lesson_cover_upload(file: UploadFile) -> None:
     if not file or not file.filename:
         return
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in GROUP_LESSON_COVER_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > GROUP_LESSON_COVER_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
+    validate_upload_file(
+        file,
+        allowed_extensions=GROUP_LESSON_COVER_EXTENSIONS,
+        max_bytes=GROUP_LESSON_COVER_MAX_BYTES,
+        invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
+        too_large_message="Изображение должно быть не больше 5MB",
+    )
 
 
-def _validate_group_homework_upload(file: UploadFile) -> None:
+def _validate_group_homework_upload(file: UploadFile):
     if not file or not file.filename:
         return
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in GROUP_HOMEWORK_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > GROUP_HOMEWORK_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Файл слишком большой")
+    return validate_upload_file(
+        file,
+        allowed_extensions=GROUP_HOMEWORK_EXTENSIONS,
+        max_bytes=GROUP_HOMEWORK_MAX_BYTES,
+    )
 
 
 def _homework_file_type(filename: str | None, content_type: str | None = None) -> str:
@@ -175,8 +169,8 @@ def _homework_url_type(url: str) -> str:
 
 
 def _save_group_homework_upload(file: UploadFile, folder: str) -> tuple[str, str, str]:
-    _validate_group_homework_upload(file)
-    original_name = os.path.basename(file.filename)
+    upload = _validate_group_homework_upload(file)
+    original_name = upload.original_filename
     if not cloudinary:
         raise HTTPException(status_code=500, detail="Cloudinary недоступен для загрузки файла")
     if hasattr(file.file, "seek"):
@@ -513,8 +507,15 @@ def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...)
     if not avatar or not avatar.filename:
         return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
 
-    ext = os.path.splitext(avatar.filename)[1].lower()
-    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+    try:
+        validate_upload_file(
+            avatar,
+            allowed_extensions=GROUP_LESSON_COVER_EXTENSIONS,
+            max_bytes=GROUP_LESSON_COVER_MAX_BYTES,
+            invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
+            too_large_message="Изображение должно быть не больше 5MB",
+        )
+    except HTTPException:
         return RedirectResponse(f"/groups/{group_id}/manage?error=invalid_image", status_code=302)
 
     avatar_url = compress_and_upload_avatar(
@@ -1292,9 +1293,9 @@ async def lesson_create(
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
             if isinstance(f, UploadFile) and f.filename:
-                _validate_group_material_upload(f)
-                original_name = os.path.basename(f.filename)
-                filename = f"{uuid.uuid4().hex}_{original_name}"
+                upload = _validate_group_material_upload(f)
+                original_name = upload.original_filename
+                filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
                 save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
                 with open(save_path, "wb") as buffer:
                     shutil.copyfileobj(f.file, buffer)
@@ -1401,9 +1402,9 @@ async def lesson_edit(
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
         for f in files:
             if isinstance(f, UploadFile) and f.filename:
-                _validate_group_material_upload(f)
-                original_name = os.path.basename(f.filename)
-                filename = f"{uuid.uuid4().hex}_{original_name}"
+                upload = _validate_group_material_upload(f)
+                original_name = upload.original_filename
+                filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
                 save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
                 with open(save_path, "wb") as buffer:
                     shutil.copyfileobj(f.file, buffer)
@@ -1470,10 +1471,10 @@ async def lesson_material_add(
 
     material_title = title.strip()
     if file and file.filename:
-        _validate_group_material_upload(file)
+        upload = _validate_group_material_upload(file)
         os.makedirs(GROUP_MATERIAL_DIR, exist_ok=True)
-        original_name = os.path.basename(file.filename)
-        filename = f"{uuid.uuid4().hex}_{original_name}"
+        original_name = upload.original_filename
+        filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
         save_path = os.path.join(GROUP_MATERIAL_DIR, filename)
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)

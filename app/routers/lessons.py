@@ -22,6 +22,7 @@ from app.models.course import Course
 from app.models.review import Review
 from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
 from app.utils.image import upload_lesson_image
+from app.utils.uploads import validate_upload_file
 
 router = APIRouter(prefix="/lessons")
 from app.ui import templates
@@ -42,32 +43,25 @@ def require_teacher(request: Request, db: Session):
 
 
 def _validate_material_upload(file: UploadFile) -> str:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Файл не выбран")
-    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
-    if ext not in MATERIAL_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
-
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > MATERIAL_UPLOAD_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Файл слишком большой")
-    return ext
+    upload = validate_upload_file(
+        file,
+        allowed_extensions=MATERIAL_EXTENSIONS,
+        max_bytes=MATERIAL_UPLOAD_MAX_BYTES,
+        missing_message="Файл не выбран",
+    )
+    return upload.extension.lstrip(".")
 
 
 def _validate_lesson_cover_upload(file: UploadFile) -> None:
     if not file or not file.filename:
         return
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in LESSON_COVER_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Разрешены только JPG, JPEG, PNG и WEBP")
-
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > LESSON_COVER_MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Изображение должно быть не больше 5MB")
+    validate_upload_file(
+        file,
+        allowed_extensions=LESSON_COVER_EXTENSIONS,
+        max_bytes=LESSON_COVER_MAX_BYTES,
+        invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
+        too_large_message="Изображение должно быть не больше 5MB",
+    )
 
 
 def _save_uploaded_files(files, lesson_id, db):
@@ -78,15 +72,21 @@ def _save_uploaded_files(files, lesson_id, db):
     for file in files:
         if not file.filename:
             continue
-        ext = _validate_material_upload(file)
-        filename = f"{uuid.uuid4().hex}_{file.filename}"
+        upload = validate_upload_file(
+            file,
+            allowed_extensions=MATERIAL_EXTENSIONS,
+            max_bytes=MATERIAL_UPLOAD_MAX_BYTES,
+            missing_message="Файл не выбран",
+        )
+        ext = upload.extension.lstrip(".")
+        filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
         save_path = os.path.join(MATERIAL_UPLOAD_DIR, filename)
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         material = Material(
             lesson_id=lesson_id,
-            title=file.filename,
+            title=upload.original_filename,
             file_url="/" + save_path,
             file_type=ext,
         )
