@@ -3829,7 +3829,30 @@ body { transition: background-color .3s ease, color .3s ease; }
   padding: 6px 10px;
 }
 
-@media (min-width: 981px) and (max-width: 1100px) {
+/* ── Гамбургер-меню (мобильный) ───────────────────── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 4px;
+  z-index: 210;
+}
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+@media (min-width: 1025px) and (max-width: 1100px) {
   .nav-container {
     padding: 0 16px;
     gap: 8px;
@@ -3860,7 +3883,7 @@ body { transition: background-color .3s ease, color .3s ease; }
   }
 }
 
-@media (min-width: 769px) and (max-width: 980px) {
+@media (min-width: 769px) and (max-width: 1024px) {
   .nav-center-links,
   .nav-auth-links {
     display: none !important;
@@ -3904,28 +3927,7 @@ body { transition: background-color .3s ease, color .3s ease; }
   }
 }
 
-/* ── Гамбургер-меню (мобильный) ───────────────────── */
-.hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px 4px;
-  z-index: 210;
-}
-.hamburger span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: var(--text);
-  border-radius: 2px;
-  transition: transform .3s, opacity .3s;
-}
-.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.hamburger.open span:nth-child(2) { opacity: 0; }
-.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 
 /* ── Мобильное меню (Сайдбар) ─────────────────────── */
 .mobile-overlay {
