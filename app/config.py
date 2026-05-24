@@ -39,3 +39,19 @@ PLATFORM_NAME = os.getenv("PLATFORM_NAME", "Фурузон")
 
 # Время жизни сессии (в секундах)
 SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", 60 * 60 * 24 * 7))  # По умолчанию 7 дней
+
+
+def _get_bool_env(key: str, default: bool) -> bool:
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+APP_ENV = os.getenv("APP_ENV", "production").strip().lower()
+IS_PRODUCTION = APP_ENV not in {"development", "dev", "local", "test"}
+
+# Production defaults are intentionally conservative. Development can keep
+# convenience behavior through config/.env without changing application code.
+ENABLE_API_DOCS = _get_bool_env("ENABLE_API_DOCS", not IS_PRODUCTION)
+AUTO_APPLY_MIGRATIONS = _get_bool_env("AUTO_APPLY_MIGRATIONS", not IS_PRODUCTION)

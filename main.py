@@ -10,7 +10,14 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
 
-from app.config import SECRET_KEY, PLATFORM_NAME
+from app.config import (
+    APP_ENV,
+    AUTO_APPLY_MIGRATIONS,
+    ENABLE_API_DOCS,
+    IS_PRODUCTION,
+    PLATFORM_NAME,
+    SECRET_KEY,
+)
 from app.database import SessionLocal, get_db
 from app.models.course import Course
 from app.models.user import User
@@ -22,10 +29,17 @@ from app.routers import admin
 from app.routers import organization
 from app.routers import groups
 
+logger = logging.getLogger(__name__)
+
 # Создаём папку data если её нет
 os.makedirs("data", exist_ok=True)
 
-app = FastAPI(title=PLATFORM_NAME, docs_url="/api/docs")
+app = FastAPI(
+    title=PLATFORM_NAME,
+    docs_url="/api/docs" if ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_API_DOCS else None,
+)
 
 # ── Rate Limiting (SlowAPI) ───────────────────────────────────────────────────
 from slowapi.errors import RateLimitExceeded
@@ -46,23 +60,27 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # Сжатие ответов (gzip) для CSS, JS, HTML - улучшает скорость загрузки на 3-5×
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Защита от Clickjacking (X-Frame-Options: DENY)
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    )
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",", 1)[0].strip().lower()
+    if IS_PRODUCTION and (request.url.scheme == "https" or forwarded_proto == "https"):
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 # Middleware для сессий на основе куков (укрепленные настройки безопасности)
 # https_only=True обязателен на проде (HTTPS), на локалке отключаем
-_app_env = os.environ.get("APP_ENV", "production").strip().lower()
-env_is_prod = _app_env not in ("development", "dev", "local")
-
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     max_age=60 * 60 * 24 * 7,
-    https_only=env_is_prod,
+    https_only=IS_PRODUCTION,
     same_site="lax"
 )
 
@@ -70,7 +88,6 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 from app.ui import templates
-logger = logging.getLogger(__name__)
 
 
 
@@ -203,19 +220,35 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
 
 # ── Инициализация БД при старте ──────────────────────────────────────────────
 
+def _run_alembic_migrations() -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+
 @app.on_event("startup")
 def on_startup():
-    print(f"✅ {PLATFORM_NAME} запущен.")
-    
-    # Автоматическое применение миграций БД (полезно для Render и других PaaS)
+    logger.info(
+        "%s startup: env=%s, docs_enabled=%s, auto_migrations=%s",
+        PLATFORM_NAME,
+        APP_ENV,
+        ENABLE_API_DOCS,
+        AUTO_APPLY_MIGRATIONS,
+    )
+
+    if not AUTO_APPLY_MIGRATIONS:
+        logger.info("Automatic Alembic migrations are disabled for this environment.")
+        return
+
     try:
-        from alembic import command
-        from alembic.config import Config
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        print("✅ Миграции БД успешно применены.")
-    except Exception as e:
-        logger.error(f"❌ Ошибка при автоматическом выполнении миграций: {e}")
+        _run_alembic_migrations()
+    except Exception:
+        logger.exception("Alembic migration failed during startup; aborting application startup.")
+        raise
+
+    logger.info("Alembic migrations applied successfully.")
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -238,9 +271,7 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception):
-    import traceback
-    traceback.print_exc()
-    logger.exception("Unhandled application error", exc_info=exc)
+    logger.exception("Unhandled application error")
     return _render_error_page(
         request,
         status.HTTP_500_INTERNAL_SERVER_ERROR,
