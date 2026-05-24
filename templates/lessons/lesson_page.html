@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
-{% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
 {% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
@@ -168,7 +167,7 @@
     {% endif %}
 
     <!-- Google Forms тест -->
-    {% if lesson.quiz_url and (not user or user.role.value != "student" or lesson_quiz_visible) %}
+    {% if lesson.quiz_url and (not user or user.role.value != "student" or lesson_test_visible) %}
     <section class="lesson-google-forms-promo">
       <div class="google-forms-banner">
         <span class="banner-icon">📋</span>
@@ -190,30 +189,6 @@
         <div>
           <h3>Тест</h3>
           <p>Тест откроется после отметки урока как пройденного.</p>
-        </div>
-      </div>
-    </section>
-    {% endif %}
-
-    <!-- Старая система квизов (DISABLED) -->
-    {% if false and lesson.quiz and (not user or user.role.value != "student" or lesson_quiz_visible) %}
-    <section class="lesson-quiz-promo">
-      <div class="quiz-card">
-        <span class="quiz-icon">🧠</span>
-        <div>
-          <h3>{{ lesson.quiz.title }}</h3>
-          <p data-i18n="lesson.questions" data-i18n-params='{"count": {{ lesson.quiz.questions | length }}}'>{{ lesson.quiz.questions | length }} вопрос(ов)</p>
-        </div>
-        <a href="/quiz/{{ lesson.quiz.id }}" class="btn btn-primary" data-i18n="lesson.quiz">Пройти квиз →</a>
-      </div>
-    </section>
-    {% elif false and lesson.quiz and user and user.is_student %}
-    <section class="lesson-quiz-promo">
-      <div class="quiz-card quiz-card-locked">
-        <span class="quiz-icon">🔒</span>
-        <div>
-          <h3>{{ lesson.quiz.title }}</h3>
-          <p data-i18n="lesson.quiz_unlock">Квиз откроется после отметки урока как пройденного.</p>
         </div>
       </div>
     </section>
@@ -290,15 +265,6 @@
           {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
         </div>
 
-        <!-- Старая система квизов (DISABLED) -->
-        {% if false %}
-        <!-- Создать квиз -->
-        {% if not lesson.quiz %}
-        {{ render_quiz_editor(None, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
-        {% else %}
-        {{ render_quiz_editor(lesson.quiz, "lesson", lesson.id, "lesson.create_quiz", "Создать квиз", "lesson-quiz-" ~ lesson.id) }}
-        {% endif %}
-        {% endif %}
       </div>
     </section>
     {% endif %}
@@ -363,7 +329,6 @@
   </main>
 </div>
 
-<script src="/static/js/quiz_builder.js"></script>
 <script>
 function toggleReplyForm(commentId) {
   const form = document.getElementById('reply-form-' + commentId);

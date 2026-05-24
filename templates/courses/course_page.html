@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
-{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}{{ course.title }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -145,11 +144,6 @@
               <strong>{{ module.title }}</strong>
               <span class="text-muted" data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
             </div>
-            {% if module.quiz and (not user or user.role.value != "student" or module_quiz_states.get(module.id, {}).get("unlocked") or module_quiz_states.get(module.id, {}).get("passed")) %}
-            <a href="/quiz/{{ module.quiz.id }}" class="btn btn-outline btn-xs curriculum-module-quiz-link" data-i18n="quiz.open_module">Квиз модуля</a>
-            {% elif module.quiz %}
-            <span class="btn btn-outline btn-xs curriculum-module-quiz-link disabled" aria-disabled="true" data-i18n="quiz.module_locked">Сначала завершите уроки</span>
-            {% endif %}
           </div>
           {% if module.description %}
           <div class="curriculum-module-description rich-text-content">{{ module.description | clean_html }}</div>
@@ -162,9 +156,6 @@
               <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
               {% else %}
               <span>{{ lesson.title }}</span>
-              {% endif %}
-              {% if lesson.quiz %}
-              <span class="badge badge-quiz">Квиз</span>
               {% endif %}
             </li>
             {% endfor %}

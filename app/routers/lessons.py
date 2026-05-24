@@ -20,7 +20,7 @@ from app.models.progress import Progress
 from app.models.comment import Comment
 from app.models.course import Course
 from app.models.review import Review
-from app.quiz_flow import lesson_quiz_unlocked, next_after_lesson
+from app.course_flow import next_after_lesson
 from app.utils.image import upload_lesson_image
 from app.utils.uploads import validate_upload_file
 
@@ -167,7 +167,6 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         .options(
             joinedload(Lesson.module),
             selectinload(Lesson.materials),
-            joinedload(Lesson.quiz),
             selectinload(Lesson.comments).joinedload(Comment.author),
             selectinload(Lesson.comments).selectinload(Comment.replies).joinedload(Comment.author),
         )
@@ -213,7 +212,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     # Прогресс студента
     progress = None
     progress_data = {}
-    lesson_quiz_visible = False
+    lesson_test_visible = False
     continue_url = None
     if is_student(user):
         progress = db.query(Progress).filter(
@@ -229,7 +228,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
             .all()
         )
         progress_data = {p.lesson_id: p.completed for p in all_progress}
-        lesson_quiz_visible = bool(lesson.quiz and lesson_quiz_unlocked(db, user.id, lesson))
+        lesson_test_visible = bool(progress and progress.completed)
         if progress and progress.completed:
             continue_url = next_after_lesson(db, user.id, lesson.id)
             
@@ -261,7 +260,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "user": user,
         "progress": progress,
         "progress_data": progress_data,
-        "lesson_quiz_visible": lesson_quiz_visible,
+        "lesson_test_visible": lesson_test_visible,
         "continue_url": continue_url,
         "next_lesson_url": next_lesson_url,
         "show_review_form": locals().get('show_review_form', False),

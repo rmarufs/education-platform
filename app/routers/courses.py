@@ -20,9 +20,8 @@ from app.models.module import Module
 from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.review import Review
-from app.models.quiz import Quiz, Question
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-from app.quiz_flow import course_learning_url, course_progress_state, course_progress_state_from_obj, first_course_lesson_url, is_course_ready_for_quiz, is_module_ready_for_quiz
+from app.course_flow import course_learning_url, course_progress_state, first_course_lesson_url, is_course_complete_by_lessons
 from app.utils.uploads import validate_upload_file
 
 try:
@@ -68,7 +67,7 @@ def get_teacher_org(teacher_id, db):
     return None
 
 
-def _can_manage_course_quiz_url(user: User, course: Course, db: Session) -> bool:
+def _can_manage_google_forms_url(user: User, course: Course, db: Session) -> bool:
     if is_admin(user):
         return True
     if is_teacher(user):
@@ -375,7 +374,7 @@ async def save_quiz_url(
         course = db.query(Course).filter(Course.id == scope_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
-        if not _can_manage_course_quiz_url(user, course, db):
+        if not _can_manage_google_forms_url(user, course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         course.quiz_url = quiz_url
     
@@ -384,7 +383,7 @@ async def save_quiz_url(
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
 
-        if not module.course or not _can_manage_course_quiz_url(user, module.course, db):
+        if not module.course or not _can_manage_google_forms_url(user, module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         module.quiz_url = quiz_url
@@ -401,7 +400,7 @@ async def save_quiz_url(
 
         if not lesson.module:
             raise HTTPException(status_code=404, detail="Module not found")
-        if not lesson.module.course or not _can_manage_course_quiz_url(user, lesson.module.course, db):
+        if not lesson.module.course or not _can_manage_google_forms_url(user, lesson.module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         lesson.quiz_url = quiz_url
@@ -436,7 +435,7 @@ async def delete_quiz_url(
         course = db.query(Course).filter(Course.id == scope_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
-        if not _can_manage_course_quiz_url(user, course, db):
+        if not _can_manage_google_forms_url(user, course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         course.quiz_url = None
     
@@ -445,7 +444,7 @@ async def delete_quiz_url(
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
 
-        if not module.course or not _can_manage_course_quiz_url(user, module.course, db):
+        if not module.course or not _can_manage_google_forms_url(user, module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         module.quiz_url = None
@@ -462,7 +461,7 @@ async def delete_quiz_url(
 
         if not lesson.module:
             raise HTTPException(status_code=404, detail="Module not found")
-        if not lesson.module.course or not _can_manage_course_quiz_url(user, lesson.module.course, db):
+        if not lesson.module.course or not _can_manage_google_forms_url(user, lesson.module.course, db):
             raise HTTPException(status_code=403, detail="Unauthorized")
         
         lesson.quiz_url = None
@@ -483,9 +482,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         .options(
             joinedload(Course.teacher),
             joinedload(Course.category),
-            joinedload(Course.quiz).selectinload(Quiz.questions),
-            selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions),
-            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz),
+            selectinload(Course.modules).selectinload(Module.lessons),
             selectinload(Course.reviews).joinedload(Review.student),
             selectinload(Course.materials),
         )
@@ -500,9 +497,6 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
     # Прогресс студента по этому курсу
     progress_data = {}
     completion_pct = 0
-    module_quiz_states = {}
-    course_quiz_unlocked = False
-    course_quiz_passed = False
     learning_url = None
     course_has_progress = False
     if is_student(user):
@@ -524,19 +518,6 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         )
         completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
 
-        # Переиспользуем уже загруженный course, избегая второго запроса к БД
-        completed_lesson_ids, passed_quiz_ids = course_progress_state_from_obj(db, user.id, course)
-        module_quiz_states = {
-            module.id: {
-                "unlocked": bool(module.quiz and is_module_ready_for_quiz(module, completed_lesson_ids, passed_quiz_ids)),
-                "passed": bool(module.quiz and module.quiz.id in passed_quiz_ids),
-            }
-            for module in course.modules
-            if module.quiz
-        }
-        course_quiz_unlocked = bool(course.quiz and is_course_ready_for_quiz(course, completed_lesson_ids, passed_quiz_ids))
-        course_quiz_passed = bool(course.quiz and course.quiz.id in passed_quiz_ids)
-        course_has_progress = course_has_progress or bool(passed_quiz_ids)
         learning_url = course_learning_url(db, user.id, course)
     else:
         learning_url = first_course_lesson_url(course)
@@ -588,9 +569,6 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "user": user,
         "progress_data": progress_data,
         "completion_pct": completion_pct,
-        "module_quiz_states": module_quiz_states,
-        "course_quiz_unlocked": course_quiz_unlocked,
-        "course_quiz_passed": course_quiz_passed,
         "learning_url": learning_url,
         "course_has_progress": course_has_progress,
         "user_review": user_review,
@@ -613,10 +591,7 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
     course = (
         db.query(Course)
         .options(
-            joinedload(Course.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
-            selectinload(Course.modules).joinedload(Module.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
             selectinload(Course.modules).selectinload(Module.lessons).selectinload(Lesson.materials),
-            selectinload(Course.modules).selectinload(Module.lessons).joinedload(Lesson.quiz).selectinload(Quiz.questions).selectinload(Question.answers),
         )
         .filter(Course.id == course_id)
         .first()
@@ -800,16 +775,14 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
     if not user or user.role.value != "student":
         return RedirectResponse("/login", status_code=302)
 
-    state_course, completed_lesson_ids, passed_quiz_ids = course_progress_state(db, user.id, course.id)
+    state_course, completed_lesson_ids = course_progress_state(db, user.id, course.id)
     if not state_course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
     total_lessons = sum(len(module.lessons) for module in state_course.modules)
     done_lessons = sum(1 for lesson_id in completed_lesson_ids if lesson_id in {lesson.id for module in state_course.modules for lesson in module.lessons})
     completion_pct = int(done_lessons / total_lessons * 100) if total_lessons > 0 else 0
-    course_finished = is_course_ready_for_quiz(state_course, completed_lesson_ids, passed_quiz_ids)
-    if state_course.quiz:
-        course_finished = course_finished and state_course.quiz.id in passed_quiz_ids
+    course_finished = is_course_complete_by_lessons(state_course, completed_lesson_ids)
 
     if not course_finished and state_course.modules:
         return RedirectResponse(f"/courses/{course.id}", status_code=302)
@@ -892,6 +865,6 @@ def get_course_api(course_id: int, request: Request, db: Session = Depends(get_d
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404)
-    if not _can_manage_course_quiz_url(user, course, db):
+    if not _can_manage_google_forms_url(user, course, db):
         raise HTTPException(status_code=403)
     return {"id": course.id, "title": course.title, "description": course.description, "level": course.level}

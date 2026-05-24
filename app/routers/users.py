@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember
-from app.quiz_flow import course_learning_url
+from app.course_flow import course_learning_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
 

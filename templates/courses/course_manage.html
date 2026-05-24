@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_quiz_authoring_macros.html" import render_quiz_editor with context %}
 {% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
 {% block title %}Управление курсом — {{ course.title }}{% endblock %}
 
@@ -70,9 +69,6 @@
             <div class="lesson-meta">
               {% if lesson.materials %}
                 <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
-              {% endif %}
-              {% if lesson.quiz %}
-                <span class="badge badge-quiz">Квиз</span>
               {% endif %}
             </div>
             <div class="lesson-actions" style="display: flex; gap: 4px;">
@@ -454,7 +450,6 @@
   </div>
 </div>
 
-<script src="/static/js/quiz_builder.js"></script>
 <script>
 // Локальные определения для модальных окон (не зависят от порядка загрузки courses.js)
 function _openModalOverlay(modalId) {
