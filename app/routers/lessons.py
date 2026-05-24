@@ -160,7 +160,7 @@ async def create_lesson(
 
 
 # ── Страница урока ─────────────────────────────────────────────
-@router.get("/{lesson_id}", response_class=HTMLResponse)
+@router.get("/{lesson_id:int}", response_class=HTMLResponse)
 def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db)):
     lesson = (
         db.query(Lesson)
@@ -270,7 +270,7 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
 
 
 # ── Редактировать урок ─────────────────────────────────────────
-@router.post("/{lesson_id}/edit")
+@router.post("/{lesson_id:int}/edit")
 async def edit_lesson(
     lesson_id: int,
     request: Request,
@@ -321,7 +321,7 @@ async def edit_lesson(
 
 
 # ── Удалить урок ───────────────────────────────────────────────
-@router.post("/{lesson_id}/delete")
+@router.post("/{lesson_id:int}/delete")
 def delete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
     teacher = require_teacher(request, db)
     lesson = db.query(Lesson).options(joinedload(Lesson.module)).filter(Lesson.id == lesson_id).first()
@@ -338,7 +338,7 @@ def delete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db
 
 
 # ── Добавить материал к уроку (через URL) ──────────────────────
-@router.post("/{lesson_id}/material")
+@router.post("/{lesson_id:int}/material")
 def add_material(
     lesson_id: int,
     request: Request,
@@ -365,7 +365,7 @@ def add_material(
 
 
 # ── Загрузить файл к уроку ─────────────────────────────────────
-@router.post("/{lesson_id}/upload")
+@router.post("/{lesson_id:int}/upload")
 async def upload_lesson_material(
     lesson_id: int,
     request: Request,
@@ -385,7 +385,7 @@ async def upload_lesson_material(
 
 
 # ── Отметить урок завершённым (студент) ───────────────────────
-@router.post("/{lesson_id}/complete")
+@router.post("/{lesson_id:int}/complete")
 def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
     uid = request.session.get("user_id")
     if not uid:
@@ -425,7 +425,7 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
     return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
 
 
-@router.get("/{lesson_id}/continue")
+@router.get("/{lesson_id:int}/continue")
 def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
     uid = request.session.get("user_id")
     if not uid:
