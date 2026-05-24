@@ -266,6 +266,7 @@ const translations = {
     "org.status_closed": "Закрытый набор",
     "org.cover_letter": "Сопроводительное письмо",
     "org.attach_label": "Резюме / сертификат",
+    "org.attach_hint": "Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG",
 
     "login.title_page": "Вход — Фурузон",
     "login.title": "Вход в аккаунт",
@@ -1326,10 +1327,11 @@ const translations = {
     "org.no_teachers": "Дар маркази таълимӣ ҳоло омӯзгор нест.",
     "org.no_courses": "Маркази таълимӣ ҳоло курс илова накардааст.",
     "org.teachers_title": "Омӯзгорони мо",
-    "org.status_open": "Қабули кушод",
+    "org.status_open": "Қабул кушода аст",
     "org.status_closed": "Қабули пӯшида",
     "org.cover_letter": "Мактуби ҳамроҳ",
     "org.attach_label": "Резюме / сертификат",
+    "org.attach_hint": "То 5 МБ. Форматҳо: PDF, DOC, DOCX, JPG, PNG",
 
     "login.title_page": "Вуруд — Фурузон",
     "login.title": "Вуруд ба аккаунт",

@@ -26,7 +26,7 @@
 
         {# Kicker: бейдж организации + статус open/closed #}
         <div class="tp-hero-kicker">
-          <span class="role-badge op-org-badge" data-i18n="nav.org">Учебный центр</span>
+          <span class="role-badge op-org-badge" data-i18n="org.label">Учебный центр</span>
           {% if org.is_open %}
             <span class="op-status-badge op-status-open" data-i18n="org.status_open">Открытый набор</span>
           {% else %}
@@ -128,7 +128,7 @@
               <span class="op-optional" data-i18n="common.optional">необязательно</span>
             </label>
             <input type="file" id="attach-input" class="form-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-            <div class="op-file-hint">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
+            <div class="op-file-hint" data-i18n="org.attach_hint">Макс. 5 МБ. Форматы: PDF, DOC, DOCX, JPG, PNG</div>
           </div>
           <div class="op-join-form-actions">
             <button id="submit-join-btn" class="btn btn-primary btn-sm" onclick="submitJoin({{ org.id }})" data-i18n="org.join_send">Отправить заявку</button>
@@ -202,12 +202,7 @@
           <div class="org-pub-teacher-bio">{{ teacher.bio | striptags | truncate(80) }}</div>
           {% endif %}
           <div class="org-pub-teacher-meta">
-            <span>📚
-              {{ teacher_courses_count }}
-              {% if teacher_courses_count % 10 == 1 and teacher_courses_count % 100 != 11 %}курс
-              {% elif teacher_courses_count % 10 in [2,3,4] and teacher_courses_count % 100 not in [12,13,14] %}курса
-              {% else %}курсов{% endif %}
-            </span>
+            <span>📚 <span data-i18n="teacher_profile.courses">Курсов</span>: {{ teacher_courses_count }}</span>
           </div>
         </div>
         <span class="org-pub-teacher-arrow">→</span>
@@ -259,7 +254,7 @@
     {% else %}
     <div class="empty-state">
       <span class="empty-icon">📭</span>
-      <p data-i18n="org.no_courses">Организация пока не добавила курсы.</p>
+      <p data-i18n="org.no_courses">Учебный центр пока не добавил курсы.</p>
     </div>
     {% endif %}
   </div>
