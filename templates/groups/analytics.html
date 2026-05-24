@@ -12,8 +12,8 @@
     {% endif %}
 
     <div class="dashboard-main">
-        <div class="dashboard-header analytics-header">
-            <div>
+        <div class="dashboard-header analytics-header teacher-dashboard-header">
+            <div class="teacher-dashboard-intro">
                 {% if analytics_scope == "organization" %}
                 <a href="{{ back_url }}" class="back-link" data-i18n="group.back">← К группам</a>
                 {% else %}
@@ -178,26 +178,6 @@
 {% block scripts %}
 <style>
 .analytics-header { align-items: flex-start; }
-@media (min-width: 769px) {
-    .analytics-header .back-link {
-        display: inline-flex;
-        align-items: center;
-        width: fit-content;
-        margin-bottom: 10px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, .9);
-        background: rgba(255, 255, 255, .96);
-        color: var(--primary-dark, #1d4ed8);
-        font-weight: 700;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, .14);
-    }
-    .analytics-header .back-link:hover {
-        opacity: 1;
-        background: #fff;
-        color: var(--primary-dark, #1d4ed8);
-    }
-}
 .analytics-section { margin-bottom: 28px; }
 .analytics-chart-grid {
     display: grid;

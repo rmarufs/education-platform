@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}announcements.section{% endblock %}
+{% block title %}Объявления — Фурузон{% endblock %}
 {% block title_key %}announcements.section{% endblock %}
 
 {% block content %}
@@ -8,15 +8,20 @@
     {% include "_org_sidebar.html" %}
 
     <div class="dashboard-main">
-        <div class="dashboard-header">
-            <div>
-                <h1><span aria-hidden="true">📣</span> <span data-i18n="announcements.section">announcements.section</span></h1>
-                <p data-i18n="announcements.subtitle">announcements.subtitle</p>
+        <div class="dashboard-header teacher-dashboard-header">
+            <div class="teacher-dashboard-intro">
+                <h1>
+                    <span aria-hidden="true">📣</span>
+                    <span data-i18n="announcements.section">Объявления</span>
+                </h1>
+                <p data-i18n="announcements.subtitle">Создавайте уведомления для преподавателей и учеников центра.</p>
             </div>
-            <button type="button" class="btn btn-primary" onclick="openAnnouncementCreateModal()">
-                <span aria-hidden="true">+</span>
-                <span data-i18n="announcements.create">announcements.create</span>
-            </button>
+            <div class="teacher-dashboard-actions pending-actions">
+                <button type="button" class="btn btn-primary" onclick="openAnnouncementCreateModal()">
+                    <span aria-hidden="true">+</span>
+                    <span data-i18n="announcements.create">Создать объявление</span>
+                </button>
+            </div>
         </div>
 
         {% if request.query_params.get('success') %}

@@ -8,18 +8,19 @@
     {% include "_org_sidebar.html" %}
 
     <div class="dashboard-main">
-        <!-- Заголовок -->
-        <div class="dashboard-header">
-            <div>
+        <div class="dashboard-header teacher-dashboard-header">
+            <div class="teacher-dashboard-intro">
                 <h1>
                     <span data-i18n="org.welcome">Добро пожаловать,</span>
                     {{ org.name if org else user.name }}!
                 </h1>
                 <p data-i18n="org.subtitle">Управляйте преподавателями и отслеживайте статистику учебного центра</p>
             </div>
-            <a href="/organization/{{ org.id }}" class="btn btn-outline" style="white-space: nowrap;">
-                👁 <span data-i18n="org.public_profile">Публичный профиль</span>
-            </a>
+            <div class="pending-actions teacher-dashboard-actions">
+                <a href="/organization/{{ org.id }}" class="btn btn-primary" style="white-space: nowrap;">
+                    👁 <span data-i18n="org.public_profile">Публичный профиль</span>
+                </a>
+            </div>
         </div>
 
         <!-- Уведомление о входящих заявках -->
