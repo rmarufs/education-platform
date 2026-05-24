@@ -6,6 +6,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
@@ -27,6 +28,7 @@ from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import admin
 from app.routers import organization
 from app.routers import groups
+from app.utils.csrf import CSRFMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,6 @@ app = FastAPI(
 # ── Rate Limiting (SlowAPI) ───────────────────────────────────────────────────
 from slowapi.errors import RateLimitExceeded
 from app.utils.rate_limit import limiter
-from fastapi.responses import JSONResponse
 
 app.state.limiter = limiter
 
@@ -73,8 +74,10 @@ async def add_security_headers(request: Request, call_next):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
+
 # Middleware для сессий на основе куков (укрепленные настройки безопасности)
 # https_only=True обязателен на проде (HTTPS), на локалке отключаем
+app.add_middleware(CSRFMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,

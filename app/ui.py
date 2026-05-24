@@ -6,7 +6,9 @@
 import base64
 from fastapi.templating import Jinja2Templates
 import markupsafe
+from fastapi import Request
 from app.utils.security import sanitize_html
+from app.utils.csrf import get_csrf_token
 
 templates = Jinja2Templates(directory="templates")
 
@@ -28,3 +30,4 @@ def _obfuscate_yt(s: str) -> str:
 
 
 templates.env.filters["b64encode"] = _obfuscate_yt
+templates.env.globals["csrf_token"] = lambda request: get_csrf_token(request) if isinstance(request, Request) else ""

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" data-i18n="base.description" content="Фурузон — платформаи муосири таълимӣ барои донишҷӯён ва омӯзгорон" />
+    <meta name="csrf-token" content="{{ csrf_token(request) }}" />
     <title data-i18n-title="{% block title_key %}{% endblock %}">{% block title %}Фурузон{% endblock %}</title>
     <link rel="icon" href="/static/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png" />
@@ -162,7 +163,9 @@
         </div>
     </div>
 
-    <form id="logout-form" method="post" action="/logout" hidden></form>
+    <form id="logout-form" method="post" action="/logout" hidden>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}" />
+    </form>
 
     <main class="main-content">
         {% block content %}{% endblock %}
@@ -193,6 +196,7 @@
     <button id="scroll-top-btn" class="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Наверх" type="button">↑</button>
 
     <script src="/static/js/i18n.js?v=15"></script>
+    <script src="/static/js/csrf.js?v=1"></script>
     <script src="/static/js/main.js?v=3"></script>
     <script src="/static/js/richtext.js?v=1"></script>
     <script src="/static/js/lesson_media.js?v=1"></script>
