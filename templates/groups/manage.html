@@ -7,7 +7,7 @@
     {% set active_page = "groups" %}
     {% include "_org_sidebar.html" %}
 
-    <div class="dashboard-main">
+    <div class="dashboard-main group-manage-main">
         <!-- Хлебные крошки -->
         <nav class="breadcrumb" style="margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
             <a href="/groups/" style="color: var(--primary, #6366f1); text-decoration: none;" data-i18n="group.back">← К группам</a>
@@ -703,8 +703,29 @@
 
 {% block scripts %}
 <style>
-.manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-@media (max-width: 768px) { .manage-grid { grid-template-columns: 1fr; } }
+.group-manage-main {
+    width: 100%;
+    max-width: min(1480px, 100%);
+    min-width: 0;
+}
+.group-manage-main .manage-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.35fr);
+    gap: 20px;
+    align-items: start;
+}
+.group-manage-main .manage-col,
+.group-manage-main .manage-section,
+.group-manage-main .module-block { min-width: 0; }
+@media (max-width: 1100px) {
+    .group-manage-main .manage-grid { grid-template-columns: 1fr; }
+    .group-manage-main .lesson-manage-main { grid-template-columns: auto minmax(0, 1fr); }
+    .group-manage-main .lesson-meta,
+    .group-manage-main .lesson-actions {
+        grid-column: 2;
+        flex-wrap: wrap;
+    }
+}
 .manage-col { display: flex; flex-direction: column; gap: 20px; }
 .manage-section {
     background: var(--bg-card, #fff); border: 1px solid rgba(0,0,0,0.07);
@@ -723,6 +744,9 @@
     .manage-header-actions .btn, .group-content-actions .btn { flex: 1 1 160px; }
     .group-students-heading { align-items: stretch; flex-direction: column; }
     .group-students-heading .btn { width: 100%; justify-content: center; }
+    .group-manage-main .lesson-manage-main { grid-template-columns: 1fr; }
+    .group-manage-main .lesson-meta,
+    .group-manage-main .lesson-actions { grid-column: auto; }
     .module-header, .lesson-manage-main { align-items: flex-start; }
     .lesson-inline-quiz, .lesson-materials { padding-left: 0; }
     .google-forms-header, .google-forms-actions { flex-wrap: wrap; }
