@@ -422,7 +422,7 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
             progress.completed = True
             progress.completed_at = datetime.utcnow()
             db.commit()
-    return RedirectResponse(f"/lessons/{lesson_id}", status_code=302)
+    return RedirectResponse(next_after_lesson(db, user.id, lesson_id), status_code=303)
 
 
 @router.get("/{lesson_id:int}/continue")
