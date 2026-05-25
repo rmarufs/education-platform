@@ -152,7 +152,7 @@
             </button>
           {% else %}
             <button id="join-student-btn" class="btn btn-primary btn-sm" onclick="joinOrganization({{ org.id }})">
-              <span data-i18n="org.join_btn">🎓 Вступить в учебный центр</span>
+              <span data-i18n="org.join_btn_short">Вступить</span>
             </button>
             <a href="/courses/catalog" class="btn btn-outline btn-sm" data-i18n="teacher_profile.browse_courses">Смотреть курсы</a>
           {% endif %}
@@ -323,8 +323,18 @@ async function submitJoin(orgId) {
 
 async function joinOrganization(orgId) {
     const btn = document.getElementById('join-student-btn');
+    const setJoinButtonText = (key, fallback) => {
+        let label = btn.querySelector('[data-i18n]');
+        if (!label) {
+            label = document.createElement('span');
+            btn.textContent = '';
+            btn.appendChild(label);
+        }
+        label.setAttribute('data-i18n', key);
+        label.textContent = t(key) || fallback;
+    };
     btn.disabled = true;
-    btn.textContent = t('action.sending') || 'Отправка...';
+    setJoinButtonText('action.sending', 'Отправка...');
 
     try {
         const res = await fetch(`/organization/${orgId}/student/join`, {
@@ -349,30 +359,32 @@ async function joinOrganization(orgId) {
                 });
                 const data2 = await res2.json();
                 if (res2.ok && data2.success) {
-                    btn.textContent = data2.auto_accepted
-                        ? t('student.is_member')
-                        : t('org.status_pending');
+                    setJoinButtonText(
+                        data2.auto_accepted ? 'student.is_member' : 'org.status_pending',
+                        data2.auto_accepted ? 'Вы приняты' : 'Ожидает рассмотрения'
+                    );
                     showToast(data2.auto_accepted ? t('org.join_success') : t('org.join_sent'), 'success');
                     return;
                 }
                 showToast(data2.detail || t('common.error_conn'), 'error');
             }
             btn.disabled = false;
-            btn.textContent = t('org.join_btn') || 'Вступить';
+            setJoinButtonText('org.join_btn_short', 'Вступить');
         } else if (res.ok && data.success) {
-            btn.textContent = data.auto_accepted
-                ? t('student.is_member')
-                : t('org.status_pending');
+            setJoinButtonText(
+                data.auto_accepted ? 'student.is_member' : 'org.status_pending',
+                data.auto_accepted ? 'Вы приняты' : 'Ожидает рассмотрения'
+            );
             showToast(data.auto_accepted ? t('org.join_success') : t('org.join_sent'), 'success');
         } else {
             btn.disabled = false;
-            btn.textContent = t('org.join_btn') || 'Вступить';
+            setJoinButtonText('org.join_btn_short', 'Вступить');
             showToast(data.detail || t('common.error_conn'), 'error');
         }
     } catch (err) {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = t('org.join_btn') || 'Вступить';
+        setJoinButtonText('org.join_btn_short', 'Вступить');
         showToast(t('common.error_conn') || 'Нет связи с сервером.', 'error');
     }
 }
