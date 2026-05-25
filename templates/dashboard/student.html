@@ -322,21 +322,30 @@
 .student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
 .student-groups-mobile { display: none; }
+.user-dashboard--student .course-card-header {
+    aspect-ratio: auto;
+    height: auto;
+    min-height: 0;
+}
+.user-dashboard--student .course-card-header .course-cover {
+    width: 100%;
+    height: auto;
+}
+.user-dashboard--student .course-card-header .course-cover-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    object-position: center;
+}
+.user-dashboard--student .course-card-header .course-cover-placeholder {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+}
 @media (min-width: 769px) {
     .user-dashboard--student .student-org-section {
         display: none !important;
-    }
-    .user-dashboard--student .course-card-header {
-        aspect-ratio: 1 / 1;
-        height: auto;
-    }
-    .user-dashboard--student .course-card-header .course-cover,
-    .user-dashboard--student .course-card-header .course-cover-image,
-    .user-dashboard--student .course-card-header .course-cover-placeholder {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
     }
     .user-dashboard--student .student-groups-desktop {
         display: grid;
