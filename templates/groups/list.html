@@ -64,7 +64,8 @@
                         ✓ <span data-i18n="homework.review_homeworks">Проверить домашки</span>
                     </a>
                     <form action="/groups/{{ group.id }}/delete" method="POST" style="margin:0;"
-                          onsubmit="return confirm(t('group.confirm_delete_group', {name: '{{ group.name|escape }}'}))">
+                          data-group-name="{{ group.name | e }}"
+                          onsubmit="confirmAndSubmit(event, 'group.confirm_delete_group', '', {name: this.dataset.groupName})">
                         <button type="submit" class="btn btn-danger btn-sm">🗑 <span data-i18n="group.delete">Удалить группу</span></button>
                     </form>
                 </div>

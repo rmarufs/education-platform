@@ -238,9 +238,9 @@ async function submitResults() {
   }
 }
 
-function confirmQuit(e) {
+async function confirmQuit(e) {
   e.preventDefault();
-  if (answers.length === 0 || confirm(t('vocabulary.quit_confirm'))) {
+  if (answers.length === 0 || await showConfirmModal(t('vocabulary.quit_confirm'))) {
     window.location.href = VOCAB_BACK_URL;
   }
   return false;

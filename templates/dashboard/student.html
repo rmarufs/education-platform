@@ -90,7 +90,7 @@
                 </div>
                 <div class="org-card__actions">
                     <a href="/organization/{{ student_org_link.organization.id }}" class="btn btn-outline btn-sm org-card__btn" data-i18n="org.open_btn">👁 Профиль</a>
-                    <form action="/organization/student/leave" method="POST" style="margin: 0;" onsubmit="return confirm(t('confirm.leave_center') || 'Вы уверены, что хотите покинуть этот учебный центр?');">
+                    <form action="/organization/student/leave" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'confirm.leave_center')">
                         <button type="submit" class="btn btn-outline btn-sm org-card__btn org-card__btn--danger" data-i18n="student.leave_center">Покинуть центр</button>
                     </form>
                 </div>

@@ -39,14 +39,19 @@ function showConfirmModal(message, hint = '', confirmText, cancelText, isDanger 
     _confirmResolve = resolve;
     const modal = document.getElementById('confirm-modal');
     if (!modal) { resolve(false); return; }
+    const normalizedMessage = String(message || '');
+    const normalizedHint = String(hint || '');
+    const messageParts = !normalizedHint ? normalizedMessage.split(/\n+/) : [normalizedMessage];
+    const modalTitle = messageParts.shift().trim();
+    const modalHint = normalizedHint || messageParts.join(' ').trim();
     const resolvedConfirmText = confirmText || (window.t ? t('confirm.confirm') : 'Подтвердить');
     const resolvedCancelText = cancelText || (window.t ? t('action.cancel') : 'Отмена');
     const titleEl = document.getElementById('confirm-modal-title');
-    if (titleEl) titleEl.textContent = message;
+    if (titleEl) titleEl.textContent = modalTitle;
     const hintEl = document.getElementById('confirm-modal-hint');
     if (hintEl) {
-      hintEl.textContent = hint;
-      hintEl.style.display = hint ? '' : 'none';
+      hintEl.textContent = modalHint;
+      hintEl.hidden = !modalHint;
     }
     const confirmBtn = document.getElementById('confirm-modal-ok');
     if (confirmBtn) {

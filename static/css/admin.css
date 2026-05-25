@@ -483,6 +483,93 @@ html[data-theme="light"] .admin-back-link:hover {
   flex-wrap: wrap;
 }
 
+/* ── Confirm modal ─────────────────────────────────────────── */
+body.admin-modal-open {
+  overflow: hidden;
+}
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(4px);
+}
+
+.admin-modal-overlay.open {
+  display: flex;
+}
+
+.admin-confirm-modal {
+  width: min(100%, 440px);
+  overflow: hidden;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-card);
+  color: var(--admin-text);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.admin-confirm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 14px;
+}
+
+.admin-confirm-modal-header h2 {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-confirm-modal-close {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--admin-radius-sm);
+  background: transparent;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 6px;
+}
+
+.admin-confirm-modal-close:hover,
+.admin-confirm-modal-close:focus-visible {
+  background: var(--admin-soft);
+  color: var(--admin-text);
+}
+
+.admin-confirm-modal-text {
+  margin: 0 24px 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-soft);
+  color: var(--admin-text-muted);
+  font-size: .9rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-confirm-modal-text[hidden] {
+  display: none;
+}
+
+.admin-confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px 22px;
+}
+
 /* ── Badges / Status ───────────────────────────────────────── */
 .admin-badge {
   display: inline-flex;
@@ -688,6 +775,26 @@ html[data-theme="light"] .admin-back-link:hover {
   }
   .admin-actions {
     flex-direction: column;
+  }
+  .admin-modal-overlay {
+    align-items: flex-end;
+    padding: 10px;
+  }
+  .admin-confirm-modal {
+    border-radius: var(--admin-radius) var(--admin-radius) 0 0;
+  }
+  .admin-confirm-modal-header {
+    padding: 18px 18px 12px;
+  }
+  .admin-confirm-modal-text {
+    margin: 0 18px 4px;
+  }
+  .admin-confirm-modal-actions {
+    flex-direction: column;
+    padding: 12px 18px 18px;
+  }
+  .admin-confirm-modal-actions .admin-btn {
+    width: 100%;
   }
   .admin-quick-links,
   .admin-stats {

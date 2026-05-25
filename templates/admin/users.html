@@ -131,25 +131,3 @@
 </div>
 {% endif %}
 {% endblock %}
-
-{% block scripts %}
-<script>
-function adminInterpolate(text, params) {
-  let result = text;
-  Object.entries(params || {}).forEach(([key, value]) => {
-    result = result.replaceAll(`{${key}}`, value);
-  });
-  return result;
-}
-
-async function confirmAndSubmit(event, titleKey, hintKey, params = {}) {
-  event.preventDefault();
-  const title = window.t ? adminInterpolate(t(titleKey), params) : titleKey;
-  const hint = window.t ? adminInterpolate(t(hintKey), params) : hintKey;
-  const confirmed = window.confirm(`${title}\n\n${hint}`);
-  if (confirmed) {
-    event.currentTarget.submit();
-  }
-}
-</script>
-{% endblock %}

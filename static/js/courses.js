@@ -324,7 +324,7 @@ function _setupModalInputHandlers(modalId) {
  * @param {number} courseId
  */
 async function deleteCourse(courseId) {
-  if (!confirm(t('manage.confirm_delete_course'))) return;
+  if (!(await showConfirmModal(t('manage.confirm_delete_course')))) return;
 
   try {
     const response = await fetch(`/courses/${courseId}/delete`, {

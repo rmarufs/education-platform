@@ -82,14 +82,18 @@
                         {% endif %}
                         
                         {% if org.status != 'rejected' %}
-                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;" onsubmit="return confirm(t('admin.org.confirm_reject', {name: '{{ org.name|escape }}'}) || 'Отклонить заявку учебного центра «{{ org.name }}»?');">
+                        <form action="/admin/organizations/{{ org.id }}/reject" method="POST" style="display:inline;"
+                              data-org-name="{{ org.name | e }}"
+                              onsubmit="confirmAndSubmit(event, 'admin.org.confirm_reject', '', {name: this.dataset.orgName})">
                             <button type="submit" class="admin-btn admin-btn-outline admin-btn-sm" title="Отклонить">
                                 ❌
                             </button>
                         </form>
                         {% endif %}
 
-                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;" onsubmit="return confirm(t('admin.org.confirm_delete', {name: '{{ org.name|escape }}'}) || 'Удалить учебный центр «{{ org.name }}»?\nПолное удаление нельзя отменить!');">
+                        <form action="/admin/organizations/{{ org.id }}/delete" method="POST" style="display:inline;"
+                              data-org-name="{{ org.name | e }}"
+                              onsubmit="confirmAndSubmit(event, 'admin.org.confirm_delete', '', {name: this.dataset.orgName})">
                             <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Удалить">
                                 🗑
                             </button>
