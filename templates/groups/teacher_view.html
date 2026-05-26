@@ -511,7 +511,7 @@
       <div class="modal-scroll-body">
         <div class="form-group">
           <label for="hw-title" data-i18n="homework.short_title">Короткое название</label>
-          <input type="text" id="hw-title" name="title" class="form-input" data-i18n="homework.short_title_ph" data-i18n-prop="placeholder" placeholder="Например: Практика к уроку" />
+          <input type="text" id="hw-title" name="title" class="form-input" required data-i18n="homework.short_title_ph" data-i18n-prop="placeholder" placeholder="Например: Практика к уроку" />
         </div>
         <div class="form-group">
           <label for="hw-description" data-i18n="homework.description">Описание задания</label>
@@ -636,7 +636,8 @@ function openHomeworkModal(dataset) {
   }
   document.getElementById('hw-title').value = dataset.homeworkTitle || '';
   document.getElementById('hw-description').value = dataset.homeworkDescription || '';
-  document.getElementById('hw-material-url').value = dataset.homeworkMaterialUrl || '';
+  const materialUrl = dataset.homeworkMaterialUrl || '';
+  document.getElementById('hw-material-url').value = /^https?:\/\//i.test(materialUrl) ? materialUrl : '';
   document.getElementById('hw-material-file').value = '';
   deadlineInput.value = dataset.homeworkDeadline || '';
   deadlineEnabled.checked = Boolean(dataset.homeworkDeadline);

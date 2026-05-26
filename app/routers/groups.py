@@ -7,7 +7,7 @@ from urllib.parse import quote, urlparse
 from urllib.request import urlopen
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DatabaseError, IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 from typing import Optional, List
@@ -1470,6 +1470,15 @@ def lesson_delete(
         GroupLesson.group_id == group_id,
     ).first()
     if lesson:
+        homework_ids = [lesson.homework.id] if lesson.homework else []
+        if homework_ids:
+            try:
+                db.query(GroupHomeworkNotification).filter(
+                    GroupHomeworkNotification.homework_id.in_(homework_ids)
+                ).delete(synchronize_session=False)
+                db.commit()
+            except DatabaseError:
+                db.rollback()
         db.delete(lesson)
         db.commit()
 
@@ -1619,7 +1628,7 @@ async def group_homework_save(
     group_id: int,
     lesson_id: int,
     request: Request,
-    title: Optional[str] = Form(None),
+    title: str = Form(...),
     description: str = Form(...),
     material_url: Optional[str] = Form(None),
     deadline_enabled: Optional[str] = Form(None),
@@ -1631,6 +1640,9 @@ async def group_homework_save(
     lesson = _get_group_lesson(group.id, lesson_id, db)
 
     clean_description = description.strip()
+    clean_title = title.strip()
+    if not clean_title:
+        raise HTTPException(status_code=400, detail="Добавьте название домашнего задания")
     if not clean_description:
         raise HTTPException(status_code=400, detail="Добавьте описание домашнего задания")
 
@@ -1645,7 +1657,7 @@ async def group_homework_save(
         )
         db.add(homework)
 
-    homework.title = title.strip() if title and title.strip() else None
+    homework.title = clean_title
     homework.description = clean_description
     deadline_is_enabled = deadline_enabled == "1"
     if deadline_is_enabled and not (deadline or "").strip():
@@ -1666,21 +1678,23 @@ async def group_homework_save(
         homework.material_type = _homework_url_type(clean_url)
         homework.material_filename = clean_url.split("/")[-1] or clean_url
 
-    if is_new_homework:
-        db.flush()
-        student_ids = [
-            student_id for (student_id,) in db.query(GroupMember.student_id)
-            .filter(GroupMember.group_id == group.id)
-            .all()
-        ]
-        for student_id in student_ids:
-            db.add(GroupHomeworkNotification(
-                homework_id=homework.id,
-                student_id=student_id,
-                notification_type="new_homework",
-            ))
-
     db.commit()
+    if is_new_homework:
+        try:
+            student_ids = [
+                student_id for (student_id,) in db.query(GroupMember.student_id)
+                .filter(GroupMember.group_id == group.id)
+                .all()
+            ]
+            for student_id in student_ids:
+                db.add(GroupHomeworkNotification(
+                    homework_id=homework.id,
+                    student_id=student_id,
+                    notification_type="new_homework",
+                ))
+            db.commit()
+        except DatabaseError:
+            db.rollback()
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
 
 
