@@ -68,28 +68,41 @@
         </div>
         {% endif %}
 
-        {% if homework_reply_notifications %}
-        <section class="student-homework-notifications">
-            <div class="section-label" data-i18n="notification.homework_replies">Ответы преподавателей</div>
-            <div class="student-homework-notification-list">
-                {% for item in homework_reply_notifications %}
-                <a href="{{ item.open_url }}" class="student-homework-notification-card" data-i18n="notification.open_homework" data-i18n-prop="aria-label" aria-label="Открыть домашку">
-                    <div class="student-homework-notification-head">
-                        <div>
-                            <h2 data-i18n="notification.teacher_homework_reply_title">Преподаватель ответил на домашку</h2>
-                            <p class="student-homework-notification-meta">
-                                {% if item.teacher_name %}<span>{{ item.teacher_name }}</span>{% endif %}
-                                {% if item.teacher_name and item.group %}<span aria-hidden="true">·</span>{% endif %}
-                                <span>{{ item.group.name }}</span>
-                                <span aria-hidden="true">·</span>
-                                <span>{{ item.lesson.title }}</span>
-                            </p>
+        {% if student_notifications %}
+        <section class="student-notifications">
+            <div class="section-label" data-i18n="notification.homework_replies">Уведомления</div>
+            <div class="student-notification-list">
+                {% for item in student_notifications %}
+                <article class="student-notification-card student-notification-card--{{ item.kind }}" id="{{ item.id }}">
+                    <div class="student-notification-icon" aria-hidden="true">{{ item.icon }}</div>
+                    <div class="student-notification-content">
+                        <div class="student-notification-topline">
+                            <span class="student-notification-badge" data-i18n="{{ item.badge_key }}">{{ item.badge }}</span>
+                            {% if item.time_at %}
+                            <span class="student-notification-time" data-i18n="{{ item.time_key }}" data-i18n-params='{{ {"time": item.time_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>{{ item.time_at.strftime("%d.%m.%Y %H:%M") }}</span>
+                            {% endif %}
                         </div>
-                        <span class="student-homework-notification-time" data-i18n="notification.reply_time" data-i18n-params='{{ {"time": item.submission.reviewed_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>Ответ: {{ item.submission.reviewed_at.strftime("%d.%m.%Y %H:%M") }}</span>
+                        <h2 data-i18n="{{ item.title_key }}">{{ item.title }}</h2>
+                        <p class="student-notification-meta">
+                            {% if item.teacher_name %}<span>{{ item.teacher_name }}</span>{% endif %}
+                            {% if item.teacher_name and item.group %}<span aria-hidden="true">·</span>{% endif %}
+                            {% if item.group %}<span>{{ item.group.name }}</span>{% endif %}
+                            {% if item.lesson %}<span aria-hidden="true">·</span><span>{{ item.lesson.title }}</span>{% endif %}
+                        </p>
+                        {% if item.preview %}
+                        <p class="student-notification-preview">{{ item.preview }}</p>
+                        {% endif %}
+                        {% if item.deadline_at %}
+                        <p class="student-notification-deadline" data-i18n="notification.deadline" data-i18n-params='{{ {"date": item.deadline_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>Дедлайн: {{ item.deadline_at.strftime("%d.%m.%Y %H:%M") }}</p>
+                        {% endif %}
+                        <a href="{{ item.open_url }}" class="student-notification-action" data-i18n="{{ item.action_key }}">{{ item.action }}</a>
                     </div>
-                    <p class="student-homework-notification-preview">{{ item.preview }}</p>
-                    <span class="student-homework-notification-action" data-i18n="notification.open_homework">Открыть домашку</span>
-                </a>
+                    <form action="{{ item.dismiss_url }}" method="POST" class="student-notification-dismiss-form">
+                        <button type="submit" class="student-notification-dismiss" data-i18n="notification.close" data-i18n-prop="aria-label" aria-label="Закрыть">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </form>
+                </article>
                 {% endfor %}
             </div>
         </section>
@@ -349,77 +362,165 @@
 .student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
 .student-groups-mobile { display: none; }
-.student-homework-notifications {
+.student-notifications {
     margin-bottom: 28px;
 }
-.student-homework-notification-list {
+.student-notification-list {
     display: grid;
     gap: 12px;
 }
-.student-homework-notification-card {
+.student-notification-card {
+    position: relative;
     display: grid;
-    gap: 10px;
+    grid-template-columns: 42px minmax(0, 1fr) 40px;
+    gap: 12px;
+    align-items: start;
     padding: 16px;
-    border: 1px solid color-mix(in srgb, var(--primary, #6366f1) 18%, var(--border, rgba(0,0,0,0.08)));
+    border: 1px solid color-mix(in srgb, var(--primary, #6366f1) 20%, var(--border, rgba(0,0,0,0.08)));
     border-radius: 16px;
-    background: var(--bg-card, #fff);
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--primary, #6366f1) 7%, transparent), transparent 46%),
+        var(--bg-card, #fff);
     color: var(--text, #111827);
-    text-decoration: none;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     transition: border-color .18s, box-shadow .18s, transform .18s;
 }
-.student-homework-notification-card:hover,
-.student-homework-notification-card:focus-visible {
+.student-notification-card:hover,
+.student-notification-card:focus-within {
     border-color: color-mix(in srgb, var(--primary, #6366f1) 42%, var(--border, rgba(0,0,0,0.08)));
     box-shadow: 0 12px 30px rgba(99, 102, 241, 0.12);
     transform: translateY(-1px);
-    outline: none;
 }
-.student-homework-notification-head {
+.student-notification-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--primary, #6366f1) 12%, var(--bg-card, #fff));
+    color: var(--primary, #6366f1);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+.student-notification-content {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+}
+.student-notification-topline {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
 }
-.student-homework-notification-card h2 {
-    margin: 0 0 4px;
+.student-notification-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary, #6366f1) 11%, var(--surface-soft, #f8fafc));
+    color: var(--primary, #6366f1);
+    font-size: .75rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.student-notification-card h2 {
+    margin: 0;
     font-size: 1rem;
     line-height: 1.25;
 }
-.student-homework-notification-meta,
-.student-homework-notification-time,
-.student-homework-notification-preview {
+.student-notification-meta,
+.student-notification-time,
+.student-notification-preview,
+.student-notification-deadline {
     margin: 0;
     color: var(--text-muted);
 }
-.student-homework-notification-meta {
+.student-notification-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 7px;
     font-size: .82rem;
     line-height: 1.35;
 }
-.student-homework-notification-time {
+.student-notification-time {
     flex: 0 0 auto;
     font-size: .78rem;
     line-height: 1.35;
     text-align: right;
+    white-space: nowrap;
 }
-.student-homework-notification-preview {
+.student-notification-preview {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     font-size: .9rem;
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
-.student-homework-notification-action {
-    color: var(--primary);
-    font-size: .86rem;
+.student-notification-deadline {
+    font-size: .82rem;
     font-weight: 700;
 }
-html[data-theme="dark"] .student-homework-notification-card,
-body.dark .student-homework-notification-card {
+.student-notification-action {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--primary, #6366f1);
+    color: #fff;
+    text-decoration: none;
+    font-size: .86rem;
+    font-weight: 800;
+}
+.student-notification-action:visited {
+    color: #fff;
+}
+.student-notification-action:hover,
+.student-notification-action:focus-visible,
+.student-notification-action:active {
+    background: var(--primary-dark, #4f46e5);
+    color: #fff;
+    text-decoration: none;
+    outline: none;
+}
+.student-notification-dismiss-form {
+    margin: 0;
+}
+.student-notification-dismiss {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+.student-notification-dismiss:hover,
+.student-notification-dismiss:focus-visible {
+    background: color-mix(in srgb, var(--text-muted, #64748b) 10%, transparent);
+    color: var(--text, #111827);
+    outline: none;
+}
+html[data-theme="dark"] .student-notification-card,
+body.dark .student-notification-card {
     background: var(--bg-card);
     border-color: color-mix(in srgb, var(--primary, #6366f1) 28%, var(--border));
     box-shadow: 0 10px 28px rgba(0,0,0,.22);
+}
+html[data-theme="dark"] .student-notification-icon,
+body.dark .student-notification-icon {
+    background: color-mix(in srgb, var(--primary, #6366f1) 18%, var(--surface-soft, #172033));
 }
 .user-dashboard--student .course-card-header {
     aspect-ratio: auto;
@@ -550,16 +651,37 @@ body.dark .student-analytics-bar {
 }
 @media (max-width: 768px) {
     .student-org-section { display: none !important; }
-    .student-homework-notification-card {
+    .student-notification-card {
+        grid-template-columns: 38px minmax(0, 1fr) 40px;
+        gap: 10px;
         padding: 14px;
         border-radius: 14px;
     }
-    .student-homework-notification-head {
+    .student-notification-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+    }
+    .student-notification-topline {
         flex-direction: column;
+        align-items: flex-start;
         gap: 8px;
     }
-    .student-homework-notification-time {
+    .student-notification-time {
         text-align: left;
+        white-space: normal;
+    }
+    .student-notification-action {
+        width: 100%;
+        min-height: 40px;
+    }
+}
+@media (max-width: 360px) {
+    .student-notification-card {
+        grid-template-columns: minmax(0, 1fr) 40px;
+    }
+    .student-notification-icon {
+        display: none;
     }
 }
 </style>

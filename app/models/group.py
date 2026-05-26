@@ -182,6 +182,23 @@ class GroupHomeworkSubmission(Base):
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], back_populates="reviewed_group_homework_submissions")
 
 
+class GroupHomeworkNotification(Base):
+    __tablename__ = "group_homework_notifications"
+    __table_args__ = (
+        UniqueConstraint("homework_id", "student_id", "notification_type", name="uq_group_homework_notification_student"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    homework_id = Column(Integer, ForeignKey("group_homeworks.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    notification_type = Column(String(50), default="new_homework", nullable=False)
+    read_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    homework = relationship("GroupHomework")
+    student = relationship("User", foreign_keys=[student_id])
+
+
 class GroupPaymentEntry(Base):
     __tablename__ = "group_payment_entries"
     __table_args__ = (

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupPaymentEntry
+from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupHomeworkNotification, GroupPaymentEntry
 from app.ui import templates
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.utils.announcements import get_visible_announcements
@@ -1635,6 +1635,7 @@ async def group_homework_save(
         raise HTTPException(status_code=400, detail="Добавьте описание домашнего задания")
 
     homework = lesson.homework
+    is_new_homework = homework is None
     if not homework:
         homework = GroupHomework(
             group_id=group.id,
@@ -1664,6 +1665,20 @@ async def group_homework_save(
         homework.material_url = clean_url
         homework.material_type = _homework_url_type(clean_url)
         homework.material_filename = clean_url.split("/")[-1] or clean_url
+
+    if is_new_homework:
+        db.flush()
+        student_ids = [
+            student_id for (student_id,) in db.query(GroupMember.student_id)
+            .filter(GroupMember.group_id == group.id)
+            .all()
+        ]
+        for student_id in student_ids:
+            db.add(GroupHomeworkNotification(
+                homework_id=homework.id,
+                student_id=student_id,
+                notification_type="new_homework",
+            ))
 
     db.commit()
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
