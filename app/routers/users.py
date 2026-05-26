@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+import logging
 import re
 from datetime import datetime
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session, joinedload, selectinload
 from collections import defaultdict
 
@@ -16,6 +18,8 @@ from app.utils.group_analytics import build_student_analytics
 
 router = APIRouter()
 from app.ui import templates
+
+logger = logging.getLogger(__name__)
 
 
 def require_login(request: Request, db: Session):
@@ -70,6 +74,115 @@ def _homework_comment_preview(comment: str | None, max_chars: int = 220, max_sen
 def _homework_target_url(group_id: int, lesson_id: int, anchor: str | None = None) -> str:
     url = f"/groups/{group_id}/lessons/{lesson_id}/homework"
     return f"{url}#{anchor}" if anchor else url
+
+
+def _load_student_notifications(db: Session, student_id: int) -> list[dict]:
+    try:
+        homework_reply_submissions = (
+            db.query(GroupHomeworkSubmission)
+            .options(
+                joinedload(GroupHomeworkSubmission.reviewed_by),
+                joinedload(GroupHomeworkSubmission.homework)
+                .joinedload(GroupHomework.lesson)
+                .joinedload(GroupLesson.group)
+                .joinedload(Group.teacher),
+            )
+            .filter(
+                GroupHomeworkSubmission.student_id == student_id,
+                GroupHomeworkSubmission.teacher_comment.isnot(None),
+                GroupHomeworkSubmission.teacher_comment != "",
+                GroupHomeworkSubmission.reviewed_at.isnot(None),
+                GroupHomeworkSubmission.homework_reply_read_at.is_(None),
+            )
+            .order_by(GroupHomeworkSubmission.reviewed_at.desc(), GroupHomeworkSubmission.id.desc())
+            .limit(5)
+            .all()
+        )
+        new_homework_notifications = (
+            db.query(GroupHomeworkNotification)
+            .options(
+                joinedload(GroupHomeworkNotification.homework)
+                .joinedload(GroupHomework.created_by),
+                joinedload(GroupHomeworkNotification.homework)
+                .joinedload(GroupHomework.lesson)
+                .joinedload(GroupLesson.group)
+                .joinedload(Group.teacher),
+            )
+            .filter(
+                GroupHomeworkNotification.student_id == student_id,
+                GroupHomeworkNotification.notification_type == "new_homework",
+                GroupHomeworkNotification.read_at.is_(None),
+            )
+            .order_by(GroupHomeworkNotification.created_at.desc(), GroupHomeworkNotification.id.desc())
+            .limit(5)
+            .all()
+        )
+    except DatabaseError as exc:
+        db.rollback()
+        logger.warning(
+            "Student homework notifications were skipped. "
+            "If this happens after deploy, run alembic upgrade head. Error: %s",
+            exc,
+        )
+        return []
+
+    student_notifications = []
+    for submission in homework_reply_submissions:
+        homework = submission.homework
+        lesson = homework.lesson if homework else None
+        group = lesson.group if lesson else None
+        if not homework or not lesson or not group:
+            continue
+        teacher = submission.reviewed_by or group.teacher
+        student_notifications.append({
+            "id": f"homework-reply-{submission.id}",
+            "kind": "homework_reply",
+            "icon": "↩",
+            "badge_key": "notification.type_teacher_reply",
+            "badge": "Ответ преподавателя",
+            "title_key": "notification.teacher_homework_reply_title",
+            "title": "Преподаватель ответил на домашку",
+            "preview": _homework_comment_preview(submission.teacher_comment),
+            "teacher_name": teacher.name if teacher else "",
+            "group": group,
+            "lesson": lesson,
+            "time_key": "notification.reply_time",
+            "time_at": submission.reviewed_at,
+            "deadline_at": homework.deadline,
+            "open_url": f"/dashboard/student/homework-replies/{submission.id}/open",
+            "dismiss_url": f"/dashboard/student/homework-replies/{submission.id}/dismiss",
+            "action_key": "notification.open_homework",
+            "action": "Открыть домашку",
+        })
+    for notification in new_homework_notifications:
+        homework = notification.homework
+        lesson = homework.lesson if homework else None
+        group = lesson.group if lesson else None
+        if not homework or not lesson or not group:
+            continue
+        teacher = homework.created_by or group.teacher
+        student_notifications.append({
+            "id": f"new-homework-{notification.id}",
+            "kind": "new_homework",
+            "icon": "✦",
+            "badge_key": "notification.type_homework",
+            "badge": "Домашка",
+            "title_key": "notification.new_homework_title",
+            "title": "Добавлена новая домашка",
+            "preview": _homework_comment_preview(homework.description),
+            "teacher_name": teacher.name if teacher else "",
+            "group": group,
+            "lesson": lesson,
+            "time_key": "notification.created_time",
+            "time_at": notification.created_at or homework.created_at,
+            "deadline_at": homework.deadline,
+            "open_url": f"/dashboard/student/homework-notifications/{notification.id}/open",
+            "dismiss_url": f"/dashboard/student/homework-notifications/{notification.id}/dismiss",
+            "action_key": "notification.open_homework",
+            "action": "Открыть домашку",
+        })
+    student_notifications.sort(key=lambda item: item["time_at"] or datetime.min, reverse=True)
+    return student_notifications[:8]
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -203,103 +316,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
     )
     student_analytics = build_student_analytics(db, user.id)
     visible_announcements = get_visible_announcements(db, user, limit=3)
-    homework_reply_submissions = (
-        db.query(GroupHomeworkSubmission)
-        .options(
-            joinedload(GroupHomeworkSubmission.reviewed_by),
-            joinedload(GroupHomeworkSubmission.homework)
-            .joinedload(GroupHomework.lesson)
-            .joinedload(GroupLesson.group)
-            .joinedload(Group.teacher),
-        )
-        .filter(
-            GroupHomeworkSubmission.student_id == user.id,
-            GroupHomeworkSubmission.teacher_comment.isnot(None),
-            GroupHomeworkSubmission.teacher_comment != "",
-            GroupHomeworkSubmission.reviewed_at.isnot(None),
-            GroupHomeworkSubmission.homework_reply_read_at.is_(None),
-        )
-        .order_by(GroupHomeworkSubmission.reviewed_at.desc(), GroupHomeworkSubmission.id.desc())
-        .limit(5)
-        .all()
-    )
-    new_homework_notifications = (
-        db.query(GroupHomeworkNotification)
-        .options(
-            joinedload(GroupHomeworkNotification.homework)
-            .joinedload(GroupHomework.created_by),
-            joinedload(GroupHomeworkNotification.homework)
-            .joinedload(GroupHomework.lesson)
-            .joinedload(GroupLesson.group)
-            .joinedload(Group.teacher),
-        )
-        .filter(
-            GroupHomeworkNotification.student_id == user.id,
-            GroupHomeworkNotification.notification_type == "new_homework",
-            GroupHomeworkNotification.read_at.is_(None),
-        )
-        .order_by(GroupHomeworkNotification.created_at.desc(), GroupHomeworkNotification.id.desc())
-        .limit(5)
-        .all()
-    )
-
-    student_notifications = []
-    for submission in homework_reply_submissions:
-        homework = submission.homework
-        lesson = homework.lesson if homework else None
-        group = lesson.group if lesson else None
-        if not homework or not lesson or not group:
-            continue
-        teacher = submission.reviewed_by or group.teacher
-        student_notifications.append({
-            "id": f"homework-reply-{submission.id}",
-            "kind": "homework_reply",
-            "icon": "↩",
-            "badge_key": "notification.type_teacher_reply",
-            "badge": "Ответ преподавателя",
-            "title_key": "notification.teacher_homework_reply_title",
-            "title": "Преподаватель ответил на домашку",
-            "preview": _homework_comment_preview(submission.teacher_comment),
-            "teacher_name": teacher.name if teacher else "",
-            "group": group,
-            "lesson": lesson,
-            "time_key": "notification.reply_time",
-            "time_at": submission.reviewed_at,
-            "deadline_at": homework.deadline,
-            "open_url": f"/dashboard/student/homework-replies/{submission.id}/open",
-            "dismiss_url": f"/dashboard/student/homework-replies/{submission.id}/dismiss",
-            "action_key": "notification.open_homework",
-            "action": "Открыть домашку",
-        })
-    for notification in new_homework_notifications:
-        homework = notification.homework
-        lesson = homework.lesson if homework else None
-        group = lesson.group if lesson else None
-        if not homework or not lesson or not group:
-            continue
-        teacher = homework.created_by or group.teacher
-        student_notifications.append({
-            "id": f"new-homework-{notification.id}",
-            "kind": "new_homework",
-            "icon": "✦",
-            "badge_key": "notification.type_homework",
-            "badge": "Домашка",
-            "title_key": "notification.new_homework_title",
-            "title": "Добавлена новая домашка",
-            "preview": _homework_comment_preview(homework.description),
-            "teacher_name": teacher.name if teacher else "",
-            "group": group,
-            "lesson": lesson,
-            "time_key": "notification.created_time",
-            "time_at": notification.created_at or homework.created_at,
-            "deadline_at": homework.deadline,
-            "open_url": f"/dashboard/student/homework-notifications/{notification.id}/open",
-            "dismiss_url": f"/dashboard/student/homework-notifications/{notification.id}/dismiss",
-            "action_key": "notification.open_homework",
-            "action": "Открыть домашку",
-        })
-    student_notifications.sort(key=lambda item: item["time_at"] or datetime.min, reverse=True)
-    student_notifications = student_notifications[:8]
+    student_notifications = _load_student_notifications(db, user.id)
 
     return templates.TemplateResponse(
         "dashboard/student.html",
