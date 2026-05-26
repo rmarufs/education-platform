@@ -124,7 +124,7 @@
       <p>{{ submission.comment }}</p>
       {% endif %}
       {% if submission.reviewed_at %}
-      <div class="homework-review-note">
+      <div class="homework-review-note" id="homework-review">
         <span class="badge badge-success" data-i18n="homework.checked">Проверено</span>
         {% if submission.teacher_comment %}
         <div>

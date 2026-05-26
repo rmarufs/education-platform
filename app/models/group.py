@@ -173,6 +173,7 @@ class GroupHomeworkSubmission(Base):
     teacher_comment = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     reviewed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    homework_reply_read_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

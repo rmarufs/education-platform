@@ -1921,7 +1921,13 @@ def group_homework_review_save(
     if not submission:
         raise HTTPException(status_code=404, detail="Ответ не найден")
 
-    submission.teacher_comment = teacher_comment.strip() if teacher_comment and teacher_comment.strip() else None
+    previous_comment = (submission.teacher_comment or "").strip()
+    clean_teacher_comment = teacher_comment.strip() if teacher_comment and teacher_comment.strip() else None
+    submission.teacher_comment = clean_teacher_comment
+    if clean_teacher_comment and clean_teacher_comment != previous_comment:
+        submission.homework_reply_read_at = None
+    elif not clean_teacher_comment:
+        submission.homework_reply_read_at = None
     submission.reviewed_at = datetime.utcnow()
     submission.reviewed_by_id = user.id
     db.commit()

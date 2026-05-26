@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+import re
+from datetime import datetime
 from sqlalchemy.orm import Session, joinedload, selectinload
 from collections import defaultdict
 
@@ -7,7 +9,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
-from app.models.group import Group, GroupMember
+from app.models.group import Group, GroupMember, GroupHomework, GroupHomeworkSubmission, GroupLesson
 from app.course_flow import first_course_lesson_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
@@ -47,6 +49,22 @@ def _course_continue_url(course: Course, lesson_id: int | None) -> str | None:
             return f"/courses/{course.id}/completed"
 
     return f"/courses/{course.id}"
+
+
+def _homework_comment_preview(comment: str | None, max_chars: int = 220, max_sentences: int = 4) -> str:
+    text = " ".join((comment or "").split())
+    if not text:
+        return ""
+
+    sentences = [part.strip() for part in re.findall(r"[^.!?…]+[.!?…]?", text) if part.strip()]
+    preview = " ".join(sentences[:max_sentences]) if sentences else text
+    if len(preview) > max_chars:
+        preview = preview[:max_chars].rstrip()
+
+    if len(preview) < len(text):
+        preview = preview.rstrip(" .,!?:;…") + "…"
+
+    return preview
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -180,6 +198,45 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
     )
     student_analytics = build_student_analytics(db, user.id)
     visible_announcements = get_visible_announcements(db, user, limit=3)
+    homework_reply_submissions = (
+        db.query(GroupHomeworkSubmission)
+        .options(
+            joinedload(GroupHomeworkSubmission.reviewed_by),
+            joinedload(GroupHomeworkSubmission.homework)
+            .joinedload(GroupHomework.lesson)
+            .joinedload(GroupLesson.group)
+            .joinedload(Group.teacher),
+        )
+        .filter(
+            GroupHomeworkSubmission.student_id == user.id,
+            GroupHomeworkSubmission.teacher_comment.isnot(None),
+            GroupHomeworkSubmission.teacher_comment != "",
+            GroupHomeworkSubmission.reviewed_at.isnot(None),
+            GroupHomeworkSubmission.homework_reply_read_at.is_(None),
+        )
+        .order_by(GroupHomeworkSubmission.reviewed_at.desc(), GroupHomeworkSubmission.id.desc())
+        .limit(5)
+        .all()
+    )
+
+
+    homework_reply_notifications = []
+    for submission in homework_reply_submissions:
+        homework = submission.homework
+        lesson = homework.lesson if homework else None
+        group = lesson.group if lesson else None
+        if not homework or not lesson or not group:
+            continue
+        teacher = submission.reviewed_by or group.teacher
+        homework_reply_notifications.append({
+            "submission": submission,
+            "preview": _homework_comment_preview(submission.teacher_comment),
+            "teacher_name": teacher.name if teacher else "",
+            "group": group,
+            "lesson": lesson,
+            "url": f"/groups/{group.id}/lessons/{lesson.id}/homework#homework-review",
+            "open_url": f"/dashboard/student/homework-replies/{submission.id}/open",
+        })
 
     return templates.TemplateResponse(
         "dashboard/student.html",
@@ -192,7 +249,48 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "student_groups": student_groups,
             "student_analytics": student_analytics,
             "visible_announcements": visible_announcements,
+            "homework_reply_notifications": homework_reply_notifications,
         },
+    )
+
+
+@router.get("/dashboard/student/homework-replies/{submission_id}/open")
+def open_homework_reply_notification(submission_id: int, request: Request, db: Session = Depends(get_db)):
+    user, redirect = require_login(request, db)
+    if redirect:
+        return redirect
+    if user.role.value != "student":
+        return RedirectResponse("/dashboard", status_code=302)
+
+    submission = (
+        db.query(GroupHomeworkSubmission)
+        .options(
+            joinedload(GroupHomeworkSubmission.homework)
+            .joinedload(GroupHomework.lesson)
+            .joinedload(GroupLesson.group)
+        )
+        .filter(
+            GroupHomeworkSubmission.id == submission_id,
+            GroupHomeworkSubmission.student_id == user.id,
+        )
+        .first()
+    )
+    if not submission:
+        return RedirectResponse("/dashboard/student", status_code=302)
+
+    homework = submission.homework
+    lesson = homework.lesson if homework else None
+    group = lesson.group if lesson else None
+    if not homework or not lesson or not group:
+        return RedirectResponse("/dashboard/student", status_code=302)
+
+    if submission.homework_reply_read_at is None:
+        submission.homework_reply_read_at = datetime.utcnow()
+        db.commit()
+
+    return RedirectResponse(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework#homework-review",
+        status_code=302,
     )
 
 
