@@ -26,6 +26,8 @@
   <div class="alert alert-danger" data-i18n="homework.submit_error">Не удалось отправить ответ.</div>
   {% elif error == "answer_required" %}
   <div class="alert alert-danger" data-i18n="homework.answer_required">Напишите ответ или прикрепите файл.</div>
+  {% elif error == "video_upload_not_allowed" %}
+  <div class="alert alert-danger" data-i18n="homework.video_upload_not_allowed">Видео нужно добавлять через ссылку, а не как файл.</div>
   {% endif %}
 
   {% if not homework %}
@@ -148,7 +150,7 @@
       <div class="form-group">
         <label for="answer-file" data-i18n="homework.attach_file_optional">Прикрепить файл (необязательно)</label>
         <input type="file" id="answer-file" name="answer_file" class="form-input"
-               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+               accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
       </div>
       {% if submission %}
       <button type="submit" class="btn btn-primary" data-i18n="homework.replace_answer">Заменить ответ</button>

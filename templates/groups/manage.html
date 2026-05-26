@@ -38,6 +38,7 @@
         <div class="alert alert-danger" style="margin-bottom: 16px;">
             {% if error == "not_org_member" %}<span data-i18n="group.error_not_org_member">❌ Ученик не является членом вашего учебного центра.</span>
             {% elif error == "invalid_image" %}<span data-i18n="validation.image_invalid">❌ Разрешены только JPG, JPEG, PNG и WEBP.</span>
+            {% elif error == "homework_video_upload" %}<span data-i18n="homework.video_upload_not_allowed">❌ Видео нужно добавлять через ссылку, а не как файл.</span>
             {% else %}<span data-i18n="group.error_generic">❌ Произошла ошибка.</span>{% endif %}
         </div>
         {% endif %}
@@ -672,8 +673,8 @@
                 <div class="form-group">
                     <label for="hw-material-file" data-i18n="homework.upload_file">Загрузить материал</label>
                     <input type="file" id="hw-material-file" name="material_file" class="form-input"
-                           accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
-                    <p class="form-hint" data-i18n="homework.upload_hint">PDF, DOC, изображение или видео до 50MB.</p>
+                           accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+                    <p class="form-hint" data-i18n="homework.upload_hint">PDF, DOC, TXT или изображение до 50MB.</p>
                     <p id="hw-current-material" class="form-hint" hidden></p>
                 </div>
                 <div class="form-group">

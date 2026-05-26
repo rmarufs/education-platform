@@ -44,10 +44,9 @@ GROUP_HOMEWORK_MAX_BYTES = 50 * 1024 * 1024
 GROUP_HOMEWORK_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".txt",
     ".jpg", ".jpeg", ".png", ".webp",
-    ".mp4", ".mov", ".webm",
 }
 GROUP_HOMEWORK_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm"}
+GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".avi", ".mkv", ".m4v"}
 
 if cloudinary:
     cloudinary.config(
@@ -144,6 +143,10 @@ def _validate_group_lesson_cover_upload(file: UploadFile) -> None:
 def _validate_group_homework_upload(file: UploadFile):
     if not file or not file.filename:
         return
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    content_type = (file.content_type or "").split(";", 1)[0].lower().strip()
+    if ext in GROUP_HOMEWORK_VIDEO_EXTENSIONS or content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="homework.video_upload_not_allowed")
     return validate_upload_file(
         file,
         allowed_extensions=GROUP_HOMEWORK_EXTENSIONS,
@@ -1665,7 +1668,13 @@ async def group_homework_save(
     homework.deadline = _parse_homework_deadline(deadline) if deadline_is_enabled else None
 
     if material_file and material_file.filename:
-        file_url, file_type, filename = _save_group_homework_upload(material_file, "materials")
+        try:
+            file_url, file_type, filename = _save_group_homework_upload(material_file, "materials")
+        except HTTPException as exc:
+            if exc.detail == "homework.video_upload_not_allowed":
+                db.rollback()
+                return RedirectResponse(f"/groups/{group_id}/manage?error=homework_video_upload", status_code=302)
+            raise
         homework.material_url = file_url
         homework.material_type = file_type
         homework.material_filename = filename
@@ -1749,7 +1758,13 @@ async def group_homework_submit(
     file_type = None
     filename = None
     if has_file:
-        file_url, file_type, filename = _save_group_homework_upload(answer_file, "submissions")
+        try:
+            file_url, file_type, filename = _save_group_homework_upload(answer_file, "submissions")
+        except HTTPException as exc:
+            if exc.detail == "homework.video_upload_not_allowed":
+                db.rollback()
+                return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?error=video_upload_not_allowed", status_code=302)
+            raise
 
     submission = db.query(GroupHomeworkSubmission).filter(
         GroupHomeworkSubmission.homework_id == homework.id,
