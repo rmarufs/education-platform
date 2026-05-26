@@ -5,7 +5,7 @@
 {% block content %}
 {% set back_url = "/groups/" ~ group.id ~ ("/teach" if is_teach_mode else ("/manage" if can_manage else "/lessons/" ~ lesson.id)) %}
 <div class="manage-page homework-page">
-  <div class="manage-header homework-header">
+  <div class="manage-header manage-hero-header homework-header">
     <div>
       <a href="{{ back_url }}" class="back-link" data-i18n="group.back_to_group">← К группе</a>
       <h1 data-i18n="homework.title">Домашнее задание</h1>

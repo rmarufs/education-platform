@@ -2385,11 +2385,31 @@ body.dark .course-detail-hero .course-detail-info {
     background: #fff;
     color: var(--primary-dark, #1d4ed8);
   }
+  .manage-hero-header .manage-header-actions {
+    align-self: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .manage-hero-header .manage-header-actions .btn {
+    border-color: rgba(255,255,255,.9);
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 8px 18px rgba(15,23,42,.14);
+  }
+  .manage-hero-header .manage-header-actions .btn:hover {
+    background: rgba(255,255,255,.94);
+    color: var(--primary-dark);
+  }
   .manage-hero-badge {
     background: rgba(255,255,255,.22);
     color: #fff;
     border: 1px solid rgba(255,255,255,.45);
     font-size: 0.78rem;
+  }
+  .manage-hero-header h1 .badge {
+    background: rgba(255,255,255,.22);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.45);
   }
 }
 .manage-section { background: var(--bg-card); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--border); }

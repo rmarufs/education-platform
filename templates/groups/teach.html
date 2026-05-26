@@ -5,7 +5,7 @@
 {% block content %}
 {% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | list %}
 <div class="manage-page group-teach-page">
-  <div class="manage-header group-teach-header">
+  <div class="manage-header manage-hero-header group-teach-header">
     <div>
       <a href="/dashboard/teacher" class="back-link" data-i18n="nav.dashboard">Кабинет</a>
       <h1 data-i18n="group.teach_select_title">Выберите урок</h1>
