@@ -74,34 +74,30 @@
             <div class="student-notification-list">
                 {% for item in student_notifications %}
                 <article class="student-notification-card student-notification-card--{{ item.kind }}" id="{{ item.id }}">
-                    <div class="student-notification-icon" aria-hidden="true">{{ item.icon }}</div>
                     <div class="student-notification-content">
                         <div class="student-notification-topline">
-                            <span class="student-notification-badge" data-i18n="{{ item.badge_key }}">{{ item.badge }}</span>
+                            <span class="student-notification-badge">
+                                <span aria-hidden="true">{{ item.icon }}</span>
+                                <span data-i18n="{{ item.badge_key }}">{{ item.badge }}</span>
+                            </span>
                             {% if item.time_at %}
                             <span class="student-notification-time" data-i18n="{{ item.time_key }}" data-i18n-params='{{ {"time": item.time_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>{{ item.time_at.strftime("%d.%m.%Y %H:%M") }}</span>
                             {% endif %}
+                            <form action="{{ item.dismiss_url }}" method="POST" class="student-notification-dismiss-form">
+                                <button type="submit" class="student-notification-dismiss" data-i18n="notification.close" data-i18n-prop="aria-label" aria-label="Закрыть">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            </form>
                         </div>
                         <h2 data-i18n="{{ item.title_key }}">{{ item.title }}</h2>
                         <p class="student-notification-meta">
-                            {% if item.teacher_name %}<span>{{ item.teacher_name }}</span>{% endif %}
-                            {% if item.teacher_name and item.group %}<span aria-hidden="true">·</span>{% endif %}
                             {% if item.group %}<span>{{ item.group.name }}</span>{% endif %}
                             {% if item.lesson %}<span aria-hidden="true">·</span><span>{{ item.lesson.title }}</span>{% endif %}
                         </p>
-                        {% if item.preview %}
-                        <p class="student-notification-preview">{{ item.preview }}</p>
-                        {% endif %}
-                        {% if item.deadline_at %}
-                        <p class="student-notification-deadline" data-i18n="notification.deadline" data-i18n-params='{{ {"date": item.deadline_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>Дедлайн: {{ item.deadline_at.strftime("%d.%m.%Y %H:%M") }}</p>
-                        {% endif %}
-                        <a href="{{ item.open_url }}" class="student-notification-action" data-i18n="{{ item.action_key }}">{{ item.action }}</a>
+                        <div class="student-notification-footer">
+                            <a href="{{ item.open_url }}" class="student-notification-action" data-i18n="{{ item.action_key }}">{{ item.action }}</a>
+                        </div>
                     </div>
-                    <form action="{{ item.dismiss_url }}" method="POST" class="student-notification-dismiss-form">
-                        <button type="submit" class="student-notification-dismiss" data-i18n="notification.close" data-i18n-prop="aria-label" aria-label="Закрыть">
-                            <span aria-hidden="true">×</span>
-                        </button>
-                    </form>
                 </article>
                 {% endfor %}
             </div>
@@ -363,147 +359,149 @@
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
 .student-groups-mobile { display: none; }
 .student-notifications {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
+    max-width: 760px;
 }
 .student-notification-list {
     display: grid;
-    gap: 12px;
+    gap: 8px;
 }
 .student-notification-card {
-    position: relative;
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) 40px;
-    gap: 12px;
-    align-items: start;
-    padding: 16px;
-    border: 1px solid color-mix(in srgb, var(--primary, #6366f1) 20%, var(--border, rgba(0,0,0,0.08)));
-    border-radius: 16px;
-    background:
-        linear-gradient(135deg, color-mix(in srgb, var(--primary, #6366f1) 7%, transparent), transparent 46%),
-        var(--bg-card, #fff);
+    padding: 10px 10px 9px;
+    border: 1px solid color-mix(in srgb, var(--border, rgba(0,0,0,0.08)) 86%, var(--primary, #6366f1));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--bg-card, #fff) 96%, var(--surface-soft, #f8fafc));
     color: var(--text, #111827);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    transition: border-color .18s, box-shadow .18s, transform .18s;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+    transition: border-color .16s, box-shadow .16s, background-color .16s;
 }
 .student-notification-card:hover,
 .student-notification-card:focus-within {
-    border-color: color-mix(in srgb, var(--primary, #6366f1) 42%, var(--border, rgba(0,0,0,0.08)));
-    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.12);
-    transform: translateY(-1px);
-}
-.student-notification-icon {
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--primary, #6366f1) 12%, var(--bg-card, #fff));
-    color: var(--primary, #6366f1);
-    font-size: 1.1rem;
-    font-weight: 800;
+    border-color: color-mix(in srgb, var(--primary, #6366f1) 24%, var(--border, rgba(0,0,0,0.08)));
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.06);
+    background: var(--bg-card, #fff);
 }
 .student-notification-content {
     min-width: 0;
     display: grid;
-    gap: 8px;
+    gap: 4px;
 }
 .student-notification-topline {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 7px;
+    min-width: 0;
 }
 .student-notification-badge {
     display: inline-flex;
     align-items: center;
-    max-width: 100%;
-    min-height: 24px;
-    padding: 3px 9px;
+    gap: 4px;
+    max-width: min(52%, 190px);
+    min-height: 18px;
+    padding: 2px 6px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--primary, #6366f1) 11%, var(--surface-soft, #f8fafc));
+    background: color-mix(in srgb, var(--primary, #6366f1) 8%, transparent);
     color: var(--primary, #6366f1);
-    font-size: .75rem;
-    font-weight: 800;
+    font-size: .67rem;
+    font-weight: 750;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.student-notification-badge span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .student-notification-card h2 {
     margin: 0;
-    font-size: 1rem;
-    line-height: 1.25;
+    font-size: .9rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .student-notification-meta,
-.student-notification-time,
-.student-notification-preview,
-.student-notification-deadline {
+.student-notification-time {
     margin: 0;
     color: var(--text-muted);
 }
 .student-notification-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 7px;
-    font-size: .82rem;
-    line-height: 1.35;
+    flex-wrap: nowrap;
+    gap: 4px 6px;
+    min-width: 0;
+    overflow: hidden;
+    font-size: .75rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.student-notification-meta span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .student-notification-time {
     flex: 0 0 auto;
-    font-size: .78rem;
-    line-height: 1.35;
-    text-align: right;
+    margin-left: auto;
+    font-size: .7rem;
+    line-height: 1.3;
+    text-align: left;
     white-space: nowrap;
 }
-.student-notification-preview {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: .9rem;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-}
-.student-notification-deadline {
-    font-size: .82rem;
-    font-weight: 700;
+.student-notification-footer {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    min-width: 0;
 }
 .student-notification-action {
-    justify-self: start;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: var(--primary, #6366f1);
-    color: #fff;
+    min-height: 26px;
+    padding: 2px 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--primary, #6366f1);
     text-decoration: none;
-    font-size: .86rem;
+    font-size: .76rem;
     font-weight: 800;
 }
+.student-notification-action::after {
+    content: "→";
+    margin-left: 4px;
+    font-weight: 900;
+}
 .student-notification-action:visited {
-    color: #fff;
+    color: var(--primary, #6366f1);
 }
 .student-notification-action:hover,
 .student-notification-action:focus-visible,
 .student-notification-action:active {
-    background: var(--primary-dark, #4f46e5);
-    color: #fff;
-    text-decoration: none;
+    background: transparent;
+    color: var(--primary-dark, #4f46e5);
+    text-decoration: underline;
+    text-underline-offset: 3px;
     outline: none;
 }
 .student-notification-dismiss-form {
     margin: 0;
+    flex: 0 0 auto;
 }
 .student-notification-dismiss {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     display: grid;
     place-items: center;
     border: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 1.35rem;
+    font-size: 1.05rem;
     line-height: 1;
 }
 .student-notification-dismiss:hover,
@@ -514,13 +512,9 @@
 }
 html[data-theme="dark"] .student-notification-card,
 body.dark .student-notification-card {
-    background: var(--bg-card);
-    border-color: color-mix(in srgb, var(--primary, #6366f1) 28%, var(--border));
-    box-shadow: 0 10px 28px rgba(0,0,0,.22);
-}
-html[data-theme="dark"] .student-notification-icon,
-body.dark .student-notification-icon {
-    background: color-mix(in srgb, var(--primary, #6366f1) 18%, var(--surface-soft, #172033));
+    background: color-mix(in srgb, var(--bg-card) 94%, var(--surface-soft, #172033));
+    border-color: color-mix(in srgb, var(--primary, #6366f1) 16%, var(--border));
+    box-shadow: 0 5px 16px rgba(0,0,0,.16);
 }
 .user-dashboard--student .course-card-header {
     aspect-ratio: auto;
@@ -652,36 +646,35 @@ body.dark .student-analytics-bar {
 @media (max-width: 768px) {
     .student-org-section { display: none !important; }
     .student-notification-card {
-        grid-template-columns: 38px minmax(0, 1fr) 40px;
-        gap: 10px;
-        padding: 14px;
-        border-radius: 14px;
-    }
-    .student-notification-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
+        padding: 10px;
     }
     .student-notification-topline {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        gap: 6px;
     }
     .student-notification-time {
         text-align: left;
-        white-space: normal;
+        white-space: nowrap;
     }
     .student-notification-action {
-        width: 100%;
-        min-height: 40px;
+        min-height: 28px;
+    }
+    .student-notification-card h2 {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
 }
 @media (max-width: 360px) {
-    .student-notification-card {
-        grid-template-columns: minmax(0, 1fr) 40px;
+    .student-notification-topline {
+        flex-wrap: wrap;
     }
-    .student-notification-icon {
-        display: none;
+    .student-notification-badge {
+        max-width: calc(100% - 38px);
+    }
+    .student-notification-time {
+        order: 3;
+        width: 100%;
     }
 }
 </style>
