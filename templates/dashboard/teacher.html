@@ -93,7 +93,7 @@
             <div class="courses-grid">
                 {% for course in courses %}
                 <div class="course-card fade-in" id="course-card-{{ course.id }}">
-                    <div class="course-card-header">
+                    <div class="course-card-header{% if course.image %} course-card-header--image{% endif %}">
                         {{ course_cover(course) }}
                     </div>
                     <div class="course-card-body">

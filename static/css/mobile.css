@@ -784,9 +784,22 @@
   .user-dashboard--teacher .course-card-header .course-cover-image {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     object-position: center;
-    background: var(--surface-soft);
+  }
+
+  .user-dashboard--teacher .course-card-header--image {
+    display: block;
+    aspect-ratio: auto;
+  }
+
+  .user-dashboard--teacher .course-card-header--image .course-cover {
+    height: auto;
+  }
+
+  .user-dashboard--teacher .course-card-header--image .course-cover-image {
+    height: auto;
+    object-fit: contain;
   }
 
   .user-dashboard--teacher .course-card-body {
@@ -1663,6 +1676,9 @@
     min-height: 0;
     max-height: none;
     aspect-ratio: 16 / 9;
+  }
+  .user-dashboard--teacher .course-card-header--image {
+    aspect-ratio: auto;
   }
   .user-dashboard .course-card > .course-cover {
     height: 48px;
