@@ -17,7 +17,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 SUPABASE_CLIENT_ROLES = ("anon", "authenticated")
-DEFAULT_PRIVILEGE_OWNER_ROLES = ("postgres", "supabase_admin")
+DEFAULT_PRIVILEGE_OWNER_ROLES = ("postgres",)
 UNSAFE_TABLE_PRIVILEGES = (
     "INSERT",
     "UPDATE",
