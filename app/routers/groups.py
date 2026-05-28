@@ -8,8 +8,8 @@ from urllib.request import urlopen
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from sqlalchemy.exc import DatabaseError, IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload, load_only, selectinload
+from sqlalchemy import func, text
 from typing import Optional, List
 from pydantic import BaseModel
 
@@ -2133,7 +2133,47 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
             None,
         )
 
-    return templates.TemplateResponse("groups/lesson_view.html", {
+    vocabulary_anticheat_warnings = []
+    if is_teach_mode:
+        vocab_ids = [vocab.id for vocab in lesson.vocabularies]
+        if vocab_ids:
+            try:
+                warning_attempts = (
+                    db.query(VocabularyAttempt)
+                    .options(
+                        joinedload(VocabularyAttempt.student),
+                        joinedload(VocabularyAttempt.vocab_set),
+                    )
+                    .filter(
+                        VocabularyAttempt.vocab_set_id.in_(vocab_ids),
+                        VocabularyAttempt.anti_cheat_teacher_visible.is_(True),
+                    )
+                    .order_by(
+                        VocabularyAttempt.anti_cheat_last_flag_at.desc(),
+                        VocabularyAttempt.id.desc(),
+                    )
+                    .limit(50)
+                    .all()
+                )
+            except DatabaseError as exc:
+                db.rollback()
+                if not _is_vocabulary_anticheat_schema_mismatch(exc):
+                    raise
+                warning_attempts = []
+            seen_warning_keys = set()
+            for attempt in warning_attempts:
+                warning_key = (attempt.student_id, attempt.vocab_set_id)
+                if warning_key in seen_warning_keys:
+                    continue
+                seen_warning_keys.add(warning_key)
+                vocabulary_anticheat_warnings.append({
+                    "attempt_id": attempt.id,
+                    "student_name": attempt.student.name if attempt.student else "",
+                    "vocab_title": attempt.vocab_set.title if attempt.vocab_set else "",
+                    "flagged_at": attempt.anti_cheat_last_flag_at,
+                })
+
+    template_context = {
         "request": request,
         "user": user,
         "group": group,
@@ -2149,7 +2189,11 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
         "can_preview_as_owner": can_preview_as_owner,
         "is_teach_mode": is_teach_mode,
         "lesson_mode_suffix": "?mode=teach" if is_teach_mode else "",
-    })
+    }
+    if is_teach_mode:
+        template_context["vocabulary_anticheat_warnings"] = vocabulary_anticheat_warnings
+
+    return templates.TemplateResponse("groups/lesson_view.html", template_context)
 
 
 @router.post("/{group_id}/lessons/{lesson_id}/complete")
@@ -2242,6 +2286,80 @@ def _parse_words_bulk(text: str) -> list[dict]:
             "position": i,
         })
     return items
+
+
+def _is_vocabulary_anticheat_schema_mismatch(exc: DatabaseError) -> bool:
+    anti_cheat_columns = (
+        "anti_cheat_flags_count",
+        "anti_cheat_teacher_visible",
+        "anti_cheat_last_flag_at",
+    )
+    orig = getattr(exc, "orig", None)
+    parts = [str(exc), exc.__class__.__name__]
+    if orig:
+        parts.extend([
+            str(orig),
+            orig.__class__.__name__,
+            str(getattr(orig, "pgcode", "")),
+            str(getattr(orig, "sqlstate", "")),
+        ])
+    message = " ".join(part for part in parts if part).lower()
+    if not any(column in message for column in anti_cheat_columns):
+        return False
+
+    undefined_column_codes = {"42703"}
+    if getattr(orig, "pgcode", None) in undefined_column_codes or getattr(orig, "sqlstate", None) in undefined_column_codes:
+        return True
+
+    missing_column_markers = (
+        "undefinedcolumn",
+        "undefined column",
+        "no such column",
+        "has no column",
+        "no column named",
+        "does not exist",
+        "unknown column",
+        "column not found",
+    )
+    return any(marker in message for marker in missing_column_markers)
+
+
+def _create_vocabulary_attempt_record(db: Session, vocab_id: int, student_id: int) -> int:
+    new_attempt = VocabularyAttempt(
+        vocab_set_id=vocab_id,
+        student_id=student_id,
+        is_completed=False,
+    )
+    db.add(new_attempt)
+    try:
+        db.commit()
+        db.refresh(new_attempt)
+        return new_attempt.id
+    except DatabaseError as exc:
+        db.rollback()
+        if not _is_vocabulary_anticheat_schema_mismatch(exc):
+            raise
+
+    attempt_id = db.execute(
+        text(
+            """
+            INSERT INTO vocabulary_attempts
+                (vocab_set_id, student_id, score, total, lang_used, is_completed, retake_allowed, completed_at)
+            VALUES
+                (:vocab_set_id, :student_id, 0, 0, 'ru', :is_completed, :retake_allowed, :completed_at)
+            RETURNING id
+            """
+        ),
+        {
+            "vocab_set_id": vocab_id,
+            "student_id": student_id,
+            "is_completed": False,
+            "retake_allowed": False,
+            "completed_at": datetime.utcnow(),
+        },
+    ).scalar_one()
+    db.commit()
+    return attempt_id
 
 
 @router.get("/{group_id}/lessons/{lesson_id}/vocabulary/create", response_class=HTMLResponse)
@@ -2503,6 +2621,14 @@ def vocab_start_page(
     if membership:
         last_attempt = (
             db.query(VocabularyAttempt)
+            .options(load_only(
+                VocabularyAttempt.id,
+                VocabularyAttempt.completed_at,
+                VocabularyAttempt.is_completed,
+                VocabularyAttempt.retake_allowed,
+                VocabularyAttempt.score,
+                VocabularyAttempt.total,
+            ))
             .filter(
                 VocabularyAttempt.vocab_set_id == vocab_id,
                 VocabularyAttempt.student_id == user.id,
@@ -2581,6 +2707,12 @@ def vocab_quiz_page(
     if membership and not can_preview_as_owner:
         latest_attempt = (
             db.query(VocabularyAttempt)
+            .options(load_only(
+                VocabularyAttempt.id,
+                VocabularyAttempt.completed_at,
+                VocabularyAttempt.is_completed,
+                VocabularyAttempt.retake_allowed,
+            ))
             .filter(
                 VocabularyAttempt.vocab_set_id == vocab_id,
                 VocabularyAttempt.student_id == user.id,
@@ -2599,17 +2731,18 @@ def vocab_quiz_page(
                     )
                 else:
                     # Разрешен повтор: создаем новую попытку
-                    new_attempt = VocabularyAttempt(
-                        vocab_set_id=vocab_id,
-                        student_id=user.id,
-                        is_completed=False,
-                    )
-                    db.add(new_attempt)
-                    # Сбрасываем разрешение на предыдущей попытке, чтобы не было бесконечных повторов
-                    latest_attempt.retake_allowed = False
-                    db.commit()
-                    db.refresh(new_attempt)
-                    attempt_id = new_attempt.id
+                    previous_attempt_id = latest_attempt.id
+                    should_clear_retake = latest_attempt.retake_allowed
+                    attempt_id = _create_vocabulary_attempt_record(db, vocab_id, user.id)
+                    if should_clear_retake:
+                        # Сбрасываем разрешение на предыдущей попытке, чтобы не было бесконечных повторов
+                        db.query(VocabularyAttempt).filter(
+                            VocabularyAttempt.id == previous_attempt_id,
+                        ).update(
+                            {VocabularyAttempt.retake_allowed: False},
+                            synchronize_session=False,
+                        )
+                        db.commit()
             else:
                 # Есть незавершенная попытка, продолжаем её
                 attempt_id = latest_attempt.id
@@ -2628,15 +2761,7 @@ def vocab_quiz_page(
                 ]
         else:
             # Нет ни одной попытки, создаем первую
-            new_attempt = VocabularyAttempt(
-                vocab_set_id=vocab_id,
-                student_id=user.id,
-                is_completed=False,
-            )
-            db.add(new_attempt)
-            db.commit()
-            db.refresh(new_attempt)
-            attempt_id = new_attempt.id
+            attempt_id = _create_vocabulary_attempt_record(db, vocab_id, user.id)
 
     items_data = [
         {
@@ -2679,7 +2804,11 @@ async def vocab_submit_answer(
         VocabularyAttempt.id == attempt_id,
         VocabularyAttempt.vocab_set_id == vocab_id,
         VocabularyAttempt.student_id == user.id,
-    ).first()
+    ).options(load_only(
+        VocabularyAttempt.id,
+        VocabularyAttempt.is_completed,
+        VocabularyAttempt.lang_used,
+    )).first()
 
     if not attempt or attempt.is_completed:
         from fastapi.responses import JSONResponse as _JSONResponse
@@ -2715,6 +2844,75 @@ async def vocab_submit_answer(
     return _JSONResponse({"success": True})
 
 
+@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/anti-cheat/second-warning")
+async def vocab_report_second_anticheat_warning(
+    group_id: int,
+    lesson_id: int,
+    vocab_id: int,
+    attempt_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user, redirect = _require_login(request, db)
+    if redirect:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not user.is_student:
+        raise HTTPException(status_code=403, detail="Only students can report vocabulary anti-cheat warnings")
+
+    try:
+        attempt = db.query(VocabularyAttempt).filter(
+            VocabularyAttempt.id == attempt_id,
+            VocabularyAttempt.vocab_set_id == vocab_id,
+            VocabularyAttempt.student_id == user.id,
+        ).options(load_only(
+            VocabularyAttempt.id,
+            VocabularyAttempt.is_completed,
+            VocabularyAttempt.anti_cheat_flags_count,
+            VocabularyAttempt.anti_cheat_teacher_visible,
+            VocabularyAttempt.anti_cheat_last_flag_at,
+        )).first()
+    except DatabaseError as exc:
+        db.rollback()
+        if not _is_vocabulary_anticheat_schema_mismatch(exc):
+            raise
+        return JSONResponse({"success": False, "detail": "Anti-cheat migration required"}, status_code=503)
+
+    if not attempt:
+        return JSONResponse({"success": False, "detail": "Attempt not found"}, status_code=404)
+    if attempt.is_completed:
+        return JSONResponse({"success": False, "detail": "Attempt is completed"}, status_code=400)
+    if attempt.anti_cheat_teacher_visible:
+        return JSONResponse({"success": True})
+
+    try:
+        updated_rows = (
+            db.query(VocabularyAttempt)
+            .filter(
+                VocabularyAttempt.id == attempt.id,
+                VocabularyAttempt.anti_cheat_teacher_visible.is_(False),
+            )
+            .update(
+                {
+                    VocabularyAttempt.anti_cheat_flags_count: max(attempt.anti_cheat_flags_count or 0, 2),
+                    VocabularyAttempt.anti_cheat_teacher_visible: True,
+                    VocabularyAttempt.anti_cheat_last_flag_at: datetime.utcnow(),
+                },
+                synchronize_session=False,
+            )
+        )
+        if updated_rows:
+            db.commit()
+        else:
+            db.rollback()
+    except DatabaseError as exc:
+        db.rollback()
+        if not _is_vocabulary_anticheat_schema_mismatch(exc):
+            raise
+        return JSONResponse({"success": False, "detail": "Anti-cheat migration required"}, status_code=503)
+
+    return JSONResponse({"success": True})
+
+
 @router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/complete")
 async def vocab_complete(
     group_id: int,
@@ -2732,7 +2930,13 @@ async def vocab_complete(
         VocabularyAttempt.id == attempt_id,
         VocabularyAttempt.vocab_set_id == vocab_id,
         VocabularyAttempt.student_id == user.id,
-    ).first()
+    ).options(load_only(
+        VocabularyAttempt.id,
+        VocabularyAttempt.completed_at,
+        VocabularyAttempt.is_completed,
+        VocabularyAttempt.score,
+        VocabularyAttempt.total,
+    )).first()
 
     if not attempt:
         raise HTTPException(status_code=404, detail="Attempt not found")
@@ -2753,11 +2957,13 @@ async def vocab_complete(
     attempt.total = total
     attempt.is_completed = True
     attempt.completed_at = datetime.utcnow()
+    response_score = attempt.score
+    response_total = attempt.total
 
     db.commit()
     
     from fastapi.responses import JSONResponse as _JSONResponse
-    return _JSONResponse({"success": True, "score": attempt.score, "total": attempt.total})
+    return _JSONResponse({"success": True, "score": response_score, "total": response_total})
 
 
 @router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results", response_class=HTMLResponse)
@@ -2792,7 +2998,18 @@ def vocab_results_page(
 
     attempts = (
         db.query(VocabularyAttempt)
-        .options(joinedload(VocabularyAttempt.student))
+        .options(
+            load_only(
+                VocabularyAttempt.id,
+                VocabularyAttempt.student_id,
+                VocabularyAttempt.score,
+                VocabularyAttempt.total,
+                VocabularyAttempt.is_completed,
+                VocabularyAttempt.retake_allowed,
+                VocabularyAttempt.completed_at,
+            ),
+            joinedload(VocabularyAttempt.student),
+        )
         .filter(VocabularyAttempt.vocab_set_id == vocab_id)
         .order_by(VocabularyAttempt.completed_at.desc())
         .all()
@@ -2844,6 +3061,11 @@ async def vocab_toggle_retake(
 
     latest_attempt = (
         db.query(VocabularyAttempt)
+        .options(load_only(
+            VocabularyAttempt.id,
+            VocabularyAttempt.completed_at,
+            VocabularyAttempt.retake_allowed,
+        ))
         .filter(
             VocabularyAttempt.vocab_set_id == vocab_id,
             VocabularyAttempt.student_id == student_id,

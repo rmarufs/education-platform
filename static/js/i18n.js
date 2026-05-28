@@ -1078,6 +1078,9 @@ const translations = {
     "vocabulary.anticheat_warning_message": "Вы переключили вкладку или окно. Оставайтесь на странице во время сдачи словаря.",
     "vocabulary.anticheat_danger_title": "Повторное переключение",
     "vocabulary.anticheat_danger_message": "Повторное переключение зафиксировано. Эти действия могут быть видны преподавателю.",
+    "vocabulary.teacher_anticheat_title": "Переключение во время словаря",
+    "vocabulary.teacher_anticheat_message": "{student} переключил вкладку или окно во время сдачи словаря «{vocab}».",
+    "vocabulary.teacher_anticheat_time": "Зафиксировано: {time}",
     "vocabulary.anticheat_dismiss": "Скрыть предупреждение"
   },
 
@@ -2162,6 +2165,9 @@ const translations = {
     "vocabulary.anticheat_warning_message": "Шумо варақа ё равзанаро иваз кардед. Ҳангоми супоридани луғат дар ҳамин саҳифа монед.",
     "vocabulary.anticheat_danger_title": "Ивазкунии такрорӣ",
     "vocabulary.anticheat_danger_message": "Ивазкунии такрорӣ сабт шуд. Ин амалҳо метавонанд ба омӯзгор намоён шаванд.",
+    "vocabulary.teacher_anticheat_title": "Ивазкунӣ ҳангоми супоридани луғат",
+    "vocabulary.teacher_anticheat_message": "{student} ҳангоми супоридани луғати «{vocab}» варақа ё равзанаро иваз кард.",
+    "vocabulary.teacher_anticheat_time": "Сабт шуд: {time}",
     "vocabulary.anticheat_dismiss": "Пинҳон кардани огоҳӣ"
   }
 };

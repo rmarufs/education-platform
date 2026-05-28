@@ -9,6 +9,7 @@ const EXISTING_ANSWERS = {{ existing_answers_json | safe | default('[]', true) }
 const ATTEMPT_ID = {{ attempt_id | default('null', true) }};
 const VOCAB_SUBMIT_ANSWER_URL = ATTEMPT_ID ? `/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/attempts/${ATTEMPT_ID}/answer` : null;
 const VOCAB_COMPLETE_URL = ATTEMPT_ID ? `/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/attempts/${ATTEMPT_ID}/complete` : null;
+const VOCAB_ANTICHEAT_SECOND_WARNING_URL = ATTEMPT_ID ? `/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}/attempts/${ATTEMPT_ID}/anti-cheat/second-warning` : null;
 const VOCAB_BACK_URL = "/groups/{{ group.id }}/lessons/{{ lesson.id }}";
 const VOCAB_RESULT_URL = "/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}";
 const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
@@ -128,6 +129,7 @@ let vocabAwaySession = null;
 let vocabAwayTimer = null;
 let vocabFocusLossCount = 0;
 let vocabIsLeavingPage = false;
+let vocabAntiCheatSecondReported = false;
 
 // \u0422\u0430\u0434\u0436\u0438\u043a\u0441\u043a\u0438\u0435 \u044d\u043a\u0432\u0438\u0432\u0430\u043b\u0435\u043d\u0442\u044b: \u043e\u0431\u0435 \u0441\u0442\u043e\u0440\u043e\u043d\u044b (tj-\u0431\u0443\u043a\u0432\u0430 \u2192 \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u0438 \u043d\u0430\u043e\u0431\u043e\u0440\u043e\u0442)
 const TJ_EQUIV = [
@@ -200,12 +202,30 @@ function showVocabAntiCheatNotice(count) {
   messageEl.textContent = t(isDanger ? 'vocabulary.anticheat_danger_message' : 'vocabulary.anticheat_warning_message');
 }
 
+async function reportVocabAntiCheatSecondWarning() {
+  if (!VOCAB_ANTICHEAT_SECOND_WARNING_URL || vocabAntiCheatSecondReported) return;
+
+  vocabAntiCheatSecondReported = true;
+  try {
+    await fetch(VOCAB_ANTICHEAT_SECOND_WARNING_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+  } catch (e) {
+    // Quiz flow must continue even if the anti-cheat report cannot be saved.
+  }
+}
+
 function recordVocabFocusLoss() {
   if (!isVocabAttemptActive() || !vocabAwaySession || vocabAwaySession.counted) return;
 
   vocabAwaySession.counted = true;
   vocabFocusLossCount++;
   showVocabAntiCheatNotice(vocabFocusLossCount);
+  if (vocabFocusLossCount === 2) {
+    reportVocabAntiCheatSecondWarning();
+  }
 }
 
 function startVocabAwayTracking() {

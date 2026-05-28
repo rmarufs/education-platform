@@ -113,6 +113,39 @@
 
   <!-- Основной контент -->
   <main class="lesson-content">
+    {% if is_teach_mode and vocabulary_anticheat_warnings %}
+    <section class="vocab-teacher-anticheat-list" aria-live="polite">
+      {% for warning in vocabulary_anticheat_warnings %}
+      {% set warning_time = warning.flagged_at.strftime("%d.%m.%Y %H:%M") if warning.flagged_at else "" %}
+      <article class="vocab-teacher-anticheat-card"
+               id="vocab-teacher-anticheat-{{ warning.attempt_id }}"
+               data-vocab-anticheat-card
+               data-attempt-id="{{ warning.attempt_id }}">
+        <div class="vocab-teacher-anticheat-icon" aria-hidden="true">!</div>
+        <div class="vocab-teacher-anticheat-content">
+          <div class="vocab-teacher-anticheat-title" data-i18n="vocabulary.teacher_anticheat_title">vocabulary.teacher_anticheat_title</div>
+          <div class="vocab-teacher-anticheat-message"
+               data-i18n="vocabulary.teacher_anticheat_message"
+               data-i18n-params='{{ {"student": warning.student_name, "vocab": warning.vocab_title} | tojson }}'>vocabulary.teacher_anticheat_message</div>
+          {% if warning_time %}
+          <div class="vocab-teacher-anticheat-time"
+               data-i18n="vocabulary.teacher_anticheat_time"
+               data-i18n-params='{{ {"time": warning_time} | tojson }}'>vocabulary.teacher_anticheat_time</div>
+          {% endif %}
+        </div>
+        <button type="button"
+                class="vocab-teacher-anticheat-close"
+                data-vocab-anticheat-close
+                data-i18n="notification.close"
+                data-i18n-prop="aria-label"
+                aria-label="notification.close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
     {% set lesson_image = lesson.cover_url %}
     {% if (lesson_image is none or lesson_image|string|trim == '') and (lesson|attr('image_url')) %}
       {% set lesson_image = lesson|attr('image_url') %}
@@ -334,6 +367,86 @@
     text-decoration: none;
   }
 
+  .vocab-teacher-anticheat-list {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+  }
+  .vocab-teacher-anticheat-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px 10px 12px;
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-left: 3px solid var(--warning, #f59e0b);
+    border-radius: 10px;
+    background: var(--bg-card, #fff);
+    color: var(--text, #111827);
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+  }
+  .vocab-teacher-anticheat-card[hidden] {
+    display: none;
+  }
+  .vocab-teacher-anticheat-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--warning, #f59e0b) 16%, transparent);
+    color: var(--warning, #f59e0b);
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .vocab-teacher-anticheat-content {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .vocab-teacher-anticheat-title {
+    color: var(--text, #111827);
+    font-size: 0.86rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+  .vocab-teacher-anticheat-message,
+  .vocab-teacher-anticheat-time {
+    color: var(--text-muted, #64748b);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+  .vocab-teacher-anticheat-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  .vocab-teacher-anticheat-close:hover,
+  .vocab-teacher-anticheat-close:focus-visible {
+    background: color-mix(in srgb, var(--text-muted, #64748b) 10%, transparent);
+    color: var(--text, #111827);
+    outline: none;
+  }
+  html[data-theme="dark"] .vocab-teacher-anticheat-card,
+  body.dark .vocab-teacher-anticheat-card {
+    background: var(--bg-card);
+    border-color: var(--border);
+    border-left-color: var(--warning, #f59e0b);
+    box-shadow: 0 5px 16px rgba(0,0,0,0.16);
+  }
+
   .group-lesson-quiz-section,
   .group-lesson-homework-section {
     display: flex;
@@ -377,6 +490,15 @@
     .group-lesson-homework-section .btn {
       width: 100%;
       justify-content: center;
+    }
+
+    .vocab-teacher-anticheat-card {
+      padding: 9px;
+    }
+
+    .vocab-teacher-anticheat-message,
+    .vocab-teacher-anticheat-time {
+      font-size: 0.76rem;
     }
   }
 </style>
@@ -439,6 +561,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   window.addEventListener("pagehide", () => setPageScrollLocked(false));
+
+  document.querySelectorAll("[data-vocab-anticheat-card]").forEach((card) => {
+    const attemptId = card.getAttribute("data-attempt-id");
+    if (!attemptId) return;
+    const storageKey = `vocabTeacherAntiCheatDismissed:${attemptId}`;
+    try {
+      if (window.localStorage?.getItem(storageKey) === "1") {
+        card.hidden = true;
+      }
+    } catch (_) {}
+  });
+
+  document.querySelectorAll("[data-vocab-anticheat-close]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest("[data-vocab-anticheat-card]");
+      if (!card) return;
+      const attemptId = card.getAttribute("data-attempt-id");
+      card.hidden = true;
+      if (!attemptId) return;
+      try {
+        window.localStorage?.setItem(`vocabTeacherAntiCheatDismissed:${attemptId}`, "1");
+      } catch (_) {}
+    });
+  });
 
   document.querySelectorAll(".group-lesson-complete-nav-form").forEach((form) => {
     form.addEventListener("submit", () => {
