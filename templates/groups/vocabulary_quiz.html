@@ -26,6 +26,15 @@ const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
   </div>
 
   <div class="vocab-card" id="vocab-card">
+    <div class="vocab-anticheat-notice" id="vocab-anticheat-notice" aria-live="polite" aria-hidden="true">
+      <div class="vocab-anticheat-copy">
+        <strong id="vocab-anticheat-title"></strong>
+        <span id="vocab-anticheat-message"></span>
+      </div>
+      <button type="button" class="vocab-anticheat-close" id="vocab-anticheat-close"
+              data-i18n="vocabulary.anticheat_dismiss" data-i18n-prop="aria-label"
+              aria-label="vocabulary.anticheat_dismiss"></button>
+    </div>
     <div class="vocab-card-inner" id="vocab-card-inner">
       <div id="vocab-screen-word" class="vocab-screen">
         <div class="vocab-word-label" data-i18n="vocabulary.word_label">Слово</div>
@@ -76,6 +85,15 @@ const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
 .vocab-counter { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
 .vocab-card { flex: 1; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.07); border-radius: 20px; padding: 40px 36px; box-shadow: 0 4px 24px rgba(99,102,241,0.07); display: flex; flex-direction: column; }
 .vocab-card-inner { flex: 1; display: flex; flex-direction: column; }
+.vocab-anticheat-notice { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; max-height: 0; margin-bottom: 0; padding: 0 10px; overflow: hidden; opacity: 0; pointer-events: none; transform: translateY(-4px); border-radius: 10px; border: 1px solid transparent; border-left: 3px solid transparent; background: var(--bg-card); color: var(--text); transition: max-height 0.18s ease, margin-bottom 0.18s ease, padding 0.18s ease, opacity 0.16s ease, transform 0.18s ease, border-color 0.18s ease; }
+.vocab-anticheat-notice.is-visible { max-height: 96px; margin-bottom: 12px; padding: 9px 10px; opacity: 1; pointer-events: auto; transform: translateY(0); border-color: var(--border-light); border-left-color: var(--warning); }
+.vocab-anticheat-notice.is-danger { border-left-color: var(--danger); }
+.vocab-anticheat-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.8rem; line-height: 1.35; }
+.vocab-anticheat-copy strong { font-size: 0.82rem; color: var(--text); }
+.vocab-anticheat-copy span { color: var(--text-muted); }
+.vocab-anticheat-close { flex: 0 0 auto; width: 24px; height: 24px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.vocab-anticheat-close::before { content: "\00d7"; }
+.vocab-anticheat-close:hover { background: var(--border-light); color: var(--text); }
 .vocab-screen { display: flex; flex-direction: column; flex: 1; gap: 20px; }
 .vocab-word-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
 .vocab-word { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
@@ -95,6 +113,7 @@ const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
 .shake { animation: shake 0.4s ease; }
 @media (max-width: 480px) {
   .vocab-card { padding: 28px 18px; }
+  .vocab-anticheat-notice.is-visible { max-height: 120px; padding: 8px 9px; }
   .vocab-word { font-size: 1.5rem; }
   .vocab-input-wrap { flex-direction: column; }
   .vocab-check-btn { width: 100%; justify-content: center; }
@@ -104,6 +123,11 @@ const CURRENT_LANG = (localStorage.getItem('lang') || 'ru');
 <script>
 let currentIndex = EXISTING_ANSWERS ? EXISTING_ANSWERS.length : 0;
 const answers = EXISTING_ANSWERS ? [...EXISTING_ANSWERS] : [];
+const VOCAB_ANTICHEAT_MIN_AWAY_MS = 900;
+let vocabAwaySession = null;
+let vocabAwayTimer = null;
+let vocabFocusLossCount = 0;
+let vocabIsLeavingPage = false;
 
 // \u0422\u0430\u0434\u0436\u0438\u043a\u0441\u043a\u0438\u0435 \u044d\u043a\u0432\u0438\u0432\u0430\u043b\u0435\u043d\u0442\u044b: \u043e\u0431\u0435 \u0441\u0442\u043e\u0440\u043e\u043d\u044b (tj-\u0431\u0443\u043a\u0432\u0430 \u2192 \u0440\u0443\u0441\u0441\u043a\u0430\u044f \u0438 \u043d\u0430\u043e\u0431\u043e\u0440\u043e\u0442)
 const TJ_EQUIV = [
@@ -140,6 +164,72 @@ function getAcceptedAnswers(item) {
   else if (CURRENT_LANG === 'tj' && item.accepted_answers_tj) source = item.accepted_answers_tj;
   else source = item.accepted_answers || '';
   return source.split('|').map(a => a.trim()).filter(Boolean);
+}
+
+function isVocabAttemptActive() {
+  return Boolean(ATTEMPT_ID) && !vocabIsLeavingPage && currentIndex < VOCAB_ITEMS.length;
+}
+
+function setVocabLeavingPage() {
+  vocabIsLeavingPage = true;
+  clearVocabAwayTimer();
+}
+
+function clearVocabAwayTimer() {
+  if (vocabAwayTimer) {
+    clearTimeout(vocabAwayTimer);
+    vocabAwayTimer = null;
+  }
+}
+
+function isPageAway() {
+  return document.hidden || !document.hasFocus();
+}
+
+function showVocabAntiCheatNotice(count) {
+  const notice = document.getElementById('vocab-anticheat-notice');
+  const titleEl = document.getElementById('vocab-anticheat-title');
+  const messageEl = document.getElementById('vocab-anticheat-message');
+  if (!notice || !titleEl || !messageEl) return;
+
+  const isDanger = count >= 2;
+  notice.classList.toggle('is-danger', isDanger);
+  notice.classList.add('is-visible');
+  notice.setAttribute('aria-hidden', 'false');
+  titleEl.textContent = t(isDanger ? 'vocabulary.anticheat_danger_title' : 'vocabulary.anticheat_warning_title');
+  messageEl.textContent = t(isDanger ? 'vocabulary.anticheat_danger_message' : 'vocabulary.anticheat_warning_message');
+}
+
+function recordVocabFocusLoss() {
+  if (!isVocabAttemptActive() || !vocabAwaySession || vocabAwaySession.counted) return;
+
+  vocabAwaySession.counted = true;
+  vocabFocusLossCount++;
+  showVocabAntiCheatNotice(vocabFocusLossCount);
+}
+
+function startVocabAwayTracking() {
+  if (!isVocabAttemptActive() || vocabAwaySession) return;
+
+  vocabAwaySession = {
+    startedAt: Date.now(),
+    counted: false,
+  };
+  clearVocabAwayTimer();
+  vocabAwayTimer = setTimeout(() => {
+    if (!vocabIsLeavingPage && isPageAway()) recordVocabFocusLoss();
+  }, VOCAB_ANTICHEAT_MIN_AWAY_MS);
+}
+
+function finishVocabAwayTracking() {
+  if (!vocabAwaySession) return;
+
+  const duration = Date.now() - vocabAwaySession.startedAt;
+  if (!vocabAwaySession.counted && duration >= VOCAB_ANTICHEAT_MIN_AWAY_MS && !vocabIsLeavingPage) {
+    recordVocabFocusLoss();
+  }
+  clearVocabAwayTimer();
+  vocabAwaySession = null;
 }
 
 function showWord(index) {
@@ -214,6 +304,7 @@ function nextWord() {
 }
 
 async function submitResults() {
+  setVocabLeavingPage();
   document.getElementById('vocab-progress-bar').style.width = '100%';
   if (!VOCAB_COMPLETE_URL) {
     window.location.href = VOCAB_RESULT_URL;
@@ -241,12 +332,24 @@ async function submitResults() {
 async function confirmQuit(e) {
   e.preventDefault();
   if (answers.length === 0 || await showConfirmModal(t('vocabulary.quit_confirm'))) {
+    setVocabLeavingPage();
     window.location.href = VOCAB_BACK_URL;
   }
   return false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const antiCheatCloseBtn = document.getElementById('vocab-anticheat-close');
+  if (antiCheatCloseBtn) {
+    antiCheatCloseBtn.addEventListener('click', () => {
+      const notice = document.getElementById('vocab-anticheat-notice');
+      if (notice) {
+        notice.classList.remove('is-visible');
+        notice.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
   if (!VOCAB_ITEMS.length) {
     document.getElementById('vocab-quiz-wrap').innerHTML = `<p style="text-align:center;padding:40px;" data-i18n="vocabulary.no_words">${t('vocabulary.no_words')}</p>`;
     return;
@@ -258,5 +361,14 @@ document.addEventListener('DOMContentLoaded', () => {
   showWord(currentIndex);
   document.getElementById('vocab-answer-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
 });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) startVocabAwayTracking();
+  else finishVocabAwayTracking();
+});
+
+window.addEventListener('blur', startVocabAwayTracking);
+window.addEventListener('focus', finishVocabAwayTracking);
+window.addEventListener('beforeunload', setVocabLeavingPage);
 </script>
 {% endblock %}

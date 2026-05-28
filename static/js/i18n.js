@@ -1073,7 +1073,12 @@ const translations = {
     "vocabulary.disable_retake": "Запретить повтор",
     "vocabulary.retake_allowed": "Повторное прохождение разрешено",
     "vocabulary.words_short": "сл.",
-    "vocabulary.in_progress": "В процессе"
+    "vocabulary.in_progress": "В процессе",
+    "vocabulary.anticheat_warning_title": "Внимание",
+    "vocabulary.anticheat_warning_message": "Вы переключили вкладку или окно. Оставайтесь на странице во время сдачи словаря.",
+    "vocabulary.anticheat_danger_title": "Повторное переключение",
+    "vocabulary.anticheat_danger_message": "Повторное переключение зафиксировано. Эти действия могут быть видны преподавателю.",
+    "vocabulary.anticheat_dismiss": "Скрыть предупреждение"
   },
 
   tj: {
@@ -2152,7 +2157,12 @@ const translations = {
     "vocabulary.disable_retake": "Дубора манъдан",
     "vocabulary.retake_allowed": "Дубора гузаштан иҷоза дода шуд",
     "vocabulary.words_short": "к.",
-    "vocabulary.in_progress": "Дар ҷараён"
+    "vocabulary.in_progress": "Дар ҷараён",
+    "vocabulary.anticheat_warning_title": "Диққат",
+    "vocabulary.anticheat_warning_message": "Шумо варақа ё равзанаро иваз кардед. Ҳангоми супоридани луғат дар ҳамин саҳифа монед.",
+    "vocabulary.anticheat_danger_title": "Ивазкунии такрорӣ",
+    "vocabulary.anticheat_danger_message": "Ивазкунии такрорӣ сабт шуд. Ин амалҳо метавонанд ба омӯзгор намоён шаванд.",
+    "vocabulary.anticheat_dismiss": "Пинҳон кардани огоҳӣ"
   }
 };
 
