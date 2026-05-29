@@ -466,9 +466,16 @@
         </div>
         {% endif %}
 
-        {# Правая колонка: кнопки навигации #}
+        {# Вторая строка: кнопки навигации #}
         <div class="gl-complete-mobile__nav">
-          {# Сначала «Далее» (главная) #}
+          {# Сначала «К группе» (вторичная, слева) #}
+          {% if previous_lesson %}
+          <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
+          {% else %}
+          <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
+          {% endif %}
+
+          {# Затем «Далее» (главная, справа) #}
           {% if next_lesson %}
             {% if membership and user.is_student and not can_preview_as_owner %}
             {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
@@ -486,13 +493,6 @@
             {% else %}
             <a href="{{ group_return_url }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</a>
             {% endif %}
-          {% endif %}
-
-          {# Затем «К группе» (вторичная) #}
-          {% if previous_lesson %}
-          <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
-          {% else %}
-          <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
           {% endif %}
         </div>
 
@@ -663,19 +663,16 @@
     .gl-journal-desktop { display: none !important; }
     .gl-complete-desktop { display: none !important; }
     .gl-complete-mobile {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      align-items: stretch;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    /* ── Левая колонка: результат урока ── */
+    /* ── Первая строка: результат урока ── */
     .gl-complete-mobile__result {
       display: flex;
       flex-direction: column;
-      justify-content: center;
       gap: 6px;
-      padding-right: 10px;
     }
 
     .gl-complete-mobile__result-label {
@@ -706,31 +703,35 @@
       line-height: 1.4;
     }
 
-    /* ── Правая колонка: кнопки навигации ── */
+    /* ── Вторая строка: кнопки навигации ── */
     .gl-complete-mobile__nav {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 10px;
+      align-items: stretch;
     }
 
     .gl-complete-mobile__nav-form {
-      width: 100%;
       display: flex;
+      width: 100%;
+      height: 100%;
     }
 
     .gl-complete-mobile__nav-btn {
       width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
       justify-content: center;
       min-height: 44px;
       font-size: 0.9rem;
       padding: 8px 12px;
+      text-align: center;
     }
 
     .gl-complete-mobile__nav-btn--secondary {
-      min-height: 38px;
       font-size: 0.85rem;
-      padding: 6px 12px;
+      padding: 8px 10px;
       opacity: 0.85;
     }
 
