@@ -5788,7 +5788,112 @@ body.dark .org-pub-teacher-card:hover {
   gap: 12px;
   margin: -4px 0 24px;
 }
+/* ── Push Permission Card ──────────────────────────────────────────────────── */
+.push-permission-card {
+  margin-bottom: 20px;
+  border-radius: var(--radius, 12px);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary) 5%, var(--bg-card, #fff));
+  overflow: hidden;
+  transition: opacity 0.3s ease, max-height 0.4s ease;
+}
+.push-permission-card__inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+.push-permission-card__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+.push-permission-card__icon--success {
+  background: color-mix(in srgb, #22c55e 15%, transparent);
+  color: #16a34a;
+}
+.push-permission-card__body {
+  flex: 1;
+  min-width: 0;
+}
+.push-permission-card__text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+.push-permission-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.push-permission-card__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+  margin-left: auto;
+}
+.push-permission-card__close:hover {
+  background: var(--primary-light);
+  color: var(--text-main);
+}
+/* Ghost button variant for "Not now" */
+.btn-ghost {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+  transition: var(--transition);
+}
+.btn-ghost:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.05));
+  color: var(--text-main);
+}
+@media (max-width: 600px) {
+  .push-permission-card__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .push-permission-card__icon {
+    display: none;
+  }
+  .push-permission-card__actions {
+    width: 100%;
+  }
+  .push-permission-card__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    margin-left: 0;
+  }
+  .push-permission-card {
+    position: relative;
+  }
+}
+
 .announcement-card {
+
   display: flex;
   align-items: flex-start;
   justify-content: space-between;

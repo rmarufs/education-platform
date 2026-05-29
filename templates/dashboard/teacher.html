@@ -30,6 +30,7 @@
         </div>
 
         {{ render_announcement_cards(visible_announcements) }}
+        {% include "_push_permission_card.html" %}
 
         {% if accepted_application_notice %}
         <section class="mb-4">

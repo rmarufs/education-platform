@@ -55,6 +55,7 @@
         </div>
 
         {{ render_announcement_cards(visible_announcements) }}
+        {% include "_push_permission_card.html" %}
 
         {% if show_removed_notification %}
         <div class="alert alert-warning" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; background-color: var(--warning-light, #fef3c7); color: var(--warning-dark, #92400e); border: 1px solid var(--warning, #f59e0b);">
