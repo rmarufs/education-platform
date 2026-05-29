@@ -673,17 +673,9 @@
     .gl-complete-mobile__result {
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      padding: 10px 12px;
-      background: var(--surface-soft);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      min-height: 0;
-    }
-
-    .gl-complete-mobile__result--empty {
-      background: transparent;
-      border-color: transparent;
+      justify-content: center;
+      gap: 6px;
+      padding-right: 10px;
     }
 
     .gl-complete-mobile__result-label {
@@ -718,7 +710,8 @@
     .gl-complete-mobile__nav {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      justify-content: center;
+      gap: 8px;
     }
 
     .gl-complete-mobile__nav-form {
@@ -729,15 +722,15 @@
     .gl-complete-mobile__nav-btn {
       width: 100%;
       justify-content: center;
-      min-height: 40px;
-      font-size: 0.88rem;
-      padding: 7px 12px;
+      min-height: 44px;
+      font-size: 0.9rem;
+      padding: 8px 12px;
     }
 
     .gl-complete-mobile__nav-btn--secondary {
-      min-height: 34px;
-      font-size: 0.8rem;
-      padding: 5px 10px;
+      min-height: 38px;
+      font-size: 0.85rem;
+      padding: 6px 12px;
       opacity: 0.85;
     }
 
@@ -875,12 +868,6 @@
     body.dark .gl-mob-accordion__tab[aria-expanded="true"] {
       background: color-mix(in srgb, var(--primary) 12%, var(--bg-card));
       color: var(--primary);
-    }
-
-    html[data-theme="dark"] .gl-complete-mobile__result,
-    body.dark .gl-complete-mobile__result {
-      background: var(--bg-card);
-      border-color: var(--border);
     }
   }
 </style>
