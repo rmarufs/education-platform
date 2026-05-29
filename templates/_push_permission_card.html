@@ -1,48 +1,116 @@
-{# Push Notification Permission Card — показывать только для авторизованных пользователей #}
+{# Push Notification Preferences Card — постоянный блок управления уведомлениями #}
 {% if user %}
-<div class="push-permission-card" id="push-permission-card" style="display:none;" role="region" aria-label="Уведомления браузера">
-    <div class="push-permission-card__inner">
-        <div class="push-permission-card__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+<div class="push-pref-card" id="push-pref-card" role="region" aria-label="Управление уведомлениями браузера">
+
+    {# Состояние: default — ещё не решил #}
+    <div class="push-pref-state" id="push-state-default" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--bell" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
         </div>
-        <div class="push-permission-card__body">
-            <p class="push-permission-card__text" data-i18n="push.prompt_text">
-                Включите уведомления браузера, чтобы вовремя получать информацию о новых домашних заданиях, ответах преподавателей и объявлениях учебного центра.
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text" data-i18n="push.prompt_text">
+                Включите уведомления, чтобы сразу узнавать о новых домашних заданиях, ответах преподавателей и объявлениях учебного центра.
             </p>
         </div>
-        <div class="push-permission-card__actions">
-            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn" data-i18n="push.enable">
+        <div class="push-pref-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn">
                 Включить уведомления
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" id="push-dismiss-btn" data-i18n="push.later">
+            <button type="button" class="btn btn-ghost btn-sm" id="push-later-btn">
                 Не сейчас
             </button>
         </div>
-        <button type="button" class="push-permission-card__close" id="push-close-btn" aria-label="Закрыть" title="Закрыть">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-        </button>
     </div>
-    <div class="push-permission-card__inner push-permission-card__success" id="push-success-state" style="display:none;">
-        <div class="push-permission-card__icon push-permission-card__icon--success" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+
+    {# Состояние: "не сейчас" — отложил #}
+    <div class="push-pref-state" id="push-state-later" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--bell" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+        </div>
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text" data-i18n="push.later_text">
+                Вы можете включить уведомления в любое время на этой странице.
+            </p>
+        </div>
+        <div class="push-pref-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn-2">
+                Включить уведомления
+            </button>
+        </div>
+    </div>
+
+    {# Состояние: granted — включены #}
+    <div class="push-pref-state" id="push-state-granted" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--on" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
                 <polyline points="20 6 9 17 4 12"/>
             </svg>
         </div>
-        <p class="push-permission-card__text" data-i18n="push.enabled_text">
-            Уведомления включены. Вы будете получать важные обновления своевременно.
-        </p>
-        <button type="button" class="push-permission-card__close" id="push-success-close-btn" aria-label="Закрыть" title="Закрыть">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-        </button>
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text push-pref-text--success" data-i18n="push.enabled_text">
+                Уведомления включены. Вы будете своевременно получать важные обновления.
+            </p>
+        </div>
+        <div class="push-pref-actions">
+            <span class="push-pref-badge push-pref-badge--on" data-i18n="push.status_on">Включены</span>
+            <button type="button" class="btn btn-ghost btn-sm" id="push-disable-btn">
+                Отключить
+            </button>
+        </div>
     </div>
+
+    {# Состояние: denied — заблокированы #}
+    <div class="push-pref-state" id="push-state-denied" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--off" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <path d="M18.63 13A17.89 17.89 0 0 1 18 8"/>
+                <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/>
+                <path d="M18 8a6 6 0 0 0-9.33-5"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+        </div>
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text push-pref-text--muted" data-i18n="push.denied_text">
+                Уведомления заблокированы в настройках браузера. Разрешите их вручную, чтобы получать важные обновления.
+            </p>
+        </div>
+        <div class="push-pref-actions">
+            <span class="push-pref-badge push-pref-badge--off" data-i18n="push.status_off">Заблокированы</span>
+        </div>
+    </div>
+
+    {# Состояние: unsubscribed — отписан (но permission ещё granted) #}
+    <div class="push-pref-state" id="push-state-unsubscribed" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--bell" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+        </div>
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text" data-i18n="push.unsubscribed_text">
+                Уведомления отключены. Вы можете включить их снова.
+            </p>
+        </div>
+        <div class="push-pref-actions">
+            <span class="push-pref-badge push-pref-badge--off" data-i18n="push.status_off">Отключены</span>
+            <button type="button" class="btn btn-primary btn-sm" id="push-resubscribe-btn">
+                Включить снова
+            </button>
+        </div>
+    </div>
+
 </div>
 {% endif %}
