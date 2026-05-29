@@ -33,7 +33,11 @@
     async function subscribe() {
         var reg = await navigator.serviceWorker.ready;
         var pkRes = await fetch('/api/push/public-key');
-        if (!pkRes.ok) throw new Error('public-key fetch failed');
+        if (!pkRes.ok) {
+            // VAPID ключи не настроены на сервере — тихо выходим
+            console.warn('[push.js] public-key endpoint returned', pkRes.status, '— push not configured on server');
+            return null;
+        }
         var pkData = await pkRes.json();
         var appKey = urlBase64ToUint8Array(pkData.public_key);
 
@@ -97,7 +101,12 @@
         var permission = await Notification.requestPermission();
         if (permission === 'granted') {
             try {
-                await subscribe();
+                var result = await subscribe();
+                if (result === null) {
+                    // Сервер не настроен — остаёмся в текущем состоянии, не ломаем UI
+                    console.warn('[push.js] Server not configured for push, staying in current state');
+                    return;
+                }
                 showState('granted');
             } catch (err) {
                 console.error('[push.js] Subscribe error:', err);

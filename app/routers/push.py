@@ -27,7 +27,10 @@ class PushUnsubscribe(BaseModel):
 @router.get("/public-key")
 def get_public_key():
     if not VAPID_PUBLIC_KEY:
-        raise HTTPException(status_code=500, detail="VAPID_PUBLIC_KEY not configured on server")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Push notifications are not configured on this server. Add VAPID_PUBLIC_KEY to environment variables."
+        )
     return {"public_key": VAPID_PUBLIC_KEY}
 
 
