@@ -235,7 +235,8 @@
     </div>
 
     {% if membership and not can_preview_as_owner %}
-    <section class="lesson-materials group-lesson-journal-result">
+    {# Desktop: отдельный блок результата #}
+    <section class="lesson-materials group-lesson-journal-result gl-journal-desktop">
       <h3 data-i18n="journal.my_result">Мой результат по уроку</h3>
       {% if journal_entry %}
         {% if journal_entry.present %}
@@ -258,9 +259,9 @@
     </section>
     {% endif %}
 
-    <!-- Материалы -->
+    <!-- Материалы (Desktop-only: на mobile используется accordion ниже) -->
     {% if lesson.materials %}
-    <section class="lesson-materials">
+    <section class="lesson-materials gl-desktop-materials">
       <h3 data-i18n="lesson.materials">📎 Материалы</h3>
       <ul class="materials-list">
         {% for m in lesson.materials %}
@@ -322,8 +323,80 @@
     </section>
     {% endif %}
 
+    {%- set has_materials_block = lesson.materials -%}
+    {%- set has_homework_block = lesson.homework -%}
+    {% if has_materials_block or has_homework_block %}
+    {#- Mobile accordion wrapper: объединяет «Материалы» и «Домашнее задание» в одну строку -#}
+    <div class="gl-mob-accordion" id="gl-mob-accordion">
+
+      {# ── Заголовки-кнопки (одна строка, 50/50) ── #}
+      <div class="gl-mob-accordion__tabs" role="tablist">
+        {% if has_materials_block %}
+        <button type="button"
+                class="gl-mob-accordion__tab{% if not has_homework_block %} gl-mob-accordion__tab--full{% endif %}"
+                id="gl-mob-tab-mat"
+                role="tab"
+                aria-expanded="false"
+                aria-controls="gl-mob-panel-mat"
+                data-gl-mob-tab="mat">
+          <span class="gl-mob-accordion__tab-icon" aria-hidden="true">📎</span>
+          <span data-i18n="lesson.materials">Материалы</span>
+          <span class="gl-mob-accordion__tab-chevron" aria-hidden="true">›</span>
+        </button>
+        {% endif %}
+        {% if has_homework_block %}
+        <button type="button"
+                class="gl-mob-accordion__tab{% if not has_materials_block %} gl-mob-accordion__tab--full{% endif %}"
+                id="gl-mob-tab-hw"
+                role="tab"
+                aria-expanded="false"
+                aria-controls="gl-mob-panel-hw"
+                data-gl-mob-tab="hw">
+          <span class="gl-mob-accordion__tab-icon" aria-hidden="true">📝</span>
+          <span data-i18n="homework.title">Домашнее задание</span>
+          <span class="gl-mob-accordion__tab-chevron" aria-hidden="true">›</span>
+        </button>
+        {% endif %}
+      </div>
+
+      {# ── Панели с содержимым (оригинальный контент) ── #}
+      {% if has_materials_block %}
+      <div class="gl-mob-accordion__panel-wrap" id="gl-mob-panel-mat" role="tabpanel" aria-labelledby="gl-mob-tab-mat">
+        <div class="gl-mob-accordion__panel">
+          <div class="gl-mob-accordion__panel-inner">
+            <ul class="materials-list">
+              {% for m in lesson.materials %}
+              <li class="material-item">
+                <span class="material-icon">📄</span>
+                <a href="{{ m.file_url }}" target="_blank" rel="noopener">
+                  {{ m.title or m.file_url.split("/")[-1] }}
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if has_homework_block %}
+      <div class="gl-mob-accordion__panel-wrap" id="gl-mob-panel-hw" role="tabpanel" aria-labelledby="gl-mob-tab-hw">
+        <div class="gl-mob-accordion__panel">
+          <div class="gl-mob-accordion__panel-inner gl-mob-accordion__panel-hw-inner">
+            <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
+               class="btn btn-primary gl-mob-accordion__hw-btn"
+               data-i18n="homework.view">Домашнее задание</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>{# /gl-mob-accordion #}
+    {% endif %}
+
+    {# Desktop-only homework section (скрыта на mobile через CSS) #}
     {% if lesson.homework %}
-    <section class="lesson-materials group-lesson-homework-section">
+    <section class="lesson-materials group-lesson-homework-section gl-desktop-homework">
       <h3 data-i18n="homework.title">Домашнее задание</h3>
       <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
          class="btn btn-primary" data-i18n="homework.view">Домашнее задание</a>
@@ -331,7 +404,8 @@
     {% endif %}
 
     <div class="lesson-complete-bar">
-      <div class="lesson-complete-actions">
+      {# Desktop: стандартный блок кнопок #}
+      <div class="lesson-complete-actions gl-complete-desktop">
         {% if previous_lesson %}
         <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
         {% else %}
@@ -357,6 +431,72 @@
           {% endif %}
         {% endif %}
       </div>
+
+      {# Mobile: двухколоночный блок — результат слева, кнопки справа #}
+      <div class="gl-complete-mobile">
+
+        {# Левая колонка: результат урока #}
+        {% if membership and not can_preview_as_owner %}
+        <div class="gl-complete-mobile__result">
+          <div class="gl-complete-mobile__result-label"
+               data-i18n="journal.result_short">Результат</div>
+          {% if journal_entry %}
+            {% if journal_entry.present %}
+            <span class="badge badge-primary" data-i18n="journal.student_present">Присутствовал</span>
+            {% if journal_entry.grade %}
+            <div class="gl-complete-mobile__result-grade"
+                 data-i18n="journal.student_grade"
+                 data-i18n-params='{{ {"grade": journal_entry.grade} | tojson }}'>Оценка: {{ journal_entry.grade }}</div>
+            {% endif %}
+            {% else %}
+            <span class="badge badge-secondary" data-i18n="journal.student_absent">Отсутствовал</span>
+            {% endif %}
+          {% else %}
+          <span class="gl-complete-mobile__result-empty"
+                data-i18n="journal.not_marked_yet">Результаты урока пока не отмечены</span>
+          {% endif %}
+        </div>
+        {% else %}
+        {# Учитель в preview: показываем нейтральный текст #}
+        <div class="gl-complete-mobile__result">
+          <div class="gl-complete-mobile__result-label"
+               data-i18n="journal.result_short">Результат</div>
+          <span class="gl-complete-mobile__result-empty"
+                data-i18n="journal.not_marked_yet">Результаты урока пока не отмечены</span>
+        </div>
+        {% endif %}
+
+        {# Правая колонка: кнопки навигации #}
+        <div class="gl-complete-mobile__nav">
+          {# Сначала «Далее» (главная) #}
+          {% if next_lesson %}
+            {% if membership and user.is_student and not can_preview_as_owner %}
+            {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
+            <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+              <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</button>
+            </form>
+            {% else %}
+            <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</a>
+            {% endif %}
+          {% else %}
+            {% if membership and user.is_student and not can_preview_as_owner %}
+            <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+              <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</button>
+            </form>
+            {% else %}
+            <a href="{{ group_return_url }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</a>
+            {% endif %}
+          {% endif %}
+
+          {# Затем «К группе» (вторичная) #}
+          {% if previous_lesson %}
+          <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
+          {% else %}
+          <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
+          {% endif %}
+        </div>
+
+      </div>{# /gl-complete-mobile #}
     </div>
 
   </main>
@@ -501,6 +641,248 @@
       font-size: 0.76rem;
     }
   }
+
+  /* ── Mobile accordion: Материалы + Домашнее задание (только мобайл) ── */
+
+  /* Desktop: accordion скрыт, стандартные секции видны */
+  .gl-mob-accordion { display: none; }
+  .gl-desktop-homework { display: flex; }
+  .gl-desktop-materials { display: block; }
+  /* Блок результата и мобильный нижний блок: desktop-default */
+  .gl-journal-desktop { display: block; }
+  .gl-complete-desktop { display: flex; }
+  .gl-complete-mobile { display: none; }
+
+  @media (max-width: 768px) {
+    /* На mobile: оригинальные секции скрыты, accordion виден */
+    .gl-desktop-homework { display: none !important; }
+    .gl-desktop-materials { display: none !important; }
+    .gl-mob-accordion { display: block; margin: 12px 0; }
+
+    /* Скрываем desktop-блоки результата и нижних кнопок */
+    .gl-journal-desktop { display: none !important; }
+    .gl-complete-desktop { display: none !important; }
+    .gl-complete-mobile {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    /* ── Левая колонка: результат урока ── */
+    .gl-complete-mobile__result {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 10px 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 0;
+    }
+
+    .gl-complete-mobile__result--empty {
+      background: transparent;
+      border-color: transparent;
+    }
+
+    .gl-complete-mobile__result-label {
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+    }
+
+    .gl-complete-mobile__result .badge {
+      align-self: flex-start;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+    }
+
+    .gl-complete-mobile__result-grade {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .gl-complete-mobile__result-empty {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ── Правая колонка: кнопки навигации ── */
+    .gl-complete-mobile__nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .gl-complete-mobile__nav-form {
+      width: 100%;
+      display: flex;
+    }
+
+    .gl-complete-mobile__nav-btn {
+      width: 100%;
+      justify-content: center;
+      min-height: 40px;
+      font-size: 0.88rem;
+      padding: 7px 12px;
+    }
+
+    .gl-complete-mobile__nav-btn--secondary {
+      min-height: 34px;
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      opacity: 0.85;
+    }
+
+    /* ── Общая карточка-обёртка accordion ── */
+    .gl-mob-accordion {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    /* Строка заголовков 50/50 */
+    .gl-mob-accordion__tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gl-mob-accordion__tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 10px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      line-height: 1.3;
+      text-align: center;
+      transition: color 0.18s, background 0.18s;
+      position: relative;
+      min-height: 46px;
+    }
+
+    /* Разделитель между кнопками */
+    .gl-mob-accordion__tab + .gl-mob-accordion__tab {
+      border-left: 1px solid var(--border);
+    }
+
+    /* Единственная кнопка (если есть что-то одно из двух) */
+    .gl-mob-accordion__tab--full {
+      flex: 1 1 100%;
+    }
+
+    .gl-mob-accordion__tab:hover,
+    .gl-mob-accordion__tab:focus-visible {
+      background: var(--surface-soft);
+      color: var(--text);
+      outline: none;
+    }
+
+    /* Активная (раскрытая) кнопка */
+    .gl-mob-accordion__tab[aria-expanded="true"] {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* Активная подчёркивающая линия снизу */
+    .gl-mob-accordion__tab[aria-expanded="true"]::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .gl-mob-accordion__tab-icon {
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+
+    /* Шеврон */
+    .gl-mob-accordion__tab-chevron {
+      margin-left: auto;
+      font-size: 1rem;
+      transition: transform 0.22s ease;
+      flex-shrink: 0;
+      color: var(--text-subtle);
+    }
+
+    .gl-mob-accordion__tab[aria-expanded="true"] .gl-mob-accordion__tab-chevron {
+      transform: rotate(90deg);
+      color: var(--primary);
+    }
+
+    /* Панели с контентом — плавное раскрытие через grid trick */
+    .gl-mob-accordion__panel-wrap {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.25s ease;
+    }
+
+    .gl-mob-accordion__panel-wrap.is-open {
+      grid-template-rows: 1fr;
+    }
+
+    .gl-mob-accordion__panel {
+      overflow: hidden;
+    }
+
+    .gl-mob-accordion__panel-inner {
+      padding: 12px;
+    }
+
+    /* Контент домашнего задания (совмещён с panel-inner) */
+    .gl-mob-accordion__panel-hw-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .gl-mob-accordion__hw-btn {
+      width: 100%;
+      justify-content: center;
+      min-height: 44px;
+      font-size: 0.95rem;
+    }
+
+    /* Dark mode */
+    html[data-theme="dark"] .gl-mob-accordion,
+    body.dark .gl-mob-accordion {
+      background: var(--bg-card);
+      border-color: var(--border);
+    }
+
+    html[data-theme="dark"] .gl-mob-accordion__tab[aria-expanded="true"],
+    body.dark .gl-mob-accordion__tab[aria-expanded="true"] {
+      background: color-mix(in srgb, var(--primary) 12%, var(--bg-card));
+      color: var(--primary);
+    }
+
+    html[data-theme="dark"] .gl-complete-mobile__result,
+    body.dark .gl-complete-mobile__result {
+      background: var(--bg-card);
+      border-color: var(--border);
+    }
+  }
 </style>
 {% endblock %}
 
@@ -592,6 +974,43 @@ document.addEventListener("DOMContentLoaded", () => {
       if (button) button.disabled = true;
     });
   });
+
+  // ── Mobile accordion: Материалы / Домашнее задание ──────────────────
+  (function initGlMobAccordion() {
+    const accordion = document.getElementById("gl-mob-accordion");
+    if (!accordion) return;
+
+    const tabs = accordion.querySelectorAll("[data-gl-mob-tab]");
+    if (!tabs.length) return;
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener("click", function() {
+        const panelWrapId = tab.getAttribute("aria-controls");
+        const panelWrap = panelWrapId ? document.getElementById(panelWrapId) : null;
+        if (!panelWrap) return;
+
+        const isOpen = tab.getAttribute("aria-expanded") === "true";
+
+        if (isOpen) {
+          // Закрыть эту же панель
+          tab.setAttribute("aria-expanded", "false");
+          panelWrap.classList.remove("is-open");
+        } else {
+          // Раскрыть эту панель, закрыть все остальные
+          tabs.forEach(function(otherTab) {
+            const otherId = otherTab.getAttribute("aria-controls");
+            const otherWrap = otherId ? document.getElementById(otherId) : null;
+            otherTab.setAttribute("aria-expanded", "false");
+            if (otherWrap) otherWrap.classList.remove("is-open");
+          });
+          tab.setAttribute("aria-expanded", "true");
+          panelWrap.classList.add("is-open");
+        }
+      });
+    });
+  })();
+  // ─────────────────────────────────────────────────────────────────────────
+
 });
 </script>
 {% endblock %}
