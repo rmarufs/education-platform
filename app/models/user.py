@@ -1,6 +1,6 @@
 # Модель пользователя
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Enum, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Enum, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
@@ -43,7 +43,7 @@ class User(Base):
     reviewed_group_homework_submissions = relationship("GroupHomeworkSubmission", foreign_keys="GroupHomeworkSubmission.reviewed_by_id", back_populates="reviewed_by")
     group_payment_entries = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.student_id", back_populates="student")
     marked_group_payments = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.marked_by_id", back_populates="marked_by")
-
+    push_subscriptions = relationship("PushSubscription", back_populates="user", cascade="all, delete-orphan")
     @property
     def is_teacher(self) -> bool:
         return self.role.value == "teacher"
@@ -59,3 +59,17 @@ class User(Base):
     @property
     def is_org(self) -> bool:
         return self.role.value == "organization"
+
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    endpoint = Column(String(500), nullable=False, unique=True)
+    p256dh = Column(String(200), nullable=False)
+    auth = Column(String(200), nullable=False)
+    user_agent = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="push_subscriptions")

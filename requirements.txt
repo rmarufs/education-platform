@@ -14,3 +14,4 @@ Pillow>=10.0.0
 alembic==1.13.1
 bleach==6.1.0
 slowapi==0.1.9
+pywebpush==2.3.0

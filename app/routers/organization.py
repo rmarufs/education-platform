@@ -282,6 +282,38 @@ def create_organization_announcement(
 
     db.add(announcement)
     db.commit()
+
+    try:
+        from app.utils.push import send_push_to_users
+        target_user_ids = []
+        if audience in ("all", "teachers"):
+            teachers = db.query(OrganizationTeacher).filter(
+                OrganizationTeacher.organization_id == org.id,
+                OrganizationTeacher.status == "accepted"
+            ).all()
+            target_user_ids.extend([t.teacher_id for t in teachers])
+            
+        if audience in ("all", "students"):
+            students = db.query(OrganizationStudent).filter(
+                OrganizationStudent.organization_id == org.id,
+                OrganizationStudent.status == "accepted"
+            ).all()
+            target_user_ids.extend([s.student_id for s in students])
+            
+        if target_user_ids:
+            send_push_to_users(
+                db=db,
+                user_ids=target_user_ids,
+                title="Новое объявление",
+                body=org.name or announcement.title,
+                target_url=f"/dashboard?announcement_id={announcement.id}",
+                notification_type="organization_announcement",
+                entity_id=announcement.id
+            )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error sending push for announcement: {e}")
+
     return RedirectResponse("/organization/announcements?success=created", status_code=302)
 
 

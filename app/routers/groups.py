@@ -1695,14 +1695,34 @@ async def group_homework_save(
                 .filter(GroupMember.group_id == group.id)
                 .all()
             ]
+            notifications_created = []
             for student_id in student_ids:
-                db.add(GroupHomeworkNotification(
+                notif = GroupHomeworkNotification(
                     homework_id=homework.id,
                     student_id=student_id,
                     notification_type="new_homework",
-                ))
+                )
+                db.add(notif)
+                notifications_created.append(notif)
             db.commit()
-        except DatabaseError:
+
+            try:
+                from app.utils.push import send_push_to_user
+                for notif in notifications_created:
+                    send_push_to_user(
+                        db=db,
+                        user_id=notif.student_id,
+                        title="Новое домашнее задание",
+                        body=homework.title,
+                        target_url=f"/dashboard/student/homework-notifications/{notif.id}/open",
+                        notification_type="new_homework",
+                        entity_id=notif.id
+                    )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Error sending push for new homework: {e}")
+
+        except Exception:
             db.rollback()
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
 
@@ -1975,6 +1995,21 @@ def group_homework_review_save(
     submission.reviewed_at = datetime.utcnow()
     submission.reviewed_by_id = user.id
     db.commit()
+
+    try:
+        from app.utils.push import send_push_to_user
+        send_push_to_user(
+            db=db,
+            user_id=submission.student_id,
+            title="Домашнее задание проверено",
+            body="Преподаватель оставил ответ/оценку",
+            target_url=f"/dashboard/student/homework-replies/{submission.id}/open",
+            notification_type="homework_reviewed",
+            entity_id=submission.id
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error sending push for homework review: {e}")
 
     lesson_id = submission.homework.lesson_id
     return RedirectResponse(f"/groups/{group_id}/homework/review?lesson_id={lesson_id}&success=review_saved", status_code=302)

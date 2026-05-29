@@ -6,7 +6,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import joinedload
@@ -29,6 +29,7 @@ from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import admin
 from app.routers import organization
 from app.routers import groups
+from app.routers import push
 from app.utils.csrf import CSRFMiddleware
 
 logger = logging.getLogger(__name__)
@@ -177,6 +178,7 @@ app.include_router(pages.router)
 app.include_router(admin.router)
 app.include_router(organization.router)
 app.include_router(groups.router)
+app.include_router(push.router)
 
 
 # ── Главная страница ─────────────────────────────────────────────────────────
@@ -223,6 +225,10 @@ def index(request: Request, user: User | None = Depends(_get_request_user), db=D
         }
     )
 
+@app.get("/sw.js")
+async def get_service_worker():
+    """Отдаёт Service Worker с корня для максимального scope."""
+    return FileResponse("static/js/sw.js", media_type="application/javascript")
 
 # ── Инициализация БД при старте ──────────────────────────────────────────────
 

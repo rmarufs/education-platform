@@ -2,7 +2,7 @@
 {% if announcements %}
 <section class="announcement-stack" data-i18n="announcements.section" data-i18n-prop="aria-label" aria-label="announcements.section">
     {% for announcement in announcements %}
-    <article class="announcement-card">
+    <article class="announcement-card" id="announcement-{{ announcement.id }}">
         <div class="announcement-card__body">
             <div class="announcement-card__meta">
                 <span data-i18n="announcements.from_org" data-i18n-params='{{ {"name": announcement.organization.name if announcement.organization else ""} | tojson }}'>announcements.from_org</span>
@@ -29,6 +29,21 @@ document.addEventListener('submit', function(event) {
     setTimeout(function() {
         form.submit();
     }, 170);
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const aId = urlParams.get('announcement_id');
+    if (aId) {
+        const el = document.getElementById('announcement-' + aId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('is-highlighted');
+            setTimeout(() => {
+                el.classList.remove('is-highlighted');
+            }, 4000);
+        }
+    }
 });
 </script>
 {% endif %}

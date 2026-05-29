@@ -5793,6 +5793,14 @@ body.dark .org-pub-teacher-card:hover {
   transform: translateY(-4px);
   pointer-events: none;
 }
+.announcement-card.is-highlighted {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent);
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+  z-index: 2;
+  position: relative;
+}
 .announcement-card__body {
   min-width: 0;
   flex: 1;

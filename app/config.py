@@ -40,6 +40,10 @@ PLATFORM_NAME = os.getenv("PLATFORM_NAME", "Фурузон")
 # Время жизни сессии (в секундах)
 SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", 60 * 60 * 24 * 7))  # По умолчанию 7 дней
 
+# Настройки Web Push Notifications
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
+VAPID_CLAIMS_SUB = os.getenv("VAPID_CLAIMS_SUB", "mailto:admin@example.com")
 
 def _get_bool_env(key: str, default: bool) -> bool:
     value = os.getenv(key)
