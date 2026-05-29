@@ -403,6 +403,27 @@
     </section>
     {% endif %}
 
+      {# Mobile-only: отдельный slim-блок результата (над кнопками) #}
+      {% if membership and not can_preview_as_owner %}
+      <div class="gl-mob-result-bar">
+        <span class="gl-mob-result-label"
+              data-i18n="journal.result_short">Результат</span>
+        {% if journal_entry %}
+          {% if journal_entry.present %}
+          <span class="gl-mob-badge gl-mob-badge--present" data-i18n="journal.student_present">Присутствовал</span>
+          {% else %}
+          <span class="gl-mob-badge gl-mob-badge--absent" data-i18n="journal.student_absent">Отсутствовал</span>
+          {% endif %}
+          {% if journal_entry.grade %}
+          <span class="gl-mob-grade gl-mob-grade--{{ journal_entry.grade }}">{{ journal_entry.grade }}</span>
+          {% endif %}
+        {% else %}
+        <span class="gl-mob-result-empty"
+              data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
+        {% endif %}
+      </div>
+      {% endif %}
+
     <div class="lesson-complete-bar">
       {# Desktop: стандартный блок кнопок #}
       <div class="lesson-complete-actions gl-complete-desktop">
@@ -432,70 +453,36 @@
         {% endif %}
       </div>
 
-      {# Mobile: slim результат + кнопки навигации #}
+      {# Mobile: кнопки навигации #}
       <div class="gl-complete-mobile">
-
-        {# Slim-строка результата #}
-        {% if membership and not can_preview_as_owner %}
-        <div class="gl-complete-mobile__result">
-          <span class="gl-mob-result-label"
-                data-i18n="journal.result_short">Результат</span>
-          {% if journal_entry %}
-            {% if journal_entry.present %}
-            <span class="gl-mob-badge gl-mob-badge--present" data-i18n="journal.student_present">Присутствовал</span>
-            {% else %}
-            <span class="gl-mob-badge gl-mob-badge--absent" data-i18n="journal.student_absent">Отсутствовал</span>
-            {% endif %}
-            {% if journal_entry.grade %}
-            <span class="gl-mob-grade gl-mob-grade--{{ journal_entry.grade }}">{{ journal_entry.grade }}</span>
-            {% endif %}
-          {% else %}
-          <span class="gl-mob-result-empty"
-                data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
-          {% endif %}
-        </div>
+        {# «К группе» — слева #}
+        {% if previous_lesson %}
+        <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
         {% else %}
-        {# Учитель в preview #}
-        <div class="gl-complete-mobile__result">
-          <span class="gl-mob-result-label"
-                data-i18n="journal.result_short">Результат</span>
-          <span class="gl-mob-result-empty"
-                data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
-        </div>
+        <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
         {% endif %}
 
-        {# Вторая строка: кнопки навигации #}
-        <div class="gl-complete-mobile__nav">
-          {# Сначала «К группе» (вторичная, слева) #}
-          {% if previous_lesson %}
-          <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
+        {# «Далее» — справа #}
+        {% if next_lesson %}
+          {% if membership and user.is_student and not can_preview_as_owner %}
+          {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
+          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+            <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</button>
+          </form>
           {% else %}
-          <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
+          <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</a>
           {% endif %}
-
-          {# Затем «Далее» (главная, справа) #}
-          {% if next_lesson %}
-            {% if membership and user.is_student and not can_preview_as_owner %}
-            {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
-            <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
-              <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</button>
-            </form>
-            {% else %}
-            <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</a>
-            {% endif %}
+        {% else %}
+          {% if membership and user.is_student and not can_preview_as_owner %}
+          <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+            <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</button>
+          </form>
           {% else %}
-            {% if membership and user.is_student and not can_preview_as_owner %}
-            <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
-              <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</button>
-            </form>
-            {% else %}
-            <a href="{{ group_return_url }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</a>
-            {% endif %}
+          <a href="{{ group_return_url }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</a>
           {% endif %}
-        </div>
-
+        {% endif %}
       </div>{# /gl-complete-mobile #}
-    </div>
+    </div>{# /lesson-complete-bar #}
 
   </main>
 </div>
@@ -650,6 +637,7 @@
   .gl-journal-desktop { display: block; }
   .gl-complete-desktop { display: flex; }
   .gl-complete-mobile { display: none; }
+  .gl-mob-result-bar { display: none; }
 
   @media (max-width: 768px) {
     /* На mobile: оригинальные секции скрыты, accordion виден */
@@ -660,23 +648,22 @@
     /* Скрываем desktop-блоки результата и нижних кнопок */
     .gl-journal-desktop { display: none !important; }
     .gl-complete-desktop { display: none !important; }
-    .gl-complete-mobile {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* ── Slim-строка результата ── */
-    .gl-complete-mobile__result {
+    /* ── Mobile: отдельный slim-блок результата ── */
+    .gl-mob-result-bar {
       display: flex;
       flex-direction: row;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
-      min-height: 28px;
+      gap: 8px;
+      padding: 8px 14px;
+      margin-bottom: 6px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 38px;
     }
 
-    /* Лейбл «РЕЗУЛЬТАТ» — маленький, uppercase */
+    /* Лейбл «REZULTAT» */
     .gl-mob-result-label {
       font-family: inherit;
       font-size: 0.65rem;
@@ -687,7 +674,7 @@
       flex-shrink: 0;
     }
 
-    /* Бейдж присутствия — slim вариант */
+    /* Бейдж присутствия */
     .gl-mob-badge {
       display: inline-flex;
       align-items: center;
@@ -709,7 +696,7 @@
       border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
     }
 
-    /* Grade badge: цифра с цветом от оценки */
+    /* Grade badge: цифра с цветом 1–5 */
     .gl-mob-grade {
       display: inline-flex;
       align-items: center;
@@ -735,8 +722,8 @@
       line-height: 1.3;
     }
 
-    /* ── Строка кнопок навигации ── */
-    .gl-complete-mobile__nav {
+    /* ── Mobile: кнопки навигации ── */
+    .gl-complete-mobile {
       display: grid;
       grid-template-columns: 2fr 3fr;
       gap: 8px;
