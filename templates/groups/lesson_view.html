@@ -432,37 +432,35 @@
         {% endif %}
       </div>
 
-      {# Mobile: двухколоночный блок — результат слева, кнопки справа #}
+      {# Mobile: slim результат + кнопки навигации #}
       <div class="gl-complete-mobile">
 
-        {# Левая колонка: результат урока #}
+        {# Slim-строка результата #}
         {% if membership and not can_preview_as_owner %}
         <div class="gl-complete-mobile__result">
-          <div class="gl-complete-mobile__result-label"
-               data-i18n="journal.result_short">Результат</div>
+          <span class="gl-mob-result-label"
+                data-i18n="journal.result_short">Результат</span>
           {% if journal_entry %}
             {% if journal_entry.present %}
-            <span class="badge badge-primary" data-i18n="journal.student_present">Присутствовал</span>
-            {% if journal_entry.grade %}
-            <div class="gl-complete-mobile__result-grade"
-                 data-i18n="journal.student_grade"
-                 data-i18n-params='{{ {"grade": journal_entry.grade} | tojson }}'>Оценка: {{ journal_entry.grade }}</div>
-            {% endif %}
+            <span class="gl-mob-badge gl-mob-badge--present" data-i18n="journal.student_present">Присутствовал</span>
             {% else %}
-            <span class="badge badge-secondary" data-i18n="journal.student_absent">Отсутствовал</span>
+            <span class="gl-mob-badge gl-mob-badge--absent" data-i18n="journal.student_absent">Отсутствовал</span>
+            {% endif %}
+            {% if journal_entry.grade %}
+            <span class="gl-mob-grade gl-mob-grade--{{ journal_entry.grade }}">{{ journal_entry.grade }}</span>
             {% endif %}
           {% else %}
-          <span class="gl-complete-mobile__result-empty"
-                data-i18n="journal.not_marked_yet">Результаты урока пока не отмечены</span>
+          <span class="gl-mob-result-empty"
+                data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
           {% endif %}
         </div>
         {% else %}
-        {# Учитель в preview: показываем нейтральный текст #}
+        {# Учитель в preview #}
         <div class="gl-complete-mobile__result">
-          <div class="gl-complete-mobile__result-label"
-               data-i18n="journal.result_short">Результат</div>
-          <span class="gl-complete-mobile__result-empty"
-                data-i18n="journal.not_marked_yet">Результаты урока пока не отмечены</span>
+          <span class="gl-mob-result-label"
+                data-i18n="journal.result_short">Результат</span>
+          <span class="gl-mob-result-empty"
+                data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
         </div>
         {% endif %}
 
@@ -665,49 +663,83 @@
     .gl-complete-mobile {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
 
-    /* ── Первая строка: результат урока ── */
+    /* ── Slim-строка результата ── */
     .gl-complete-mobile__result {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
+      min-height: 28px;
     }
 
-    .gl-complete-mobile__result-label {
+    /* Лейбл «РЕЗУЛЬТАТ» — маленький, uppercase */
+    .gl-mob-result-label {
       font-family: inherit;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+
+    /* Бейдж присутствия — slim вариант */
+    .gl-mob-badge {
+      display: inline-flex;
+      align-items: center;
       font-size: 0.72rem;
       font-weight: 600;
-      color: var(--text-subtle);
-      letter-spacing: 0.04em;
-      line-height: 1.2;
-    }
-
-    .gl-complete-mobile__result .badge {
-      align-self: flex-start;
-      font-size: 0.75rem;
+      line-height: 1;
       padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .gl-mob-badge--present {
+      background: color-mix(in srgb, #22c55e 15%, transparent);
+      color: #16a34a;
+      border: 1px solid color-mix(in srgb, #22c55e 30%, transparent);
+    }
+    .gl-mob-badge--absent {
+      background: color-mix(in srgb, #ef4444 12%, transparent);
+      color: #dc2626;
+      border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
     }
 
-    .gl-complete-mobile__result-grade {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-top: 2px;
-    }
-
-    .gl-complete-mobile__result-empty {
+    /* Grade badge: цифра с цветом от оценки */
+    .gl-mob-grade {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .gl-mob-grade--1 { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .gl-mob-grade--2 { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+    .gl-mob-grade--3 { background: #fefce8; color: #a16207; border: 1px solid #fde047; }
+    .gl-mob-grade--4 { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .gl-mob-grade--5 { background: #dcfce7; color: #15803d; border: 1px solid #4ade80; }
+
+    /* Текст пустого состояния */
+    .gl-mob-result-empty {
+      font-size: 0.75rem;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.3;
     }
 
-    /* ── Вторая строка: кнопки навигации ── */
+    /* ── Строка кнопок навигации ── */
     .gl-complete-mobile__nav {
       display: grid;
       grid-template-columns: 2fr 3fr;
-      gap: 10px;
+      gap: 8px;
       align-items: stretch;
     }
 
