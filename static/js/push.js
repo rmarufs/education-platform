@@ -59,12 +59,10 @@
         btn.style.display = 'inline-flex';
         if (isSubscribed || Notification.permission === 'granted') {
             btn.classList.add('subscribed');
-            btn.innerHTML = '🔕';
             btn.title = 'Уведомления включены';
             btn.disabled = true; // For now we just disable it when subscribed, or we could implement unsubscribe
         } else {
             btn.classList.remove('subscribed');
-            btn.innerHTML = '🔔';
             btn.title = 'Включить уведомления браузера';
             btn.disabled = false;
         }

@@ -3885,6 +3885,27 @@ body { transition: background-color .3s ease, color .3s ease; }
 }
 .theme-toggle:hover { background: var(--primary-light); }
 
+.push-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.push-toggle:hover {
+  background: var(--primary-light);
+  color: var(--text-main);
+}
+.push-toggle .icon-bell-off { display: none; }
+.push-toggle.subscribed .icon-bell { display: none; }
+.push-toggle.subscribed .icon-bell-off { display: block; }
+
 .nav-auth-links {
   display: flex;
   align-items: center;
