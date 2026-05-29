@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from pywebpush import webpush, WebPushException
 
 from app.models.user import PushSubscription
-from app.config import VAPID_PRIVATE_KEY, VAPID_CLAIMS_SUB
+import app.config as config
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def send_push_to_user(
     Невалидные подписки (404, 410) автоматически удаляются из БД.
     Ошибки отправки перехватываются, чтобы не ломать основной бизнес-процесс.
     """
-    if not VAPID_PRIVATE_KEY or not VAPID_CLAIMS_SUB:
+    if not config.VAPID_PRIVATE_KEY or not config.VAPID_CLAIMS_SUB:
         logger.warning("VAPID_PRIVATE_KEY or VAPID_CLAIMS_SUB not configured. Push notifications are disabled.")
         return
 
@@ -60,8 +60,8 @@ def send_push_to_user(
             webpush(
                 subscription_info=subscription_info,
                 data=payload_str,
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims={"sub": VAPID_CLAIMS_SUB}
+                vapid_private_key=config.VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": config.VAPID_CLAIMS_SUB}
             )
         except WebPushException as e:
             # 404 (Not Found) or 410 (Gone) indicates the subscription is no longer valid

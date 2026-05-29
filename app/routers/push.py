@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models.user import PushSubscription
 from app.dependencies import get_user
-from app.config import VAPID_PUBLIC_KEY
+import app.config as config
 
 router = APIRouter(prefix="/api/push", tags=["Push Notifications"])
 
@@ -26,12 +26,12 @@ class PushUnsubscribe(BaseModel):
 
 @router.get("/public-key")
 def get_public_key():
-    if not VAPID_PUBLIC_KEY:
+    if not config.VAPID_PUBLIC_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Push notifications are not configured on this server. Add VAPID_PUBLIC_KEY to environment variables."
         )
-    return {"public_key": VAPID_PUBLIC_KEY}
+    return {"public_key": config.VAPID_PUBLIC_KEY}
 
 
 @router.post("/subscribe")
