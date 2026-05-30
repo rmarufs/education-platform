@@ -200,10 +200,6 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/admin", status_code=302)
     if user.is_org:
         return RedirectResponse("/dashboard/organization", status_code=302)
-    # Для студента пробрасываем только joined_org_status (одноразовый toast после регистрации)
-    joined_status = request.query_params.get("joined_org_status", "")
-    if joined_status in ("accepted", "pending"):
-        return RedirectResponse(f"/dashboard/student?joined_org_status={joined_status}", status_code=302)
     return RedirectResponse("/dashboard/student", status_code=302)
 
 

@@ -30,41 +30,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/style.css?v=41" />
-    <link rel="stylesheet" href="/static/css/mobile.css?v=25" />
-    <link rel="stylesheet" href="/static/css/video_player.css?v=4" />
+    <link rel="stylesheet" href="/static/css/style.css?v=37" />
+    <link rel="stylesheet" href="/static/css/mobile.css?v=24" />
+    <link rel="stylesheet" href="/static/css/video_player.css?v=3" />
 
-    <style>
-    /* ── DEBUG-режим ── */
-    body.nav-loader-debug .nav-loader {
-      opacity: 1 !important;
-      visibility: visible !important;
-      display: flex !important;
-      transform: translateY(0) scale(1) !important;
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4), 0 4px 16px rgba(0, 0, 0, 0.15) !important;
-    }
-    .nav-loader.nav-loader-active {
-      opacity: 1 !important;
-      visibility: visible !important;
-      transform: translateY(0) scale(1) !important;
-    }
-    </style>
 </head>
 <body class="{% block body_class %}{% endblock %}">
-
-    <!-- Глобальный индикатор загрузки страниц (PWA/standalone) -->
-    <div id="nav-loader"
-         class="nav-loader"
-         role="status"
-         aria-live="polite"
-         aria-label="Загрузка"
-         aria-hidden="true">
-      <span class="nav-loader__dots" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
-      </span>
-    </div>
 
     <nav class="navbar">
         <div class="nav-container">
@@ -219,7 +190,7 @@
 
     <script src="/static/js/i18n.js?v=23"></script>
     <script src="/static/js/csrf.js?v=1"></script>
-    <script src="/static/js/main.js?v=8"></script>
+    <script src="/static/js/main.js?v=4"></script>
     <script src="/static/js/richtext.js?v=1"></script>
     <script src="/static/js/lesson_media.js?v=1"></script>
     <script src="/static/js/auth.js?v=2"></script>

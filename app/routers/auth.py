@@ -471,8 +471,6 @@ async def register(
             )
             db.add(org_student)
         db.commit()
-        # Передаём статус вступления через URL — клиент покажет одноразовый toast
-        return RedirectResponse(f"/dashboard?joined_org_status={join_status}", status_code=302)
 
     return RedirectResponse("/dashboard", status_code=302)
 
