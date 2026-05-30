@@ -112,9 +112,10 @@ function showToast(message, type = 'success') {
   window.__hideNavLoader = hide;
 
   try {
-    /* ── Скрыть при загрузке/восстановлении страницы ── */
-    window.addEventListener('pageshow', function () { hide(); });
-    window.addEventListener('load', function () { hide(); });
+    /* ── Скрыть только при восстановлении из bfcache ── */
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) hide();
+    });
 
     /* ── DEBUG-режим ── */
     if (isDebug) {
