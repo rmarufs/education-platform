@@ -6681,111 +6681,139 @@ html[data-theme="dark"] .announcement-card__dismiss {
 }
 
 /* ══════════════════════════════════════════════════
-   PAGE NAV LOADER
-   Тонкий shimmer-индикатор под navbar при MPA-переходах.
-   Цвета: --primary и --gradient-end из дизайн-системы.
-   Автоматически адаптируется в тёмной теме через CSS-переменные.
-   Не использует color-mix() в базовом состоянии (Safari fallback).
+   PAGE NAV LOADER (FLOATING CAPSULE)
+   Аккуратный плавающий индикатор загрузки при MPA-переходах.
    ══════════════════════════════════════════════════ */
 
-/* Высота navbar как CSS-переменная */
 :root {
   --navbar-height: 58px;
 }
 
-#nav-loader {
+.nav-loader {
   position: fixed;
-  top: var(--navbar-height, 58px);
-  left: 0;
-  width: 100%;
-  height: 3px;
-
-  /* z-index: выше navbar (100), avatar-menu (100), модалок (999 не мешает — те fullscreen) */
-  z-index: 200;
-
+  top: calc(var(--navbar-height, 58px) + env(safe-area-inset-top, 0px) + 12px);
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  z-index: 9999;
   pointer-events: none;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  width: 48px;
+  height: 32px;
+  border-radius: 999px;
+  
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  border: 1px solid var(--border-color, #e5e7eb);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
   opacity: 0;
-
-  background: linear-gradient(
-    90deg,
-    transparent            0%,
-    var(--primary)         20%,
-    var(--gradient-end, #8b5cf6) 50%,
-    var(--primary)         80%,
-    transparent           100%
-  );
-  background-size: 250% 100%;
-
-  /* box-shadow: только при активном состоянии — см. .nav-loader-active */
-  transition: opacity 0.15s ease;
-  will-change: opacity, background-position;
-  transform: translateZ(0); /* GPU-слой */
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.96);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+  will-change: opacity, transform;
 }
 
-#nav-loader.nav-loader-active {
+@supports (box-shadow: 0 0 0 color-mix(in srgb, red 50%, transparent)) {
+  .nav-loader {
+    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+.nav-loader.nav-loader-active {
   opacity: 1;
-  animation: nav-loader-shimmer 1.2s linear infinite;
-
-  /* Fallback: rgba работает во всех браузерах включая Safari iOS */
-  box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5);
+  visibility: visible;
+  transform: translateY(0) scale(1);
 }
 
-/* Прогрессивное улучшение для браузеров с color-mix() (Safari 15.4+, Chrome 111+) */
-@supports (box-shadow: 0 0 0 color-mix(in srgb, red 50%, transparent)) {
-  #nav-loader.nav-loader-active {
-    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--primary) 60%, transparent);
+.nav-loader__dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-loader__dots span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.6;
+  animation: nav-loader-pulse 1.2s ease-in-out infinite;
+}
+
+.nav-loader__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+  background: color-mix(in srgb, var(--primary) 50%, var(--gradient-end, #8b5cf6));
+}
+
+.nav-loader__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+  background: var(--gradient-end, #8b5cf6);
+}
+
+@keyframes nav-loader-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
   }
 }
 
-@keyframes nav-loader-shimmer {
-  0%   { background-position:  250% 0; }
-  100% { background-position: -250% 0; }
-}
-
-/* ── Тёмная тема: усиливаем glow (var(--primary) = #6366f1 в dark) ── */
-html[data-theme="dark"] #nav-loader.nav-loader-active,
-body.dark #nav-loader.nav-loader-active {
-  box-shadow: 0 0 10px 3px rgba(99, 102, 241, 0.55);
-}
-
-@supports (box-shadow: 0 0 0 color-mix(in srgb, red 50%, transparent)) {
-  html[data-theme="dark"] #nav-loader.nav-loader-active,
-  body.dark #nav-loader.nav-loader-active {
-    box-shadow: 0 0 12px 3px color-mix(in srgb, var(--primary) 65%, transparent);
-  }
-}
-
-/* ── Мобильные: чуть толще ── */
+/* ── Мобильные ── */
 @media (max-width: 640px) {
-  #nav-loader {
-    height: 4px;
+  .nav-loader {
+    top: calc(var(--navbar-height, 58px) + env(safe-area-inset-top, 0px) + 10px);
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    width: 42px;
+    height: 28px;
   }
-  #nav-loader.nav-loader-active {
-    box-shadow: 0 0 10px 3px rgba(37, 99, 235, 0.55);
+  .nav-loader__dots {
+    gap: 3px;
+  }
+  .nav-loader__dots span {
+    width: 5px;
+    height: 5px;
   }
 }
 
-/* ── DEBUG-режим: body.nav-loader-debug делает loader ярко видимым ──
-   Добавляется JS при ?debug_loader=1. Удаляется автоматически через 2с.
-   Не влияет на обычных пользователей. */
-body.nav-loader-debug #nav-loader {
+/* ── Тёмная тема ── */
+html[data-theme="dark"] .nav-loader,
+body.dark .nav-loader {
+  background: rgba(17, 24, 39, 0.75); /* --bg-card с прозрачностью */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html[data-theme="dark"] .nav-loader__dots span,
+body.dark .nav-loader__dots span {
+  opacity: 0.8;
+}
+
+/* ── DEBUG-режим ── */
+body.nav-loader-debug .nav-loader {
   opacity: 1 !important;
-  height: 5px !important;
-  /* Яркий, явный цвет — исключаем проблемы с CSS-переменными */
-  background: linear-gradient(90deg, #2563eb 0%, #8b5cf6 50%, #2563eb 100%) !important;
-  box-shadow: 0 0 14px 4px rgba(37, 99, 235, 0.7) !important;
-  outline: none;
-  animation: nav-loader-shimmer 1.2s linear infinite !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4), 0 4px 16px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* ── Отключить анимацию при prefers-reduced-motion ── */
+/* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
-  #nav-loader.nav-loader-active,
-  body.nav-loader-debug #nav-loader {
+  .nav-loader {
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    transform: none !important;
+  }
+  .nav-loader__dots span {
     animation: none !important;
-    background: var(--primary) !important;
-    background-size: 100% 100% !important;
-    box-shadow: none !important;
-    opacity: 0.85 !important;
+    opacity: 0.8 !important;
+    transform: none !important;
   }
 }

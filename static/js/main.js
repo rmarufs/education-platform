@@ -548,28 +548,16 @@ async function uploadSidebarAvatar(input) {
 (function () {
   'use strict';
 
-  var DELAY_MS = 150; // не мигать при быстрых переходах (< 150ms)
-  var _timer   = null;
-  var _active  = false;
-
-  function getLoader() {
-    return document.getElementById('nav-loader');
-  }
-
   function show() {
     if (_active) return;
-    _timer = setTimeout(function () {
-      var el = getLoader();
-      if (!el) return;
-      _active = true;
-      el.removeAttribute('aria-hidden');
-      el.classList.add('nav-loader-active');
-    }, DELAY_MS);
+    var el = getLoader();
+    if (!el) return;
+    _active = true;
+    el.removeAttribute('aria-hidden');
+    el.classList.add('nav-loader-active');
   }
 
   function hide() {
-    clearTimeout(_timer);
-    _timer  = null;
     _active = false;
     var el = getLoader();
     if (!el) return;
@@ -584,7 +572,7 @@ async function uploadSidebarAvatar(input) {
   // load — дополнительная страховка
   window.addEventListener('load', function () { hide(); });
 
-  /* ── DEBUG: ?debug_loader=1 — показать loader на 2с для визуальной проверки ── */
+  /* ── DEBUG: ?debug_loader=1 — показать loader на 3с для визуальной проверки ── */
   // Безопасно: не влияет на обычных пользователей без этого параметра
   window.addEventListener('load', function () {
     try {
@@ -596,18 +584,15 @@ async function uploadSidebarAvatar(input) {
         el.classList.add('nav-loader-active');
         setTimeout(function () {
           hide();
-        }, 2000);
+        }, 3000);
       }
     } catch (_) {}
   });
 
   /* ── Сбросить таймер при уходе со страницы ── */
-  // Не скрываем здесь — скроем при pageshow следующей страницы.
-  // Но сбрасываем таймер, чтобы не было ложного показа при быстрой отмене.
-  window.addEventListener('pagehide', function () {
-    clearTimeout(_timer);
-    _timer = null;
-  });
+  // В старой логике здесь сбрасывался setTimeout показа. 
+  // Теперь показ мгновенный, таймера нет, поэтому этот обработчик больше не нужен,
+  // скрытие отработает через pageshow следующей/вернувшейся страницы.
 
   /* ── Перехват кликов по ссылкам ── */
   document.addEventListener('click', function (e) {
