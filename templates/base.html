@@ -70,6 +70,17 @@
       </span>
     </div>
 
+    <!-- ВРЕМЕННЫЙ ДИАГНОСТИЧЕСКИЙ СКРИПТ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const el = document.getElementById('nav-loader');
+      if (el) {
+        el.classList.add('nav-loader-active');
+        el.removeAttribute('aria-hidden');
+      }
+    });
+    </script>
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="nav-logo" aria-label="Furuzon">
