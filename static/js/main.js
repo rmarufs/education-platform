@@ -22,6 +22,183 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
+/* ── Глобальный индикатор загрузки страниц ───────────────────────────────
+   Показывает плавающую капсулу loader при MPA-переходах.
+   Размещён в начале файла для гарантии запуска даже при ошибках ниже.
+   ───────────────────────────────────────────────────────────────────── */
+(function initNavLoader() {
+  'use strict';
+  
+  var _active = false;
+  var isDebug = false;
+
+  try {
+    if (new URLSearchParams(window.location.search).get('debug_loader') === '1') {
+      isDebug = true;
+    }
+  } catch (_) {}
+
+  function log() {
+    if (!isDebug) return;
+    console.log.apply(console, ['[nav-loader]'].concat(Array.prototype.slice.call(arguments)));
+  }
+
+  function getOrCreateLoader() {
+    var el = document.getElementById('nav-loader');
+    if (el) return el;
+    
+    // Fallback: если элемента нет в DOM, создаем его динамически
+    log('Element not found in DOM. Creating fallback DOM.');
+    el = document.createElement('div');
+    el.id = 'nav-loader';
+    el.className = 'nav-loader';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.setAttribute('aria-label', 'Загрузка');
+    el.setAttribute('aria-hidden', 'true');
+    
+    var dots = document.createElement('span');
+    dots.className = 'nav-loader__dots';
+    dots.setAttribute('aria-hidden', 'true');
+    dots.appendChild(document.createElement('span'));
+    dots.appendChild(document.createElement('span'));
+    dots.appendChild(document.createElement('span'));
+    
+    el.appendChild(dots);
+    if (document.body) {
+      document.body.appendChild(el);
+    } else {
+      // Если body еще нет, ждем DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.appendChild(el);
+      });
+    }
+    return el;
+  }
+
+  function show() {
+    try {
+      if (_active) return;
+      var el = getOrCreateLoader();
+      if (!el || !document.body) return; // Страховка
+      
+      log('show');
+      _active = true;
+      el.removeAttribute('aria-hidden');
+      el.classList.add('nav-loader-active');
+    } catch (e) {
+      console.error('[nav-loader]', e);
+    }
+  }
+
+  function hide() {
+    try {
+      if (!_active && !isDebug) return;
+      var el = document.getElementById('nav-loader');
+      if (!el) return;
+      
+      log('hide');
+      _active = false;
+      el.setAttribute('aria-hidden', 'true');
+      el.classList.remove('nav-loader-active');
+      if (document.body) document.body.classList.remove('nav-loader-debug');
+    } catch (e) {
+      console.error('[nav-loader]', e);
+    }
+  }
+
+  // Экспорт для отладки
+  window.__showNavLoader = show;
+  window.__hideNavLoader = hide;
+
+  try {
+    /* ── Скрыть при загрузке/восстановлении страницы ── */
+    window.addEventListener('pageshow', function () { hide(); });
+    window.addEventListener('load', function () { hide(); });
+
+    /* ── DEBUG-режим ── */
+    if (isDebug) {
+      var applyDebug = function() {
+        log('initialized (debug mode)');
+        document.body.classList.add('nav-loader-debug');
+        show();
+        setTimeout(function() { hide(); }, 5000); // 5 секунд
+      };
+      
+      if (document.body) {
+        applyDebug();
+      } else {
+        document.addEventListener('DOMContentLoaded', applyDebug);
+      }
+    }
+
+    /* ── Перехват кликов по ссылкам ── */
+    function handleNavClick(e) {
+      // Только левая кнопка мыши без модификаторов
+      if (e.type === 'click' && e.button !== 0) return;
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+      var target = e.target;
+      var link = target.closest('a[href]');
+      
+      // Ищем кнопку внутри формы (submit)
+      if (!link) {
+        var btn = target.closest('button');
+        if (btn && btn.type === 'submit' && btn.closest('form')) {
+           return; 
+        }
+      }
+      
+      // Ищем элементы с role="link" или data-href
+      if (!link) {
+         var customLink = target.closest('[data-href], [role="link"]');
+         if (customLink) {
+             var cHref = customLink.getAttribute('data-href') || customLink.getAttribute('href');
+             if (cHref && !cHref.startsWith('#')) show();
+         }
+         return;
+      }
+
+      var href = link.getAttribute('href') || '';
+
+      // --- Исключения: не навигационные клики ---
+      if (href === '' || href === '#') return;
+      if (/^#/.test(href)) return; 
+      if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (link.target === '_blank') return;
+      if (link.hasAttribute('download')) return;
+      if (link.closest('.lang-switcher')) return;
+      if (link.id === 'theme-btn') return;
+      if (link.hasAttribute('data-logout-link')) return;
+
+      show();
+    }
+
+    // Усиленный перехват для мобильных и десктопов
+    document.addEventListener('click', handleNavClick, true);
+    document.addEventListener('pointerdown', function(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      var link = e.target.closest('a[href]');
+      if (link && link.getAttribute('href') && !link.getAttribute('href').startsWith('#')) {
+        // Мы не вызываем show() сразу, чтобы не перебивать preventDefault()
+        // click справится сам, но listener добавлен для страховки PWA
+      }
+    }, { passive: true, capture: true });
+    
+    document.addEventListener('touchstart', function(e) {}, { passive: true });
+
+    /* ── Перехват отправки форм ── */
+    document.addEventListener('submit', function (e) {
+      if (e.defaultPrevented) return;
+      show();
+    });
+
+    log('initialized');
+  } catch (e) {
+    console.error('[nav-loader] Init error:', e);
+  }
+})();
+
 /* ── Глобальная кастомная confirm-модалка (заменяет нативный confirm) ── */
 let _confirmResolve = null;
 
@@ -537,114 +714,3 @@ async function uploadSidebarAvatar(input) {
         if (wrapper) wrapper.style.opacity = '1';
         input.value = '';
     }
-}
-
-/* ── Глобальный индикатор загрузки страниц ───────────────────────────────
-   Показывает тонкую shimmer-полоску под navbar при MPA-переходах.
-   Не срабатывает для: anchor, mailto/tel/js, download, _blank,
-   modifier-click, lang-switcher, theme-btn, logout-modal.
-   Скрывается при pageshow (включая bfcache restore в Safari/iOS).
-   ───────────────────────────────────────────────────────────────────── */
-(function () {
-  'use strict';
-
-  function show() {
-    if (_active) return;
-    var el = getLoader();
-    if (!el) return;
-    _active = true;
-    el.removeAttribute('aria-hidden');
-    el.classList.add('nav-loader-active');
-  }
-
-  function hide() {
-    _active = false;
-    var el = getLoader();
-    if (!el) return;
-    el.setAttribute('aria-hidden', 'true');
-    el.classList.remove('nav-loader-active');
-    document.body.classList.remove('nav-loader-debug');
-  }
-
-  /* ── Скрыть при загрузке/восстановлении страницы ── */
-  // pageshow срабатывает и при обычной загрузке, и при bfcache restore (persisted=true)
-  window.addEventListener('pageshow', function () { hide(); });
-  // load — дополнительная страховка
-  window.addEventListener('load', function () { hide(); });
-
-  /* ── DEBUG: ?debug_loader=1 — показать loader на 3с для визуальной проверки ── */
-  // Безопасно: не влияет на обычных пользователей без этого параметра
-  window.addEventListener('load', function () {
-    try {
-      if (new URLSearchParams(window.location.search).get('debug_loader') === '1') {
-        var el = getLoader();
-        if (!el) return;
-        document.body.classList.add('nav-loader-debug');
-        el.removeAttribute('aria-hidden');
-        el.classList.add('nav-loader-active');
-        setTimeout(function () {
-          hide();
-        }, 3000);
-      }
-    } catch (_) {}
-  });
-
-  /* ── Сбросить таймер при уходе со страницы ── */
-  // В старой логике здесь сбрасывался setTimeout показа. 
-  // Теперь показ мгновенный, таймера нет, поэтому этот обработчик больше не нужен,
-  // скрытие отработает через pageshow следующей/вернувшейся страницы.
-
-  /* ── Перехват кликов по ссылкам ── */
-  document.addEventListener('click', function (e) {
-    // Только левая кнопка мыши без модификаторов
-    if (e.button !== 0)                          return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-
-    var link = e.target.closest('a[href]');
-    if (!link) return;
-
-    var href = link.getAttribute('href') || '';
-
-    // --- Исключения: не навигационные клики ---
-
-    // Anchor, пустой href, служебные протоколы
-    if (href === '' || href === '#')             return;
-    if (/^#/.test(href))                         return; // любой anchor
-    if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
-
-    // Открытие в новой вкладке
-    if (link.target === '_blank')                return;
-
-    // Скачивание файла
-    if (link.hasAttribute('download'))           return;
-
-    // Переключатель языка (.lang-switcher → setLang())
-    if (link.closest('.lang-switcher'))          return;
-
-    // Кнопка темы — это <button>, не <a>, но страховка
-    if (link.id === 'theme-btn')                 return;
-
-    // Logout-ссылка открывает modal, а не переходит на новую страницу
-    if (link.hasAttribute('data-logout-link'))   return;
-
-    // Ссылка «Кабинет» в mobile-menu ведёт на /dashboard — навигация, loader нужен
-    // Ничего не исключаем здесь — обычная ссылка
-
-    show();
-  }, true); // capture: перехватываем до других обработчиков
-
-  /* ── Перехват отправки форм ── */
-  document.addEventListener('submit', function (e) {
-    // Если форма заблокирована другим обработчиком через e.preventDefault(),
-    // defaultPrevented будет true — не показываем loader.
-    // Важно: проверка в capture-фазе, до обработчиков формы.
-    // Поэтому используем bubbling-фазу (capture: false по умолчанию),
-    // чтобы другие обработчики успели заблокировать форму первыми.
-    if (e.defaultPrevented) return;
-
-    // Google Forms и confirm-modal уже блокируют submit через preventDefault.
-    // register-form и login-form делают нативный submit — loader нужен.
-    show();
-  }); // bubbling: вызывается после других submit-обработчиков
-
-})();
