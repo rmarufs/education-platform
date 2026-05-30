@@ -84,6 +84,15 @@
                         <span class="form-error" id="last_name-error"></span>
                     </div>
                 </div>
+                <div class="form-group" style="margin-top: var(--space-4);">
+                    <label for="gender_student" data-i18n="auth.gender">auth.gender</label>
+                    <select id="gender_student" name="gender" class="form-input" disabled>
+                        <option value="" disabled {% if not fv.get('gender') %}selected{% endif %} data-i18n="auth.gender_placeholder">auth.gender_placeholder</option>
+                        <option value="male" data-i18n="auth.gender_male" {% if fv.get('gender') == 'male' %}selected{% endif %}>auth.gender_male</option>
+                        <option value="female" data-i18n="auth.gender_female" {% if fv.get('gender') == 'female' %}selected{% endif %}>auth.gender_female</option>
+                    </select>
+                    <span class="form-error" id="gender_student-error"></span>
+                </div>
                 <div class="student-wizard-actions">
                     <button type="button" class="btn btn-primary btn-full" data-student-next data-i18n="auth.next">auth.next</button>
                 </div>
@@ -215,6 +224,16 @@
             </div>
 
             <div id="teacher-extra-fields" hidden>
+                <div class="form-group">
+                    <label for="gender_teacher" data-i18n="auth.gender">auth.gender</label>
+                    <select id="gender_teacher" name="gender" class="form-input" disabled>
+                        <option value="" disabled {% if not fv.get('gender') %}selected{% endif %} data-i18n="auth.gender_placeholder">auth.gender_placeholder</option>
+                        <option value="male" data-i18n="auth.gender_male" {% if fv.get('gender') == 'male' %}selected{% endif %}>auth.gender_male</option>
+                        <option value="female" data-i18n="auth.gender_female" {% if fv.get('gender') == 'female' %}selected{% endif %}>auth.gender_female</option>
+                    </select>
+                    <span class="form-error" id="gender_teacher-error"></span>
+                </div>
+
                 <div class="form-group">
                     <label for="document" data-i18n="register.teacher_docs">register.teacher_docs</label>
                     <input
@@ -370,6 +389,9 @@
         accountFields.forEach((field) => field.hidden = isStudent && studentStep !== 4);
         teacherOrgSelect.disabled = !isTeacher;
 
+        document.getElementById('gender_student').disabled = !isStudent;
+        document.getElementById('gender_teacher').disabled = !isTeacher;
+
         document.getElementById('org_name').toggleAttribute('required', isOrg);
         document.getElementById('org_phone').toggleAttribute('required', isOrg);
         document.getElementById('org_description').toggleAttribute('required', isOrg);
@@ -413,6 +435,7 @@
         if (step === 1) {
             const firstName = document.getElementById('first_name');
             const lastName = document.getElementById('last_name');
+            const genderStudent = document.getElementById('gender_student');
             let valid = true;
             if (!firstName.value.trim()) {
                 showFieldError('first_name', tr('validation.first_name_required'));
@@ -420,6 +443,10 @@
             }
             if (!lastName.value.trim()) {
                 showFieldError('last_name', tr('validation.last_name_required'));
+                valid = false;
+            }
+            if (!genderStudent.value) {
+                showFieldError('gender_student', tr('validation.gender_required'));
                 valid = false;
             }
             if (valid) setStudentName();
@@ -653,6 +680,13 @@
         if (!field) return;
         if (field === 'student_org_id') {
             document.getElementById('student-org-error').textContent = message;
+        } else if (field === 'gender') {
+            // Map the generic 'gender' field error to the specific role input
+            if (selectedRoleInput.value === 'student') {
+                showFieldError('gender_student', message);
+            } else if (selectedRoleInput.value === 'teacher') {
+                showFieldError('gender_teacher', message);
+            }
         } else {
             showFieldError(field, message);
         }

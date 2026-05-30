@@ -31,6 +31,7 @@ class User(Base):
     parent_contact_name = Column(String(150), nullable=True)
     parent_contact_phone = Column(String(32), nullable=True)
     is_active = Column(Boolean, default=True)         # для блокировки пользователей
+    gender = Column(String(10), nullable=True)        # пол пользователя (male/female)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     organization = relationship("Organization", back_populates="user", uselist=False)

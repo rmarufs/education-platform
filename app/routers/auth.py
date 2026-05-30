@@ -112,6 +112,7 @@ async def register(
     org_description: str = Form(""),
     org_id: Optional[int] = Form(None),          # ID организации при регистрации учителя
     student_org_id: Optional[int] = Form(None),  # ID организации при регистрации студента
+    gender: Optional[str] = Form(None),          # пол
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
@@ -142,6 +143,7 @@ async def register(
         "org_description": org_description,
         "org_id": org_id or "",
         "student_org_id": student_org_id or "",
+        "gender": gender or "",
     }
 
     if role == "student" and not first_name:
@@ -196,6 +198,20 @@ async def register(
     # Валидация роли
     if role not in ("student", "teacher", "organization"):
         raise HTTPException(status_code=400, detail="Неверная роль")
+
+    if role in ("student", "teacher") and gender not in ("male", "female"):
+        return templates.TemplateResponse(
+            "auth/register.html",
+            _register_context(
+                request,
+                role,
+                form_values,
+                error_key="validation.gender_required",
+                error_field="gender",
+                error_step=1 if role == "student" else None,
+            ),
+            status_code=400,
+        )
 
     if role == "organization" and not org_name.strip():
         return templates.TemplateResponse(
@@ -389,6 +405,7 @@ async def register(
         phone_number=phone_number if role == "student" else None,
         parent_contact_name=parent_contact_name if role == "student" else None,
         parent_contact_phone=parent_contact_phone if role == "student" else None,
+        gender=gender if role in ("student", "teacher") else None,
         is_active=is_active,
     )
     db.add(user)
