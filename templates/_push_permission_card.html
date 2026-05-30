@@ -17,10 +17,10 @@
             </p>
         </div>
         <div class="push-pref-actions">
-            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn">
+            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn" data-i18n="push.enable_btn">
                 Включить уведомления
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" id="push-later-btn">
+            <button type="button" class="btn btn-ghost btn-sm" id="push-later-btn" data-i18n="push.later_btn">
                 Не сейчас
             </button>
         </div>
@@ -41,7 +41,7 @@
             </p>
         </div>
         <div class="push-pref-actions">
-            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn-2">
+            <button type="button" class="btn btn-primary btn-sm" id="push-enable-btn-2" data-i18n="push.enable_btn">
                 Включить уведомления
             </button>
         </div>
@@ -62,7 +62,7 @@
         </div>
         <div class="push-pref-actions">
             <span class="push-pref-badge push-pref-badge--on" data-i18n="push.status_on">Включены</span>
-            <button type="button" class="btn btn-ghost btn-sm" id="push-disable-btn">
+            <button type="button" class="btn btn-ghost btn-sm" id="push-disable-btn" data-i18n="push.disable_btn">
                 Отключить
             </button>
         </div>
@@ -86,7 +86,7 @@
             </p>
         </div>
         <div class="push-pref-actions">
-            <span class="push-pref-badge push-pref-badge--off" data-i18n="push.status_off">Заблокированы</span>
+            <span class="push-pref-badge push-pref-badge--off" data-i18n="push.status_denied">Заблокированы</span>
         </div>
     </div>
 
@@ -106,9 +106,28 @@
         </div>
         <div class="push-pref-actions">
             <span class="push-pref-badge push-pref-badge--off" data-i18n="push.status_off">Отключены</span>
-            <button type="button" class="btn btn-primary btn-sm" id="push-resubscribe-btn">
+            <button type="button" class="btn btn-primary btn-sm" id="push-resubscribe-btn" data-i18n="push.enable_again_btn">
                 Включить снова
             </button>
+        </div>
+    </div>
+
+    {# Состояние: unsupported — не поддерживается #}
+    <div class="push-pref-state" id="push-state-unsupported" style="display:none;">
+        <div class="push-pref-icon push-pref-icon--off" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+        </div>
+        <div class="push-pref-body">
+            <p class="push-pref-title" data-i18n="push.pref_title">Уведомления браузера</p>
+            <p class="push-pref-text push-pref-text--muted" id="push-unsupported-text" data-i18n="push.unsupported_text">
+                Ваш браузер сейчас не поддерживает push-уведомления. На iPhone/iPad добавьте сайт на экран “Домой”, затем откройте его оттуда и включите уведомления.
+            </p>
+        </div>
+        <div class="push-pref-actions">
+            <span class="push-pref-badge push-pref-badge--off" id="push-unsupported-badge" data-i18n="push.status_unsupported">Не поддерживается</span>
         </div>
     </div>
 

@@ -21,8 +21,8 @@
         const savedLang = localStorage.getItem('lang') || 'tj';
         root.dataset.theme = savedTheme;
         root.dataset.lang = savedLang;
-        root.lang = savedLang === 'tj' ? 'tg' : 'ru';
-        root.classList.toggle('dark', savedTheme === 'dark');
+        root.lang = savedLang === 'tj' ? 'tj' : 'ru';
+        root.classList.toggle('dark', savedLang === 'dark');
         root.style.colorScheme = savedTheme === 'dark' ? 'dark' : 'light';
       } catch (_) {}
     })();
@@ -188,7 +188,7 @@
 
     <button id="scroll-top-btn" class="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Наверх" type="button">↑</button>
 
-    <script src="/static/js/i18n.js?v=22"></script>
+    <script src="/static/js/i18n.js?v=23"></script>
     <script src="/static/js/csrf.js?v=1"></script>
     <script src="/static/js/main.js?v=4"></script>
     <script src="/static/js/richtext.js?v=1"></script>
@@ -307,7 +307,7 @@
     })();
     </script>
     {% if user %}
-    <script src="/static/js/push.js?v=3" defer></script>
+    <script src="/static/js/push.js?v=4" defer></script>
     {% endif %}
     {% block scripts %}{% endblock %}
 </body>

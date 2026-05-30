@@ -1084,7 +1084,22 @@ const translations = {
     "vocabulary.teacher_anticheat_title": "Переключение во время словаря",
     "vocabulary.teacher_anticheat_message": "{student} переключил вкладку или окно во время сдачи словаря «{vocab}».",
     "vocabulary.teacher_anticheat_time": "Зафиксировано: {time}",
-    "vocabulary.anticheat_dismiss": "Скрыть предупреждение"
+    "vocabulary.anticheat_dismiss": "Скрыть предупреждение",
+
+    "push.pref_title": "Уведомления браузера",
+    "push.prompt_text": "Включите уведомления, чтобы сразу узнавать о новых домашних заданиях, ответах преподавателей и объявлениях учебного центра.",
+    "push.later_text": "Вы можете включить уведомления в любое время на этой странице.",
+    "push.enabled_text": "Уведомления включены. Вы будете своевременно получать важные обновления.",
+    "push.denied_text": "Уведомления заблокированы в настройках браузера. Разрешите их вручную, чтобы получать важные обновления.",
+    "push.unsubscribed_text": "Уведомления отключены. Вы можете включить их снова.",
+    "push.enable_btn": "Включить уведомления",
+    "push.later_btn": "Не сейчас",
+    "push.disable_btn": "Отключить",
+    "push.enable_again_btn": "Включить снова",
+    "push.status_denied": "Заблокированы",
+    "push.status_off": "Отключены",
+    "push.unsupported_text": "Ваш браузер сейчас не поддерживает push-уведомления. На iPhone/iPad добавьте сайт на экран “Домой”, затем откройте его оттуда и включите уведомления.",
+    "push.status_unsupported": "Не поддерживается"
   },
 
   tj: {
@@ -2174,7 +2189,22 @@ const translations = {
     "vocabulary.teacher_anticheat_title": "Ивазкунӣ ҳангоми супоридани луғат",
     "vocabulary.teacher_anticheat_message": "{student} ҳангоми супоридани луғати «{vocab}» варақа ё равзанаро иваз кард.",
     "vocabulary.teacher_anticheat_time": "Сабт шуд: {time}",
-    "vocabulary.anticheat_dismiss": "Пинҳон кардани огоҳӣ"
+    "vocabulary.anticheat_dismiss": "Пинҳон кардани огоҳӣ",
+
+    "push.pref_title": "Огоҳиномаҳои браузер",
+    "push.prompt_text": "Огоҳиномаҳоро фаъол кунед, то дар бораи вазифаҳои хонагӣ, ҷавобҳои омӯзгорон ва эълонҳои маркази таълимӣ зудтар бохабар шавед.",
+    "push.later_text": "Шумо метавонед огоҳиномаҳоро дилхоҳ вақт дар ин саҳифа фаъол кунед.",
+    "push.enabled_text": "Огоҳиномаҳо фаъол мебошанд. Шумо навсозиҳои муҳимро саривақт хоҳед гирифт.",
+    "push.denied_text": "Огоҳиномаҳо дар танзимоти браузер манъ карда шудаанд. Барои гирифтани навсозиҳои муҳим, онҳоро дастӣ иҷозат диҳед.",
+    "push.unsubscribed_text": "Огоҳиномаҳо хомӯш карда шудаанд. Шумо метавонед онҳоро дубора фаъол кунед.",
+    "push.enable_btn": "Фаъол кардани огоҳиномаҳо",
+    "push.later_btn": "Ҳоло не",
+    "push.disable_btn": "Хомӯш кардан",
+    "push.enable_again_btn": "Дубора фаъол кардан",
+    "push.status_denied": "Манъ аст",
+    "push.status_off": "Хомӯш карда шудааст",
+    "push.unsupported_text": "Браузери шумо ҳоло push-огоҳиҳоро дастгирӣ намекунад. Дар iPhone/iPad сайтро ба экрани “Home” илова кунед, баъд онро аз ҳамон ҷо кушода, огоҳиҳоро фаъол намоед.",
+    "push.status_unsupported": "Дастгирӣ намешавад"
   }
 };
 
@@ -2291,7 +2321,7 @@ function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('lang', lang);
 
-  document.documentElement.setAttribute('lang', lang === 'tj' ? 'tg' : 'ru');
+  document.documentElement.setAttribute('lang', lang === 'tj' ? 'tj' : 'ru');
   document.documentElement.setAttribute('data-lang', lang);
 
   document.querySelectorAll('.lang-btn').forEach((btn) => {

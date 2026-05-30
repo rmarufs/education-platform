@@ -13,7 +13,7 @@
         const savedLang = localStorage.getItem('lang') || 'tj';
         root.dataset.theme = savedTheme;
         root.dataset.lang = savedLang;
-        root.lang = savedLang === 'tj' ? 'tg' : 'ru';
+        root.lang = savedLang === 'tj' ? 'tj' : 'ru';
         root.classList.toggle('dark', savedTheme === 'dark');
         root.style.colorScheme = savedTheme === 'dark' ? 'dark' : 'light';
       } catch (_) {}

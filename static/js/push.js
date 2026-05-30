@@ -19,7 +19,7 @@
 
     // ── Управление состояниями карточки ─────────────────────────────────────
 
-    var STATES = ['default', 'later', 'granted', 'denied', 'unsubscribed'];
+    var STATES = ['default', 'later', 'granted', 'denied', 'unsubscribed', 'unsupported'];
 
     function showState(name) {
         STATES.forEach(function (s) {
@@ -138,9 +138,7 @@
 
     async function initPrefCard() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            // Браузер не поддерживает push — скрываем карточку совсем
-            var card = document.getElementById('push-pref-card');
-            if (card) card.style.display = 'none';
+            showState('unsupported');
             return;
         }
 
