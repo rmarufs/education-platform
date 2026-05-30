@@ -191,32 +191,7 @@
                 </div>
             </div>
             {% if student_groups %}
-            <div class="student-groups-mobile">
-                {% for group in student_groups %}
-                <a href="/groups/{{ group.id }}/view" class="student-group-card">
-                    <div class="student-group-card__media">
-                        {% if group.avatar_url %}
-                            <img src="{{ group.avatar_url }}" alt="{{ group.name }}">
-                        {% else %}
-                            <span>{{ (group.name or "F")[0]|upper }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="student-group-card__body">
-                        <div class="student-group-card__title">{{ group.name }}</div>
-                        <div class="student-group-card__meta">
-                            {% if group.organization %}
-                            <span>{{ group.organization.name }}</span>
-                            {% endif %}
-                            {% if group.teacher %}
-                            <span>👨‍🏫 {{ group.teacher.name }}</span>
-                            {% endif %}
-                            <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></span>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-            <div class="student-groups-desktop">
+            <div class="student-groups-universal">
                 {% for group in student_groups %}
                 <div class="group-card student-group-card-desktop fade-in">
                     <div class="group-card-header">
@@ -358,7 +333,6 @@
 .student-analytics-bar-fill--good { background: linear-gradient(90deg, var(--success, #22c55e), #86efac); }
 .student-analytics-bar-fill--warn { background: linear-gradient(90deg, var(--warning, #f59e0b), #fcd34d); }
 .student-analytics-bar-fill--risk { background: linear-gradient(90deg, var(--danger, #ef4444), #fca5a5); }
-.student-groups-mobile { display: none; }
 .student-notifications {
     margin-bottom: 20px;
     max-width: 760px;
@@ -538,97 +512,98 @@ body.dark .student-notification-card {
     height: auto;
     aspect-ratio: 16 / 9;
 }
+.user-dashboard--student .student-groups-universal {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+.user-dashboard--student .student-group-card-desktop {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.user-dashboard--student .student-group-card-desktop:hover {
+    box-shadow: 0 8px 32px rgba(99,102,241,0.12);
+    transform: translateY(-2px);
+}
+.user-dashboard--student .student-group-card-desktop .group-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.user-dashboard--student .student-group-card-desktop .group-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-dashboard--student .student-group-card-desktop .group-icon-img {
+    object-fit: cover;
+}
+.user-dashboard--student .student-group-card-desktop .group-meta {
+    flex: 1;
+    min-width: 0;
+}
+.user-dashboard--student .student-group-card-desktop .group-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-dashboard--student .student-group-card-desktop .group-meta span {
+    color: var(--text-muted);
+    font-size: .8rem;
+}
+.user-dashboard--student .student-group-card-desktop .group-description {
+    color: var(--text-muted);
+    font-size: .875rem;
+    line-height: 1.5;
+    margin: 0;
+}
+.user-dashboard--student .student-group-card-desktop .group-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.user-dashboard--student .student-group-card-desktop .group-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .85rem;
+    color: var(--text-muted);
+}
+.user-dashboard--student .student-group-card-desktop .group-stat-icon {
+    width: 20px;
+    text-align: center;
+}
+.user-dashboard--student .student-group-card-desktop .group-card-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border, rgba(0,0,0,0.06));
+}
+.user-dashboard--student .student-group-card-desktop .group-card-footer .btn {
+    width: 100%;
+    min-height: 38px;
+    justify-content: center;
+}
+
 @media (min-width: 769px) {
     .user-dashboard--student .student-org-section {
         display: none !important;
-    }
-    .user-dashboard--student .student-groups-desktop {
-        display: grid;
-        gap: 18px;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    }
-    .user-dashboard--student .student-group-card-desktop {
-        background: var(--bg-card, #fff);
-        border: 1px solid var(--border, rgba(0,0,0,0.08));
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 20px;
-        transition: box-shadow 0.2s, transform 0.2s;
-    }
-    .user-dashboard--student .student-group-card-desktop:hover {
-        box-shadow: 0 8px 32px rgba(99,102,241,0.12);
-        transform: translateY(-2px);
-    }
-    .user-dashboard--student .student-group-card-desktop .group-card-header {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        flex-shrink: 0;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: #fff;
-        font-size: 1.4rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-icon-img {
-        object-fit: cover;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-meta {
-        flex: 1;
-        min-width: 0;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-name {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-meta span {
-        color: var(--text-muted);
-        font-size: .8rem;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-description {
-        color: var(--text-muted);
-        font-size: .875rem;
-        line-height: 1.5;
-        margin: 0;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-stat {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: .85rem;
-        color: var(--text-muted);
-    }
-    .user-dashboard--student .student-group-card-desktop .group-stat-icon {
-        width: 20px;
-        text-align: center;
-    }
-    .user-dashboard--student .student-group-card-desktop .group-card-footer {
-        margin-top: auto;
-        padding-top: 10px;
-        border-top: 1px solid var(--border, rgba(0,0,0,0.06));
-    }
-    .user-dashboard--student .student-group-card-desktop .group-card-footer .btn {
-        width: 100%;
-        min-height: 38px;
-        justify-content: center;
     }
 }
 html[data-theme="dark"] .student-analytics-bar,
