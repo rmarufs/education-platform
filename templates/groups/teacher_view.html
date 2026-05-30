@@ -545,10 +545,21 @@
         </div>
       </div>
     </form>
-    <form id="homework-delete-form" method="POST" onsubmit="confirmAndSubmit(event, 'homework.delete', 'confirm.action_irreversible', null, 'homework.delete')"></form>
-    <div class="modal-footer">
+    <form id="homework-delete-form" method="POST"></form>
+
+    <div id="hw-delete-confirm-block" style="display: none; padding: 15px; background: var(--bg-secondary, #f9f9f9); border-radius: 8px; margin-bottom: 15px; text-align: center;">
+      <p style="margin: 0 0 10px 0; color: var(--error, #e53e3e); font-weight: 500;">
+        <span data-i18n="homework.delete">Удалить домашнее задание?</span> <span data-i18n="confirm.action_irreversible">Это действие нельзя отменить.</span>
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('hw-delete-confirm-block').style.display='none'; document.getElementById('hw-default-buttons').style.display='flex';" data-i18n="group.cancel">Отмена</button>
+        <button type="submit" form="homework-delete-form" class="btn btn-danger btn-sm" data-i18n="action.delete">Удалить</button>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="hw-default-buttons" style="display: flex;">
       <button type="button" class="btn btn-outline" onclick="closeModal('homework-modal')" data-i18n="group.cancel">Отмена</button>
-      <button type="submit" form="homework-delete-form" id="homework-delete-btn" class="btn btn-outline homework-delete-icon-btn" hidden data-i18n="homework.delete_aria" data-i18n-prop="title" aria-label="homework.delete_aria">
+      <button type="button" id="homework-delete-btn" class="btn btn-outline homework-delete-icon-btn" hidden onclick="document.getElementById('hw-delete-confirm-block').style.display='block'; document.getElementById('hw-default-buttons').style.display='none';" data-i18n="homework.delete_aria" data-i18n-prop="title" aria-label="homework.delete_aria">
         <span class="homework-delete-icon" aria-hidden="true">🗑️</span>
       </button>
       <button type="submit" form="homework-form" class="btn btn-primary" data-i18n="homework.save">Сохранить</button>
@@ -666,6 +677,14 @@ function openHomeworkModal(dataset) {
     currentMaterial.hidden = true;
     currentMaterial.textContent = '';
   }
+
+  const confirmBlock = document.getElementById('hw-delete-confirm-block');
+  const defaultButtons = document.getElementById('hw-default-buttons');
+  if (confirmBlock && defaultButtons) {
+    confirmBlock.style.display = 'none';
+    defaultButtons.style.display = 'flex';
+  }
+
   _openModalOverlay('homework-modal');
 }
 function updateHomeworkDeadlineField() {

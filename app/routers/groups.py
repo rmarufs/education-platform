@@ -1732,6 +1732,13 @@ def group_homework_delete(group_id: int, lesson_id: int, request: Request, db: S
     _, group = _get_manageable_group(group_id, request, db)
     lesson = _get_group_lesson(group.id, lesson_id, db)
     if lesson.homework:
+        try:
+            db.query(GroupHomeworkNotification).filter(
+                GroupHomeworkNotification.homework_id == lesson.homework.id
+            ).delete(synchronize_session=False)
+            db.commit()
+        except Exception:
+            db.rollback()
         db.delete(lesson.homework)
         db.commit()
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_deleted", status_code=302)
