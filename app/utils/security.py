@@ -11,19 +11,26 @@ ALLOWED_ATTRIBUTES = {
     'a': ['href', 'target', 'rel']
 }
 
-# Ограничиваем потенциально опасные CSS свойства (например, url() или expression())
+# Ограничиваем потенциально опасные CSS свойства
 ALLOWED_STYLES = [
-    'color', 'background-color', 'font-size', 'font-weight', 
-    'text-align', 'margin', 'padding', 'border'
+    "color",
+    "background-color",
+    "font-weight",
+    "font-style",
+    "text-decoration",
+    "text-align",
+    "font-size",
+    "line-height",
+    "margin-left",
+    "margin-right",
+    "padding-left",
+    "padding-right",
 ]
 
 ALLOWED_PROTOCOLS = ['http', 'https', 'mailto']
 
-try:
-    from bleach.css_sanitizer import CSSSanitizer
-    css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_STYLES)
-except ImportError:
-    css_sanitizer = None
+from bleach.css_sanitizer import CSSSanitizer
+css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_STYLES)
 
 def sanitize_html(html_content: str) -> str:
     """
@@ -33,13 +40,11 @@ def sanitize_html(html_content: str) -> str:
     if not html_content:
         return ""
     
-    kwargs = {
-        "tags": ALLOWED_TAGS,
-        "attributes": ALLOWED_ATTRIBUTES,
-        "protocols": ALLOWED_PROTOCOLS,
-        "strip": True
-    }
-    if css_sanitizer:
-        kwargs["css_sanitizer"] = css_sanitizer
-        
-    return bleach.clean(html_content, **kwargs)
+    return bleach.clean(
+        html_content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        css_sanitizer=css_sanitizer,
+        strip=True
+    )
