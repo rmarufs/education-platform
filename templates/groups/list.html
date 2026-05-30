@@ -15,7 +15,7 @@
                 <p data-i18n="group.private_groups_subtitle">Приватные учебные группы вашего центра</p>
             </div>
             <div class="group-header-actions">
-                <a href="/groups/analytics" class="btn btn-outline">
+                <a href="/groups/analytics" class="btn btn-outline btn-analytics">
                     📊 <span data-i18n="analytics.open">Аналитика</span>
                 </a>
                 <button class="btn btn-primary" onclick="openModal('create-group-modal')">
@@ -129,6 +129,12 @@
     gap: 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+.group-header-actions .btn-analytics {
+    background: var(--bg-card, #ffffff);
+}
+.group-header-actions .btn-analytics:hover {
+    background: var(--primary-light);
 }
 @media (max-width: 640px) {
     .group-header-actions {
