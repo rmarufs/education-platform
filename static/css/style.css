@@ -6679,3 +6679,52 @@ html[data-theme="dark"] .announcement-card__dismiss {
     box-sizing: border-box;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   PAGE NAV LOADER
+   Тонкий shimmer-индикатор под navbar при MPA-переходах.
+   Цвета: --primary и --gradient-end из дизайн-системы.
+   Автоматически адаптируется в тёмной теме.
+   ══════════════════════════════════════════════════ */
+#nav-loader {
+  position: fixed;
+  top: 58px;                        /* вплотную под navbar (высота 58px) */
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 101;                     /* выше navbar (z-index: 100) */
+  pointer-events: none;             /* не блокирует клики */
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent        0%,
+    var(--primary)     25%,
+    var(--gradient-end, #8b5cf6) 50%,
+    var(--primary)     75%,
+    transparent       100%
+  );
+  background-size: 200% 100%;
+  transition: opacity 0.15s ease;
+  will-change: opacity, background-position;
+  transform: translateZ(0);         /* отдельный GPU-слой */
+}
+
+#nav-loader.nav-loader-active {
+  opacity: 1;
+  animation: nav-loader-shimmer 1.4s linear infinite;
+}
+
+@keyframes nav-loader-shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Отключить анимацию при prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  #nav-loader.nav-loader-active {
+    animation: none;
+    background: var(--primary);
+    background-size: 100% 100%;
+    opacity: 0.75;
+  }
+}
