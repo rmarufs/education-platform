@@ -82,7 +82,7 @@
             </form>
         </div>
 
-        <div class="manage-grid">
+        <div class="manage-grid {% if user.id != group.teacher_id %}manage-grid-single{% endif %}">
             <!-- ── Левая колонка: настройки + ученики ── -->
             <div class="manage-col">
                 <!-- Настройки группы -->
@@ -176,6 +176,7 @@
                 </div>
             </div>
 
+            {% if user.id == group.teacher_id %}
             <!-- ── Правая колонка: учебный контент ── -->
             <div class="manage-col">
                 {% set unassigned_lessons = group.lessons | selectattr("group_module_id", "none") | sort(attribute="order") | list %}
@@ -380,17 +381,18 @@
                             <p style="margin: 0;" data-i18n="group.no_modules">Модулей пока нет</p>
                         </div>
                         {% endif %}
-
                     <div class="group-content-actions">
                         <button class="btn btn-primary btn-sm" onclick="openModal('add-module-modal')" data-i18n="group.add_module">+ Добавить модуль</button>
                         <button class="btn btn-outline btn-sm" onclick="openAddLessonModal()" data-i18n="group.add_lesson">+ Добавить урок</button>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
+{% if user.id == group.teacher_id %}
 <!-- Модалка: Добавить модуль -->
 <div class="modal-overlay" id="add-module-modal" onclick="if(event.target===this) closeModal('add-module-modal')">
     <div class="modal">
@@ -442,6 +444,7 @@
         </form>
     </div>
 </div>
+{% endif %}
 
 <!-- Модалка: Редактировать группу -->
 <div class="modal-overlay" id="edit-group-modal" onclick="closeModal('edit-group-modal')">
@@ -509,6 +512,7 @@
     </div>
 </div>
 
+{% if user.id == group.teacher_id %}
 <!-- Модалка: Добавить урок -->
 <div class="modal-overlay" id="add-lesson-modal" onclick="closeModal('add-lesson-modal')">
     <div class="modal" onclick="event.stopPropagation()">
@@ -711,10 +715,15 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <style>
+.manage-grid-single {
+    grid-template-columns: 1fr !important;
+    max-width: 900px;
+}
 .group-manage-main {
     width: 100%;
     max-width: min(1480px, 100%);
