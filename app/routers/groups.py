@@ -1688,6 +1688,9 @@ async def group_homework_save(
         homework.material_filename = clean_url.split("/")[-1] or clean_url
 
     db.commit()
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"### DEBUG HW PUSH: group_id={group.id}, homework_id={homework.id}, is_new_homework={is_new_homework}")
     if is_new_homework:
         try:
             student_ids = [
@@ -1695,6 +1698,7 @@ async def group_homework_save(
                 .filter(GroupMember.group_id == group.id)
                 .all()
             ]
+            logger.info(f"### DEBUG HW PUSH: Found {len(student_ids)} students in group: {student_ids}")
             notifications_created = []
             for student_id in student_ids:
                 notif = GroupHomeworkNotification(
@@ -1720,9 +1724,11 @@ async def group_homework_save(
                     )
             except Exception as e:
                 import logging
-                logging.getLogger(__name__).error(f"Error sending push for new homework: {e}")
+                logging.getLogger(__name__).error(f"### DEBUG HW PUSH: Error inside inner push loop: {e}")
 
-        except Exception:
+        except Exception as outer_e:
+            import logging
+            logging.getLogger(__name__).error(f"### DEBUG HW PUSH: db.commit() failed for notifications or outer exception: {outer_e}")
             db.rollback()
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
 

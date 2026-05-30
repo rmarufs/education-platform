@@ -30,9 +30,12 @@ def send_push_to_user(
     """
     if not config.VAPID_PRIVATE_KEY or not config.VAPID_CLAIMS_SUB:
         logger.warning("VAPID_PRIVATE_KEY or VAPID_CLAIMS_SUB not configured. Push notifications are disabled.")
+        logger.warning(f"### DEBUG HW PUSH: VAPID missing. PRIVATE_KEY={'YES' if config.VAPID_PRIVATE_KEY else 'NO'}, CLAIMS_SUB={'YES' if config.VAPID_CLAIMS_SUB else 'NO'}")
         return
 
+    logger.info(f"### DEBUG HW PUSH: VAPID keys present. Fetching subscriptions for user_id={user_id}")
     subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user_id).all()
+    logger.info(f"### DEBUG HW PUSH: Found {len(subscriptions)} push subscriptions for user_id={user_id}")
     if not subscriptions:
         return
 
@@ -57,12 +60,14 @@ def send_push_to_user(
                 }
             }
             
+            logger.info(f"### DEBUG HW PUSH: Calling webpush() for endpoint={sub.endpoint[:30]}...")
             webpush(
                 subscription_info=subscription_info,
                 data=payload_str,
                 vapid_private_key=config.VAPID_PRIVATE_KEY,
                 vapid_claims={"sub": config.VAPID_CLAIMS_SUB}
             )
+            logger.info(f"### DEBUG HW PUSH: webpush() SUCCESS for endpoint={sub.endpoint[:30]}...")
         except WebPushException as e:
             # 404 (Not Found) or 410 (Gone) indicates the subscription is no longer valid
             if e.response and e.response.status_code in (404, 410):
@@ -71,8 +76,10 @@ def send_push_to_user(
                 db.commit()
             else:
                 logger.error(f"WebPushException when sending push to user {user_id}: {e}")
+                logger.error(f"### DEBUG HW PUSH: WebPushException: {e}")
         except Exception as e:
             logger.exception(f"Unexpected error when sending push to user {user_id}: {e}")
+            logger.exception(f"### DEBUG HW PUSH: Unexpected error: {e}")
 
 
 def send_push_to_users(
