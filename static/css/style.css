@@ -1113,7 +1113,6 @@ body.dark .logo-copy::after {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-card);
-  overflow: hidden;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
 
@@ -1130,6 +1129,8 @@ body.dark .logo-copy::after {
   padding: 10px;
   background: var(--surface-soft);
   border-bottom: 1px solid var(--border);
+  border-top-left-radius: calc(var(--radius-md) - 1px);
+  border-top-right-radius: calc(var(--radius-md) - 1px);
 }
 
 .rich-editor-btn {
