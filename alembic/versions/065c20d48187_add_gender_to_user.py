@@ -1,7 +1,7 @@
 """add_gender_to_user
 
 Revision ID: 065c20d48187
-Revises: c5667a2f2758
+Revises: de486074425b
 Create Date: 2026-05-31 02:25:11.817677
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '065c20d48187'
-down_revision: Union[str, None] = 'c5667a2f2758'
+down_revision: Union[str, None] = 'de486074425b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
