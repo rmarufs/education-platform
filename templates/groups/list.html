@@ -60,9 +60,6 @@
                     <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm" data-i18n="group.manage">
                         ⚙️ <span data-i18n="group.manage">Управление</span>
                     </a>
-                    <a href="/groups/{{ group.id }}/homework/review" class="btn btn-outline btn-sm">
-                        ✓ <span data-i18n="homework.review_homeworks">Проверить домашки</span>
-                    </a>
                     <form action="/groups/{{ group.id }}/delete" method="POST" style="margin:0;"
                           data-group-name="{{ group.name | e }}"
                           onsubmit="confirmAndSubmit(event, 'group.confirm_delete_group', '', {name: this.dataset.groupName})">
