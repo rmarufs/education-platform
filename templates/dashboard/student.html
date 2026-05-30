@@ -25,9 +25,13 @@
             </div>
         </div>
         <nav class="sidebar-nav">
-            <a href="/dashboard/student" class="sidebar-link active">
+            <a href="#groups" class="sidebar-link active" data-section-target="groups">
+                <span class="link-icon">👥</span>
+                <span data-i18n="group.my_groups">Мои группы</span>
+            </a>
+            <a href="#courses" class="sidebar-link" data-section-target="courses">
                 <span class="link-icon">📚</span>
-                <span data-i18n="nav.courses">Курсы</span>
+                <span data-i18n="student.my_courses">Мои курсы</span>
             </a>
             {% if student_org_link and student_org_link.status == 'accepted' %}
             <a href="/organization/{{ student_org_link.organization.id }}" class="sidebar-link">
@@ -160,7 +164,7 @@
         </section>
 
         <!-- Мои группы -->
-        <section style="margin-bottom: 32px;">
+        <section class="student-dashboard-section" data-section="groups" style="margin-bottom: 32px;">
             <div class="section-label" data-i18n="{{ 'group.my_group' if student_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if student_groups|length == 1 else 'Мои группы' }}</div>
             <div class="student-analytics-cards">
                 <div class="student-analytics-card">
@@ -231,6 +235,7 @@
         </section>
 
         <!-- Мои курсы (Активные) -->
+        <section class="student-dashboard-section" data-section="courses">
         {% if my_courses %}
         <section style="margin-bottom: 40px;">
             <div class="section-label" data-i18n="student.my_courses">Мои курсы</div>
@@ -274,6 +279,7 @@
             </div>
         </section>
         {% endif %}
+        </section>
     </div>
 </div>
 {% endblock %}
@@ -653,5 +659,58 @@ body.dark .student-analytics-bar {
         width: 100%;
     }
 }
+.student-dashboard-section { display: none; }
+.student-dashboard-section.is-active { display: block; }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.sidebar-link[data-section-target]');
+    const sections = document.querySelectorAll('.student-dashboard-section');
+
+    function showSection(targetId) {
+        if (!targetId || targetId === '') targetId = 'groups';
+        if (targetId.startsWith('#')) targetId = targetId.substring(1);
+
+        let found = false;
+        sections.forEach(sec => {
+            if (sec.getAttribute('data-section') === targetId) {
+                sec.classList.add('is-active');
+                found = true;
+            } else {
+                sec.classList.remove('is-active');
+            }
+        });
+
+        if (!found) {
+            targetId = 'groups';
+            sections.forEach(sec => {
+                if (sec.getAttribute('data-section') === targetId) {
+                    sec.classList.add('is-active');
+                }
+            });
+        }
+
+        tabs.forEach(tab => {
+            if (tab.getAttribute('data-section-target') === targetId) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            const target = this.getAttribute('data-section-target');
+            showSection(target);
+        });
+    });
+
+    window.addEventListener('hashchange', function() {
+        showSection(window.location.hash);
+    });
+
+    showSection(window.location.hash);
+});
+</script>
 {% endblock %}
