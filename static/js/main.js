@@ -548,7 +548,7 @@ async function uploadSidebarAvatar(input) {
 (function () {
   'use strict';
 
-  var DELAY_MS = 200; // не мигать при быстрых переходах (< 200ms)
+  var DELAY_MS = 150; // не мигать при быстрых переходах (< 150ms)
   var _timer   = null;
   var _active  = false;
 
@@ -575,13 +575,31 @@ async function uploadSidebarAvatar(input) {
     if (!el) return;
     el.setAttribute('aria-hidden', 'true');
     el.classList.remove('nav-loader-active');
+    document.body.classList.remove('nav-loader-debug');
   }
 
   /* ── Скрыть при загрузке/восстановлении страницы ── */
   // pageshow срабатывает и при обычной загрузке, и при bfcache restore (persisted=true)
   window.addEventListener('pageshow', function () { hide(); });
   // load — дополнительная страховка
-  window.addEventListener('load',     function () { hide(); });
+  window.addEventListener('load', function () { hide(); });
+
+  /* ── DEBUG: ?debug_loader=1 — показать loader на 2с для визуальной проверки ── */
+  // Безопасно: не влияет на обычных пользователей без этого параметра
+  window.addEventListener('load', function () {
+    try {
+      if (new URLSearchParams(window.location.search).get('debug_loader') === '1') {
+        var el = getLoader();
+        if (!el) return;
+        document.body.classList.add('nav-loader-debug');
+        el.removeAttribute('aria-hidden');
+        el.classList.add('nav-loader-active');
+        setTimeout(function () {
+          hide();
+        }, 2000);
+      }
+    } catch (_) {}
+  });
 
   /* ── Сбросить таймер при уходе со страницы ── */
   // Не скрываем здесь — скроем при pageshow следующей страницы.
