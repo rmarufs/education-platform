@@ -711,6 +711,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     showSection(window.location.hash);
+
+    // ── Одноразовое уведомление после регистрации ─────────────────────────
+    // Читаем статус вступления в учебный центр из URL
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const joinedStatus = params.get('joined_org_status');
+        if (!joinedStatus) return;
+
+        // Немедленно убираем параметр из URL, чтобы уведомление не повторялось
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+
+        if (typeof showToast !== 'function') return;
+
+        if (joinedStatus === 'accepted') {
+            const msg = (typeof t === 'function' && t('reg_toast.joined')) ||
+                'Добро пожаловать! Вы успешно присоединились к учебному центру.';
+            showToast(msg, 'success');
+        } else if (joinedStatus === 'pending') {
+            const msg = (typeof t === 'function' && t('reg_toast.pending')) ||
+                'Ваша заявка отправлена. Учебный центр рассмотрит её в ближайшее время.';
+            showToast(msg, 'success');
+        }
+    })();
 });
 </script>
 {% endblock %}
