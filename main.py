@@ -3,13 +3,11 @@ import os
 import logging
 from fastapi import FastAPI, Request, status, Depends
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from sqlalchemy.orm import joinedload
 
 from app.config import (
     APP_ENV,
@@ -20,10 +18,7 @@ from app.config import (
     SECRET_KEY,
 )
 from app.database import SessionLocal, get_db
-from app.models.course import Course
-from app.models.organization import OrganizationTeacher
 from app.models.user import User
-from app.models.category import Category
 from app.routers import auth, users, courses
 from app.routers import modules, lessons, reviews, comments, profile, pages
 from app.routers import admin
@@ -179,51 +174,6 @@ app.include_router(admin.router)
 app.include_router(organization.router)
 app.include_router(groups.router)
 app.include_router(push.router)
-
-
-# ── Главная страница ─────────────────────────────────────────────────────────
-
-# Кэш удален из-за ошибки DetachedInstanceError. 
-# Запрос 10 курсов отрабатывает за доли миллисекунд.
-def _get_popular_courses_cached(db):
-    """Получить популярные курсы из БД."""
-    return (
-        db.query(Course)
-        .options(
-            joinedload(Course.teacher)
-                .selectinload(User.employer_organizations)
-                .joinedload(OrganizationTeacher.organization),
-            joinedload(Course.category),
-        )
-        .order_by(Course.rating.desc())
-        .limit(10)
-        .all()
-    )
-
-def invalidate_courses_cache():
-    """Заглушка для обратной совместимости."""
-    pass
-
-def _get_categories_cached(db):
-    """Получить категории из БД."""
-    return db.query(Category).order_by(Category.name).all()
-
-
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request, user: User | None = Depends(_get_request_user), db=Depends(get_db)):
-    """Главная страница с популярными курсами."""
-    popular_courses = _get_popular_courses_cached(db)
-    categories = _get_categories_cached(db)
-    
-    return templates.TemplateResponse(
-        "pages/index.html",
-        {
-            "request": request,
-            "courses": popular_courses,
-            "user": user,
-            "categories": categories
-        }
-    )
 
 @app.get("/sw.js")
 async def get_service_worker():

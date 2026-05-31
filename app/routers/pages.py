@@ -23,6 +23,54 @@ def _plain_text(value: str | None) -> str:
     if not value:
         return ""
     return re.sub(r"<[^>]+>", "", value).strip()
+
+
+# ── Главная страница ─────────────────────────────────────────────────────────
+
+# Кэш удален из-за ошибки DetachedInstanceError.
+# Запрос 10 курсов отрабатывает за доли миллисекунд.
+def _get_popular_courses_cached(db):
+    """Получить популярные курсы из БД."""
+    return (
+        db.query(Course)
+        .options(
+            joinedload(Course.teacher)
+                .selectinload(User.employer_organizations)
+                .joinedload(OrganizationTeacher.organization),
+            joinedload(Course.category),
+        )
+        .order_by(Course.rating.desc())
+        .limit(10)
+        .all()
+    )
+
+
+def invalidate_courses_cache():
+    """Заглушка для обратной совместимости."""
+    pass
+
+
+def _get_categories_cached(db):
+    """Получить категории из БД."""
+    return db.query(Category).order_by(Category.name).all()
+
+
+@router.get("/", response_class=HTMLResponse)
+def index(request: Request, db: Session = Depends(get_db)):
+    """Главная страница с популярными курсами."""
+    user = get_user(request, db)
+    popular_courses = _get_popular_courses_cached(db)
+    categories = _get_categories_cached(db)
+
+    return templates.TemplateResponse(
+        "pages/index.html",
+        {
+            "request": request,
+            "courses": popular_courses,
+            "user": user,
+            "categories": categories
+        }
+    )
 # ── Страница "О нас" ────────────────────────────────────────────────────────
 
 @router.get("/about", response_class=HTMLResponse)
