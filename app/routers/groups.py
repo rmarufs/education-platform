@@ -2,6 +2,7 @@ import os
 import shutil
 import uuid
 import mimetypes
+import calendar
 from datetime import date, datetime
 from urllib.parse import quote, urlparse
 from urllib.request import urlopen
@@ -318,6 +319,48 @@ def _parse_month(value: str | None) -> date:
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid month")
     return _month_start(parsed)
+
+
+def _last_day_of_month(year: int, month: int) -> int:
+    return calendar.monthrange(year, month)[1]
+
+
+def _normalize_payment_day(payment_day: int, year: int, month: int) -> int:
+    if payment_day < 1 or payment_day > 31:
+        raise ValueError("payment_day must be between 1 and 31")
+    return min(payment_day, _last_day_of_month(year, month))
+
+
+def _next_month(year: int, month: int) -> tuple[int, int]:
+    if month == 12:
+        return year + 1, 1
+    return year, month + 1
+
+
+def _calculate_paid_until(payment_day: int, payment_date: date) -> date:
+    next_year, next_month = _next_month(payment_date.year, payment_date.month)
+    next_normalized_day = _normalize_payment_day(payment_day, next_year, next_month)
+    return date(next_year, next_month, next_normalized_day)
+
+
+def _payment_status(paid_until: date | None, today: date | None = None) -> str:
+    if not paid_until:
+        return "unpaid"
+    today = today or date.today()
+    if today > paid_until:
+        return "overdue"
+    return "paid"
+
+
+def _resolve_payment_day(value, fallback: int | None = None) -> int:
+    raw_value = str(value if value is not None else fallback or 1).strip()
+    try:
+        payment_day = int(raw_value)
+    except (TypeError, ValueError):
+        return 1
+    if payment_day < 1 or payment_day > 31:
+        return 1
+    return payment_day
 
 
 def _payment_redirect(group_id: int, month: date, **params) -> RedirectResponse:
@@ -1014,6 +1057,10 @@ def group_payments(group_id: int, request: Request, month: Optional[str] = None,
         ).all()
 
     entries_map = {entry.student_id: entry for entry in entries}
+    payment_status_map = {
+        member.student_id: _payment_status(member.paid_until)
+        for member in members
+    }
     can_edit_payments = user.is_org and _can_manage_group_content(user, group, db)
 
     return templates.TemplateResponse("groups/payments.html", {
@@ -1022,6 +1069,7 @@ def group_payments(group_id: int, request: Request, month: Optional[str] = None,
         "group": group,
         "members": members,
         "entries_map": entries_map,
+        "payment_status_map": payment_status_map,
         "selected_month": selected_month,
         "month_value": selected_month.strftime("%Y-%m"),
         "can_edit_payments": can_edit_payments,
@@ -1052,33 +1100,53 @@ async def group_payments_save(group_id: int, request: Request, db: Session = Dep
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
     student_ids = [member.student_id for member in group.members]
+    now = datetime.utcnow()
+    payment_month = _month_start(now.date())
+    entry_months = list({selected_month, payment_month})
     existing_entries = db.query(GroupPaymentEntry).filter(
         GroupPaymentEntry.group_id == group.id,
-        GroupPaymentEntry.month == selected_month,
+        GroupPaymentEntry.month.in_(entry_months),
         GroupPaymentEntry.student_id.in_(student_ids or [0]),
     ).all()
-    entries_map = {entry.student_id: entry for entry in existing_entries}
-    now = datetime.utcnow()
+    entries_map = {
+        (entry.student_id, entry.month): entry
+        for entry in existing_entries
+    }
 
-    for student_id in student_ids:
+    for member in group.members:
+        student_id = member.student_id
+        payment_day = _resolve_payment_day(
+            form_data.get(f"payment_day_{student_id}"),
+            member.payment_day,
+        )
+        member.payment_day = payment_day
         is_paid = f"paid_{student_id}" in form_data
-        entry = entries_map.get(student_id)
+        entry_month = payment_month if is_paid else selected_month
+        entry = entries_map.get((student_id, entry_month))
         if not entry:
             entry = GroupPaymentEntry(
                 group_id=group.id,
                 student_id=student_id,
-                month=selected_month,
+                month=entry_month,
             )
             db.add(entry)
 
         if is_paid:
-            if not entry.is_paid or not entry.paid_at:
-                entry.paid_at = now
+            paid_until = _calculate_paid_until(payment_day, now.date())
+            member.paid_until = paid_until
+            member.last_paid_at = now
+
             entry.is_paid = True
+            entry.paid_at = now
+            entry.paid_until = paid_until
+            entry.action = "paid"
         else:
             entry.is_paid = False
             entry.paid_at = None
+            entry.paid_until = None
+            entry.action = "cancelled"
         entry.marked_by_id = user.id
+        entry.payment_day = payment_day
 
     db.commit()
     return _payment_redirect(group.id, selected_month, success="payments_saved")

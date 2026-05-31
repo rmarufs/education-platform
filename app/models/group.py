@@ -50,11 +50,18 @@ class GroupModule(Base):
 
 class GroupMember(Base):
     __tablename__ = "group_members"
+    __table_args__ = (
+        CheckConstraint("payment_day IS NULL OR (payment_day >= 1 AND payment_day <= 31)", name="ck_group_members_payment_day_range"),
+    )
+
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     grade = Column(Integer, nullable=True)   # класс 1-11
     is_paid = Column(Boolean, default=False)
+    payment_day = Column(Integer, default=1, nullable=True)
+    paid_until = Column(Date, nullable=True)
+    last_paid_at = Column(DateTime, nullable=True)
     joined_at = Column(DateTime, default=datetime.utcnow)
 
     group = relationship("Group", back_populates="members")
@@ -203,6 +210,7 @@ class GroupPaymentEntry(Base):
     __tablename__ = "group_payment_entries"
     __table_args__ = (
         UniqueConstraint("group_id", "student_id", "month", name="uq_group_payment_entry"),
+        CheckConstraint("payment_day IS NULL OR (payment_day >= 1 AND payment_day <= 31)", name="ck_group_payment_entries_payment_day_range"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -212,6 +220,9 @@ class GroupPaymentEntry(Base):
     is_paid = Column(Boolean, default=False, nullable=False)
     paid_at = Column(DateTime, nullable=True)
     marked_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    payment_day = Column(Integer, nullable=True)
+    paid_until = Column(Date, nullable=True)
+    action = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

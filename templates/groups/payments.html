@@ -40,6 +40,10 @@
           <thead>
             <tr>
               <th data-i18n="manage.student">Студент</th>
+              <th data-i18n="payment.payment_day">День оплаты</th>
+              <th data-i18n="payment.last_paid_at">Последняя оплата</th>
+              <th data-i18n="payment.paid_until">Оплачено до</th>
+              <th data-i18n="payment.status">Статус</th>
               <th data-i18n="payment.is_paid">Оплачено</th>
               <th data-i18n="payment.paid_at">Дата оплаты</th>
               <th data-i18n="payment.marked_by">Кто отметил</th>
@@ -48,6 +52,7 @@
           <tbody>
             {% for member in members %}
             {% set entry = entries_map.get(member.student_id) %}
+            {% set payment_status = payment_status_map.get(member.student_id, "unpaid") %}
             <tr>
               <td>
                 <div style="display:flex;align-items:center;gap:10px;">
@@ -59,6 +64,46 @@
                     <div style="font-size:0.75rem;color:var(--text-muted);">{{ member.student.email }}</div>
                   </div>
                 </div>
+              </td>
+              <td>
+                {% if can_edit_payments %}
+                <input
+                  type="number"
+                  name="payment_day_{{ member.student_id }}"
+                  class="form-input payment-day-input"
+                  min="1"
+                  max="31"
+                  value="{{ member.payment_day or 1 }}"
+                  data-i18n="payment.payment_day_hint"
+                  data-i18n-prop="aria-label"
+                  aria-label="День оплаты"
+                >
+                {% else %}
+                {{ member.payment_day or 1 }}
+                {% endif %}
+              </td>
+              <td>
+                {% if member.last_paid_at %}
+                {{ member.last_paid_at.strftime("%d.%m.%Y %H:%M") }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if member.paid_until %}
+                {{ member.paid_until.strftime("%d.%m.%Y") }}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if payment_status == "paid" %}
+                <span class="badge payment-status-badge payment-status-badge--paid" data-i18n="payment.status_paid">Оплачен</span>
+                {% elif payment_status == "overdue" %}
+                <span class="badge payment-status-badge payment-status-badge--overdue" data-i18n="payment.status_overdue">Просрочен</span>
+                {% else %}
+                <span class="badge payment-status-badge payment-status-badge--unpaid" data-i18n="payment.status_unpaid">Не оплачен</span>
+                {% endif %}
               </td>
               <td>
                 {% if can_edit_payments %}
@@ -123,12 +168,34 @@
 }
 .payment-month-input { max-width: 220px; }
 .payment-table-wrap { overflow-x: auto; }
-.payment-table { min-width: 760px; }
+.payment-table { min-width: 1120px; }
+.payment-day-input {
+  width: 76px;
+  min-width: 76px;
+  padding-inline: 8px;
+}
 .payment-checkbox {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--text);
+}
+.payment-status-badge {
+  font-weight: 600;
+}
+.payment-status-badge--paid {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+.payment-status-badge--overdue {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.payment-status-badge--unpaid {
+  background: var(--surface-soft);
+  color: var(--text-muted);
 }
 .payment-actions {
   display: flex;
