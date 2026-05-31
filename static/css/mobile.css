@@ -285,6 +285,12 @@
     border-radius: var(--radius-md);
     aspect-ratio: 2 / 1;
   }
+  .group-cover-hero {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: var(--radius-md);
+    aspect-ratio: 2 / 1;
+  }
   .course-detail-title { font-size: 1.35rem; }
   .course-detail-info { gap: 10px; font-size: .8rem; }
   .course-detail-body,

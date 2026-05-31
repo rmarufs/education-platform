@@ -29,12 +29,12 @@
             {% for group in groups %}
             <div class="course-card fade-in">
                 <div class="course-card-header">
-                    <div class="course-cover">
+                    <div class="group-cover">
                     {% if group.avatar_url %}
-                        <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="course-cover-image" loading="lazy">
+                        <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-cover-image" loading="lazy">
                     {% else %}
-                        <div class="course-cover-placeholder">
-                            <span class="course-cover-letter">{{ (group.name or "F")[0]|upper }}</span>
+                        <div class="group-cover-placeholder">
+                            <span class="group-cover-letter">{{ (group.name or "F")[0]|upper }}</span>
                         </div>
                     {% endif %}
                     </div>

@@ -13,12 +13,12 @@
     <div class="course-detail-main">
       <div class="course-detail-card">
         <div class="course-detail-hero">
-          <div class="course-cover course-cover-hero">
+          <div class="group-cover group-cover-hero">
             {% if group.avatar_url %}
-            <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="course-cover-image" loading="lazy">
+            <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-cover-image student-group-cover-image" loading="lazy">
             {% else %}
-            <div class="course-cover-placeholder">
-              <span class="course-cover-letter">{{ (group.name or "F")[0]|upper }}</span>
+            <div class="group-cover-placeholder">
+              <span class="group-cover-letter">{{ (group.name or "F")[0]|upper }}</span>
             </div>
             {% endif %}
           </div>
@@ -48,7 +48,7 @@
               <span>✅</span><span data-i18n="group.available">Группа доступна вам</span>
             </div>
             {% if ordered_lessons %}
-            <a href="/groups/{{ group.id }}/lessons/{{ ordered_lessons[0].id }}"
+            <a href="/groups/{{ group.id }}/continue"
                class="btn btn-primary btn-full" style="margin-top: 8px;">
                <span aria-hidden="true">▶</span>
                <span data-i18n="{{ 'course_page.continue_learning' if group_has_progress else 'course_page.start_course' }}">{{ 'Продолжить' if group_has_progress else 'Начать' }}</span>

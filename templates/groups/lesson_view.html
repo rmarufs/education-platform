@@ -24,9 +24,9 @@
     <div class="lesson-sidebar-head">
       <div class="lesson-sidebar-course">
         {% if group.avatar_url %}
-          <img src="{{ group.avatar_url }}" alt="" class="course-cover-sidebar-sm" style="border-radius: 8px;">
+          <img src="{{ group.avatar_url }}" alt="" class="group-cover-sidebar-sm">
         {% else %}
-          <div class="course-cover-sidebar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1.2rem;">{{ (group.name or "F")[0]|upper }}</div>
+          <div class="group-cover-sidebar-sm group-cover-placeholder"><span class="group-cover-letter">{{ (group.name or "F")[0]|upper }}</span></div>
         {% endif %}
         <div class="lesson-sidebar-title">
           <a href="{{ group_return_url }}" data-i18n="group.back_to_group">← К группе</a>

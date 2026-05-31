@@ -951,6 +951,70 @@ body.dark .logo-copy::after {
 .course-cover-sidebar-sm .course-cover-letter {
   font-size: 1.45rem;
 }
+.group-cover {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-soft, #f8fafc);
+}
+.group-cover-image,
+.group-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.group-cover-image {
+  object-fit: contain;
+  object-position: center;
+}
+.student-group-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.group-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.22), transparent 36%),
+    linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 52%, #22c55e 100%);
+  color: #fff;
+}
+.group-cover-letter {
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  font-weight: 800;
+  text-shadow: 0 10px 24px rgba(0,0,0,.2);
+}
+.group-cover-hero {
+  width: clamp(160px, 28vw, 240px);
+  aspect-ratio: 16 / 9;
+  flex-shrink: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.2);
+  box-shadow: var(--shadow-md);
+}
+.group-cover-hero .group-cover-letter {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+.group-cover-sidebar-sm {
+  width: 72px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-soft, #f8fafc);
+  object-fit: contain;
+  object-position: center;
+}
+.group-cover-sidebar-sm.group-cover-placeholder {
+  display: flex;
+}
+.group-cover-sidebar-sm .group-cover-letter {
+  font-size: 1.2rem;
+}
 .course-card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
 
 .course-title {

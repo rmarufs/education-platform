@@ -21,7 +21,7 @@ from app.models.group import Group, GroupMember, GroupModule, GroupLesson, Group
 from app.ui import templates
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.utils.announcements import get_visible_announcements
-from app.utils.image import compress_and_upload_avatar, upload_lesson_image
+from app.utils.image import upload_group_cover_image, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
 from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
@@ -597,7 +597,7 @@ def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...)
     except HTTPException:
         return RedirectResponse(f"/groups/{group_id}/manage?error=invalid_image", status_code=302)
 
-    avatar_url = compress_and_upload_avatar(
+    avatar_url = upload_group_cover_image(
         avatar.file,
         public_id=f"groups/group_{group.id}"
     )
@@ -2108,6 +2108,39 @@ def group_homework_review_save(
 # ═══════════════════════════════════════════════════════════
 # STUDENT VIEW
 # ═══════════════════════════════════════════════════════════
+
+@router.get("/{group_id:int}/continue")
+def group_continue(group_id: int, request: Request, db: Session = Depends(get_db)):
+    """Redirect a student to the first available group lesson, or fallback to group view."""
+    user, redirect = _require_login(request, db)
+    if redirect:
+        return redirect
+
+    group = db.query(Group).options(
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.lessons),
+    ).filter(Group.id == group_id, Group.is_active == True).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Группа не найдена")
+
+    membership = db.query(GroupMember.id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == user.id,
+    ).first()
+
+    if not membership:
+        return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
+
+    ordered_lessons = _ordered_group_lessons(group)
+    if ordered_lessons:
+        return RedirectResponse(
+            f"/groups/{group.id}/lessons/{ordered_lessons[0].id}",
+            status_code=303,
+        )
+
+    return RedirectResponse(f"/groups/{group.id}/view", status_code=303)
+
 
 @router.get("/{group_id:int}/view", response_class=HTMLResponse)
 def group_student_view(group_id: int, request: Request, db: Session = Depends(get_db)):

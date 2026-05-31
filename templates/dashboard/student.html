@@ -221,7 +221,7 @@
                         <div class="group-stat"><span class="group-stat-icon">📚</span><span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></div>
                     </div>
                     <div class="group-card-footer">
-                        <a href="/groups/{{ group.id }}/view" class="btn btn-primary btn-sm" data-i18n="org.open_btn">Открыть</a>
+                        <a href="/groups/{{ group.id }}/continue" class="btn btn-primary btn-sm" data-i18n="org.open_btn">Открыть</a>
                     </div>
                 </div>
                 {% endfor %}
