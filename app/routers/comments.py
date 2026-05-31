@@ -26,7 +26,7 @@ def _require_lesson_access(lesson: Lesson | None, user, db: Session) -> None:
 
 
 # ── Добавить комментарий к уроку ──────────────────────────────
-@router.post("/lessons/{lesson_id}/comment")
+@router.post("/lessons/{lesson_id:int}/comment")
 def add_comment(
     lesson_id: int,
     request: Request,
@@ -55,7 +55,7 @@ def add_comment(
 
 
 # ── Ответить на комментарий ────────────────────────────────────
-@router.post("/comments/{comment_id}/reply")
+@router.post("/comments/{comment_id:int}/reply")
 def reply_comment(
     comment_id: int,
     request: Request,

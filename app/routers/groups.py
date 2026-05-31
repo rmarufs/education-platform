@@ -546,7 +546,7 @@ def group_create(
     return RedirectResponse(f"/groups/{group.id}/manage", status_code=302)
 
 
-@router.get("/{group_id}", response_class=HTMLResponse)
+@router.get("/{group_id:int}", response_class=HTMLResponse)
 def group_detail(group_id: int, request: Request, db: Session = Depends(get_db)):
     """Детали группы (org-only redirect to manage)."""
     result, redirect = _require_org(request, db)
@@ -557,7 +557,7 @@ def group_detail(group_id: int, request: Request, db: Session = Depends(get_db))
     return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
 
 
-@router.post("/{group_id}/edit")
+@router.post("/{group_id:int}/edit")
 def group_edit(
     group_id: int,
     request: Request,
@@ -579,7 +579,7 @@ def group_edit(
     return RedirectResponse(f"/groups/{group_id}/manage?success=saved", status_code=302)
 
 
-@router.post("/{group_id}/avatar")
+@router.post("/{group_id:int}/avatar")
 def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...), db: Session = Depends(get_db)):
     _, group = _get_manageable_group(group_id, request, db)
 
@@ -607,7 +607,7 @@ def group_avatar(group_id: int, request: Request, avatar: UploadFile = File(...)
     return RedirectResponse(f"/groups/{group_id}/manage?success=avatar", status_code=302)
 
 
-@router.post("/{group_id}/delete")
+@router.post("/{group_id:int}/delete")
 def group_delete(group_id: int, request: Request, db: Session = Depends(get_db)):
     result, redirect = _require_org(request, db)
     if redirect:
@@ -620,7 +620,7 @@ def group_delete(group_id: int, request: Request, db: Session = Depends(get_db))
     return RedirectResponse("/groups/", status_code=302)
 
 
-@router.post("/{group_id}/assign-teacher")
+@router.post("/{group_id:int}/assign-teacher")
 def group_assign_teacher(
     group_id: int,
     request: Request,
@@ -646,7 +646,7 @@ def group_assign_teacher(
     return RedirectResponse(f"/groups/{group_id}/manage?success=teacher", status_code=302)
 
 
-@router.post("/{group_id}/add-student")
+@router.post("/{group_id:int}/add-student")
 def group_add_student(
     group_id: int,
     request: Request,
@@ -688,7 +688,7 @@ def group_add_student(
     return RedirectResponse(f"/groups/{group_id}/manage?success=student_added", status_code=302)
 
 
-@router.post("/{group_id}/students/bulk-add")
+@router.post("/{group_id:int}/students/bulk-add")
 def group_bulk_add_students(
     group_id: int,
     payload: BulkAddStudentsPayload,
@@ -750,7 +750,7 @@ def group_bulk_add_students(
     }
 
 
-@router.post("/{group_id}/remove-student/{student_id}")
+@router.post("/{group_id:int}/remove-student/{student_id:int}")
 def group_remove_student(
     group_id: int,
     student_id: int,
@@ -786,7 +786,7 @@ def group_remove_student(
 # MANAGE — ORG & TEACHER SHARED VIEW
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/manage", response_class=HTMLResponse)
+@router.get("/{group_id:int}/manage", response_class=HTMLResponse)
 def group_manage(group_id: int, request: Request, db: Session = Depends(get_db)):
     """Управление группой: организация видит всё, преподаватель — уроки и учеников."""
     user = _get_user(request, db)
@@ -877,7 +877,7 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
 
-@router.get("/{group_id}/teach", response_class=HTMLResponse)
+@router.get("/{group_id:int}/teach", response_class=HTMLResponse)
 def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
     """Lesson selection for the assigned teacher's in-class mode."""
     user, redirect = _require_teacher(request, db)
@@ -911,7 +911,7 @@ def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
 # GROUP JOURNAL — ORG & TEACHER
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/journal", response_class=HTMLResponse)
+@router.get("/{group_id:int}/journal", response_class=HTMLResponse)
 def group_journal(group_id: int, request: Request, db: Session = Depends(get_db)):
     user, group = _get_manageable_group(group_id, request, db)
 
@@ -968,7 +968,7 @@ def group_journal(group_id: int, request: Request, db: Session = Depends(get_db)
     })
 
 
-@router.post("/{group_id}/journal")
+@router.post("/{group_id:int}/journal")
 async def group_journal_save(group_id: int, request: Request, db: Session = Depends(get_db)):
     _, group = _get_manageable_group(group_id, request, db)
 
@@ -1032,7 +1032,7 @@ async def group_journal_save(group_id: int, request: Request, db: Session = Depe
 # PAYMENT JOURNAL — ORG EDITS, TEACHER READS
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/payments", response_class=HTMLResponse)
+@router.get("/{group_id:int}/payments", response_class=HTMLResponse)
 def group_payments(group_id: int, request: Request, month: Optional[str] = None, db: Session = Depends(get_db)):
     user, group = _get_manageable_group(group_id, request, db)
     selected_month = _parse_month(month)
@@ -1079,7 +1079,7 @@ def group_payments(group_id: int, request: Request, month: Optional[str] = None,
     })
 
 
-@router.post("/{group_id}/payments")
+@router.post("/{group_id:int}/payments")
 async def group_payments_save(group_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user or not user.is_org:
@@ -1163,7 +1163,7 @@ def _can_manage_lessons(user: User, group: Group, db: Session) -> bool:
     return _can_manage_group_content(user, group, db)
 
 
-@router.post("/{group_id}/modules/create")
+@router.post("/{group_id:int}/modules/create")
 def group_module_create(
     group_id: int,
     request: Request,
@@ -1191,7 +1191,7 @@ def group_module_create(
     return RedirectResponse(f"/groups/{group_id}/manage?success=module_created", status_code=302)
 
 
-@router.post("/{group_id}/modules/{module_id}/edit")
+@router.post("/{group_id:int}/modules/{module_id:int}/edit")
 def group_module_edit(
     group_id: int,
     module_id: int,
@@ -1219,7 +1219,7 @@ def group_module_edit(
     return RedirectResponse(f"/groups/{group_id}/manage?success=module_saved", status_code=302)
 
 
-@router.post("/{group_id}/modules/{module_id}/delete")
+@router.post("/{group_id:int}/modules/{module_id:int}/delete")
 def group_module_delete(
     group_id: int,
     module_id: int,
@@ -1334,7 +1334,7 @@ async def delete_group_quiz_url(
     return JSONResponse({"success": True})
 
 
-@router.post("/{group_id}/lessons/create")
+@router.post("/{group_id:int}/lessons/create")
 async def lesson_create(
     group_id: int,
     request: Request,
@@ -1413,7 +1413,15 @@ async def lesson_create(
     return RedirectResponse(f"/groups/{group_id}/manage?success=lesson_created", status_code=302)
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/edit", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/create")
+async def group_lesson_create_get(group_id: int):
+    return RedirectResponse(
+        url=f"/groups/{group_id}/manage",
+        status_code=303,
+    )
+
+
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/edit", response_class=HTMLResponse)
 def lesson_edit_page(
     group_id: int,
     lesson_id: int,
@@ -1438,7 +1446,7 @@ def lesson_edit_page(
     return RedirectResponse(f"/groups/{group_id}/manage?edit_lesson={lesson_id}", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/edit")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/edit")
 async def lesson_edit(
     group_id: int,
     lesson_id: int,
@@ -1522,7 +1530,7 @@ async def lesson_edit(
     return RedirectResponse(f"/groups/{group_id}/manage?success=lesson_saved", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/delete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/delete")
 def lesson_delete(
     group_id: int,
     lesson_id: int,
@@ -1557,7 +1565,7 @@ def lesson_delete(
     return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/materials/add")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/materials/add")
 async def lesson_material_add(
     group_id: int,
     lesson_id: int,
@@ -1610,7 +1618,7 @@ async def lesson_material_add(
     return RedirectResponse(f"/groups/{group_id}/manage?success=material_added", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/materials/{material_id}/delete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/materials/{material_id:int}/delete")
 def lesson_material_delete(
     group_id: int,
     lesson_id: int,
@@ -1642,7 +1650,7 @@ def lesson_material_delete(
 # GROUP HOMEWORK — ORG / TEACHER / STUDENT
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/lessons/{lesson_id}/homework", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/homework", response_class=HTMLResponse)
 def group_homework_view(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = _require_login(request, db)
     if redirect:
@@ -1695,7 +1703,7 @@ def group_homework_view(group_id: int, lesson_id: int, request: Request, db: Ses
     })
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/homework/save")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/homework/save")
 async def group_homework_save(
     group_id: int,
     lesson_id: int,
@@ -1802,7 +1810,7 @@ async def group_homework_save(
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_saved", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/homework/delete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/homework/delete")
 def group_homework_delete(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
     _, group = _get_manageable_group(group_id, request, db)
     lesson = _get_group_lesson(group.id, lesson_id, db)
@@ -1819,7 +1827,7 @@ def group_homework_delete(group_id: int, lesson_id: int, request: Request, db: S
     return RedirectResponse(f"/groups/{group_id}/manage?success=homework_deleted", status_code=302)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/homework/submit")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/homework/submit")
 async def group_homework_submit(
     group_id: int,
     lesson_id: int,
@@ -1902,7 +1910,7 @@ async def group_homework_submit(
     return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}/homework?success=submit_success", status_code=302)
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/homework/material/download")
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/homework/material/download")
 def group_homework_material_download(
     group_id: int,
     lesson_id: int,
@@ -1928,7 +1936,7 @@ def group_homework_material_download(
     return _download_remote_file(homework.material_url, homework.material_filename or "homework-file")
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/homework/submissions/{submission_id}/download")
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/homework/submissions/{submission_id:int}/download")
 def group_homework_submission_download(
     group_id: int,
     lesson_id: int,
@@ -1955,7 +1963,7 @@ def group_homework_submission_download(
     return _download_remote_file(submission.file_url, submission.filename or "homework-submission")
 
 
-@router.get("/{group_id}/homework/review", response_class=HTMLResponse)
+@router.get("/{group_id:int}/homework/review", response_class=HTMLResponse)
 def group_homework_review(group_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = _require_login(request, db)
     if redirect:
@@ -2051,7 +2059,7 @@ def group_homework_review(group_id: int, request: Request, db: Session = Depends
     })
 
 
-@router.post("/{group_id}/homework/review/{submission_id}")
+@router.post("/{group_id:int}/homework/review/{submission_id:int}")
 def group_homework_review_save(
     group_id: int,
     submission_id: int,
@@ -2101,7 +2109,7 @@ def group_homework_review_save(
 # STUDENT VIEW
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/view", response_class=HTMLResponse)
+@router.get("/{group_id:int}/view", response_class=HTMLResponse)
 def group_student_view(group_id: int, request: Request, db: Session = Depends(get_db)):
     """Просмотр группы для участника-студента."""
     user, redirect = _require_login(request, db)
@@ -2171,7 +2179,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     })
 
 
-@router.get("/{group_id}/lessons/{lesson_id}", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}", response_class=HTMLResponse)
 def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
     """Просмотр конкретного урока группы для участника-студента."""
     user, redirect = _require_login(request, db)
@@ -2313,7 +2321,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     return templates.TemplateResponse("groups/lesson_view.html", template_context)
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/complete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/complete")
 def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = _require_login(request, db)
     if redirect:
@@ -2479,7 +2487,7 @@ def _create_vocabulary_attempt_record(db: Session, vocab_id: int, student_id: in
     return attempt_id
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/create", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/create", response_class=HTMLResponse)
 def vocab_create_page(
     group_id: int,
     lesson_id: int,
@@ -2512,7 +2520,7 @@ def vocab_create_page(
     })
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/create")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/create")
 async def vocab_create(
     group_id: int,
     lesson_id: int,
@@ -2560,7 +2568,7 @@ async def vocab_create(
     )
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/edit", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/edit", response_class=HTMLResponse)
 def vocab_edit_page(
     group_id: int,
     lesson_id: int,
@@ -2611,7 +2619,7 @@ def vocab_edit_page(
     })
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/edit")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/edit")
 async def vocab_edit(
     group_id: int,
     lesson_id: int,
@@ -2658,7 +2666,7 @@ async def vocab_edit(
     )
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/delete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/delete")
 def vocab_delete(
     group_id: int,
     lesson_id: int,
@@ -2689,7 +2697,7 @@ def vocab_delete(
 # VOCABULARY — ПРОСМОТР И ПРОХОЖДЕНИЕ (student)
 # ═══════════════════════════════════════════════════════════
 
-@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}", response_class=HTMLResponse)
 def vocab_start_page(
     group_id: int,
     lesson_id: int,
@@ -2774,7 +2782,7 @@ def vocab_start_page(
     })
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/quiz", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/quiz", response_class=HTMLResponse)
 def vocab_quiz_page(
     group_id: int,
     lesson_id: int,
@@ -2904,7 +2912,7 @@ def vocab_quiz_page(
     })
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/answer")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/attempts/{attempt_id:int}/answer")
 async def vocab_submit_answer(
     group_id: int,
     lesson_id: int,
@@ -2961,7 +2969,7 @@ async def vocab_submit_answer(
     return _JSONResponse({"success": True})
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/anti-cheat/second-warning")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/attempts/{attempt_id:int}/anti-cheat/second-warning")
 async def vocab_report_second_anticheat_warning(
     group_id: int,
     lesson_id: int,
@@ -3030,7 +3038,7 @@ async def vocab_report_second_anticheat_warning(
     return JSONResponse({"success": True})
 
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/attempts/{attempt_id}/complete")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/attempts/{attempt_id:int}/complete")
 async def vocab_complete(
     group_id: int,
     lesson_id: int,
@@ -3083,7 +3091,7 @@ async def vocab_complete(
     return _JSONResponse({"success": True, "score": response_score, "total": response_total})
 
 
-@router.get("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/results", response_class=HTMLResponse)
+@router.get("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/results", response_class=HTMLResponse)
 def vocab_results_page(
     group_id: int,
     lesson_id: int,
@@ -3147,7 +3155,7 @@ def vocab_results_page(
 # VOCABULARY — Разрешить/запретить повторные попытки (teacher / org)
 # ═══════════════════════════════════════════════════════════
 
-@router.post("/{group_id}/lessons/{lesson_id}/vocabulary/{vocab_id}/toggle-retake")
+@router.post("/{group_id:int}/lessons/{lesson_id:int}/vocabulary/{vocab_id:int}/toggle-retake")
 async def vocab_toggle_retake(
     group_id: int,
     lesson_id: int,

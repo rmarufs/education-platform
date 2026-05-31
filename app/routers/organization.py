@@ -325,7 +325,7 @@ def create_organization_announcement(
     return RedirectResponse("/organization/announcements?success=created", status_code=302)
 
 
-@router.post("/organization/announcements/{announcement_id}/update")
+@router.post("/organization/announcements/{announcement_id:int}/update")
 def update_organization_announcement(
     announcement_id: int,
     request: Request,
@@ -357,7 +357,7 @@ def update_organization_announcement(
     return RedirectResponse("/organization/announcements?success=updated", status_code=302)
 
 
-@router.post("/organization/announcements/{announcement_id}/toggle")
+@router.post("/organization/announcements/{announcement_id:int}/toggle")
 def toggle_organization_announcement(
     announcement_id: int,
     request: Request,
@@ -375,7 +375,7 @@ def toggle_organization_announcement(
     return RedirectResponse("/organization/announcements?success=updated", status_code=302)
 
 
-@router.post("/organization/announcements/{announcement_id}/delete")
+@router.post("/organization/announcements/{announcement_id:int}/delete")
 def delete_organization_announcement(
     announcement_id: int,
     request: Request,
@@ -392,7 +392,7 @@ def delete_organization_announcement(
     return RedirectResponse("/organization/announcements?success=deleted", status_code=302)
 
 
-@router.post("/announcements/{announcement_id}/dismiss")
+@router.post("/announcements/{announcement_id:int}/dismiss")
 def dismiss_organization_announcement(
     announcement_id: int,
     request: Request,
@@ -561,7 +561,7 @@ def invite_teacher(
 
 # ── Принять входящую заявку от преподавателя ──────────────────────────────
 
-@router.post("/organization/teacher/{link_id}/accept-incoming")
+@router.post("/organization/teacher/{link_id:int}/accept-incoming")
 def accept_incoming_teacher(link_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -600,7 +600,7 @@ def accept_incoming_teacher(link_id: int, request: Request, db: Session = Depend
 
 # ── Отклонить входящую заявку ─────────────────────────────────────────────
 
-@router.post("/organization/teacher/{link_id}/reject-incoming")
+@router.post("/organization/teacher/{link_id:int}/reject-incoming")
 def reject_incoming_teacher(link_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -628,7 +628,7 @@ def reject_incoming_teacher(link_id: int, request: Request, db: Session = Depend
 
 # ── Удалить преподавателя из организации ─────────────────────────────────
 
-@router.post("/organization/teacher/{teacher_id}/remove")
+@router.post("/organization/teacher/{teacher_id:int}/remove")
 def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -652,7 +652,7 @@ def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_
 
 # ── Удалить студента из организации ──────────────────────────────────────
 
-@router.post("/organization/student/{student_id}/remove")
+@router.post("/organization/student/{student_id:int}/remove")
 def remove_student(student_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -678,7 +678,7 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
 
 # ── Обработка заявок от студентов ──────────────────────────────────────────
 
-@router.post("/organization/student/{link_id}/accept")
+@router.post("/organization/student/{link_id:int}/accept")
 def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -698,7 +698,7 @@ def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)
     return _redirect_org_students()
 
 
-@router.post("/organization/student/{link_id}/reject")
+@router.post("/organization/student/{link_id:int}/reject")
 def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -721,7 +721,7 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
 
 # ── Студент вступает в организацию ───────────────────────────────────────────
 
-@router.post("/organization/{org_id}/student/join")
+@router.post("/organization/{org_id:int}/student/join")
 def student_join_organization(org_id: int, request: Request, force: bool = False, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -810,7 +810,7 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
 
 # ── Курсы преподавателя (для кабинета организации) ────────────────────────────
 
-@router.get("/organization/teacher/{teacher_id}/courses", response_class=HTMLResponse)
+@router.get("/organization/teacher/{teacher_id:int}/courses", response_class=HTMLResponse)
 def org_teacher_courses(teacher_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_org(request, db)
     if redirect:
@@ -894,7 +894,7 @@ def organization_profile_update(
 
 # ── Принять/отклонить приглашение (для преподавателя) ──────────────────────
 
-@router.post("/organization/invite/{invite_id}/accept")
+@router.post("/organization/invite/{invite_id:int}/accept")
 def accept_invite(invite_id: int, request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -913,7 +913,7 @@ def accept_invite(invite_id: int, request: Request, db: Session = Depends(get_db
     return RedirectResponse("/dashboard/teacher", status_code=302)
 
 
-@router.post("/organization/invite/{invite_id}/reject")
+@router.post("/organization/invite/{invite_id:int}/reject")
 def reject_invite(invite_id: int, request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -933,7 +933,7 @@ def reject_invite(invite_id: int, request: Request, db: Session = Depends(get_db
 
 # ── Публичная страница организации ────────────────────────────────────────
 
-@router.get("/organization/{org_id}", response_class=HTMLResponse)
+@router.get("/organization/{org_id:int}", response_class=HTMLResponse)
 def public_organization_profile(org_id: int, request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     user = db.query(User).filter(User.id == user_id).first() if user_id else None
@@ -1048,7 +1048,7 @@ def public_organization_profile(org_id: int, request: Request, db: Session = Dep
 
 # ── Преподаватель сам вступает в организацию ──────────────────────────────────
 
-@router.post("/organization/{org_id}/join")
+@router.post("/organization/{org_id:int}/join")
 async def join_organization(
     org_id: int,
     request: Request,

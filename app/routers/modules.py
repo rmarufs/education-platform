@@ -62,7 +62,7 @@ def create_module(
 
 
 # ── Редактировать модуль ───────────────────────────────────────
-@router.post("/{module_id}/edit")
+@router.post("/{module_id:int}/edit")
 def edit_module(
     module_id: int,
     request: Request,
@@ -90,7 +90,7 @@ def edit_module(
 
 
 # ── Удалить модуль ─────────────────────────────────────────────
-@router.post("/{module_id}/delete")
+@router.post("/{module_id:int}/delete")
 def delete_module(
     module_id: int,
     request: Request,

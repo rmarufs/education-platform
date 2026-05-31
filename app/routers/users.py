@@ -334,7 +334,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/dashboard/student/homework-replies/{submission_id}/open")
+@router.get("/dashboard/student/homework-replies/{submission_id:int}/open")
 def open_homework_reply_notification(submission_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_login(request, db)
     if redirect:
@@ -371,7 +371,7 @@ def open_homework_reply_notification(submission_id: int, request: Request, db: S
     return RedirectResponse(_homework_target_url(group.id, lesson.id, "homework-review"), status_code=302)
 
 
-@router.post("/dashboard/student/homework-replies/{submission_id}/dismiss")
+@router.post("/dashboard/student/homework-replies/{submission_id:int}/dismiss")
 def dismiss_homework_reply_notification(submission_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_login(request, db)
     if redirect:
@@ -390,7 +390,7 @@ def dismiss_homework_reply_notification(submission_id: int, request: Request, db
     return RedirectResponse("/dashboard/student", status_code=302)
 
 
-@router.get("/dashboard/student/homework-notifications/{notification_id}/open")
+@router.get("/dashboard/student/homework-notifications/{notification_id:int}/open")
 def open_new_homework_notification(notification_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_login(request, db)
     if redirect:
@@ -427,7 +427,7 @@ def open_new_homework_notification(notification_id: int, request: Request, db: S
     return RedirectResponse(_homework_target_url(group.id, lesson.id, "homework-task"), status_code=302)
 
 
-@router.post("/dashboard/student/homework-notifications/{notification_id}/dismiss")
+@router.post("/dashboard/student/homework-notifications/{notification_id:int}/dismiss")
 def dismiss_new_homework_notification(notification_id: int, request: Request, db: Session = Depends(get_db)):
     user, redirect = require_login(request, db)
     if redirect:

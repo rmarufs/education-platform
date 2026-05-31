@@ -272,7 +272,7 @@ def search_api(
 
 # ── Публичный профиль преподавателя ──────────────────────────────────────────
 
-@router.get("/teachers/{teacher_id}", response_class=HTMLResponse)
+@router.get("/teachers/{teacher_id:int}", response_class=HTMLResponse)
 def teacher_profile(teacher_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     teacher = db.query(User).filter(User.id == teacher_id).first()

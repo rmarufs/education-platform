@@ -476,7 +476,7 @@ async def delete_quiz_url(
 
 # ── Страница курса ───────────────────────────────────────────────────────────
 
-@router.get("/{course_id}", response_class=HTMLResponse)
+@router.get("/{course_id:int}", response_class=HTMLResponse)
 def course_page(course_id: int, request: Request, db: Session = Depends(get_db)):
     course = (
         db.query(Course)
@@ -583,7 +583,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
 
 # ── Страница управления курсом (teacher) ─────────────────────────────────────
 
-@router.get("/{course_id}/manage", response_class=HTMLResponse)
+@router.get("/{course_id:int}/manage", response_class=HTMLResponse)
 def manage_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     if not user or user.role.value not in ("teacher", "admin", "organization"):
@@ -662,7 +662,7 @@ def manage_course(course_id: int, request: Request, db: Session = Depends(get_db
 
 # ── Редактирование курса ─────────────────────────────────────────────────────
 
-@router.post("/{course_id}/edit")
+@router.post("/{course_id:int}/edit")
 def edit_course(
     course_id: int,
     request: Request,
@@ -730,7 +730,7 @@ def edit_course(
 
 # ── Удаление курса ───────────────────────────────────────────────────────────
 
-@router.post("/{course_id}/delete")
+@router.post("/{course_id:int}/delete")
 def delete_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     if not user or user.role.value not in ("teacher", "admin", "organization"):
@@ -763,7 +763,7 @@ def delete_course(course_id: int, request: Request, db: Session = Depends(get_db
     return RedirectResponse("/dashboard/teacher", status_code=302)
 
 
-@router.get("/{course_id}/completed", response_class=HTMLResponse)
+@router.get("/{course_id:int}/completed", response_class=HTMLResponse)
 def course_completed(course_id: int, request: Request, db: Session = Depends(get_db)):
     course = (
         db.query(Course)
@@ -808,7 +808,7 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
 
 # ── Удаление материала ───────────────────────────────────────────────────────
 
-@router.post("/materials/{material_id}/delete")
+@router.post("/materials/{material_id:int}/delete")
 def delete_course_material(
     material_id: int, 
     request: Request, 
@@ -860,7 +860,7 @@ def delete_course_material(
 
 # ── API JSON для редактирования ──────────────────────────────────────────────
 
-@router.get("/api/{course_id}")
+@router.get("/api/{course_id:int}")
 def get_course_api(course_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     if not user:

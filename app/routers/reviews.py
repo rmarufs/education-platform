@@ -109,7 +109,7 @@ def submit_review(
 
 
 # ── Оставить отзыв на курс ─────────────────────────────────────
-@router.post("/courses/{course_id}/review")
+@router.post("/courses/{course_id:int}/review")
 def leave_review(
     course_id: int,
     request: Request,

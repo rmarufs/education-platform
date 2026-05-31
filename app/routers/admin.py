@@ -272,7 +272,7 @@ def admin_teachers(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.post("/teachers/{user_id}/approve")
+@router.post("/teachers/{user_id:int}/approve")
 def approve_teacher(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
@@ -287,7 +287,7 @@ def approve_teacher(user_id: int, request: Request, db: Session = Depends(get_db
     return RedirectResponse("/admin/teachers", status_code=302)
 
 
-@router.post("/teachers/{user_id}/reject")
+@router.post("/teachers/{user_id:int}/reject")
 def reject_teacher(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
@@ -308,7 +308,7 @@ def reject_teacher(user_id: int, request: Request, db: Session = Depends(get_db)
     return RedirectResponse("/admin/teachers", status_code=302)
 
 
-@router.post("/teachers/{user_id}/remove-from-org")
+@router.post("/teachers/{user_id:int}/remove-from-org")
 def admin_remove_from_org(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
     from app.models.organization import OrganizationTeacher
@@ -340,7 +340,7 @@ def admin_organizations(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.post("/organizations/{org_id}/approve")
+@router.post("/organizations/{org_id:int}/approve")
 def admin_approve_org(org_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
     from app.models.organization import Organization
@@ -360,7 +360,7 @@ def admin_approve_org(org_id: int, request: Request, db: Session = Depends(get_d
     return RedirectResponse("/admin/organizations", status_code=302)
 
 
-@router.post("/organizations/{org_id}/reject")
+@router.post("/organizations/{org_id:int}/reject")
 def admin_reject_org(org_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
     from app.models.organization import Organization
@@ -378,7 +378,7 @@ def admin_reject_org(org_id: int, request: Request, db: Session = Depends(get_db
     return RedirectResponse("/admin/organizations", status_code=302)
 
 
-@router.post("/organizations/{org_id}/delete")
+@router.post("/organizations/{org_id:int}/delete")
 def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
     from app.models.organization import Organization
@@ -431,7 +431,7 @@ def admin_users(request: Request, q: str = "", db: Session = Depends(get_db)):
     })
 
 
-@router.post("/users/{user_id}/toggle-active")
+@router.post("/users/{user_id:int}/toggle-active")
 def toggle_user_active(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
@@ -456,7 +456,7 @@ def toggle_user_active(user_id: int, request: Request, db: Session = Depends(get
     return _admin_users_redirect(success="unblocked" if target.is_active else "blocked")
 
 
-@router.post("/users/{user_id}/delete")
+@router.post("/users/{user_id:int}/delete")
 def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
@@ -526,7 +526,7 @@ def admin_courses(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.post("/courses/{course_id}/delete")
+@router.post("/courses/{course_id:int}/delete")
 def admin_delete_course(course_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
 
