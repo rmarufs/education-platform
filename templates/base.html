@@ -33,7 +33,6 @@
     <link rel="stylesheet" href="/static/css/style.css?v=37" />
     <link rel="stylesheet" href="/static/css/mobile.css?v=24" />
     <link rel="stylesheet" href="/static/css/video_player.css?v=3" />
-    <link rel="stylesheet" href="/static/css/mobile_click_feedback.css?v=1" />
 
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -307,7 +306,6 @@
       document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
     })();
     </script>
-    <script src="/static/js/mobile_click_feedback.js?v=1"></script>
     {% if user %}
     <script src="/static/js/push.js?v=4" defer></script>
     {% endif %}
