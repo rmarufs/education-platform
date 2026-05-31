@@ -26,6 +26,14 @@ APPLICATION_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
 APPLICATION_ATTACHMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp"}
 
 
+def _redirect_org_teachers():
+    return RedirectResponse("/organization/teachers", status_code=302)
+
+
+def _redirect_org_students():
+    return RedirectResponse("/organization/students", status_code=302)
+
+
 def require_org(request: Request, db: Session):
     """Проверяет что пользователь — активная одобренная организация."""
     user_id = request.session.get("user_id")
@@ -587,7 +595,7 @@ def accept_incoming_teacher(link_id: int, request: Request, db: Session = Depend
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка сервера при принятии заявки: {str(e)}")
 
-    return RedirectResponse("/organization/teachers", status_code=302)
+    return _redirect_org_teachers()
 
 
 # ── Отклонить входящую заявку ─────────────────────────────────────────────
@@ -615,7 +623,7 @@ def reject_incoming_teacher(link_id: int, request: Request, db: Session = Depend
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка при отклонении заявки: {str(e)}")
 
-    return RedirectResponse("/organization/teachers", status_code=302)
+    return _redirect_org_teachers()
 
 
 # ── Удалить преподавателя из организации ─────────────────────────────────
@@ -639,7 +647,7 @@ def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_
         db.delete(link)
         db.commit()
 
-    return RedirectResponse("/organization/teachers", status_code=302)
+    return _redirect_org_teachers()
 
 
 # ── Удалить студента из организации ──────────────────────────────────────
@@ -665,7 +673,7 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
         link.was_removed_notification = True
         db.commit()
 
-    return RedirectResponse("/organization/students", status_code=302)
+    return _redirect_org_students()
 
 
 # ── Обработка заявок от студентов ──────────────────────────────────────────
@@ -687,7 +695,7 @@ def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)
         link.status = "accepted"
         db.commit()
 
-    return RedirectResponse("/organization/students", status_code=302)
+    return _redirect_org_students()
 
 
 @router.post("/organization/student/{link_id}/reject")
@@ -708,7 +716,7 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
         link.was_removed_notification = False
         db.commit()
 
-    return RedirectResponse("/organization/students", status_code=302)
+    return _redirect_org_students()
 
 
 # ── Студент вступает в организацию ───────────────────────────────────────────
