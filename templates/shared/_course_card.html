@@ -1,0 +1,19 @@
+{% from "_course_macros.html" import course_cover %}
+
+{% macro render_public_course_card(course, meta_html, button_text_key, button_fallback, button_full=False, animation_delay=None) %}
+<div class="course-card reveal"{% if animation_delay is not none %} style="animation-delay: {{ animation_delay }};"{% endif %}>
+  <div class="course-card-header">
+    {{ course_cover(course) }}
+  </div>
+  <div class="course-card-body">
+    <h3 class="course-title">{{ course.title }}</h3>
+    <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
+    <div class="course-meta">
+      {{ meta_html | safe }}
+    </div>
+  </div>
+  <div class="course-card-footer">
+    <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm{% if button_full %} btn-full{% endif %}" data-i18n="{{ button_text_key }}">{{ button_fallback }}</a>
+  </div>
+</div>
+{% endmacro %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
 {% from "shared/_empty_state.html" import render_empty_state %}
+{% from "shared/_course_card.html" import render_public_course_card %}
 {% block title %}{{ org.name }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -234,22 +235,11 @@
     {% if courses %}
     <div class="courses-grid org-pub-courses-grid">
       {% for course in courses %}
-      <div class="course-card reveal" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
-        <div class="course-card-header">
-          {{ course_cover(course) }}
-        </div>
-        <div class="course-card-body">
-          <h3 class="course-title">{{ course.title }}</h3>
-          <p class="course-desc">{{ (course.description or "") | striptags }}{% if not course.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
-          <div class="course-meta">
-            <span class="course-teacher">{{ course.teacher.name }}</span>
-            <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f" | format(course.rating) }}{% endif %}</span>
-          </div>
-        </div>
-        <div class="course-card-footer">
-          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="teacher_profile.open_course">Открыть курс →</a>
-        </div>
-      </div>
+      {% set meta_html %}
+        <span class="course-teacher">{{ course.teacher.name }}</span>
+        <span class="rating-text">{% if course.rating > 0 %}⭐ {{ "%.1f" | format(course.rating) }}{% endif %}</span>
+      {% endset %}
+      {{ render_public_course_card(course, meta_html, "teacher_profile.open_course", "Открыть курс →", button_full=True, animation_delay=loop.index0 * 0.05 ~ "s") }}
       {% endfor %}
     </div>
     {% else %}
