@@ -566,6 +566,11 @@ def login(
 
 # ── Выход ───────────────────────────────────────────────────────────────────
 
+@router.get("/logout")
+def logout_get():
+    return RedirectResponse(url="/login", status_code=303)
+
+
 @router.post("/logout")
 def logout(request: Request):
     request.session.clear()
