@@ -2384,7 +2384,10 @@ def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: S
     if not user.is_student:
         raise HTTPException(status_code=403, detail="Только ученики могут отмечать урок как пройденный")
 
-    group = db.query(Group).filter(
+    group = db.query(Group).options(
+        joinedload(Group.modules).joinedload(GroupModule.lessons),
+        joinedload(Group.lessons),
+    ).filter(
         Group.id == group_id,
         Group.is_active == True,  # noqa: E712
     ).first()
@@ -2422,15 +2425,25 @@ def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: S
         except IntegrityError:
             db.rollback()
 
+    ordered_lessons = _ordered_group_lessons(group)
+    current_index = next(
+        (index for index, item in enumerate(ordered_lessons) if item.id == lesson_id),
+        None,
+    )
+    if current_index is not None:
+        if current_index + 1 < len(ordered_lessons):
+            next_lesson = ordered_lessons[current_index + 1]
+            return RedirectResponse(f"/groups/{group_id}/lessons/{next_lesson.id}", status_code=302)
+        return RedirectResponse("/dashboard/student", status_code=302)
+
     next_url = request.query_params.get("next")
     allowed_prefixes = (
         f"/groups/{group_id}/lessons/",
-        f"/groups/{group_id}/view",
     )
     if next_url and next_url.startswith(allowed_prefixes):
         return RedirectResponse(next_url, status_code=302)
 
-    return RedirectResponse(f"/groups/{group_id}/lessons/{lesson_id}", status_code=302)
+    return RedirectResponse("/dashboard/student", status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════
