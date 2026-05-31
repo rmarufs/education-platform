@@ -1,0 +1,45 @@
+#mobile-click-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--primary, #2563eb), var(--gradient-end, #8b5cf6));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary, #2563eb) 35%, transparent);
+  transition:
+    transform 700ms cubic-bezier(.22, 1, .36, 1),
+    opacity 180ms ease;
+}
+
+#mobile-click-progress.is-active {
+  opacity: 1;
+}
+
+#mobile-click-progress.is-finishing {
+  opacity: 0;
+  transform: scaleX(1);
+  transition:
+    transform 180ms ease,
+    opacity 220ms ease;
+}
+
+@media (min-width: 1025px), (pointer: fine) {
+  #mobile-click-progress {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mobile-click-progress {
+    transition: opacity 120ms ease;
+  }
+
+  #mobile-click-progress.is-finishing {
+    transition: opacity 120ms ease;
+  }
+}
