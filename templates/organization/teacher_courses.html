@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
+{% from "shared/_empty_state.html" import render_empty_state %}
 {% block title %}Курсы — {{ teacher.name }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -57,10 +58,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="empty-state">
-            <span class="empty-icon">📭</span>
-            <p data-i18n="teacher_profile.no_courses">У этого преподавателя пока нет курсов.</p>
-        </div>
+        {{ render_empty_state("📭", "teacher_profile.no_courses", "У этого преподавателя пока нет курсов.") }}
         {% endif %}
     </div>
 </div>

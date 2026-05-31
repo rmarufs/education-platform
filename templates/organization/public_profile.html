@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_course_macros.html" import course_cover %}
+{% from "shared/_empty_state.html" import render_empty_state %}
 {% block title %}{{ org.name }} — Фурузон{% endblock %}
 
 {% block content %}
@@ -252,10 +253,7 @@
       {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-      <span class="empty-icon">📭</span>
-      <p data-i18n="org.no_courses">Учебный центр пока не добавил курсы.</p>
-    </div>
+    {{ render_empty_state("📭", "org.no_courses", "Учебный центр пока не добавил курсы.") }}
     {% endif %}
   </div>
 
