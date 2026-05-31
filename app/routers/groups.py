@@ -23,6 +23,7 @@ from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API
 from app.utils.announcements import get_visible_announcements
 from app.utils.image import compress_and_upload_avatar, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
+from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 
 try:
@@ -34,10 +35,10 @@ except ModuleNotFoundError:
 router = APIRouter(prefix="/groups", tags=["groups"])
 
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
-GROUP_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
-GROUP_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx"}
-GROUP_LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
-GROUP_LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+GROUP_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
+GROUP_MATERIAL_EXTENSIONS = BASIC_DOCUMENT_EXTENSIONS
+GROUP_LESSON_COVER_MAX_BYTES = COVER_IMAGE_MAX_BYTES
+GROUP_LESSON_COVER_EXTENSIONS = IMAGE_EXTENSIONS
 # Homework uploads use Cloudinary because Render's local filesystem is ephemeral.
 # TODO(Render): group materials still use local static storage and have the same persistence risk.
 GROUP_HOMEWORK_CLOUDINARY_FOLDER = "group_homework"

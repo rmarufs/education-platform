@@ -22,6 +22,7 @@ from app.models.material import Material
 from app.models.review import Review
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.course_flow import course_learning_url, course_progress_state, first_course_lesson_url, is_course_complete_by_lessons
+from app.utils.upload_constants import COVER_IMAGE_MAX_BYTES, COURSE_MATERIAL_EXTENSIONS, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 
 try:
@@ -33,12 +34,11 @@ except ModuleNotFoundError:
 router = APIRouter(prefix="/courses")
 from app.ui import templates
 
-COURSE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
-COURSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+COURSE_IMAGE_MAX_BYTES = COVER_IMAGE_MAX_BYTES
+COURSE_IMAGE_EXTENSIONS = IMAGE_EXTENSIONS
 COURSE_IMAGE_DIR = os.path.join("static", "uploads", "course_images")
 COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
-COURSE_MATERIAL_MAX_BYTES = 15 * 1024 * 1024
-COURSE_MATERIAL_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx"}
+COURSE_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
 
 if cloudinary:
     cloudinary.config(
@@ -332,7 +332,7 @@ def create_course(
 
     _save_course_materials(files, course.id, db)
 
-    from main import invalidate_courses_cache
+    from app.routers.pages import invalidate_courses_cache
     invalidate_courses_cache()
     return RedirectResponse(f"/courses/{course.id}/manage", status_code=302)
 
@@ -723,7 +723,7 @@ def edit_course(
 
     db.commit()
     _save_course_materials(files, course.id, db)
-    from main import invalidate_courses_cache
+    from app.routers.pages import invalidate_courses_cache
     invalidate_courses_cache()
     return RedirectResponse(f"/courses/{course_id}/manage", status_code=302)
 
@@ -758,7 +758,7 @@ def delete_course(course_id: int, request: Request, db: Session = Depends(get_db
     _delete_course_image(course.image)
     db.delete(course)
     db.commit()
-    from main import invalidate_courses_cache
+    from app.routers.pages import invalidate_courses_cache
     invalidate_courses_cache()
     return RedirectResponse("/dashboard/teacher", status_code=302)
 

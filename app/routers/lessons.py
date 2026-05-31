@@ -22,15 +22,16 @@ from app.models.course import Course
 from app.models.review import Review
 from app.course_flow import next_after_lesson
 from app.utils.image import upload_lesson_image
+from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 
 router = APIRouter(prefix="/lessons")
 from app.ui import templates
 MATERIAL_UPLOAD_DIR = os.path.join("static", "materials")
-MATERIAL_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
-MATERIAL_EXTENSIONS = {"pdf", "doc", "docx"}
-LESSON_COVER_MAX_BYTES = 5 * 1024 * 1024
-LESSON_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MATERIAL_UPLOAD_MAX_BYTES = MATERIAL_MAX_BYTES
+MATERIAL_EXTENSIONS = {ext.lstrip(".") for ext in BASIC_DOCUMENT_EXTENSIONS}
+LESSON_COVER_MAX_BYTES = COVER_IMAGE_MAX_BYTES
+LESSON_COVER_EXTENSIONS = IMAGE_EXTENSIONS
 
 
 def require_teacher(request: Request, db: Session):
