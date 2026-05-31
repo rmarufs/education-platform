@@ -294,6 +294,28 @@ def _ordered_group_lessons(group: Group) -> list[GroupLesson]:
     return ordered_lessons
 
 
+def get_next_group_lesson_for_student(db: Session, group: Group, student_id: int) -> GroupLesson | None:
+    ordered_lessons = _ordered_group_lessons(group)
+    if not ordered_lessons:
+        return None
+
+    lesson_ids = [lesson.id for lesson in ordered_lessons]
+    completed_lesson_ids = {
+        lesson_id
+        for (lesson_id,) in db.query(GroupLessonProgress.lesson_id).filter(
+            GroupLessonProgress.group_id == group.id,
+            GroupLessonProgress.student_id == student_id,
+            GroupLessonProgress.lesson_id.in_(lesson_ids),
+        ).all()
+    }
+
+    for lesson in ordered_lessons:
+        if lesson.id not in completed_lesson_ids:
+            return lesson
+
+    return ordered_lessons[-1]
+
+
 def _journal_redirect(group_id: int, **params) -> RedirectResponse:
     from urllib.parse import urlencode
 
@@ -2132,10 +2154,10 @@ def group_continue(group_id: int, request: Request, db: Session = Depends(get_db
     if not membership:
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
-    ordered_lessons = _ordered_group_lessons(group)
-    if ordered_lessons:
+    next_lesson = get_next_group_lesson_for_student(db, group, user.id)
+    if next_lesson:
         return RedirectResponse(
-            f"/groups/{group.id}/lessons/{ordered_lessons[0].id}",
+            f"/groups/{group.id}/lessons/{next_lesson.id}",
             status_code=303,
         )
 

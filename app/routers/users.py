@@ -11,7 +11,8 @@ from app.database import get_db
 from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
-from app.models.group import Group, GroupMember, GroupHomework, GroupHomeworkNotification, GroupHomeworkSubmission, GroupLesson
+from app.models.group import Group, GroupMember, GroupHomework, GroupHomeworkNotification, GroupHomeworkSubmission, GroupJournalEntry, GroupLesson, GroupLessonProgress
+from app.models.vocabulary import VocabularyAttempt, VocabularySet
 from app.course_flow import first_course_lesson_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
@@ -314,6 +315,44 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
         .filter(GroupMember.student_id == user.id)
         .all()
     )
+    group_ids = [group.id for group in student_groups]
+    group_progress_map = {group_id: False for group_id in group_ids}
+    if group_ids:
+        progress_group_ids = {
+            group_id
+            for (group_id,) in db.query(GroupLessonProgress.group_id)
+            .filter(
+                GroupLessonProgress.student_id == user.id,
+                GroupLessonProgress.group_id.in_(group_ids),
+            )
+            .distinct()
+            .all()
+        }
+        journal_group_ids = {
+            group_id
+            for (group_id,) in db.query(GroupJournalEntry.group_id)
+            .filter(
+                GroupJournalEntry.student_id == user.id,
+                GroupJournalEntry.group_id.in_(group_ids),
+                (GroupJournalEntry.present == True) | (GroupJournalEntry.grade.isnot(None)),  # noqa: E712
+            )
+            .distinct()
+            .all()
+        }
+        vocabulary_group_ids = {
+            group_id
+            for (group_id,) in db.query(GroupLesson.group_id)
+            .join(VocabularySet, VocabularySet.lesson_id == GroupLesson.id)
+            .join(VocabularyAttempt, VocabularyAttempt.vocab_set_id == VocabularySet.id)
+            .filter(
+                VocabularyAttempt.student_id == user.id,
+                GroupLesson.group_id.in_(group_ids),
+            )
+            .distinct()
+            .all()
+        }
+        for group_id in progress_group_ids | journal_group_ids | vocabulary_group_ids:
+            group_progress_map[group_id] = True
     student_analytics = build_student_analytics(db, user.id)
     visible_announcements = get_visible_announcements(db, user, limit=3)
     student_notifications = _load_student_notifications(db, user.id)
@@ -327,6 +366,7 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             "student_org_link": student_org_link,
             "show_removed_notification": show_removed_notification,
             "student_groups": student_groups,
+            "group_progress_map": group_progress_map,
             "student_analytics": student_analytics,
             "visible_announcements": visible_announcements,
             "student_notifications": student_notifications,
