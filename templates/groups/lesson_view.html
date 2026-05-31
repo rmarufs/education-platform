@@ -163,16 +163,7 @@
     <div class="protected-video-container">
       {% set vid = lesson.video_url %}
       {% if "youtube.com" in vid or "youtu.be" in vid %}
-        {% set vid_id = None %}
-        {% if "youtube.com/watch?v=" in vid %}
-          {% set vid_id = vid.split("v=")[1].split("&")[0] %}
-        {% elif "youtu.be/" in vid %}
-          {% set vid_id = vid.split("youtu.be/")[1].split("?")[0] %}
-        {% elif "youtube.com/embed/" in vid %}
-          {% set vid_id = vid.split("youtube.com/embed/")[1].split("?")[0].split("&")[0] %}
-        {% elif "youtube.com/shorts/" in vid %}
-          {% set vid_id = vid.split("youtube.com/shorts/")[1].split("?")[0].split("&")[0] %}
-        {% endif %}
+        {% set vid_id = youtube_video_id(vid) %}
 
         {% if vid_id %}
         <div class="vp-shell" data-vp-provider="youtube" data-video-token="{{ vid_id | b64encode }}">
