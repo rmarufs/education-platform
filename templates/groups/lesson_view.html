@@ -166,26 +166,17 @@
         {% set vid_id = youtube_video_id(vid) %}
 
         {% if vid_id %}
-        <div class="vp-shell" data-vp-provider="youtube" data-video-token="{{ vid_id | b64encode }}">
-          <div class="vp-stage">
-            <div class="vp-youtube"></div>
-            <div class="vp-click-layer" aria-hidden="true"></div>
-            <div class="vp-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
-            <div class="vp-big-play" aria-hidden="true">▶</div>
-          </div>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play/Pause">▶</button>
-            <div class="vp-progress" role="slider" aria-label="Прогресс видео" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-              <div class="vp-progress-fill"></div>
-              <span class="vp-progress-handle" aria-hidden="true"></span>
-            </div>
-            <span class="vp-time">0:00 / 0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Звук">🔊</button>
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Полный экран">⛶</button>
-          </div>
+        <div class="video-container">
+          <iframe
+            src="https://www.youtube.com/embed/{{ vid_id }}"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
         </div>
         {% else %}
-        <div class="vp-unsupported">Не удалось открыть видео</div>
+        <p>Не удалось открыть видео. <a href="{{ vid }}" target="_blank" rel="noopener noreferrer">Открыть ссылку</a></p>
         {% endif %}
       {% else %}
         <div class="vp-shell" data-vp-provider="html5" data-video-token="{{ lesson.video_url | b64encode }}">
