@@ -45,6 +45,8 @@ class User(Base):
     group_payment_entries = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.student_id", back_populates="student")
     marked_group_payments = relationship("GroupPaymentEntry", foreign_keys="GroupPaymentEntry.marked_by_id", back_populates="marked_by")
     push_subscriptions = relationship("PushSubscription", back_populates="user", cascade="all, delete-orphan")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
+
     @property
     def is_teacher(self) -> bool:
         return self.role.value == "teacher"
@@ -60,6 +62,21 @@ class User(Base):
     @property
     def is_org(self) -> bool:
         return self.role.value == "organization"
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    used_at = Column(DateTime, nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    request_ip = Column(String(64), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+
+    user = relationship("User", back_populates="password_reset_tokens")
 
 
 class PushSubscription(Base):

@@ -40,6 +40,17 @@ PLATFORM_NAME = os.getenv("PLATFORM_NAME", "Фурузон")
 # Время жизни сессии (в секундах)
 SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", 60 * 60 * 24 * 7))  # По умолчанию 7 дней
 
+# SMTP для системных email. Значения приходят из переменных окружения
+# и не должны логироваться.
+SMTP_SERVER = (os.getenv("SMTP_SERVER") or os.getenv("SMTP_HOST") or "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587") or "587")
+SMTP_EMAIL = (os.getenv("SMTP_EMAIL") or os.getenv("SMTP_USER") or os.getenv("MAIL_FROM") or "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", PLATFORM_NAME)
+
+# Время жизни ссылки восстановления пароля в минутах.
+PASSWORD_RESET_TOKEN_TTL_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "60") or "60")
+
 # Настройки Web Push Notifications
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")

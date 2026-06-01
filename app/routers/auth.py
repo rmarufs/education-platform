@@ -1,26 +1,36 @@
 # Роутер авторизации: регистрация, логин, выход
+import hashlib
+import html
+import logging
 import os
 import re
+import secrets
 import uuid
 import shutil
-from datetime import date
-from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
+from datetime import date, datetime, timedelta
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Form, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 import bcrypt
 from typing import Optional
 
+from app.config import PASSWORD_RESET_TOKEN_TTL_MINUTES, PLATFORM_NAME
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import PasswordResetToken, User, UserRole
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
+from app.utils.email import send_email
 from app.utils.rate_limit import limiter
 from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
 from app.ui import templates
+
+logger = logging.getLogger(__name__)
+
 DOCUMENT_MAX_BYTES = 10 * 1024 * 1024
 DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{6,24}$")
+PASSWORD_RESET_MIN_LENGTH = 6
 
 
 def hash_password(password: str) -> str:
@@ -31,6 +41,95 @@ def hash_password(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     """Проверяем пароль против bcrypt-хеша."""
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+
+
+def _hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _client_host(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()[:64]
+    return request.client.host[:64] if request.client else None
+
+
+def _absolute_url(request: Request, route_name: str, **path_params) -> str:
+    url = str(request.url_for(route_name, **path_params))
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",", 1)[0].strip().lower()
+    if forwarded_proto in {"http", "https"}:
+        url = re.sub(r"^https?://", f"{forwarded_proto}://", url, count=1)
+    return url
+
+
+def _password_reset_context(
+    request: Request,
+    *,
+    token: str | None = None,
+    success_key: str | None = None,
+    error_key: str | None = None,
+    error: str | None = None,
+) -> dict:
+    context = {"request": request}
+    if token:
+        context["token"] = token
+    if success_key:
+        context["success_key"] = success_key
+    if error_key:
+        context["error_key"] = error_key
+    if error:
+        context["error"] = error
+    return context
+
+
+def _send_email_safely(to_email: str, subject: str, text_body: str, html_body: str, user_id: int) -> None:
+    try:
+        send_email(to_email, subject, text_body, html_body)
+    except Exception:
+        logger.exception("Password reset email send failed for user_id=%s", user_id)
+
+
+def _schedule_password_reset_email(
+    request: Request,
+    user: User,
+    db: Session,
+    background_tasks: BackgroundTasks,
+) -> None:
+    raw_token = secrets.token_urlsafe(32)
+    now = datetime.utcnow()
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({"used_at": now}, synchronize_session=False)
+    token = PasswordResetToken(
+        user_id=user.id,
+        token_hash=_hash_reset_token(raw_token),
+        expires_at=now + timedelta(minutes=PASSWORD_RESET_TOKEN_TTL_MINUTES),
+        request_ip=_client_host(request),
+        user_agent=request.headers.get("user-agent", "")[:255] or None,
+    )
+    db.add(token)
+    db.commit()
+
+    reset_url = _absolute_url(request, "reset_password_page", token=raw_token)
+    subject = f"Восстановление пароля — {PLATFORM_NAME}"
+    text_body = (
+        f"Здравствуйте, {user.name}.\n\n"
+        "Для установки нового пароля перейдите по ссылке:\n"
+        f"{reset_url}\n\n"
+        f"Ссылка действительна {PASSWORD_RESET_TOKEN_TTL_MINUTES} минут и может быть использована только один раз.\n"
+        "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо."
+    )
+    safe_name = html.escape(user.name or "")
+    safe_reset_url = html.escape(reset_url, quote=True)
+    html_body = (
+        f"<p>Здравствуйте, {safe_name}.</p>"
+        "<p>Для установки нового пароля перейдите по ссылке:</p>"
+        f'<p><a href="{safe_reset_url}">{safe_reset_url}</a></p>'
+        f"<p>Ссылка действительна {PASSWORD_RESET_TOKEN_TTL_MINUTES} минут и может быть использована только один раз.</p>"
+        "<p>Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.</p>"
+    )
+    background_tasks.add_task(_send_email_safely, user.email, subject, text_body, html_body, user.id)
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
@@ -562,6 +661,131 @@ def login(
         return RedirectResponse("/register/pending", status_code=302)
 
     return RedirectResponse("/dashboard", status_code=302)
+
+
+# ── Восстановление пароля ───────────────────────────────────────────────────
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request):
+    if request.session.get("user_id"):
+        return RedirectResponse("/dashboard", status_code=302)
+    return templates.TemplateResponse("auth/forgot_password.html", {"request": request})
+
+
+@router.post("/forgot-password", response_class=HTMLResponse)
+@limiter.limit("3/minute")
+def forgot_password(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    email = email.strip().lower()
+    user = db.query(User).filter(User.email == email, User.is_active.is_(True)).first() if email else None
+
+    if user:
+        try:
+            _schedule_password_reset_email(request, user, db, background_tasks)
+        except Exception:
+            db.rollback()
+            logger.exception("Password reset token creation failed for user_id=%s", user.id)
+
+    return templates.TemplateResponse(
+        "auth/forgot_password.html",
+        _password_reset_context(request, success_key="password_reset.request_sent"),
+    )
+
+
+@router.get("/reset-password/{token}", response_class=HTMLResponse, name="reset_password_page")
+def reset_password_page(request: Request, token: str, db: Session = Depends(get_db)):
+    token_hash = _hash_reset_token(token)
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used_at.is_(None),
+        PasswordResetToken.expires_at >= datetime.utcnow(),
+    ).first()
+
+    if not reset_token:
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, error_key="password_reset.invalid_link"),
+            status_code=400,
+        )
+
+    return templates.TemplateResponse(
+        "auth/reset_password.html",
+        _password_reset_context(request, token=token),
+    )
+
+
+@router.post("/reset-password/{token}", response_class=HTMLResponse)
+@limiter.limit("5/minute")
+def reset_password(
+    request: Request,
+    token: str,
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if len(password) < PASSWORD_RESET_MIN_LENGTH:
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, token=token, error_key="validation.password_short"),
+            status_code=400,
+        )
+
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, token=token, error_key="password_reset.password_mismatch"),
+            status_code=400,
+        )
+
+    now = datetime.utcnow()
+    token_hash = _hash_reset_token(token)
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used_at.is_(None),
+        PasswordResetToken.expires_at >= now,
+    ).first()
+
+    if not reset_token:
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, error_key="password_reset.invalid_link"),
+            status_code=400,
+        )
+
+    updated = db.query(PasswordResetToken).filter(
+        PasswordResetToken.id == reset_token.id,
+        PasswordResetToken.used_at.is_(None),
+        PasswordResetToken.expires_at >= now,
+    ).update({"used_at": now}, synchronize_session=False)
+
+    if updated != 1:
+        db.rollback()
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, error_key="password_reset.invalid_link"),
+            status_code=400,
+        )
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user or not user.is_active:
+        db.rollback()
+        return templates.TemplateResponse(
+            "auth/reset_password.html",
+            _password_reset_context(request, error_key="password_reset.invalid_link"),
+            status_code=400,
+        )
+
+    user.password_hash = hash_password(password)
+    db.commit()
+
+    return templates.TemplateResponse(
+        "auth/reset_password.html",
+        _password_reset_context(request, success_key="password_reset.password_changed"),
+    )
 
 
 # ── Выход ───────────────────────────────────────────────────────────────────

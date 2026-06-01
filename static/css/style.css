@@ -1750,6 +1750,12 @@ body.dark .logo-copy::after {
   color: var(--text-muted);
 }
 .auth-footer a { font-weight: 600; }
+.auth-inline-action {
+  margin-top: -8px;
+  text-align: right;
+  font-size: .875rem;
+}
+.auth-inline-action a { font-weight: 600; }
 
 /* ── Сообщения ──────────────────────────────────────────────── */
 .alert {
