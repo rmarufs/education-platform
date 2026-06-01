@@ -790,6 +790,13 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
     if not course_finished and state_course.modules:
         return RedirectResponse(f"/courses/{course.id}", status_code=302)
 
+    last_lesson_url = f"/courses/{course.id}"
+    for module in reversed(list(state_course.modules)):
+        lessons = list(module.lessons)
+        if lessons:
+            last_lesson_url = f"/lessons/{lessons[-1].id}"
+            break
+
     # Оставлял отзыв этому преподавателю?
     user_review = db.query(Review).filter(
         Review.student_id == user.id,
@@ -803,6 +810,7 @@ def course_completed(course_id: int, request: Request, db: Session = Depends(get
         "course": course,
         "completion_pct": completion_pct,
         "show_review_on_completion": show_review_on_completion,
+        "last_lesson_url": last_lesson_url,
     })
 
 

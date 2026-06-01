@@ -489,6 +489,7 @@ const translations = {
     "course_page.completed_kicker": "Курс завершён",
     "course_page.completed_title": "Поздравляем с завершением курса {title}",
     "course_page.completed_text": "Вы прошли все уроки. Отличная работа.",
+    "course_page.return_to_lessons": "Вернуться к урокам",
 
     "lesson.back_course": "← {title}",
     "lesson.materials": "Материалы",
@@ -1595,6 +1596,7 @@ const translations = {
     "course_page.completed_kicker": "Курс анҷом ёфт",
     "course_page.completed_title": "Шуморо бо анҷоми курси {title} табрик мекунем",
     "course_page.completed_text": "Шумо ҳамаи дарсҳоро гузаштед. Офарин.",
+    "course_page.return_to_lessons": "Бозгашт ба дарсҳо",
 
     "lesson.back_course": "← {title}",
     "lesson.materials": "Маводҳо",

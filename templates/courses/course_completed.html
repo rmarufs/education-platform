@@ -50,7 +50,7 @@
     {% endif %}
 
     <div class="quiz-result-actions">
-      <a href="/courses/{{ course.id }}" class="btn btn-primary" data-i18n="course.view">Просмотр</a>
+      <a href="{{ last_lesson_url or '/courses/' ~ course.id }}" class="btn btn-primary" data-i18n="course_page.return_to_lessons">Вернуться к урокам</a>
       <a href="/dashboard/student" class="btn btn-outline" data-i18n="nav.dashboard">Кабинет</a>
     </div>
   </section>
