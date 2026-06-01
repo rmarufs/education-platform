@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Аналитика групп — Фурузон{% endblock %}
 {% block title_key %}analytics.title{% endblock %}
+{% block body_class %}{% if analytics_scope == "teacher" %}user-dashboard-page{% endif %}{% endblock %}
 
 {% block content %}
-<div class="dashboard">
+<div class="dashboard{% if analytics_scope == "teacher" %} user-dashboard user-dashboard--teacher{% endif %}">
     {% set active_page = "groups" %}
     {% if analytics_scope == "organization" %}
         {% include "_org_sidebar.html" %}
