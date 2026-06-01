@@ -24,6 +24,50 @@
   </div>
 </section>
 
+<!-- ── Популярные курсы ────────────────────────── -->
+<section class="courses-section reveal">
+  <div class="section-header">
+    <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
+    <p data-i18n="home.popular_courses_sub">Выберите программу и начните обучение в удобном темпе</p>
+  </div>
+  <div class="courses-grid" id="courses-grid">
+    {% if courses %}
+      {% for course in courses %}
+      <div class="course-card fade-in">
+        <div class="course-card-header">
+          {{ course_cover(course) }}
+        </div>
+        <div class="course-card-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <p class="course-desc">{{ (course.description or "") | striptags | truncate(100) }}</p>
+          <div class="course-meta">
+            <span class="course-author" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+              👨‍🏫 {{ course.teacher.name }}
+              {% if course.teacher.employer_organizations %}
+                {% for ot in course.teacher.employer_organizations %}
+                  {% if ot.status == 'accepted' %}
+                    &middot; {{ ot.organization.name }}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </span>
+            <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
+          </div>
+        </div>
+        <div class="course-card-footer">
+          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="course.open">Открыть курс</a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      {{ render_empty_state("📭", "home.no_courses", "На платформе пока нет курсов. Если вы преподаватель, зарегистрируйтесь и создайте первый курс.") }}
+    {% endif %}
+  </div>
+  <div class="home-catalog-cta">
+    <a href="/courses/catalog" class="btn btn-outline" data-i18n="catalog.view_all">Посмотреть все курсы</a>
+  </div>
+</section>
+
 <!-- ── Для кого ────────────────────────────────── -->
 <section class="home-roles-section reveal">
   <div class="home-section-wrap">
@@ -85,50 +129,5 @@
     </div>
   </div>
 </section>
-
-<!-- ── Популярные курсы ────────────────────────── -->
-<section class="courses-section reveal">
-  <div class="section-header">
-    <h2 data-i18n="home.popular_courses">Популярные курсы</h2>
-    <p data-i18n="home.popular_courses_sub">Выберите программу и начните обучение в удобном темпе</p>
-  </div>
-  <div class="courses-grid" id="courses-grid">
-    {% if courses %}
-      {% for course in courses %}
-      <div class="course-card fade-in">
-        <div class="course-card-header">
-          {{ course_cover(course) }}
-        </div>
-        <div class="course-card-body">
-          <h3 class="course-title">{{ course.title }}</h3>
-          <p class="course-desc">{{ (course.description or "") | striptags | truncate(100) }}</p>
-          <div class="course-meta">
-            <span class="course-author" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-              👨‍🏫 {{ course.teacher.name }}
-              {% if course.teacher.employer_organizations %}
-                {% for ot in course.teacher.employer_organizations %}
-                  {% if ot.status == 'accepted' %}
-                    &middot; {{ ot.organization.name }}
-                  {% endif %}
-                {% endfor %}
-              {% endif %}
-            </span>
-            <span class="course-date">{{ course.created_at.strftime("%d.%m.%Y") }}</span>
-          </div>
-        </div>
-        <div class="course-card-footer">
-          <a href="/courses/{{ course.id }}" class="btn btn-primary btn-sm btn-full" data-i18n="course.open">Открыть курс</a>
-        </div>
-      </div>
-      {% endfor %}
-    {% else %}
-      {{ render_empty_state("📭", "home.no_courses", "На платформе пока нет курсов. Если вы преподаватель, зарегистрируйтесь и создайте первый курс.") }}
-    {% endif %}
-  </div>
-  <div class="home-catalog-cta">
-    <a href="/courses/catalog" class="btn btn-outline" data-i18n="catalog.view_all">Посмотреть все курсы</a>
-  </div>
-</section>
-
 
 {% endblock %}
