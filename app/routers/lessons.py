@@ -339,6 +339,11 @@ def delete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db
 
 
 # ── Добавить материал к уроку (через URL) ──────────────────────
+@router.get("/{lesson_id:int}/material")
+def add_material_get(lesson_id: int):
+    return RedirectResponse(url=f"/lessons/{lesson_id}", status_code=303)
+
+
 @router.post("/{lesson_id:int}/material")
 def add_material(
     lesson_id: int,
