@@ -34,8 +34,10 @@ def is_org(user: User | None) -> bool:
 
 def can_access_course_content(user: User | None, course: Course | None, db: Session) -> bool:
     """Returns whether a user may open regular course learning content."""
-    if not user or not course:
+    if not course:
         return False
+    if not user:
+        return bool(course.is_guest_accessible)
     if is_admin(user):
         return True
     if is_teacher(user):

@@ -45,7 +45,11 @@
         <div class="course-detail-cta-section">
           {% if not user %}
           <div class="cta-guest">
+            {% if can_open_course_content and learning_url %}
+            <a href="{{ learning_url }}" class="btn btn-primary btn-full" data-i18n="course_page.start_course">Начать</a>
+            {% else %}
             <a href="/register" class="btn btn-primary btn-full" data-i18n="course_page.start_learning">Начать изучение</a>
+            {% endif %}
           </div>
           {% elif user.is_teacher and user.id == course.teacher_id %}
           <div class="cta-teacher">
@@ -152,7 +156,7 @@
             {% for lesson in module.lessons %}
             <li class="curriculum-lesson {{ 'done' if progress_data.get(lesson.id) else '' }}">
               <span>{{ "✅" if progress_data.get(lesson.id) else ("🎥" if lesson.video_url else "📄") }}</span>
-              {% if user %}
+              {% if user or can_open_course_content %}
               <a href="/lessons/{{ lesson.id }}">{{ lesson.title }}</a>
               {% else %}
               <span>{{ lesson.title }}</span>

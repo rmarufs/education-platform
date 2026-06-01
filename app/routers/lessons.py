@@ -188,16 +188,15 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
 
-    # Проверка прав доступа (IDOR Protection)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-    
     if not can_access_course_content(user, course, db):
+        if not user:
+            return RedirectResponse("/login", status_code=302)
         if user.is_teacher:
             raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не являетесь преподавателем этого курса.")
         if user.is_student:
             raise HTTPException(status_code=403, detail="Доступ запрещён. Вы не записаны на этот курс. Перейдите к оплате.")
         raise HTTPException(status_code=403, detail="Доступ запрещён.")
+    is_guest_access = not user and bool(course.is_guest_accessible)
 
     course_lesson_ids = [
         course_lesson.id
@@ -265,8 +264,9 @@ def lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db))
         "continue_url": continue_url,
         "next_lesson_url": next_lesson_url,
         "show_review_form": locals().get('show_review_form', False),
+        "is_guest_access": is_guest_access,
         "course": course,
-        "top_comments": [c for c in lesson.comments if c.parent_comment_id is None],
+        "top_comments": [] if is_guest_access else [c for c in lesson.comments if c.parent_comment_id is None],
     })
 
 

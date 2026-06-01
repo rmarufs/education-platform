@@ -149,7 +149,7 @@
     {% endif %}
 
     <!-- Google Forms тест -->
-    {% if lesson.quiz_url and (not user or user.role.value != "student" or lesson_test_visible) %}
+    {% if lesson.quiz_url and user and (user.role.value != "student" or lesson_test_visible) %}
     <section class="lesson-google-forms-promo">
       <div class="google-forms-banner">
         <span class="banner-icon">📋</span>
@@ -251,6 +251,7 @@
     </section>
     {% endif %}
 
+    {% if not is_guest_access %}
     <!-- Комментарии (Q&A) -->
     <section class="lesson-comments">
       <h3 data-i18n="lesson.qa">💬 Вопросы и ответы</h3>
@@ -307,6 +308,7 @@
         {% endfor %}
       </div>
     </section>
+    {% endif %}
 
   </main>
 </div>

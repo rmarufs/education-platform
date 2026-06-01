@@ -10,7 +10,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
-from app.dependencies import get_user, is_teacher, is_student, is_admin, can
+from app.dependencies import can_access_course_content, get_user, is_teacher, is_student, is_admin, can
 from app.models.user import User
 from app.models.course import Course
 from app.models.organization import Organization, OrganizationTeacher
@@ -493,6 +493,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="Курс не найден")
 
     user = get_user(request, db)
+    can_open_course_content = can_access_course_content(user, course, db)
 
     # Прогресс студента по этому курсу
     progress_data = {}
@@ -532,14 +533,16 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
 
     # \u0422\u043e\u043f-4 \u043e\u0442\u0437\u044b\u0432\u0430 \u043a\u0443\u0440\u0441\u0430 (\u0432\u0438\u0434\u043d\u044b \u0432\u0441\u0435\u043c)
     reviews_count = db.query(func.count(Review.id)).filter(Review.course_id == course_id).scalar() or 0
-    top_reviews = (
-        db.query(Review)
-        .options(joinedload(Review.student))
-        .filter(Review.course_id == course_id)
-        .order_by(Review.rating.desc(), Review.created_at.desc())
-        .limit(4)
-        .all()
-    )
+    top_reviews = []
+    if user:
+        top_reviews = (
+            db.query(Review)
+            .options(joinedload(Review.student))
+            .filter(Review.course_id == course_id)
+            .order_by(Review.rating.desc(), Review.created_at.desc())
+            .limit(4)
+            .all()
+        )
 
     # \u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435 \u043e\u0442\u0437\u044b\u0432\u0430 \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u043a\u0443\u0440\u0441\u0430?
     show_review_prompt = False
@@ -573,6 +576,7 @@ def course_page(course_id: int, request: Request, db: Session = Depends(get_db))
         "completion_pct": completion_pct,
         "learning_url": learning_url,
         "course_has_progress": course_has_progress,
+        "can_open_course_content": can_open_course_content,
         "user_review": user_review,
         "reviews_count": reviews_count,
         "top_reviews": top_reviews,

@@ -1,6 +1,6 @@
 # Модель курса
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
+from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey, Float, text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -17,6 +17,7 @@ class Course(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     rating      = Column(Float, default=0.0)          # средний рейтинг
     quiz_url    = Column(String(500), nullable=True)  # ссылка на Google Forms для теста курса
+    is_guest_accessible = Column(Boolean, default=False, server_default=text("false"), nullable=False)
     created_at  = Column(DateTime, default=datetime.utcnow)
 
     teacher  = relationship("User", backref="courses")
