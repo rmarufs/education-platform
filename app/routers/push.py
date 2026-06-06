@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import PushSubscription
-from app.dependencies import get_user
+from app.deps.auth import get_user
 import app.config as config
 
 router = APIRouter(prefix="/api/push", tags=["Push Notifications"])
