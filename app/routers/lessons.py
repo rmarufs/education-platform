@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
-from app.dependencies import can_access_course_content, get_user, is_student, is_teacher, is_admin
+from app.deps.auth import get_user
+from app.deps.permissions import can_access_course_content, is_student, is_teacher, is_admin
 from app.models.user import User
 from app.models.module import Module
 from app.models.lesson import Lesson
@@ -393,10 +394,9 @@ async def upload_lesson_material(
 # ── Отметить урок завершённым (студент) ───────────────────────
 @router.post("/{lesson_id:int}/complete")
 def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         raise HTTPException(status_code=401)
-    user = db.query(User).filter(User.id == uid).first()
     if not is_student(user):
         raise HTTPException(status_code=403)
 
@@ -410,11 +410,11 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
     progress = db.query(Progress).filter(
-        Progress.student_id == uid, Progress.lesson_id == lesson_id
+        Progress.student_id == user.id, Progress.lesson_id == lesson_id
     ).first()
 
     if not progress:
-        progress = Progress(student_id=uid, lesson_id=lesson_id, completed=True, completed_at=datetime.utcnow())
+        progress = Progress(student_id=user.id, lesson_id=lesson_id, completed=True, completed_at=datetime.utcnow())
         db.add(progress)
     elif not progress.completed:
         progress.completed = True
@@ -423,7 +423,7 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
         db.commit()
     except IntegrityError:
         db.rollback()
-        progress = db.query(Progress).filter(Progress.student_id == uid, Progress.lesson_id == lesson_id).first()
+        progress = db.query(Progress).filter(Progress.student_id == user.id, Progress.lesson_id == lesson_id).first()
         if progress and not progress.completed:
             progress.completed = True
             progress.completed_at = datetime.utcnow()
@@ -433,11 +433,10 @@ def complete_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
 
 @router.get("/{lesson_id:int}/continue")
 def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_db)):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         return RedirectResponse("/login", status_code=302)
 
-    user = db.query(User).filter(User.id == uid).first()
     if not is_student(user):
         raise HTTPException(status_code=403)
 
@@ -451,7 +450,7 @@ def continue_lesson(lesson_id: int, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=403, detail="Доступ запрещён.")
 
     progress = db.query(Progress).filter(
-        Progress.student_id == uid,
+        Progress.student_id == user.id,
         Progress.lesson_id == lesson_id,
         Progress.completed == True,  # noqa: E712
     ).first()
