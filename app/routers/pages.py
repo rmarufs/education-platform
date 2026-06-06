@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 
 from app.database import get_db
-from app.dependencies import get_user
+from app.deps.auth import get_user
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.category import Category
@@ -19,10 +19,7 @@ router = APIRouter()
 from app.ui import templates
 
 
-def _plain_text(value: str | None) -> str:
-    if not value:
-        return ""
-    return re.sub(r"<[^>]+>", "", value).strip()
+from app.utils.text import plain_text
 
 
 # ── Главная страница ─────────────────────────────────────────────────────────
@@ -141,7 +138,7 @@ def search_api(
     db: Session = Depends(get_db),
 ):
     # Данные текущего пользователя
-    from app.dependencies import get_user
+    from app.deps.auth import get_user
     from app.models.organization import OrganizationStudent
     user = get_user(request, db)
     user_is_student = bool(user and user.is_student)
@@ -194,7 +191,7 @@ def search_api(
         {
             "id": o.id,
             "name": o.name,
-            "description": _plain_text(o.description)[:120] if o.description else "Организация",
+            "description": plain_text(o.description)[:120] if o.description else "Организация",
             "logo_url": o.logo_url or (o.user.avatar_url if o.user else None)
         }
         for o in orgs
@@ -251,7 +248,7 @@ def search_api(
             {
                 "id": c.id,
                 "title": c.title,
-                "description": _plain_text(c.description)[:120],
+                "description": plain_text(c.description)[:120],
                 "image": c.image,
                 "teacher_name": c.teacher.name,
                 "rating": c.rating,
