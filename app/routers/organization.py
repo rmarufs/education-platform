@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 
 from app.database import get_db
+from app.deps.auth import get_user
 from app.models.user import User, UserRole
 from app.models.organization import (
     Organization,
@@ -17,6 +18,7 @@ from app.models.organization import (
 from app.models.course import Course
 from app.models.group import Group, GroupMember
 from app.utils.announcements import VALID_AUDIENCES, get_visible_announcement
+from app.utils.datetime_helpers import parse_optional_datetime as _parse_optional_datetime
 from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
@@ -36,10 +38,9 @@ def _redirect_org_students():
 
 def require_org(request: Request, db: Session):
     """Проверяет что пользователь — активная одобренная организация."""
-    user_id = request.session.get("user_id")
-    if not user_id:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         return None, RedirectResponse("/login", status_code=302)
-    user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_org:
         return None, RedirectResponse("/", status_code=302)
     # Если не одобрена — на страницу ожидания
@@ -49,26 +50,13 @@ def require_org(request: Request, db: Session):
 
 
 def require_user(request: Request, db: Session):
-    user_id = request.session.get("user_id")
-    if not user_id:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         return None, RedirectResponse("/login", status_code=302)
-    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         request.session.clear()
         return None, RedirectResponse("/login", status_code=302)
     return user, None
-
-
-def _parse_optional_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    cleaned = value.strip()
-    if not cleaned:
-        return None
-    try:
-        return datetime.fromisoformat(cleaned)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid expires_at")
 
 
 def _organization_for_user(db: Session, user: User) -> Organization:
@@ -149,9 +137,8 @@ def search_teachers_api(
 
     # Определяем приглашённых текущей организацией (если запрос от орг)
     already_invited = set()
-    user_id = request.session.get("user_id") if request else None
-    if user_id:
-        caller = db.query(User).filter(User.id == user_id).first()
+    caller = get_user(request, db) if request else None
+    if caller:
         if caller and caller.is_org and caller.is_active:
             org = db.query(Organization).filter(Organization.user_id == caller.id).first()
             if org:
@@ -723,11 +710,10 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
 
 @router.post("/organization/{org_id:int}/student/join")
 def student_join_organization(org_id: int, request: Request, force: bool = False, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         raise HTTPException(status_code=401, detail="Необходима авторизация")
 
-    user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_student:
         raise HTTPException(status_code=403, detail="Только студенты могут вступать в учебные центры")
 
@@ -935,8 +921,7 @@ def reject_invite(invite_id: int, request: Request, db: Session = Depends(get_db
 
 @router.get("/organization/{org_id:int}", response_class=HTMLResponse)
 def public_organization_profile(org_id: int, request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    user = db.query(User).filter(User.id == user_id).first() if user_id else None
+    user = get_user(request, db)
 
     org = (
         db.query(Organization)
@@ -1056,11 +1041,9 @@ async def join_organization(
     attachment: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    user_id = request.session.get("user_id")
-    if not user_id:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         raise HTTPException(status_code=401, detail="Необходима авторизация")
-
-    user = db.query(User).filter(User.id == user_id).first()
 
     from app.models.user import UserRole
     if not user or user.role not in [UserRole.teacher, UserRole.teacher_pending]:
