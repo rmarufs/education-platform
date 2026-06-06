@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import get_db
+from app.deps.auth import require_admin as get_admin
 from app.models.user import User, UserRole
 from app.models.course import Course
 from app.models.progress import Progress
@@ -37,17 +38,6 @@ from app.models.review import Review
 
 router = APIRouter(prefix="/admin")
 from app.ui import templates
-
-
-def get_admin(request: Request, db: Session) -> User:
-    """Проверяет, что текущий пользователь — админ."""
-    user_id = request.session.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=302, headers={"Location": "/login"})
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Доступ запрещён")
-    return user
 
 
 def _admin_users_redirect(**params) -> RedirectResponse:

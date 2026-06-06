@@ -37,9 +37,9 @@ def require_auth(request: Request, db: Session = Depends(get_db)) -> User:
 def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
     """Require the current user to be an admin."""
     user = get_user(request, db)
-    if not user:
+    if "user_id" not in request.session or not request.session["user_id"]:
         raise _redirect_exception("/login")
-    if not user.is_admin:
+    if not user or not user.is_admin:
         raise HTTPException(status_code=403, detail=ACCESS_DENIED_DETAIL)
     return user
 
