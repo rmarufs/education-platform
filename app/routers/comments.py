@@ -4,7 +4,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.dependencies import can_access_course_content, get_user
+from app.deps.auth import get_user
+from app.deps.permissions import can_access_course_content
 from app.models.comment import Comment
 from app.models.course import Course
 from app.models.lesson import Lesson
