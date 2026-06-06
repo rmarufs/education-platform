@@ -10,7 +10,8 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database import get_db
-from app.dependencies import can_access_course_content, get_user, is_teacher, is_student, is_admin, can
+from app.deps.auth import get_user
+from app.deps.permissions import can_access_course_content, is_teacher, is_student, is_admin, can
 from app.models.user import User
 from app.models.course import Course
 from app.models.organization import Organization, OrganizationTeacher
@@ -24,6 +25,7 @@ from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API
 from app.course_flow import course_learning_url, course_progress_state, first_course_lesson_url, is_course_complete_by_lessons
 from app.utils.upload_constants import COVER_IMAGE_MAX_BYTES, COURSE_MATERIAL_EXTENSIONS, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
+from app.utils.text import plain_text
 
 try:
     import cloudinary
@@ -47,12 +49,6 @@ if cloudinary:
         api_secret=CLOUDINARY_API_SECRET,
         secure=True,
     )
-
-
-def _plain_text(value: str | None) -> str:
-    if not value:
-        return ""
-    return re.sub(r"<[^>]+>", "", value).strip()
 
 
 def get_teacher_org(teacher_id, db):
@@ -279,7 +275,7 @@ def list_courses_api(q: str = "", db: Session = Depends(get_db)):
         {
             "id": c.id,
             "title": c.title,
-            "description": _plain_text(c.description),
+            "description": plain_text(c.description),
             "image": c.image,
             "teacher_name": c.teacher.name,
             "rating": c.rating,
