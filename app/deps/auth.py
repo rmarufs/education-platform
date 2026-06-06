@@ -45,10 +45,12 @@ def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
 
 
 def require_teacher(request: Request, db: Session = Depends(get_db)) -> User:
-    """Require the current user to be a teacher."""
+    """Require the current user to be a teacher or admin."""
     user = get_user(request, db)
-    if not user or not user.is_teacher:
-        raise _redirect_exception("/login")
+    if "user_id" not in request.session or not request.session["user_id"]:
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
+    if not user or user.role.value not in ("teacher", "admin"):
+        raise HTTPException(status_code=403, detail="Только преподаватели")
     return user
 
 

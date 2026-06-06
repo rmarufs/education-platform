@@ -4,21 +4,12 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.deps.auth import require_teacher
 from app.models.user import User
 from app.models.course import Course
 from app.models.module import Module
 
 router = APIRouter(prefix="/modules")
-
-
-def get_teacher(request: Request, db: Session) -> User:
-    uid = request.session.get("user_id")
-    if not uid:
-        raise HTTPException(status_code=401, detail="Необходима авторизация")
-    user = db.query(User).filter(User.id == uid).first()
-    if not user or user.role.value not in ("teacher", "admin"):
-        raise HTTPException(status_code=403, detail="Только преподаватели")
-    return user
 
 
 def _get_manageable_course(course_id: int, user: User, db: Session) -> Course | None:
@@ -43,7 +34,7 @@ def create_module(
     if not title:
         raise HTTPException(status_code=400, detail="Введите название курса")
 
-    teacher = get_teacher(request, db)
+    teacher = require_teacher(request, db)
     course = _get_manageable_course(course_id, teacher, db)
     if not course:
         raise HTTPException(status_code=404, detail="Курс не найден")
@@ -74,7 +65,7 @@ def edit_module(
     if not title:
         raise HTTPException(status_code=400, detail="Введите название курса")
 
-    teacher = get_teacher(request, db)
+    teacher = require_teacher(request, db)
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(status_code=404)
@@ -96,7 +87,7 @@ def delete_module(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    teacher = get_teacher(request, db)
+    teacher = require_teacher(request, db)
     module = db.query(Module).filter(Module.id == module_id).first()
     if not module:
         raise HTTPException(status_code=404)
