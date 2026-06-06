@@ -16,6 +16,7 @@ from typing import Optional
 
 from app.config import PASSWORD_RESET_TOKEN_TTL_MINUTES, PLATFORM_NAME
 from app.database import get_db
+from app.deps.auth import get_user
 from app.models.user import PasswordResetToken, User, UserRole
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.utils.email import send_email
@@ -134,10 +135,7 @@ def _schedule_password_reset_email(
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Получить текущего пользователя из сессии."""
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return None
-    return db.query(User).filter(User.id == user_id).first()
+    return get_user(request, db)
 
 
 def _validate_teacher_document(document: UploadFile | None):
@@ -578,8 +576,7 @@ async def register(
 
 @router.get("/register/pending", response_class=HTMLResponse)
 def register_pending(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    user = db.query(User).filter(User.id == user_id).first() if user_id else None
+    user = get_user(request, db)
     return templates.TemplateResponse("auth/register_pending.html", {"request": request, "user": user})
 
 
