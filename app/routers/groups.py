@@ -2,7 +2,6 @@ import os
 import shutil
 import uuid
 import mimetypes
-import calendar
 from datetime import date, datetime
 from urllib.parse import quote, urlparse
 from urllib.request import urlopen
@@ -15,6 +14,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 from app.database import get_db
+from app.deps.auth import get_user as _get_user
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupHomeworkNotification, GroupPaymentEntry
@@ -23,6 +23,14 @@ from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API
 from app.utils.announcements import get_visible_announcements
 from app.utils.image import upload_group_cover_image, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
+from app.utils.datetime_helpers import (
+    calculate_paid_until as _calculate_paid_until,
+    month_start as _month_start,
+    parse_homework_deadline as _parse_homework_deadline,
+    parse_month as _parse_month,
+    payment_status as _payment_status,
+    resolve_payment_day as _resolve_payment_day,
+)
 from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 
@@ -65,13 +73,6 @@ class BulkAddStudentsPayload(BaseModel):
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-
-def _get_user(request: Request, db: Session) -> Optional[User]:
-    uid = request.session.get("user_id")
-    if not uid:
-        return None
-    return db.query(User).filter(User.id == uid).first()
-
 
 def _require_org(request: Request, db: Session):
     user = _get_user(request, db)
@@ -230,16 +231,6 @@ def _download_remote_file(file_url: str, filename: str):
     )
 
 
-def _parse_homework_deadline(value: str | None) -> datetime | None:
-    clean_value = (value or "").strip()
-    if not clean_value:
-        return None
-    try:
-        return datetime.fromisoformat(clean_value)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Некорректный дедлайн")
-
-
 def _get_group_lesson(group_id: int, lesson_id: int, db: Session) -> GroupLesson:
     lesson = db.query(GroupLesson).options(
         joinedload(GroupLesson.group),
@@ -324,66 +315,6 @@ def _journal_redirect(group_id: int, **params) -> RedirectResponse:
     if query:
         location = f"{location}?{query}"
     return RedirectResponse(location, status_code=302)
-
-
-def _month_start(value: date | None = None) -> date:
-    value = value or date.today()
-    return date(value.year, value.month, 1)
-
-
-def _parse_month(value: str | None) -> date:
-    if not value:
-        return _month_start()
-    try:
-        if len(value) == 7:
-            parsed = datetime.strptime(value, "%Y-%m").date()
-        else:
-            parsed = datetime.strptime(value, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid month")
-    return _month_start(parsed)
-
-
-def _last_day_of_month(year: int, month: int) -> int:
-    return calendar.monthrange(year, month)[1]
-
-
-def _normalize_payment_day(payment_day: int, year: int, month: int) -> int:
-    if payment_day < 1 or payment_day > 31:
-        raise ValueError("payment_day must be between 1 and 31")
-    return min(payment_day, _last_day_of_month(year, month))
-
-
-def _next_month(year: int, month: int) -> tuple[int, int]:
-    if month == 12:
-        return year + 1, 1
-    return year, month + 1
-
-
-def _calculate_paid_until(payment_day: int, payment_date: date) -> date:
-    next_year, next_month = _next_month(payment_date.year, payment_date.month)
-    next_normalized_day = _normalize_payment_day(payment_day, next_year, next_month)
-    return date(next_year, next_month, next_normalized_day)
-
-
-def _payment_status(paid_until: date | None, today: date | None = None) -> str:
-    if not paid_until:
-        return "unpaid"
-    today = today or date.today()
-    if today > paid_until:
-        return "overdue"
-    return "paid"
-
-
-def _resolve_payment_day(value, fallback: int | None = None) -> int:
-    raw_value = str(value if value is not None else fallback or 1).strip()
-    try:
-        payment_day = int(raw_value)
-    except (TypeError, ValueError):
-        return 1
-    if payment_day < 1 or payment_day > 31:
-        return 1
-    return payment_day
 
 
 def _payment_redirect(group_id: int, month: date, **params) -> RedirectResponse:
