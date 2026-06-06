@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.database import get_db
-from app.models.user import User
+from app.deps.auth import get_user
 from app.models.course import Course
 from app.models.review import Review
 from app.models.progress import Progress
@@ -23,11 +23,10 @@ def submit_review(
     comment: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         raise HTTPException(status_code=401, detail="Не авторизован")
 
-    user = db.query(User).filter(User.id == uid).first()
     if not user or user.role.value != "student":
         raise HTTPException(status_code=403, detail="Только студенты могут оставлять отзывы")
 
@@ -78,7 +77,7 @@ def submit_review(
         raise HTTPException(status_code=403, detail="Необходимо завершить минимум 2 урока или пройти курс полностью")
 
     review = db.query(Review).filter(
-        Review.student_id == uid,
+        Review.student_id == user.id,
         Review.teacher_id == teacher_id
     ).first()
 
@@ -88,7 +87,7 @@ def submit_review(
         review.course_id = course_id
     else:
         review = Review(
-            student_id=uid,
+            student_id=user.id,
             teacher_id=teacher_id,
             course_id=course_id,
             rating=rating,
@@ -117,11 +116,10 @@ def leave_review(
     text: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    uid = request.session.get("user_id")
-    if not uid:
+    user = get_user(request, db)
+    if "user_id" not in request.session or not request.session["user_id"]:
         return RedirectResponse("/login", status_code=302)
 
-    user = db.query(User).filter(User.id == uid).first()
     if not user or user.role.value != "student":
         raise HTTPException(status_code=403, detail="Только студенты могут оставлять отзывы")
 
@@ -134,14 +132,14 @@ def leave_review(
 
     # Обновляем или создаём отзыв
     review = db.query(Review).filter(
-        Review.course_id == course_id, Review.student_id == uid
+        Review.course_id == course_id, Review.student_id == user.id
     ).first()
 
     if review:
         review.rating = rating
         review.text = text
     else:
-        review = Review(course_id=course_id, student_id=uid, rating=rating, text=text)
+        review = Review(course_id=course_id, student_id=user.id, rating=rating, text=text)
         db.add(review)
 
     db.commit()
