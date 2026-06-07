@@ -5,6 +5,26 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  function getSubmitButton(form, event) {
+    const submitter = event && event.submitter;
+    const selector = 'button[type="submit"], input[type="submit"]';
+    if (
+      submitter &&
+      submitter.form === form &&
+      submitter.matches &&
+      submitter.matches(selector) &&
+      !submitter.disabled
+    ) {
+      return submitter;
+    }
+
+    const buttons = Array.from(form.querySelectorAll(selector)).filter((button) => !button.disabled);
+    return buttons.find((button) => {
+      if (button.hidden) return false;
+      const style = window.getComputedStyle(button);
+      return style.display !== 'none' && style.visibility !== 'hidden' && button.getClientRects().length > 0;
+    }) || buttons[0] || null;
+  }
 
   // ── Форма ВХОДА ─────────────────────────────────────────────
   const loginForm = document.getElementById('login-form');
@@ -36,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Блокируем кнопку только при валидной отправке
-      const btn = this.querySelector('button[type="submit"]');
+      const btn = getSubmitButton(this, e);
       if (btn) {
         btn.disabled = true;
         btn.style.opacity = '0.7';
@@ -138,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const btn = this.querySelector('button[type="submit"]');
+      const btn = getSubmitButton(this, e);
       if (btn) {
         btn.disabled = true;
         btn.style.opacity = '0.7';
