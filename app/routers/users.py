@@ -14,7 +14,7 @@ from app.models.course import Course
 from app.models.module import Module
 from app.models.group import Group, GroupMember, GroupHomework, GroupHomeworkNotification, GroupHomeworkSubmission, GroupJournalEntry, GroupLesson, GroupLessonProgress
 from app.models.vocabulary import VocabularyAttempt, VocabularySet
-from app.course_flow import first_course_lesson_url
+from app.services.course_service import first_course_lesson_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
 

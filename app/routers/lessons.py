@@ -21,7 +21,7 @@ from app.models.progress import Progress
 from app.models.comment import Comment
 from app.models.course import Course
 from app.models.review import Review
-from app.course_flow import next_after_lesson
+from app.services.course_service import next_after_lesson
 from app.utils.image import upload_lesson_image
 from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file

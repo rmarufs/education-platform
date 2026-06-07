@@ -22,7 +22,7 @@ from app.models.lesson import Lesson
 from app.models.material import Material
 from app.models.review import Review
 from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-from app.course_flow import course_learning_url, course_progress_state, first_course_lesson_url, is_course_complete_by_lessons
+from app.services.course_service import course_learning_url, course_progress_state, first_course_lesson_url, is_course_complete_by_lessons
 from app.utils.upload_constants import COVER_IMAGE_MAX_BYTES, COURSE_MATERIAL_EXTENSIONS, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 from app.utils.text import plain_text
