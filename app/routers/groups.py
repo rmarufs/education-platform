@@ -40,6 +40,9 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 from app.routers import group_crud
 router.include_router(group_crud.router)
 
+from app.routers import group_modules
+router.include_router(group_modules.router)
+
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
 GROUP_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
 GROUP_MATERIAL_EXTENSIONS = BASIC_DOCUMENT_EXTENSIONS
@@ -714,85 +717,6 @@ def _can_manage_lessons(user: User, group: Group, db: Session) -> bool:
     return _can_manage_group_content(user, group, db)
 
 
-@router.post("/{group_id:int}/modules/create")
-def group_module_create(
-    group_id: int,
-    request: Request,
-    title: str = Form(...),
-    order_index: Optional[int] = Form(None),
-    db: Session = Depends(get_db),
-):
-    _, group = _get_manageable_group(group_id, request, db)
-
-    clean_title = title.strip()
-    if not clean_title:
-        raise HTTPException(status_code=400, detail="Введите название модуля")
-
-    module_order = order_index
-    if module_order is None:
-        module_order = db.query(GroupModule).filter(GroupModule.group_id == group_id).count()
-
-    module = GroupModule(
-        group_id=group_id,
-        title=clean_title,
-        order_index=module_order,
-    )
-    db.add(module)
-    db.commit()
-    return RedirectResponse(f"/groups/{group_id}/manage?success=module_created", status_code=302)
-
-
-@router.post("/{group_id:int}/modules/{module_id:int}/edit")
-def group_module_edit(
-    group_id: int,
-    module_id: int,
-    request: Request,
-    title: str = Form(...),
-    order_index: int = Form(0),
-    db: Session = Depends(get_db),
-):
-    _, group = _get_manageable_group(group_id, request, db)
-
-    module = db.query(GroupModule).filter(
-        GroupModule.id == module_id,
-        GroupModule.group_id == group.id,
-    ).first()
-    if not module:
-        raise HTTPException(status_code=404, detail="Модуль не найден")
-
-    clean_title = title.strip()
-    if not clean_title:
-        raise HTTPException(status_code=400, detail="Введите название модуля")
-
-    module.title = clean_title
-    module.order_index = order_index
-    db.commit()
-    return RedirectResponse(f"/groups/{group_id}/manage?success=module_saved", status_code=302)
-
-
-@router.post("/{group_id:int}/modules/{module_id:int}/delete")
-def group_module_delete(
-    group_id: int,
-    module_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    _, group = _get_manageable_group(group_id, request, db)
-
-    module = db.query(GroupModule).filter(
-        GroupModule.id == module_id,
-        GroupModule.group_id == group.id,
-    ).first()
-    if not module:
-        raise HTTPException(status_code=404, detail="Модуль не найден")
-
-    db.query(GroupLesson).filter(
-        GroupLesson.group_id == group.id,
-        GroupLesson.group_module_id == module.id,
-    ).update({GroupLesson.group_module_id: None}, synchronize_session=False)
-    db.delete(module)
-    db.commit()
-    return RedirectResponse(f"/groups/{group_id}/manage?success=module_deleted", status_code=302)
 
 
 @router.post("/api/quiz-url")
