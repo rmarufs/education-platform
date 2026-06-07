@@ -50,6 +50,9 @@ router.include_router(group_lessons.router)
 from app.routers import group_journal
 router.include_router(group_journal.router)
 
+from app.routers import group_payments
+router.include_router(group_payments.router)
+
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
 GROUP_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
 GROUP_MATERIAL_EXTENSIONS = BASIC_DOCUMENT_EXTENSIONS
@@ -248,29 +251,6 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
 
 
 
-def _payment_redirect(group_id: int, month: date, **params) -> RedirectResponse:
-    from urllib.parse import urlencode
-
-    payload = {"month": month.strftime("%Y-%m"), **{key: value for key, value in params.items() if value}}
-    return RedirectResponse(f"/groups/{group_id}/payments?{urlencode(payload)}", status_code=302)
-
-
-def _student_payment_overdue(db: Session, group_id: int, student_id: int, today: date | None = None) -> bool:
-    today = today or date.today()
-    if today.day <= 7:
-        return False
-    entry = _student_month_payment_entry(db, group_id, student_id, _month_start(today))
-    return not (entry and entry.is_paid)
-
-
-def _student_month_payment_entry(db: Session, group_id: int, student_id: int, month: date) -> GroupPaymentEntry | None:
-    return db.query(GroupPaymentEntry).filter(
-        GroupPaymentEntry.group_id == group_id,
-        GroupPaymentEntry.student_id == student_id,
-        GroupPaymentEntry.month == month,
-    ).first()
-
-
 
 
 
@@ -406,127 +386,6 @@ def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
 # ═══════════════════════════════════════════════════════════
 # PAYMENT JOURNAL — ORG EDITS, TEACHER READS
 # ═══════════════════════════════════════════════════════════
-
-@router.get("/{group_id:int}/payments", response_class=HTMLResponse)
-def group_payments(group_id: int, request: Request, month: Optional[str] = None, db: Session = Depends(get_db)):
-    user, group = _get_manageable_group(group_id, request, db)
-    selected_month = _parse_month(month)
-
-    group = db.query(Group).options(
-        joinedload(Group.organization),
-        joinedload(Group.teacher),
-        selectinload(Group.members).joinedload(GroupMember.student),
-    ).filter(Group.id == group.id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-
-    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
-    student_ids = [member.student_id for member in members]
-    entries = []
-    if student_ids:
-        entries = db.query(GroupPaymentEntry).options(
-            joinedload(GroupPaymentEntry.marked_by)
-        ).filter(
-            GroupPaymentEntry.group_id == group.id,
-            GroupPaymentEntry.month == selected_month,
-            GroupPaymentEntry.student_id.in_(student_ids),
-        ).all()
-
-    entries_map = {entry.student_id: entry for entry in entries}
-    payment_status_map = {
-        member.student_id: _payment_status(member.paid_until)
-        for member in members
-    }
-    can_edit_payments = user.is_org and _can_manage_group_content(user, group, db)
-
-    return templates.TemplateResponse("groups/payments.html", {
-        "request": request,
-        "user": user,
-        "group": group,
-        "members": members,
-        "entries_map": entries_map,
-        "payment_status_map": payment_status_map,
-        "selected_month": selected_month,
-        "month_value": selected_month.strftime("%Y-%m"),
-        "can_edit_payments": can_edit_payments,
-        "success": request.query_params.get("success"),
-        "error": request.query_params.get("error"),
-    })
-
-
-@router.post("/{group_id:int}/payments")
-async def group_payments_save(group_id: int, request: Request, db: Session = Depends(get_db)):
-    user = _get_user(request, db)
-    if not user or not user.is_org:
-        raise HTTPException(status_code=403, detail="Доступ запрещён")
-
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
-        raise HTTPException(status_code=403, detail="Доступ запрещён")
-
-    form_data = await request.form()
-    selected_month = _parse_month(form_data.get("month"))
-
-    group = db.query(Group).options(selectinload(Group.members)).filter(
-        Group.id == group.id,
-    ).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-
-    student_ids = [member.student_id for member in group.members]
-    now = datetime.utcnow()
-    payment_month = _month_start(now.date())
-    entry_months = list({selected_month, payment_month})
-    existing_entries = db.query(GroupPaymentEntry).filter(
-        GroupPaymentEntry.group_id == group.id,
-        GroupPaymentEntry.month.in_(entry_months),
-        GroupPaymentEntry.student_id.in_(student_ids or [0]),
-    ).all()
-    entries_map = {
-        (entry.student_id, entry.month): entry
-        for entry in existing_entries
-    }
-
-    for member in group.members:
-        student_id = member.student_id
-        payment_day = _resolve_payment_day(
-            form_data.get(f"payment_day_{student_id}"),
-            member.payment_day,
-        )
-        member.payment_day = payment_day
-        is_paid = f"paid_{student_id}" in form_data
-        entry_month = payment_month if is_paid else selected_month
-        entry = entries_map.get((student_id, entry_month))
-        if not entry:
-            entry = GroupPaymentEntry(
-                group_id=group.id,
-                student_id=student_id,
-                month=entry_month,
-            )
-            db.add(entry)
-
-        if is_paid:
-            paid_until = _calculate_paid_until(payment_day, now.date())
-            member.paid_until = paid_until
-            member.last_paid_at = now
-
-            entry.is_paid = True
-            entry.paid_at = now
-            entry.paid_until = paid_until
-            entry.action = "paid"
-        else:
-            entry.is_paid = False
-            entry.paid_at = None
-            entry.paid_until = None
-            entry.action = "cancelled"
-        entry.marked_by_id = user.id
-        entry.payment_day = payment_day
-
-    db.commit()
-    return _payment_redirect(group.id, selected_month, success="payments_saved")
-
 
 
 # ═══════════════════════════════════════════════════════════
