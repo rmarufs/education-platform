@@ -47,6 +47,9 @@ router.include_router(group_modules.router)
 from app.routers import group_lessons
 router.include_router(group_lessons.router)
 
+from app.routers import group_journal
+router.include_router(group_journal.router)
+
 GROUP_MATERIAL_DIR = os.path.join("static", "uploads", "group_materials")
 GROUP_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
 GROUP_MATERIAL_EXTENSIONS = BASIC_DOCUMENT_EXTENSIONS
@@ -245,16 +248,6 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
 
 
 
-def _journal_redirect(group_id: int, **params) -> RedirectResponse:
-    from urllib.parse import urlencode
-
-    query = urlencode({key: value for key, value in params.items() if value})
-    location = f"/groups/{group_id}/journal"
-    if query:
-        location = f"{location}?{query}"
-    return RedirectResponse(location, status_code=302)
-
-
 def _payment_redirect(group_id: int, month: date, **params) -> RedirectResponse:
     from urllib.parse import urlencode
 
@@ -409,123 +402,6 @@ def group_teach(group_id: int, request: Request, db: Session = Depends(get_db)):
 # ═══════════════════════════════════════════════════════════
 # GROUP JOURNAL — ORG & TEACHER
 # ═══════════════════════════════════════════════════════════
-
-@router.get("/{group_id:int}/journal", response_class=HTMLResponse)
-def group_journal(group_id: int, request: Request, db: Session = Depends(get_db)):
-    user, group = _get_manageable_group(group_id, request, db)
-
-    group = db.query(Group).options(
-        joinedload(Group.organization),
-        joinedload(Group.teacher),
-        selectinload(Group.modules).selectinload(GroupModule.lessons),
-        selectinload(Group.lessons),
-        selectinload(Group.members).joinedload(GroupMember.student),
-    ).filter(Group.id == group.id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-
-    lessons = _ordered_group_lessons(group)
-    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
-    lesson_ids = [lesson.id for lesson in lessons]
-    student_ids = [member.student_id for member in members]
-
-    entries = []
-    if lesson_ids and student_ids:
-        entries = db.query(GroupJournalEntry).filter(
-            GroupJournalEntry.group_id == group.id,
-            GroupJournalEntry.lesson_id.in_(lesson_ids),
-            GroupJournalEntry.student_id.in_(student_ids),
-        ).all()
-
-    entries_map = {
-        (entry.student_id, entry.lesson_id): entry
-        for entry in entries
-    }
-    averages = {
-        student_id: avg
-        for student_id, avg in db.query(
-            GroupJournalEntry.student_id,
-            func.avg(GroupJournalEntry.grade),
-        ).filter(
-            GroupJournalEntry.group_id == group.id,
-            GroupJournalEntry.student_id.in_(student_ids or [0]),
-            GroupJournalEntry.present.is_(True),
-            GroupJournalEntry.grade.isnot(None),
-        ).group_by(GroupJournalEntry.student_id).all()
-    }
-
-    return templates.TemplateResponse("groups/journal.html", {
-        "request": request,
-        "user": user,
-        "group": group,
-        "members": members,
-        "lessons": lessons,
-        "entries_map": entries_map,
-        "averages": averages,
-        "success": request.query_params.get("success"),
-        "error": request.query_params.get("error"),
-    })
-
-
-@router.post("/{group_id:int}/journal")
-async def group_journal_save(group_id: int, request: Request, db: Session = Depends(get_db)):
-    _, group = _get_manageable_group(group_id, request, db)
-
-    group = db.query(Group).options(
-        selectinload(Group.modules).selectinload(GroupModule.lessons),
-        selectinload(Group.lessons),
-        selectinload(Group.members),
-    ).filter(Group.id == group.id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Группа не найдена")
-
-    lessons = _ordered_group_lessons(group)
-    lesson_ids = [lesson.id for lesson in lessons]
-    student_ids = [member.student_id for member in group.members]
-    form_data = await request.form()
-
-    existing_entries = db.query(GroupJournalEntry).filter(
-        GroupJournalEntry.group_id == group.id,
-        GroupJournalEntry.lesson_id.in_(lesson_ids or [0]),
-        GroupJournalEntry.student_id.in_(student_ids or [0]),
-    ).all()
-    entries_map = {
-        (entry.student_id, entry.lesson_id): entry
-        for entry in existing_entries
-    }
-
-    try:
-        for student_id in student_ids:
-            for lesson_id in lesson_ids:
-                present = f"present_{student_id}_{lesson_id}" in form_data
-                raw_grade = (form_data.get(f"grade_{student_id}_{lesson_id}") or "").strip()
-                grade = int(raw_grade) if raw_grade else None
-
-                if grade is not None and grade not in {1, 2, 3, 4, 5}:
-                    return _journal_redirect(group.id, error="invalid_grade")
-                if not present:
-                    grade = None
-
-                entry = entries_map.get((student_id, lesson_id))
-                if entry:
-                    entry.present = present
-                    entry.grade = grade
-                else:
-                    db.add(GroupJournalEntry(
-                        group_id=group.id,
-                        lesson_id=lesson_id,
-                        student_id=student_id,
-                        present=present,
-                        grade=grade,
-                    ))
-
-        db.commit()
-    except ValueError:
-        db.rollback()
-        return _journal_redirect(group.id, error="invalid_grade")
-
-    return _journal_redirect(group.id, success="journal_saved")
-
 
 # ═══════════════════════════════════════════════════════════
 # PAYMENT JOURNAL — ORG EDITS, TEACHER READS
