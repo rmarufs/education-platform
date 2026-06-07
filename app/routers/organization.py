@@ -139,9 +139,8 @@ def organization_announcements(request: Request, db: Session = Depends(get_db)):
         return redirect
 
     org = _organization_for_user(db, user)
-    announcements = db.query(OrganizationAnnouncement).filter(
-        OrganizationAnnouncement.organization_id == org.id
-    ).order_by(OrganizationAnnouncement.created_at.desc()).all()
+    from app.services.announcement_service import get_organization_announcements
+    announcements = get_organization_announcements(db, org.id)
 
     return templates.TemplateResponse(
         "organization/announcements.html",
@@ -166,54 +165,13 @@ def create_organization_announcement(
     user, redirect = require_org(request, db)
     if redirect:
         return redirect
-    if audience not in VALID_AUDIENCES:
-        raise HTTPException(status_code=400, detail="Invalid audience")
 
     org = _organization_for_user(db, user)
-    announcement = OrganizationAnnouncement(
-        organization_id=org.id,
-        title=title.strip(),
-        body=body.strip(),
-        audience=audience,
-        created_by_id=user.id,
-        expires_at=_parse_optional_datetime(expires_at),
-    )
-    if not announcement.title or not announcement.body:
-        raise HTTPException(status_code=400, detail="Title and body are required")
-
-    db.add(announcement)
-    db.commit()
-
+    from app.services.announcement_service import create_organization_announcement_service
     try:
-        from app.utils.push import send_push_to_users
-        target_user_ids = []
-        if audience in ("all", "teachers"):
-            teachers = db.query(OrganizationTeacher).filter(
-                OrganizationTeacher.organization_id == org.id,
-                OrganizationTeacher.status == "accepted"
-            ).all()
-            target_user_ids.extend([t.teacher_id for t in teachers])
-            
-        if audience in ("all", "students"):
-            students = db.query(OrganizationStudent).filter(
-                OrganizationStudent.organization_id == org.id,
-                OrganizationStudent.status == "accepted"
-            ).all()
-            target_user_ids.extend([s.student_id for s in students])
-            
-        if target_user_ids:
-            send_push_to_users(
-                db=db,
-                user_ids=target_user_ids,
-                title="Новое объявление",
-                body=org.name or announcement.title,
-                target_url=f"/dashboard?announcement_id={announcement.id}",
-                notification_type="organization_announcement",
-                entity_id=announcement.id
-            )
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Error sending push for announcement: {e}")
+        create_organization_announcement_service(db, org, user, title, body, audience, expires_at)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return RedirectResponse("/organization/announcements?success=created", status_code=302)
 
@@ -231,22 +189,13 @@ def update_organization_announcement(
     user, redirect = require_org(request, db)
     if redirect:
         return redirect
-    if audience not in VALID_AUDIENCES:
-        raise HTTPException(status_code=400, detail="Invalid audience")
 
     org = _organization_for_user(db, user)
-    announcement = _get_owned_announcement(db, org.id, announcement_id)
-    clean_title = title.strip()
-    clean_body = body.strip()
-    if not clean_title or not clean_body:
-        raise HTTPException(status_code=400, detail="Title and body are required")
-
-    announcement.title = clean_title
-    announcement.body = clean_body
-    announcement.audience = audience
-    announcement.expires_at = _parse_optional_datetime(expires_at)
-    announcement.updated_at = datetime.utcnow()
-    db.commit()
+    from app.services.announcement_service import update_organization_announcement_service
+    try:
+        update_organization_announcement_service(db, org.id, announcement_id, title, body, audience, expires_at)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return RedirectResponse("/organization/announcements?success=updated", status_code=302)
 
 
@@ -261,10 +210,11 @@ def toggle_organization_announcement(
         return redirect
 
     org = _organization_for_user(db, user)
-    announcement = _get_owned_announcement(db, org.id, announcement_id)
-    announcement.is_active = not announcement.is_active
-    announcement.updated_at = datetime.utcnow()
-    db.commit()
+    from app.services.announcement_service import toggle_organization_announcement_service
+    try:
+        toggle_organization_announcement_service(db, org.id, announcement_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     return RedirectResponse("/organization/announcements?success=updated", status_code=302)
 
 
@@ -279,9 +229,11 @@ def delete_organization_announcement(
         return redirect
 
     org = _organization_for_user(db, user)
-    announcement = _get_owned_announcement(db, org.id, announcement_id)
-    db.delete(announcement)
-    db.commit()
+    from app.services.announcement_service import delete_organization_announcement_service
+    try:
+        delete_organization_announcement_service(db, org.id, announcement_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     return RedirectResponse("/organization/announcements?success=deleted", status_code=302)
 
 
@@ -295,20 +247,11 @@ def dismiss_organization_announcement(
     if redirect:
         return redirect
 
-    announcement = get_visible_announcement(db, user, announcement_id)
-    if not announcement:
-        raise HTTPException(status_code=403, detail="Announcement is not available")
-
-    existing = db.query(OrganizationAnnouncementDismissal).filter(
-        OrganizationAnnouncementDismissal.announcement_id == announcement.id,
-        OrganizationAnnouncementDismissal.user_id == user.id,
-    ).first()
-    if not existing:
-        db.add(OrganizationAnnouncementDismissal(
-            announcement_id=announcement.id,
-            user_id=user.id,
-        ))
-        db.commit()
+    from app.services.announcement_service import dismiss_organization_announcement_service
+    try:
+        dismiss_organization_announcement_service(db, user, announcement_id)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
     referer = request.headers.get("referer") or ""
     parsed_referer = urlparse(referer)
