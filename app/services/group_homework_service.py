@@ -123,7 +123,7 @@ def submit_homework_record(
         submission.file_type = url_type
         submission.filename = url_filename
 
-    submission.text_answer = clean_text
+    submission.comment = clean_text
     submission.submitted_at = datetime.utcnow()
     db.commit()
     return submission

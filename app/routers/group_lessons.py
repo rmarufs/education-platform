@@ -125,7 +125,10 @@ async def save_group_quiz_url(
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid scope_id")
 
-    quiz_url = validate_quiz_url(form_data.get("quiz_url", ""))
+    try:
+        quiz_url = validate_quiz_url(form_data.get("quiz_url", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     if scope_name == "group":
         group = db.query(Group).filter(Group.id == scope_id).first()

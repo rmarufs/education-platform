@@ -41,6 +41,9 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 from app.routers import group_crud
 router.include_router(group_crud.router)
 
+from app.routers import group_analytics
+router.include_router(group_analytics.router)
+
 from app.routers import group_modules
 router.include_router(group_modules.router)
 
@@ -185,7 +188,6 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
 import json as _json
 import re as _re
 from app.models.vocabulary import VocabularySet, VocabularyItem, VocabularyAttempt, VocabularyAttemptAnswer
-
 
 
 
