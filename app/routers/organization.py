@@ -80,24 +80,8 @@ def _get_owned_announcement(db: Session, org_id: int, announcement_id: int) -> O
 
 @router.get("/api/organizations/list")
 def list_organizations_api(db: Session = Depends(get_db)):
-    orgs = (
-        db.query(Organization)
-        .options(joinedload(Organization.user))
-        .filter(Organization.status == "approved")
-        .order_by(Organization.name)
-        .all()
-    )
-    return JSONResponse({
-        "organizations": [
-            {
-                "id": o.id,
-                "name": o.name,
-                "logo_url": o.logo_url or (o.user.avatar_url if o.user else None),
-                "is_open": o.is_open,
-            }
-            for o in orgs
-        ]
-    })
+    from app.services.organization_service import get_approved_organizations_list
+    return JSONResponse({"organizations": get_approved_organizations_list(db)})
 
 
 # ── API: поиск преподавателей (для кабинета организации и глобального поиска) ─
@@ -108,58 +92,13 @@ def search_teachers_api(
     request: Request = None,
     db: Session = Depends(get_db)
 ):
-    from app.models.user import UserRole
-
-    query = db.query(User).filter(
-        User.role == UserRole.teacher,
-        User.is_active == True,
-    )
-    if q.strip():
-        query = query.filter(User.name.ilike(f"%{q.strip()}%"))
-
-    teachers = query.order_by(User.name).limit(20).all()
-
-    # Получаем карту teacher_id → org_link
-    teacher_ids = [t.id for t in teachers]
-    org_map = {}
-    if teacher_ids:
-        links = (
-            db.query(OrganizationTeacher)
-            .options(joinedload(OrganizationTeacher.organization))
-            .filter(
-                OrganizationTeacher.teacher_id.in_(teacher_ids),
-                OrganizationTeacher.status == "accepted",
-            )
-            .all()
-        )
-        for link in links:
-            org_map[link.teacher_id] = link
-
-    # Определяем приглашённых текущей организацией (если запрос от орг)
-    already_invited = set()
     caller = get_user(request, db) if request else None
-    if caller:
-        if caller and caller.is_org and caller.is_active:
-            org = db.query(Organization).filter(Organization.user_id == caller.id).first()
-            if org:
-                inv_links = db.query(OrganizationTeacher).filter(
-                    OrganizationTeacher.organization_id == org.id,
-                    OrganizationTeacher.teacher_id.in_(teacher_ids),
-                ).all()
-                already_invited = {l.teacher_id for l in inv_links}
+    org = None
+    if caller and caller.is_org and caller.is_active:
+        org = db.query(Organization).filter(Organization.user_id == caller.id).first()
 
-    result = []
-    for t in teachers:
-        org_link = org_map.get(t.id)
-        result.append({
-            "id": t.id,
-            "name": t.name,
-            "bio": (t.bio[:120] if t.bio else None),
-            "avatar": getattr(t, "avatar_url", None),
-            "org_name": org_link.organization.name if org_link else None,
-            "org_id": org_link.organization_id if org_link else None,
-            "already_invited": t.id in already_invited,
-        })
+    from app.services.organization_service import search_teachers_for_organization
+    result = search_teachers_for_organization(db, q, org)
 
     return JSONResponse({"teachers": result})
 
@@ -174,39 +113,11 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
 
-    accepted_count = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "accepted"
-    ).count() if org else 0
-
-    teacher_ids = [teacher_id for (teacher_id,) in db.query(OrganizationTeacher.teacher_id).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "accepted"
-    ).all()] if org else []
-
-    courses_count = db.query(Course).filter(Course.teacher_id.in_(teacher_ids)).count() if teacher_ids else 0
-
-    # Входящие заявки преподавателей (pending — учителя выбрали эту организацию при регистрации)
-    incoming_count = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "pending"
-    ).count() if org else 0
-
-    # Входящие заявки студентов (pending — студенты ждут одобрения закрытого центра)
-    student_requests_count = db.query(OrganizationStudent).filter(
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.status == "pending"
-    ).count() if org else 0
-
-    # Количество студентов
-    students_count = db.query(OrganizationStudent).filter(
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.status == "accepted"
-    ).count() if org else 0
-
-    # Количество групп
-    from app.models.group import Group
-    groups_count = db.query(Group).filter(Group.organization_id == org.id).count() if org else 0
+    from app.services.organization_service import get_organization_dashboard_stats
+    stats = get_organization_dashboard_stats(db, org.id) if org else {
+        "teachers_count": 0, "courses_count": 0, "students_count": 0,
+        "incoming_count": 0, "student_requests_count": 0, "groups_count": 0
+    }
 
     return templates.TemplateResponse(
         "organization/dashboard.html",
@@ -214,12 +125,7 @@ def organization_dashboard(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "user": user,
             "org": org,
-            "teachers_count": accepted_count,
-            "courses_count": courses_count,
-            "students_count": students_count,
-            "incoming_count": incoming_count,
-            "student_requests_count": student_requests_count,
-            "groups_count": groups_count,
+            **stats
         }
     )
 
@@ -424,13 +330,8 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
 
-    all_links = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.teacher)).filter(
-        OrganizationTeacher.organization_id == org.id
-    ).all() if org else []
-
-    accepted = [l for l in all_links if l.status == "accepted"]
-    pending  = [l for l in all_links if l.status == "pending"]
-    rejected = [l for l in all_links if l.status == "rejected"]
+    from app.services.organization_service import get_organization_teachers_lists
+    accepted, pending, rejected = get_organization_teachers_lists(db, org.id) if org else ([], [], [])
 
     return templates.TemplateResponse(
         "organization/teachers.html",
@@ -454,15 +355,8 @@ def organization_students(request: Request, db: Session = Depends(get_db)):
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
 
-    org_students = db.query(OrganizationStudent).options(
-        joinedload(OrganizationStudent.student)
-    ).filter(
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
-    ).order_by(OrganizationStudent.created_at.desc()).all() if org else []
-
-    accepted_students = [s for s in org_students if s.status == "accepted"]
-    pending_students = [s for s in org_students if s.status == "pending"]
+    from app.services.organization_service import get_organization_students_lists
+    accepted_students, pending_students = get_organization_students_lists(db, org.id) if org else ([], [])
 
     return templates.TemplateResponse(
         "organization/students.html",
@@ -807,23 +701,13 @@ def org_teacher_courses(teacher_id: int, request: Request, db: Session = Depends
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
     # Проверяем, что преподаватель является членом этой организации
-    membership = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.teacher_id == teacher_id,
-        OrganizationTeacher.status == "accepted"
-    ).first()
-    if not membership:
-        raise HTTPException(status_code=403, detail="Этот преподаватель не является членом вашего учебного центра")
-
-    teacher = db.query(User).filter(User.id == teacher_id).first()
-    if not teacher:
-        raise HTTPException(status_code=404, detail="Преподаватель не найден")
-
-    from app.models.course import Course
-    from sqlalchemy.orm import joinedload
-    courses = db.query(Course).options(
-        joinedload(Course.category)
-    ).filter(Course.teacher_id == teacher_id).order_by(Course.created_at.desc()).all()
+    from app.services.organization_service import get_organization_teacher_courses
+    try:
+        teacher, courses = get_organization_teacher_courses(db, org.id, teacher_id)
+    except ValueError as e:
+        if "не является членом" in str(e):
+            raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
 
     return templates.TemplateResponse(
         "organization/teacher_courses.html",
@@ -923,110 +807,18 @@ def reject_invite(invite_id: int, request: Request, db: Session = Depends(get_db
 def public_organization_profile(org_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
 
-    org = (
-        db.query(Organization)
-        .options(joinedload(Organization.user))
-        .filter(Organization.id == org_id)
-        .first()
-    )
-    if not org:
-        raise HTTPException(status_code=404, detail="Организация не найдена")
-    if org.status != "approved" and not (user and (user.is_admin or org.user_id == user.id)):
-        raise HTTPException(status_code=404, detail="Организация не найдена")
-
-    org_teachers = db.query(OrganizationTeacher).options(joinedload(OrganizationTeacher.teacher)).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "accepted"
-    ).all()
-
-    teacher_ids = [ot.teacher_id for ot in org_teachers]
-
-    courses = []
-    if teacher_ids:
-        courses = db.query(Course).options(
-            joinedload(Course.teacher),
-            joinedload(Course.category)
-        ).filter(Course.teacher_id.in_(teacher_ids)).all()
-
-    direct_student_ids = {
-        student_id
-        for (student_id,) in db.query(OrganizationStudent.student_id)
-        .join(User, User.id == OrganizationStudent.student_id)
-        .filter(
-            OrganizationStudent.organization_id == org.id,
-            OrganizationStudent.status == "accepted",
-            User.role == UserRole.student,
-        )
-        .all()
-    }
-    group_student_ids = {
-        student_id
-        for (student_id,) in db.query(GroupMember.student_id)
-        .join(Group, Group.id == GroupMember.group_id)
-        .join(User, User.id == GroupMember.student_id)
-        .filter(
-            Group.organization_id == org.id,
-            User.role == UserRole.student,
-        )
-        .all()
-    }
-    students_count = len(direct_student_ids | group_student_ids)
-
-    from app.models.review import Review
-    from sqlalchemy.sql import func
-    avg_rating = 0.0
-    if teacher_ids:
-        avg = db.query(func.avg(Review.rating)).filter(Review.teacher_id.in_(teacher_ids)).scalar()
-        avg_rating = round(avg or 0.0, 1)
-
-    # Заявка текущего пользователя-преподавателя в эту организацию
-    user_application = None
-    user_in_any_org = False
-    # Членство текущего студента в этой организации
-    user_student_membership = None
-    current_student_org = None
-
-    if user and user.is_teacher:
-        user_application = db.query(OrganizationTeacher).filter(
-            OrganizationTeacher.organization_id == org.id,
-            OrganizationTeacher.teacher_id == user.id
-        ).first()
-        user_in_any_org = db.query(OrganizationTeacher).filter(
-            OrganizationTeacher.teacher_id == user.id,
-            OrganizationTeacher.status == "accepted"
-        ).first() is not None
-
-    if user and user.is_student:
-        user_student_membership = db.query(OrganizationStudent).filter(
-            OrganizationStudent.organization_id == org.id,
-            OrganizationStudent.student_id == user.id,
-            OrganizationStudent.status.in_(["accepted", "pending", "rejected"])
-        ).first()
-        
-        if not user_student_membership:
-            other_membership = db.query(OrganizationStudent).filter(
-                OrganizationStudent.student_id == user.id,
-                OrganizationStudent.status.in_(["accepted", "pending"])
-            ).first()
-            if other_membership:
-                current_student_org = db.query(Organization).filter(
-                    Organization.id == other_membership.organization_id
-                ).first()
+    from app.services.organization_service import get_public_organization_profile_data
+    try:
+        data = get_public_organization_profile_data(db, org_id, user)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     return templates.TemplateResponse(
         "organization/public_profile.html",
         {
             "request": request,
             "user": user,
-            "org": org,
-            "org_teachers": [ot.teacher for ot in org_teachers],
-            "courses": courses,
-            "students_count": students_count,
-            "avg_rating": avg_rating,
-            "user_application": user_application,
-            "user_in_any_org": user_in_any_org,
-            "user_student_membership": user_student_membership,
-            "current_student_org": current_student_org,
+            **data
         }
     )
 
