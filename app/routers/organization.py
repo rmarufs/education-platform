@@ -330,55 +330,21 @@ def invite_teacher(
     if not org:
         raise HTTPException(status_code=404, detail="Организация не найдена")
 
-    from app.models.user import UserRole
+    from app.services.organization_service import invite_organization_teacher
+    status = invite_organization_teacher(db, org.id, teacher_id, email)
 
-    # Найти преподавателя по ID или email
-    if teacher_id:
-        teacher = db.query(User).filter(
-            User.id == teacher_id,
-            User.role == UserRole.teacher,
-            User.is_active == True,
-        ).first()
-    else:
-        email = email.strip().lower()
-        teacher = db.query(User).filter(
-            User.email == email,
-            User.role == UserRole.teacher,
-        ).first()
-
-    if not teacher:
+    if status == "teacher_not_found":
         if teacher_id:
             return JSONResponse({"error": "teacher_not_found"}, status_code=404)
         return RedirectResponse("/organization/teachers?error=teacher_not_found", status_code=302)
-
-    # Защита: нельзя приглашать если уже в другой организации
-    in_other_org = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.teacher_id == teacher.id,
-        OrganizationTeacher.status == "accepted",
-        OrganizationTeacher.organization_id != org.id,
-    ).first()
-    if in_other_org:
+    elif status == "in_other_org":
         if teacher_id:
             return JSONResponse({"error": "in_other_org"}, status_code=400)
         return RedirectResponse("/organization/teachers?error=in_other_org", status_code=302)
-
-    existing = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.teacher_id == teacher.id
-    ).first()
-
-    if existing:
+    elif status == "already_invited":
         if teacher_id:
             return JSONResponse({"error": "already_invited"}, status_code=409)
         return RedirectResponse("/organization/teachers?error=already_invited", status_code=302)
-
-    org_teacher = OrganizationTeacher(
-        organization_id=org.id,
-        teacher_id=teacher.id,
-        status="pending"
-    )
-    db.add(org_teacher)
-    db.commit()
 
     return RedirectResponse("/organization/teachers?success=invited", status_code=302)
 
@@ -393,31 +359,13 @@ def accept_incoming_teacher(link_id: int, request: Request, db: Session = Depend
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
     
-    org_teacher = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.id == link_id,
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "pending"
-    ).first()
-    
-    if not org_teacher:
-        raise HTTPException(status_code=404, detail="Заявка не найдена")
-
-    teacher = db.query(User).filter(User.id == org_teacher.teacher_id).first()
-    if not teacher:
-        raise HTTPException(status_code=404, detail="Преподаватель не найден")
-
-    from app.models.user import UserRole
+    from app.services.organization_service import accept_incoming_teacher_service
     try:
-        org_teacher.status = "accepted"
-        org_teacher.was_accepted_notification = True
-        teacher.is_active = True
-        teacher.role = UserRole.teacher
-        db.commit()
-        db.refresh(teacher)
-        db.refresh(org_teacher)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Ошибка сервера при принятии заявки: {str(e)}")
+        accept_incoming_teacher_service(db, org.id, link_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     return _redirect_org_teachers()
 
@@ -431,21 +379,14 @@ def reject_incoming_teacher(link_id: int, request: Request, db: Session = Depend
         return redirect
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
-    link = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.id == link_id,
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.status == "pending"
-    ).first()
-
-    if not link:
-        raise HTTPException(status_code=404, detail="Заявка не найдена")
-
+    
+    from app.services.organization_service import reject_incoming_teacher_service
     try:
-        link.status = "rejected"
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Ошибка при отклонении заявки: {str(e)}")
+        reject_incoming_teacher_service(db, org.id, link_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     return _redirect_org_teachers()
 
@@ -462,14 +403,8 @@ def remove_teacher(teacher_id: int, request: Request, db: Session = Depends(get_
     if not org:
         raise HTTPException(status_code=404)
 
-    link = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.teacher_id == teacher_id
-    ).first()
-
-    if link:
-        db.delete(link)
-        db.commit()
+    from app.services.organization_service import remove_teacher_from_organization
+    remove_teacher_from_organization(db, org.id, teacher_id)
 
     return _redirect_org_teachers()
 
@@ -486,16 +421,8 @@ def remove_student(student_id: int, request: Request, db: Session = Depends(get_
     if not org:
         raise HTTPException(status_code=404)
 
-    link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == student_id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
-    ).first()
-
-    if link:
-        link.status = "removed"
-        link.was_removed_notification = True
-        db.commit()
+    from app.services.organization_service import remove_student_from_organization
+    remove_student_from_organization(db, org.id, student_id)
 
     return _redirect_org_students()
 
@@ -509,15 +436,9 @@ def accept_student(link_id: int, request: Request, db: Session = Depends(get_db)
         return redirect
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
-    link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.id == link_id,
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.status == "pending"
-    ).first()
-
-    if link:
-        link.status = "accepted"
-        db.commit()
+    
+    from app.services.organization_service import accept_student_in_organization
+    accept_student_in_organization(db, org.id, link_id)
 
     return _redirect_org_students()
 
@@ -529,16 +450,9 @@ def reject_student(link_id: int, request: Request, db: Session = Depends(get_db)
         return redirect
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
-    link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.id == link_id,
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.status == "pending"
-    ).first()
-
-    if link:
-        link.status = "rejected"
-        link.was_removed_notification = False
-        db.commit()
+    
+    from app.services.organization_service import reject_student_in_organization
+    reject_student_in_organization(db, org.id, link_id)
 
     return _redirect_org_students()
 
@@ -554,60 +468,21 @@ def student_join_organization(org_id: int, request: Request, force: bool = False
     if not user or not user.is_student:
         raise HTTPException(status_code=403, detail="Только студенты могут вступать в учебные центры")
 
-    org = db.query(Organization).filter(
-        Organization.id == org_id,
-        Organization.status == "approved"
-    ).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Организация не найдена")
+    from app.services.organization_service import student_join_organization_service
+    try:
+        status, old_org_name, is_open = student_join_organization_service(db, org_id, user, force)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
-    # ── Upsert: ищем ЛЮБУЮ запись для этой пары (student, org) ──────────────
-    # Это предотвращает создание дублей при повторном вступлении (после removed).
-    existing_this_org = db.query(OrganizationStudent).filter(
-        OrganizationStudent.organization_id == org.id,
-        OrganizationStudent.student_id == user.id,
-    ).first()
-
-    # Если уже состоит (активная запись) — ничего не делаем
-    if existing_this_org and existing_this_org.status in ("accepted", "pending"):
+    if status == "already_in_this_org":
         return JSONResponse({"success": True, "already": True})
+    elif status == "in_other_org":
+        return JSONResponse({
+            "already_in_org": True,
+            "org_name": old_org_name
+        })
 
-    # Если состоит в ДРУГОЙ организации — проверяем force
-    other_org_link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.student_id == user.id,
-        OrganizationStudent.organization_id != org.id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
-    ).first()
-    if other_org_link:
-        if not force:
-            old_org = db.query(Organization).filter(Organization.id == other_org_link.organization_id).first()
-            return JSONResponse({
-                "already_in_org": True,
-                "org_name": old_org.name if old_org else "Неизвестно"
-            })
-        else:
-            # Мягко удаляем старую связь с другой организацией через статус
-            other_org_link.status = "removed"
-            other_org_link.was_removed_notification = False
-
-    new_status = "accepted" if org.is_open else "pending"
-
-    if existing_this_org:
-        # Запись уже существует (статус removed) — обновляем её, дублей не создаём
-        existing_this_org.status = new_status
-        existing_this_org.was_removed_notification = False
-    else:
-        # Записи нет совсем — создаём новую
-        existing_this_org = OrganizationStudent(
-            organization_id=org.id,
-            student_id=user.id,
-            status=new_status,
-            was_removed_notification=False,
-        )
-        db.add(existing_this_org)
-
-    db.commit()
-    return JSONResponse({"success": True, "auto_accepted": org.is_open})
+    return JSONResponse({"success": True, "auto_accepted": is_open})
 
 
 # ── Студент покидает организацию ─────────────────────────────────────────────
@@ -618,15 +493,8 @@ def student_leave_organization(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         return RedirectResponse("/login", status_code=302)
 
-    link = db.query(OrganizationStudent).filter(
-        OrganizationStudent.student_id == user_id,
-        OrganizationStudent.status.in_(["accepted", "pending"])
-    ).first()
-
-    if link:
-        link.status = "left"
-        link.was_removed_notification = False
-        db.commit()
+    from app.services.organization_service import student_leave_organization_service
+    student_leave_organization_service(db, user_id)
 
     return RedirectResponse("/dashboard/student", status_code=302)
 
@@ -695,12 +563,12 @@ def organization_profile_update(
         return redirect
 
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
-    org.name = name
-    org.description = description
-    org.phone = phone
-    org.website = website
-    org.is_open = is_open.lower() == "true"
-    db.commit()
+    
+    from app.services.organization_service import update_organization_profile_service
+    try:
+        update_organization_profile_service(db, org.id, name, description, phone, website, is_open)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     return RedirectResponse("/organization/profile?success=1", status_code=302)
 
@@ -713,15 +581,8 @@ def accept_invite(invite_id: int, request: Request, db: Session = Depends(get_db
     if not user_id:
         return RedirectResponse("/login", status_code=302)
 
-    invite = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.id == invite_id,
-        OrganizationTeacher.teacher_id == user_id
-    ).first()
-
-    if invite:
-        invite.status = "accepted"
-        invite.was_accepted_notification = True
-        db.commit()
+    from app.services.organization_service import teacher_accepts_invite
+    teacher_accepts_invite(db, user_id, invite_id)
 
     return RedirectResponse("/dashboard/teacher", status_code=302)
 
@@ -732,14 +593,8 @@ def reject_invite(invite_id: int, request: Request, db: Session = Depends(get_db
     if not user_id:
         return RedirectResponse("/login", status_code=302)
 
-    invite = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.id == invite_id,
-        OrganizationTeacher.teacher_id == user_id
-    ).first()
-
-    if invite:
-        invite.status = "rejected"
-        db.commit()
+    from app.services.organization_service import teacher_rejects_invite
+    teacher_rejects_invite(db, user_id, invite_id)
 
     return RedirectResponse("/dashboard/teacher", status_code=302)
 
@@ -784,57 +639,17 @@ async def join_organization(
     if not user or user.role not in [UserRole.teacher, UserRole.teacher_pending]:
         raise HTTPException(status_code=403, detail="Только преподаватели могут отправлять заявку")
 
-    org = db.query(Organization).filter(Organization.id == org_id, Organization.status == "approved").first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Организация не найдена")
-
-    # Проверка, что преподаватель не в другой организации
-    in_other_org = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.teacher_id == user.id,
-        OrganizationTeacher.status == "accepted",
-        OrganizationTeacher.organization_id != org.id
-    ).first()
-    if in_other_org:
-        raise HTTPException(status_code=400, detail="Вы уже состоите в другом учебном центре")
-
-    # Проверка на уже существующую заявку
-    existing = db.query(OrganizationTeacher).filter(
-        OrganizationTeacher.organization_id == org.id,
-        OrganizationTeacher.teacher_id == user.id
-    ).first()
-    if existing:
-        return JSONResponse({"success": True, "status": existing.status, "already": True})
-
-    # Загрузка файла-вложения
-    attachment_path = None
-    if attachment and attachment.filename:
-        import os, uuid, shutil
-        upload = validate_upload_file(
-            attachment,
-            allowed_extensions=APPLICATION_ATTACHMENT_EXTENSIONS,
-            max_bytes=APPLICATION_ATTACHMENT_MAX_BYTES,
-            invalid_type_message="Недопустимый тип файла вложения",
-        )
-        upload_dir = "static/uploads/applications"
-        os.makedirs(upload_dir, exist_ok=True)
-        safe_name = f"{uuid.uuid4().hex}_{upload.safe_filename}"
-        dest = os.path.join(upload_dir, safe_name)
-        with open(dest, "wb") as f:
-            shutil.copyfileobj(attachment.file, f)
-        attachment_path = f"/{dest}"
-
+    from app.services.organization_service import teacher_apply_organization_service
     try:
-        org_teacher = OrganizationTeacher(
-            organization_id=org.id,
-            teacher_id=user.id,
-            status="pending",
-            cover_letter=cover_letter.strip() if cover_letter else None,
-            attachment=attachment_path,
-        )
-        db.add(org_teacher)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Ошибка при создании заявки")
+        status, existing_status = teacher_apply_organization_service(db, org_id, user, cover_letter, attachment)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if status == "in_other_org":
+        raise HTTPException(status_code=400, detail="Вы уже состоите в другом учебном центре")
+    elif status == "already_exists":
+        return JSONResponse({"success": True, "status": existing_status, "already": True})
 
     return JSONResponse({"success": True})

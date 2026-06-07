@@ -271,3 +271,291 @@ def get_public_organization_profile_data(db: Session, org_id: int, user: User | 
         "user_student_membership": user_student_membership,
         "current_student_org": current_student_org,
     }
+
+
+def invite_organization_teacher(db: Session, org_id: int, teacher_id: int | None, email: str) -> str:
+    if teacher_id:
+        teacher = db.query(User).filter(
+            User.id == teacher_id,
+            User.role == UserRole.teacher,
+            User.is_active == True,
+        ).first()
+    else:
+        email = email.strip().lower()
+        teacher = db.query(User).filter(
+            User.email == email,
+            User.role == UserRole.teacher,
+        ).first()
+
+    if not teacher:
+        return "teacher_not_found"
+
+    in_other_org = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.teacher_id == teacher.id,
+        OrganizationTeacher.status == "accepted",
+        OrganizationTeacher.organization_id != org_id,
+    ).first()
+    if in_other_org:
+        return "in_other_org"
+
+    existing = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.organization_id == org_id,
+        OrganizationTeacher.teacher_id == teacher.id
+    ).first()
+
+    if existing:
+        return "already_invited"
+
+    org_teacher = OrganizationTeacher(
+        organization_id=org_id,
+        teacher_id=teacher.id,
+        status="pending"
+    )
+    db.add(org_teacher)
+    db.commit()
+    return "success"
+
+
+def accept_incoming_teacher_service(db: Session, org_id: int, link_id: int):
+    org_teacher = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.id == link_id,
+        OrganizationTeacher.organization_id == org_id,
+        OrganizationTeacher.status == "pending"
+    ).first()
+    
+    if not org_teacher:
+        raise ValueError("Заявка не найдена")
+
+    teacher = db.query(User).filter(User.id == org_teacher.teacher_id).first()
+    if not teacher:
+        raise ValueError("Преподаватель не найден")
+
+    try:
+        org_teacher.status = "accepted"
+        org_teacher.was_accepted_notification = True
+        teacher.is_active = True
+        teacher.role = UserRole.teacher
+        db.commit()
+        db.refresh(teacher)
+        db.refresh(org_teacher)
+    except Exception as e:
+        db.rollback()
+        raise RuntimeError(f"Ошибка сервера при принятии заявки: {str(e)}")
+
+
+def reject_incoming_teacher_service(db: Session, org_id: int, link_id: int):
+    link = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.id == link_id,
+        OrganizationTeacher.organization_id == org_id,
+        OrganizationTeacher.status == "pending"
+    ).first()
+
+    if not link:
+        raise ValueError("Заявка не найдена")
+
+    try:
+        link.status = "rejected"
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise RuntimeError(f"Ошибка при отклонении заявки: {str(e)}")
+
+
+def remove_teacher_from_organization(db: Session, org_id: int, teacher_id: int):
+    link = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.organization_id == org_id,
+        OrganizationTeacher.teacher_id == teacher_id
+    ).first()
+    if link:
+        db.delete(link)
+        db.commit()
+
+
+def accept_student_in_organization(db: Session, org_id: int, link_id: int):
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.id == link_id,
+        OrganizationStudent.organization_id == org_id,
+        OrganizationStudent.status == "pending"
+    ).first()
+    if link:
+        link.status = "accepted"
+        db.commit()
+
+
+def reject_student_in_organization(db: Session, org_id: int, link_id: int):
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.id == link_id,
+        OrganizationStudent.organization_id == org_id,
+        OrganizationStudent.status == "pending"
+    ).first()
+    if link:
+        link.status = "rejected"
+        link.was_removed_notification = False
+        db.commit()
+
+
+def remove_student_from_organization(db: Session, org_id: int, student_id: int):
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org_id,
+        OrganizationStudent.student_id == student_id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
+    ).first()
+    if link:
+        link.status = "removed"
+        link.was_removed_notification = True
+        db.commit()
+
+
+def teacher_accepts_invite(db: Session, teacher_id: int, invite_id: int):
+    invite = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.id == invite_id,
+        OrganizationTeacher.teacher_id == teacher_id
+    ).first()
+    if invite:
+        invite.status = "accepted"
+        invite.was_accepted_notification = True
+        db.commit()
+
+
+def teacher_rejects_invite(db: Session, teacher_id: int, invite_id: int):
+    invite = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.id == invite_id,
+        OrganizationTeacher.teacher_id == teacher_id
+    ).first()
+    if invite:
+        invite.status = "rejected"
+        db.commit()
+
+
+def student_join_organization_service(db: Session, org_id: int, user: User, force: bool) -> tuple[str, str | None, bool | None]:
+    org = db.query(Organization).filter(
+        Organization.id == org_id,
+        Organization.status == "approved"
+    ).first()
+    if not org:
+        raise ValueError("Организация не найдена")
+
+    existing_this_org = db.query(OrganizationStudent).filter(
+        OrganizationStudent.organization_id == org.id,
+        OrganizationStudent.student_id == user.id,
+    ).first()
+
+    if existing_this_org and existing_this_org.status in ("accepted", "pending"):
+        return "already_in_this_org", None, None
+
+    other_org_link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.student_id == user.id,
+        OrganizationStudent.organization_id != org.id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
+    ).first()
+    
+    if other_org_link:
+        if not force:
+            old_org = db.query(Organization).filter(Organization.id == other_org_link.organization_id).first()
+            return "in_other_org", (old_org.name if old_org else "Неизвестно"), None
+        else:
+            other_org_link.status = "removed"
+            other_org_link.was_removed_notification = False
+
+    new_status = "accepted" if org.is_open else "pending"
+
+    if existing_this_org:
+        existing_this_org.status = new_status
+        existing_this_org.was_removed_notification = False
+    else:
+        existing_this_org = OrganizationStudent(
+            organization_id=org.id,
+            student_id=user.id,
+            status=new_status,
+            was_removed_notification=False,
+        )
+        db.add(existing_this_org)
+
+    db.commit()
+    return "success", None, org.is_open
+
+
+def student_leave_organization_service(db: Session, user_id: int):
+    link = db.query(OrganizationStudent).filter(
+        OrganizationStudent.student_id == user_id,
+        OrganizationStudent.status.in_(["accepted", "pending"])
+    ).first()
+
+    if link:
+        link.status = "left"
+        link.was_removed_notification = False
+        db.commit()
+
+
+def update_organization_profile_service(
+    db: Session, org_id: int, name: str, description: str, phone: str, website: str | None, is_open: str
+):
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    if not org:
+        raise ValueError("Организация не найдена")
+        
+    org.name = name
+    org.description = description
+    org.phone = phone
+    org.website = website
+    org.is_open = is_open.lower() == "true"
+    db.commit()
+
+
+def teacher_apply_organization_service(
+    db: Session, org_id: int, user: User, cover_letter: str | None, attachment
+) -> tuple[str, str | None]:
+    org = db.query(Organization).filter(Organization.id == org_id, Organization.status == "approved").first()
+    if not org:
+        raise ValueError("Организация не найдена")
+
+    in_other_org = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.teacher_id == user.id,
+        OrganizationTeacher.status == "accepted",
+        OrganizationTeacher.organization_id != org.id
+    ).first()
+    if in_other_org:
+        return "in_other_org", None
+
+    existing = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.organization_id == org.id,
+        OrganizationTeacher.teacher_id == user.id
+    ).first()
+    if existing:
+        return "already_exists", existing.status
+
+    attachment_path = None
+    if attachment and getattr(attachment, "filename", None):
+        import os, uuid, shutil
+        from app.utils.validators import validate_upload_file
+        from app.utils.constants import APPLICATION_ATTACHMENT_EXTENSIONS, APPLICATION_ATTACHMENT_MAX_BYTES
+        
+        upload = validate_upload_file(
+            attachment,
+            allowed_extensions=APPLICATION_ATTACHMENT_EXTENSIONS,
+            max_bytes=APPLICATION_ATTACHMENT_MAX_BYTES,
+            invalid_type_message="Недопустимый тип файла вложения",
+        )
+        upload_dir = "static/uploads/applications"
+        os.makedirs(upload_dir, exist_ok=True)
+        safe_name = f"{uuid.uuid4().hex}_{upload.safe_filename}"
+        dest = os.path.join(upload_dir, safe_name)
+        with open(dest, "wb") as f:
+            shutil.copyfileobj(attachment.file, f)
+        attachment_path = f"/{dest}"
+
+    try:
+        org_teacher = OrganizationTeacher(
+            organization_id=org.id,
+            teacher_id=user.id,
+            status="pending",
+            cover_letter=cover_letter.strip() if cover_letter else None,
+            attachment=attachment_path,
+        )
+        db.add(org_teacher)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise RuntimeError("Ошибка при создании заявки")
+
+    return "success", None
