@@ -12,6 +12,11 @@ from app.models.organization import (
 from app.models.course import Course
 from app.models.group import Group, GroupMember
 from app.models.review import Review
+from app.utils.uploads import validate_upload_file
+
+
+APPLICATION_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
+APPLICATION_ATTACHMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp"}
 
 
 def get_approved_organizations_list(db: Session) -> list[dict]:
@@ -527,8 +532,6 @@ def teacher_apply_organization_service(
     attachment_path = None
     if attachment and getattr(attachment, "filename", None):
         import os, uuid, shutil
-        from app.utils.validators import validate_upload_file
-        from app.utils.constants import APPLICATION_ATTACHMENT_EXTENSIONS, APPLICATION_ATTACHMENT_MAX_BYTES
         
         upload = validate_upload_file(
             attachment,

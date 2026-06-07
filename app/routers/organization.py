@@ -195,6 +195,8 @@ def update_organization_announcement(
     try:
         update_organization_announcement_service(db, org.id, announcement_id, title, body, audience, expires_at)
     except ValueError as e:
+        if str(e) == "Announcement not found":
+            raise HTTPException(status_code=404, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     return RedirectResponse("/organization/announcements?success=updated", status_code=302)
 
