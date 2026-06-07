@@ -16,14 +16,10 @@ from app.models.review import Review
 from app.models.lesson import Lesson
 from app.models.module import Module
 from app.models.organization import Organization
-from app.utils.image import compress_and_upload_avatar
-from app.utils.uploads import validate_upload_file
+from app.services import upload_service
 
 router = APIRouter()
 from app.ui import templates
-
-AVATAR_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-AVATAR_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 
@@ -44,42 +40,22 @@ async def upload_avatar(
     logger.info(f"Avatar upload started for user {user.id}")
 
     try:
-        validate_upload_file(
-            file,
-            allowed_extensions=AVATAR_ALLOWED_EXTS,
-            max_bytes=AVATAR_MAX_BYTES,
-            invalid_type_message="Разрешены только JPG, JPEG, PNG и WEBP",
-            too_large_message="Файл не должен превышать 10 МБ",
-        )
+        avatar_url = await upload_service.upload_user_avatar(file, user, db)
+        logger.info(f"Cloudinary result: {avatar_url}")
+        logger.info(f"Avatar saved: {user.avatar_url}")
+        return JSONResponse({"success": True, "url": avatar_url})
     except HTTPException as exc:
         logger.warning(f"Invalid avatar upload: {file.filename}, {file.content_type}, {exc.detail}")
         return JSONResponse(
             {"success": False, "error": exc.detail},
             status_code=400,
         )
-
-    file_bytes = await file.read()
-
-    try:
-        avatar_url = compress_and_upload_avatar(file_bytes, user.id)
-        logger.info(f"Cloudinary result: {avatar_url}")
     except Exception as exc:
         logger.error(f"Avatar upload failed: {exc}")
         return JSONResponse(
             {"success": False, "error": f"Ошибка загрузки: {exc}"},
             status_code=500,
         )
-
-    user.avatar_url = avatar_url
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        if org:
-            org.logo_url = avatar_url
-    db.commit()
-    
-    logger.info(f"Avatar saved: {user.avatar_url}")
-
-    return JSONResponse({"success": True, "url": avatar_url})
 
 
 @router.delete("/profile/avatar")
@@ -94,19 +70,7 @@ async def delete_avatar(
     if not user:
         return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
 
-    # Удаляем из Cloudinary (public_id совпадает с тем, что использовали при загрузке)
-    try:
-        import cloudinary.uploader as _uploader
-        _uploader.destroy(f"avatars/user_{user.id}", invalidate=True, resource_type="image")
-    except Exception:
-        pass  # Не блокируем удаление из БД, если Cloudinary недоступен
-
-    user.avatar_url = None
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        if org:
-            org.logo_url = None
-    db.commit()
+    upload_service.delete_user_avatar(user, db)
 
     return JSONResponse({"success": True})
 
