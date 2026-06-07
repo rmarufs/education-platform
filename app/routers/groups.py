@@ -19,7 +19,6 @@ from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.models.group import Group, GroupMember, GroupModule, GroupLesson, GroupMaterial, GroupJournalEntry, GroupLessonProgress, GroupHomework, GroupHomeworkSubmission, GroupHomeworkNotification, GroupPaymentEntry
 from app.ui import templates
-from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.utils.announcements import get_visible_announcements
 from app.utils.image import upload_group_cover_image, upload_lesson_image
 from app.utils.group_analytics import build_group_analytics
@@ -34,11 +33,7 @@ from app.utils.datetime_helpers import (
 from app.utils.upload_constants import BASIC_DOCUMENT_EXTENSIONS, COVER_IMAGE_MAX_BYTES, IMAGE_EXTENSIONS, MATERIAL_MAX_BYTES
 from app.utils.uploads import validate_upload_file
 
-try:
-    import cloudinary
-    import cloudinary.uploader
-except ModuleNotFoundError:
-    cloudinary = None
+from app.deps.cloudinary import cloudinary
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -57,14 +52,6 @@ GROUP_HOMEWORK_EXTENSIONS = {
 }
 GROUP_HOMEWORK_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 GROUP_HOMEWORK_VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".avi", ".mkv", ".m4v"}
-
-if cloudinary:
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
-        secure=True,
-    )
 
 
 class BulkAddStudentsPayload(BaseModel):

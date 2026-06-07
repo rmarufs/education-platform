@@ -3,12 +3,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-import cloudinary
+from app.deps.cloudinary import cloudinary
 from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
 
-from app.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from app.database import get_db
 from app.deps.auth import get_user
 from app.models.course import Course
@@ -26,12 +25,7 @@ from app.ui import templates
 AVATAR_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 AVATAR_ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
-cloudinary.config(
-    cloud_name=CLOUDINARY_CLOUD_NAME,
-    api_key=CLOUDINARY_API_KEY,
-    api_secret=CLOUDINARY_API_SECRET,
-    secure=True,
-)
+
 
 
 @router.post("/profile/avatar")

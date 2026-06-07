@@ -27,11 +27,7 @@ from app.utils.upload_constants import COVER_IMAGE_MAX_BYTES, COURSE_MATERIAL_EX
 from app.utils.uploads import validate_upload_file
 from app.utils.text import plain_text
 
-try:
-    import cloudinary
-    import cloudinary.uploader
-except ModuleNotFoundError:
-    cloudinary = None
+from app.deps.cloudinary import cloudinary
 
 router = APIRouter(prefix="/courses")
 from app.ui import templates
@@ -41,14 +37,6 @@ COURSE_IMAGE_EXTENSIONS = IMAGE_EXTENSIONS
 COURSE_IMAGE_DIR = os.path.join("static", "uploads", "course_images")
 COURSE_MATERIAL_DIR = os.path.join("static", "uploads")
 COURSE_MATERIAL_MAX_BYTES = MATERIAL_MAX_BYTES
-
-if cloudinary:
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
-        secure=True,
-    )
 
 
 def get_teacher_org(teacher_id, db):
