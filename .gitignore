@@ -43,6 +43,7 @@ Thumbs.db
 logs/
 data/logs/
 data/backups/
+backups/
 
 # ── Pytest / Coverage ────────────────────────────
 .pytest_cache/
