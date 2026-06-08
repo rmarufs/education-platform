@@ -61,6 +61,7 @@ class GroupModule(Base):
 class GroupMember(Base):
     __tablename__ = "group_members"
     __table_args__ = (
+        UniqueConstraint("group_id", "student_id", name="uq_group_member_student"),
         CheckConstraint("payment_day IS NULL OR (payment_day >= 1 AND payment_day <= 31)", name="ck_group_members_payment_day_range"),
         Index("ix_group_members_student_id", "student_id"),
     )

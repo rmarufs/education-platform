@@ -1,6 +1,6 @@
 # Модели квиза: Quiz → Question → Answer
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, Index
+from sqlalchemy import CheckConstraint, Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -8,6 +8,7 @@ from app.database import Base
 class Quiz(Base):
     __tablename__ = "quizzes"
     __table_args__ = (
+        CheckConstraint("num_nonnulls(lesson_id, module_id, course_id) = 1", name="ck_quizzes_single_scope"),
         Index("ix_quizzes_course_id", "course_id"),
         Index("ix_quizzes_lesson_id", "lesson_id"),
         Index("ix_quizzes_module_id", "module_id"),

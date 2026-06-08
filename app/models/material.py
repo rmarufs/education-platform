@@ -1,5 +1,5 @@
 # Модель файлового материала урока
-from sqlalchemy import Column, Integer, String, ForeignKey, Index
+from sqlalchemy import CheckConstraint, Column, Integer, String, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -7,6 +7,7 @@ from app.database import Base
 class Material(Base):
     __tablename__ = "materials"
     __table_args__ = (
+        CheckConstraint("num_nonnulls(lesson_id, course_id) = 1", name="ck_materials_single_target"),
         Index("ix_materials_course_id", "course_id"),
     )
 
