@@ -1,11 +1,14 @@
 # Модель урока
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class Lesson(Base):
     __tablename__ = "lessons"
+    __table_args__ = (
+        Index("ix_lessons_module_id_order_index", "module_id", "order_index"),
+    )
 
     id          = Column(Integer, primary_key=True, index=True)
     module_id   = Column(Integer, ForeignKey("modules.id", ondelete="CASCADE"), nullable=False)

@@ -1,12 +1,17 @@
 # Модели квиза: Quiz → Question → Answer
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class Quiz(Base):
     __tablename__ = "quizzes"
+    __table_args__ = (
+        Index("ix_quizzes_course_id", "course_id"),
+        Index("ix_quizzes_lesson_id", "lesson_id"),
+        Index("ix_quizzes_module_id", "module_id"),
+    )
 
     id        = Column(Integer, primary_key=True, index=True)
     lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=True)
@@ -29,6 +34,9 @@ class Quiz(Base):
 
 class Question(Base):
     __tablename__ = "questions"
+    __table_args__ = (
+        Index("ix_questions_quiz_id", "quiz_id"),
+    )
 
     id             = Column(Integer, primary_key=True, index=True)
     quiz_id        = Column(Integer, ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False)
@@ -43,6 +51,9 @@ class Question(Base):
 
 class Answer(Base):
     __tablename__ = "answers"
+    __table_args__ = (
+        Index("ix_answers_question_id", "question_id"),
+    )
 
     id          = Column(Integer, primary_key=True, index=True)
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
@@ -56,6 +67,7 @@ class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
     __table_args__ = (
         UniqueConstraint("quiz_id", "student_id", name="uq_quiz_attempt_student"),
+        Index("ix_quiz_attempts_student_id_quiz_id", "student_id", "quiz_id"),
     )
 
     id          = Column(Integer, primary_key=True, index=True)

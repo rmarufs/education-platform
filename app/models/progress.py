@@ -1,6 +1,6 @@
 # Модель прогресса студента
 from datetime import datetime
-from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -10,6 +10,7 @@ class Progress(Base):
     __table_args__ = (
         # Один студент — один прогресс на урок
         UniqueConstraint("student_id", "lesson_id", name="uq_student_lesson"),
+        Index("ix_progress_student_completed_completed_at", "student_id", "completed", "completed_at"),
     )
 
     id           = Column(Integer, primary_key=True, index=True)

@@ -7,6 +7,10 @@ from app.database import Base
 
 class Organization(Base):
     __tablename__ = "organizations"
+    __table_args__ = (
+        Index("ix_organizations_created_at", "created_at"),
+        Index("ix_organizations_status_name", "status", "name"),
+    )
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
@@ -29,12 +33,16 @@ class Organization(Base):
 
 class OrganizationTeacher(Base):
     __tablename__ = "organization_teachers"
+    __table_args__ = (
+        Index("ix_org_teachers_org_id_status", "organization_id", "status"),
+        Index("ix_org_teachers_teacher_id_status", "teacher_id", "status"),
+    )
 
     id = Column(Integer, primary_key=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"))
     teacher_id = Column(Integer, ForeignKey("users.id"))
     status = Column(String, default="pending")  # pending, accepted, rejected
-    was_accepted_notification = Column(Boolean, default=False, nullable=False)
+    was_accepted_notification = Column(Boolean, default=False, nullable=True)
     cover_letter = Column(Text, nullable=True)   # сопроводительное письмо от преподавателя
     attachment = Column(String(500), nullable=True)  # путь к прикреплённому файлу
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -64,6 +72,8 @@ class OrganizationStudent(Base):
 
     __table_args__ = (
         UniqueConstraint('student_id', 'organization_id', name='uq_student_org'),
+        Index("ix_org_students_org_id_status_created_at", "organization_id", "status", "created_at"),
+        Index("ix_org_students_student_id_status", "student_id", "status"),
     )
 
     # Relationships

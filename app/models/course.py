@@ -1,12 +1,23 @@
 # Модель курса
 from datetime import datetime
-from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey, Float, text
+from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey, Float, Index, text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class Course(Base):
     __tablename__ = "courses"
+    __table_args__ = (
+        Index("ix_courses_category_id_rating", "category_id", "rating"),
+        Index("ix_courses_rating", "rating"),
+        Index("ix_courses_teacher_id_created_at", "teacher_id", "created_at"),
+        Index(
+            "ux_courses_single_guest_accessible",
+            "is_guest_accessible",
+            unique=True,
+            postgresql_where=text("is_guest_accessible = true"),
+        ),
+    )
 
     id          = Column(Integer, primary_key=True, index=True)
     title       = Column(String(200), nullable=False)

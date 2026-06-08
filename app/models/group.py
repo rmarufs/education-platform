@@ -1,11 +1,16 @@
 from datetime import datetime
-from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint, Index, text as sa_text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class Group(Base):
     __tablename__ = "groups"
+    __table_args__ = (
+        Index("ix_groups_org_id_created_at", "organization_id", "created_at"),
+        Index("ix_groups_teacher_id_active_created_at", "teacher_id", "is_active", "created_at"),
+    )
+
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
@@ -34,6 +39,11 @@ class Group(Base):
 
 class GroupModule(Base):
     __tablename__ = "group_modules"
+    __table_args__ = (
+        Index("ix_group_modules_group_id", "group_id"),
+        Index("ix_group_modules_id", "id"),
+    )
+
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
@@ -52,6 +62,7 @@ class GroupMember(Base):
     __tablename__ = "group_members"
     __table_args__ = (
         CheckConstraint("payment_day IS NULL OR (payment_day >= 1 AND payment_day <= 31)", name="ck_group_members_payment_day_range"),
+        Index("ix_group_members_student_id", "student_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -70,6 +81,11 @@ class GroupMember(Base):
 
 class GroupLesson(Base):
     __tablename__ = "group_lessons"
+    __table_args__ = (
+        Index("ix_group_lessons_group_id_order", "group_id", "order"),
+        Index("ix_group_lessons_group_module_id", "group_module_id"),
+    )
+
     id = Column(Integer, primary_key=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
     group_module_id = Column(Integer, ForeignKey("group_modules.id", ondelete="SET NULL"), nullable=True)
@@ -92,6 +108,10 @@ class GroupLesson(Base):
 
 class GroupMaterial(Base):
     __tablename__ = "group_materials"
+    __table_args__ = (
+        Index("ix_group_materials_lesson_id", "lesson_id"),
+    )
+
     id = Column(Integer, primary_key=True)
     lesson_id = Column(Integer, ForeignKey("group_lessons.id"), nullable=False)
     title = Column(String, nullable=False)
@@ -106,6 +126,10 @@ class GroupJournalEntry(Base):
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_journal_entry"),
         CheckConstraint("grade IS NULL OR (grade >= 1 AND grade <= 5)", name="ck_group_journal_grade_range"),
+        CheckConstraint("score_percent IS NULL OR score_percent BETWEEN 0 AND 100", name="ck_group_journal_score_percent_range"),
+        Index("ix_group_journal_entries_group_id", "group_id"),
+        Index("ix_group_journal_entries_lesson_id", "lesson_id"),
+        Index("ix_group_journal_entries_student_id", "student_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -114,6 +138,7 @@ class GroupJournalEntry(Base):
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     present = Column(Boolean, default=False, nullable=False)
     grade = Column(Integer, nullable=True)
+    score_percent = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -126,6 +151,9 @@ class GroupLessonProgress(Base):
     __tablename__ = "group_lesson_progress"
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_lesson_progress"),
+        Index("ix_group_lesson_progress_group_id", "group_id"),
+        Index("ix_group_lesson_progress_lesson_id", "lesson_id"),
+        Index("ix_group_lesson_progress_student_id", "student_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -143,6 +171,9 @@ class GroupHomework(Base):
     __tablename__ = "group_homeworks"
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", name="uq_group_homework_lesson"),
+        Index("ix_group_homeworks_created_by_id", "created_by_id"),
+        Index("ix_group_homeworks_group_id", "group_id"),
+        Index("ix_group_homeworks_lesson_id", "lesson_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -168,6 +199,9 @@ class GroupHomeworkSubmission(Base):
     __tablename__ = "group_homework_submissions"
     __table_args__ = (
         UniqueConstraint("homework_id", "student_id", name="uq_group_homework_submission_student"),
+        Index("ix_group_homework_submissions_homework_id", "homework_id"),
+        Index("ix_group_homework_submissions_reviewed_by_id", "reviewed_by_id"),
+        Index("ix_group_homework_submissions_student_id", "student_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -193,6 +227,7 @@ class GroupHomeworkNotification(Base):
     __tablename__ = "group_homework_notifications"
     __table_args__ = (
         UniqueConstraint("homework_id", "student_id", "notification_type", name="uq_group_homework_notification_student"),
+        Index("ix_group_homework_notifications_student_read", "student_id", "read_at"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -211,6 +246,9 @@ class GroupPaymentEntry(Base):
     __table_args__ = (
         UniqueConstraint("group_id", "student_id", "month", name="uq_group_payment_entry"),
         CheckConstraint("payment_day IS NULL OR (payment_day >= 1 AND payment_day <= 31)", name="ck_group_payment_entries_payment_day_range"),
+        Index("ix_group_payment_entries_group_id", "group_id"),
+        Index("ix_group_payment_entries_month", "month"),
+        Index("ix_group_payment_entries_student_id", "student_id"),
     )
 
     id = Column(Integer, primary_key=True)
@@ -229,3 +267,52 @@ class GroupPaymentEntry(Base):
     group = relationship("Group", back_populates="payment_entries")
     student = relationship("User", foreign_keys=[student_id], back_populates="group_payment_entries")
     marked_by = relationship("User", foreign_keys=[marked_by_id], back_populates="marked_group_payments")
+
+
+class GroupLessonChatMessage(Base):
+    __tablename__ = "group_lesson_chat_messages"
+    __table_args__ = (
+        Index("ix_group_lesson_chat_group_lesson", "group_id", "lesson_id"),
+        Index("ix_group_lesson_chat_lesson_created", "lesson_id", "created_at"),
+        Index("ix_group_lesson_chat_messages_recipient_id", "recipient_id"),
+        Index("ix_group_lesson_chat_messages_user_id", "user_id"),
+        Index("ix_group_lesson_chat_scope_lesson", "lesson_id", "message_scope", "created_at"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("group_lessons.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    recipient_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    message_scope = Column(String(20), server_default=sa_text("'public'"), nullable=False)
+
+    group = relationship("Group")
+    lesson = relationship("GroupLesson")
+    user = relationship("User", foreign_keys=[user_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+
+
+class GroupLessonSession(Base):
+    __tablename__ = "group_lesson_sessions"
+    __table_args__ = (
+        UniqueConstraint("group_id", "lesson_id", name="uq_group_lesson_session"),
+        Index("ix_group_lesson_sessions_group_status", "group_id", "status"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("group_lessons.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(20), server_default=sa_text("'not_started'"), nullable=False)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    started_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    completed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    group = relationship("Group")
+    lesson = relationship("GroupLesson")
+    started_by = relationship("User", foreign_keys=[started_by_id])
+    completed_by = relationship("User", foreign_keys=[completed_by_id])

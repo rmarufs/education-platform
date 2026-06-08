@@ -1,6 +1,6 @@
 # Модель рейтинга и отзыва на курс
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -10,6 +10,7 @@ class Review(Base):
     __table_args__ = (
         # Один студент — один отзыв на преподавателя
         UniqueConstraint("teacher_id", "student_id", name="uq_teacher_student_review"),
+        Index("ix_reviews_course_rating_created_at", "course_id", "rating", "created_at"),
     )
 
     id         = Column(Integer, primary_key=True, index=True)

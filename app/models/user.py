@@ -12,7 +12,6 @@ class UserRole(str, enum.Enum):
     teacher_pending = "teacher_pending"
     admin = "admin"
     organization = "organization"
-    guest = "guest"
 
 
 class User(Base):
@@ -67,7 +66,7 @@ class User(Base):
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     token_hash = Column(String(64), unique=True, index=True, nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)

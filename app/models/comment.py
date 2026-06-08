@@ -1,11 +1,15 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship, backref
 from app.database import Base
 
 
 class Comment(Base):
     __tablename__ = "comments"
+    __table_args__ = (
+        Index("ix_comments_lesson_parent_created_at", "lesson_id", "parent_comment_id", "created_at"),
+        Index("ix_comments_user_id", "user_id"),
+    )
 
     id                = Column(Integer, primary_key=True, index=True)
     lesson_id         = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
@@ -22,4 +26,3 @@ class Comment(Base):
         "Comment",
         backref=backref("parent", remote_side=[id]),
     )
-
