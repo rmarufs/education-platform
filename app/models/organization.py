@@ -34,15 +34,16 @@ class Organization(Base):
 class OrganizationTeacher(Base):
     __tablename__ = "organization_teachers"
     __table_args__ = (
+        UniqueConstraint("organization_id", "teacher_id", name="uq_organization_teacher"),
         Index("ix_org_teachers_org_id_status", "organization_id", "status"),
         Index("ix_org_teachers_teacher_id_status", "teacher_id", "status"),
     )
 
     id = Column(Integer, primary_key=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"))
-    teacher_id = Column(Integer, ForeignKey("users.id"))
-    status = Column(String, default="pending")  # pending, accepted, rejected
-    was_accepted_notification = Column(Boolean, default=False, nullable=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String, default="pending", nullable=False)  # pending, accepted, rejected
+    was_accepted_notification = Column(Boolean, default=False, nullable=False)
     cover_letter = Column(Text, nullable=True)   # сопроводительное письмо от преподавателя
     attachment = Column(String(500), nullable=True)  # путь к прикреплённому файлу
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -56,16 +57,16 @@ class OrganizationStudent(Base):
     __tablename__ = "organization_students"
 
     id = Column(Integer, primary_key=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"))
-    student_id = Column(Integer, ForeignKey("users.id"))
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     # Статусы: 
     # pending - ожидает решения, 
     # accepted - участник, 
     # rejected - отклонен админом, 
     # left - ушел сам, 
     # removed - исключен админом (с уведомлением)
-    status = Column(String(20), default="pending")
-    was_removed_notification = Column(Boolean, default=False)
+    status = Column(String(20), default="pending", nullable=False)
+    was_removed_notification = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)     # Дата самого первого взаимодействия
     last_joined_at = Column(DateTime, nullable=True)           # Дата последнего одобренного вступления
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
