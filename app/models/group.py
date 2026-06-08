@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint, Index, text as sa_text
+from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Boolean, DateTime, ForeignKey, ForeignKeyConstraint, Text, UniqueConstraint, Index, text as sa_text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -83,6 +83,7 @@ class GroupMember(Base):
 class GroupLesson(Base):
     __tablename__ = "group_lessons"
     __table_args__ = (
+        UniqueConstraint("id", "group_id", name="uq_group_lessons_id_group_id"),
         Index("ix_group_lessons_group_id_order", "group_id", "order"),
         Index("ix_group_lessons_group_module_id", "group_module_id"),
     )
@@ -101,9 +102,28 @@ class GroupLesson(Base):
     group = relationship("Group", back_populates="lessons")
     group_module = relationship("GroupModule", back_populates="lessons")
     materials = relationship("GroupMaterial", back_populates="lesson", cascade="all, delete-orphan")
-    journal_entries = relationship("GroupJournalEntry", back_populates="lesson", cascade="all, delete-orphan")
-    progress_entries = relationship("GroupLessonProgress", back_populates="lesson", cascade="all, delete-orphan")
-    homework = relationship("GroupHomework", back_populates="lesson", uselist=False, cascade="all, delete-orphan")
+    journal_entries = relationship(
+        "GroupJournalEntry",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+        primaryjoin="GroupLesson.id == GroupJournalEntry.lesson_id",
+        foreign_keys="GroupJournalEntry.lesson_id",
+    )
+    progress_entries = relationship(
+        "GroupLessonProgress",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+        primaryjoin="GroupLesson.id == GroupLessonProgress.lesson_id",
+        foreign_keys="GroupLessonProgress.lesson_id",
+    )
+    homework = relationship(
+        "GroupHomework",
+        back_populates="lesson",
+        uselist=False,
+        cascade="all, delete-orphan",
+        primaryjoin="GroupLesson.id == GroupHomework.lesson_id",
+        foreign_keys="GroupHomework.lesson_id",
+    )
     vocabularies = relationship("VocabularySet", back_populates="lesson", cascade="all, delete-orphan")
 
 
@@ -126,6 +146,12 @@ class GroupJournalEntry(Base):
     __tablename__ = "group_journal_entries"
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_journal_entry"),
+        ForeignKeyConstraint(
+            ["lesson_id", "group_id"],
+            ["group_lessons.id", "group_lessons.group_id"],
+            name="fk_group_journal_lesson_group",
+            ondelete="CASCADE",
+        ),
         CheckConstraint("grade IS NULL OR (grade >= 1 AND grade <= 5)", name="ck_group_journal_grade_range"),
         CheckConstraint("score_percent IS NULL OR score_percent BETWEEN 0 AND 100", name="ck_group_journal_score_percent_range"),
         Index("ix_group_journal_entries_group_id", "group_id"),
@@ -144,7 +170,12 @@ class GroupJournalEntry(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     group = relationship("Group", back_populates="journal_entries")
-    lesson = relationship("GroupLesson", back_populates="journal_entries")
+    lesson = relationship(
+        "GroupLesson",
+        back_populates="journal_entries",
+        primaryjoin="GroupLesson.id == GroupJournalEntry.lesson_id",
+        foreign_keys=[lesson_id],
+    )
     student = relationship("User", foreign_keys=[student_id], back_populates="group_journal_entries")
 
 
@@ -152,6 +183,12 @@ class GroupLessonProgress(Base):
     __tablename__ = "group_lesson_progress"
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", "student_id", name="uq_group_lesson_progress"),
+        ForeignKeyConstraint(
+            ["lesson_id", "group_id"],
+            ["group_lessons.id", "group_lessons.group_id"],
+            name="fk_group_lesson_progress_lesson_group",
+            ondelete="CASCADE",
+        ),
         Index("ix_group_lesson_progress_group_id", "group_id"),
         Index("ix_group_lesson_progress_lesson_id", "lesson_id"),
         Index("ix_group_lesson_progress_student_id", "student_id"),
@@ -164,7 +201,12 @@ class GroupLessonProgress(Base):
     completed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     group = relationship("Group", back_populates="lesson_progress")
-    lesson = relationship("GroupLesson", back_populates="progress_entries")
+    lesson = relationship(
+        "GroupLesson",
+        back_populates="progress_entries",
+        primaryjoin="GroupLesson.id == GroupLessonProgress.lesson_id",
+        foreign_keys=[lesson_id],
+    )
     student = relationship("User", foreign_keys=[student_id], back_populates="group_lesson_progress")
 
 
@@ -172,6 +214,12 @@ class GroupHomework(Base):
     __tablename__ = "group_homeworks"
     __table_args__ = (
         UniqueConstraint("group_id", "lesson_id", name="uq_group_homework_lesson"),
+        ForeignKeyConstraint(
+            ["lesson_id", "group_id"],
+            ["group_lessons.id", "group_lessons.group_id"],
+            name="fk_group_homeworks_lesson_group",
+            ondelete="CASCADE",
+        ),
         Index("ix_group_homeworks_created_by_id", "created_by_id"),
         Index("ix_group_homeworks_group_id", "group_id"),
         Index("ix_group_homeworks_lesson_id", "lesson_id"),
@@ -191,7 +239,12 @@ class GroupHomework(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     group = relationship("Group", back_populates="homeworks")
-    lesson = relationship("GroupLesson", back_populates="homework")
+    lesson = relationship(
+        "GroupLesson",
+        back_populates="homework",
+        primaryjoin="GroupLesson.id == GroupHomework.lesson_id",
+        foreign_keys=[lesson_id],
+    )
     created_by = relationship("User", foreign_keys=[created_by_id], back_populates="created_group_homeworks")
     submissions = relationship("GroupHomeworkSubmission", back_populates="homework", cascade="all, delete-orphan")
 
