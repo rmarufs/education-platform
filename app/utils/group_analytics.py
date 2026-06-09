@@ -4,6 +4,7 @@ from typing import Iterable
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.group import Group, GroupJournalEntry, GroupMember
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 
 def _round_metric(value: float | None) -> float | None:
@@ -24,7 +25,10 @@ def build_group_analytics(db: Session, groups: Iterable[Group]) -> list[dict]:
     members = (
         db.query(GroupMember)
         .options(joinedload(GroupMember.student))
-        .filter(GroupMember.group_id.in_(group_ids))
+        .filter(
+            GroupMember.group_id.in_(group_ids),
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+        )
         .all()
     )
     member_ids_by_group: dict[int, set[int]] = defaultdict(set)
@@ -100,7 +104,10 @@ def build_group_analytics(db: Session, groups: Iterable[Group]) -> list[dict]:
 
 def build_student_analytics(db: Session, student_id: int) -> dict:
     """Calculate personal student stats across groups where the student is currently a member."""
-    memberships = db.query(GroupMember.group_id).filter(GroupMember.student_id == student_id).all()
+    memberships = db.query(GroupMember.group_id).filter(
+        GroupMember.student_id == student_id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+    ).all()
     group_ids = [membership.group_id for membership in memberships]
     if not group_ids:
         return {

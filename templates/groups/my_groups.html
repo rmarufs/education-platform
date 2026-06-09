@@ -48,7 +48,7 @@
                 <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
                 {% endif %}
                 <div class="group-stats">
-                    <div class="group-stat"><span class="group-stat-icon">🎓</span><span>{{ group.members|length }} <span data-i18n="group.members_count">учеников</span></span></div>
+                    <div class="group-stat"><span class="group-stat-icon">🎓</span><span>{{ group.active_members|length }} <span data-i18n="group.members_count">учеников</span></span></div>
                     <div class="group-stat"><span class="group-stat-icon">📚</span><span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></div>
                 </div>
                 <div class="group-card-footer">

@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 from app.models.group import Group, GroupModule, GroupJournalEntry, GroupMember
 from app.services.group_lesson_service import ordered_group_lessons
+from app.utils.group_membership import active_members
 
 def get_group_for_journal(db: Session, group_id: int) -> Group | None:
     return db.query(Group).options(
@@ -14,7 +15,7 @@ def get_group_for_journal(db: Session, group_id: int) -> Group | None:
 
 def get_journal_data(db: Session, group: Group):
     lessons = ordered_group_lessons(group)
-    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
+    members = sorted(active_members(group.members), key=lambda member: ((member.student.name or "").lower(), member.student_id))
     lesson_ids = [lesson.id for lesson in lessons]
     student_ids = [member.student_id for member in members]
 
@@ -55,7 +56,7 @@ def get_group_for_journal_save(db: Session, group_id: int) -> Group | None:
 def save_journal_entries(db: Session, group: Group, form_data: dict) -> bool:
     lessons = ordered_group_lessons(group)
     lesson_ids = [lesson.id for lesson in lessons]
-    student_ids = [member.student_id for member in group.members]
+    student_ids = [member.student_id for member in active_members(group.members)]
 
     existing_entries = db.query(GroupJournalEntry).filter(
         GroupJournalEntry.group_id == group.id,

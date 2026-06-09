@@ -11,6 +11,7 @@ from app.models.organization import (
     OrganizationTeacher,
 )
 from app.models.user import User
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 
 TEACHER_AUDIENCES = ("teachers", "all")
@@ -46,6 +47,7 @@ def get_student_organization_ids(db: Session, user_id: int) -> list[int]:
         .join(GroupMember, GroupMember.group_id == Group.id)
         .filter(
             GroupMember.student_id == user_id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
             Group.is_active == True,  # noqa: E712
         )
         .all()

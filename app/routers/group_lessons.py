@@ -30,6 +30,7 @@ from app.utils.upload_constants import (
 )
 from app.utils.uploads import validate_upload_file
 from app.deps.auth import get_user as _get_user
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 from app.services.group_lesson_service import (
     ordered_group_lessons,
@@ -533,6 +534,7 @@ def group_continue(group_id: int, request: Request, db: Session = Depends(get_db
     membership = db.query(GroupMember.id).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
 
     if not membership:
@@ -572,6 +574,7 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
 
     if not membership and not can_preview_as_owner:
@@ -710,6 +713,7 @@ def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: S
     membership = db.query(GroupMember.id).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
     if not membership:
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")

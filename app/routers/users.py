@@ -17,6 +17,7 @@ from app.models.vocabulary import VocabularyAttempt, VocabularySet
 from app.services.course_service import first_course_lesson_url
 from app.utils.announcements import get_visible_announcements
 from app.utils.group_analytics import build_student_analytics
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS, is_active_group_member
 
 router = APIRouter()
 from app.ui import templates
@@ -78,10 +79,7 @@ def _homework_target_url(group_id: int, lesson_id: int, anchor: str | None = Non
 
 
 def _is_group_member(db: Session, group_id: int, student_id: int) -> bool:
-    return db.query(GroupMember.id).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == student_id,
-    ).first() is not None
+    return is_active_group_member(db, group_id, student_id)
 
 
 def _load_student_notifications(db: Session, student_id: int) -> list[dict]:
@@ -323,7 +321,10 @@ def student_dashboard(request: Request, db: Session = Depends(get_db)):
             selectinload(Group.lessons),
         )
         .join(GroupMember, GroupMember.group_id == Group.id)
-        .filter(GroupMember.student_id == user.id)
+        .filter(
+            GroupMember.student_id == user.id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+        )
         .all()
     )
     group_ids = [group.id for group in student_groups]

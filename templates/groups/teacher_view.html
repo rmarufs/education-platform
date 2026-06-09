@@ -273,7 +273,7 @@
 
   <section class="manage-section" style="margin-top: 40px;">
     <div class="section-label" data-i18n="group.group_students">Ученики группы</div>
-    {% if group.members %}
+    {% if group.active_members %}
     <div class="data-table-wrap">
       <table class="data-table">
         <thead>
@@ -283,7 +283,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for member in group.members %}
+          {% for member in group.active_members %}
           <tr>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">

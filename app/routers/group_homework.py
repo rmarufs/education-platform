@@ -25,6 +25,7 @@ from app.deps.cloudinary import cloudinary
 from app.utils.datetime_helpers import parse_homework_deadline as _parse_homework_deadline
 
 from app.utils.uploads import validate_upload_file
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS, active_members
 from app.services.group_homework_service import (
     save_homework_record, delete_homework_record, submit_homework_record, save_review_record
 )
@@ -193,6 +194,7 @@ def group_homework_view(group_id: int, lesson_id: int, request: Request, db: Ses
         membership = db.query(GroupMember).filter(
             GroupMember.group_id == group_id,
             GroupMember.student_id == user.id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
         ).first()
         if not membership:
             raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
@@ -315,6 +317,7 @@ async def group_homework_submit(
     membership = db.query(GroupMember.id).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
     if not membership:
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
@@ -369,6 +372,7 @@ def group_homework_material_download(
     is_member = db.query(GroupMember.id).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first() is not None
     if not (_can_manage_group_content(user, lesson.group, db) or is_member):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
@@ -397,7 +401,15 @@ def group_homework_submission_download(
     if not submission or not submission.file_url:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
-    if not (_can_manage_group_content(user, lesson.group, db) or submission.student_id == user.id):
+    is_submission_owner_with_access = (
+        submission.student_id == user.id
+        and db.query(GroupMember.id).filter(
+            GroupMember.group_id == group_id,
+            GroupMember.student_id == user.id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+        ).first() is not None
+    )
+    if not (_can_manage_group_content(user, lesson.group, db) or is_submission_owner_with_access):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     return _download_remote_file(submission.file_url, submission.filename or "homework-submission")
@@ -428,7 +440,7 @@ def group_homework_review(group_id: int, request: Request, db: Session = Depends
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     members = sorted(
-        [member for member in group.members if member.student],
+        [member for member in active_members(group.members) if member.student],
         key=lambda member: (member.student.name or "").lower(),
     )
     ordered_lessons = _ordered_group_lessons(group)
@@ -512,4 +524,3 @@ def group_homework_review_save(
     if not success:
         raise HTTPException(status_code=404, detail="Ответ не найден")
     return RedirectResponse(f"/groups/{group_id}/homework/review?lesson_id={lesson_id}&success=review_saved", status_code=302)
-

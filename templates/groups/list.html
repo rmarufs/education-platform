@@ -52,7 +52,7 @@
                     <p class="course-desc">{{ (group.description or "") | striptags }}{% if not group.description %}<span data-i18n="common.no_desc">Нет описания</span>{% endif %}</p>
                     <div class="course-meta">
                         <span>👨‍🏫 {% if group.teacher %}{{ group.teacher.name }}{% else %}<span data-i18n="group.teacher_not_assigned">Не назначен</span>{% endif %}</span>
-                        <span>🎓 {{ group.members|length }} <span data-i18n="group.members_count">учеников</span></span>
+                        <span>🎓 {{ group.active_members|length }} <span data-i18n="group.members_count">учеников</span></span>
                         <span>📚 <span data-i18n="course_page.lessons_count" data-i18n-params='{"count":{{ group.lessons|length }}}'>{{ group.lessons|length }} урок(ов)</span></span>
                     </div>
                 </div>

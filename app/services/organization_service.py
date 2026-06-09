@@ -11,6 +11,7 @@ from app.models.organization import (
 )
 from app.models.course import Course
 from app.models.group import Group, GroupMember
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 from app.models.review import Review
 from app.utils.uploads import validate_upload_file
 
@@ -222,6 +223,7 @@ def get_public_organization_profile_data(db: Session, org_id: int, user: User | 
         .join(User, User.id == GroupMember.student_id)
         .filter(
             Group.organization_id == org.id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
             User.role == UserRole.student,
         )
         .all()

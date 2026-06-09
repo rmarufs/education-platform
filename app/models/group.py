@@ -36,6 +36,10 @@ class Group(Base):
     )
     lessons = relationship("GroupLesson", back_populates="group", cascade="all, delete-orphan", order_by="GroupLesson.order")
 
+    @property
+    def active_members(self):
+        return [member for member in self.members if member.status == "active"]
+
 
 class GroupModule(Base):
     __tablename__ = "group_modules"

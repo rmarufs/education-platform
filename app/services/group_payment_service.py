@@ -9,6 +9,7 @@ from app.utils.datetime_helpers import (
     payment_status as _payment_status,
     resolve_payment_day as _resolve_payment_day,
 )
+from app.utils.group_membership import active_members
 
 def get_group_for_payments(db: Session, group_id: int) -> Group | None:
     return db.query(Group).options(
@@ -19,7 +20,7 @@ def get_group_for_payments(db: Session, group_id: int) -> Group | None:
 
 def get_payments_data(db: Session, group: Group, month: str | None):
     selected_month = _parse_month(month)
-    members = sorted(group.members, key=lambda member: ((member.student.name or "").lower(), member.student_id))
+    members = sorted(active_members(group.members), key=lambda member: ((member.student.name or "").lower(), member.student_id))
     student_ids = [member.student_id for member in members]
     
     entries = []
@@ -47,7 +48,8 @@ def get_group_for_payments_save(db: Session, group_id: int) -> Group | None:
 
 def save_payments(db: Session, group: Group, user_id: int, form_data: dict) -> date:
     selected_month = _parse_month(form_data.get("month"))
-    student_ids = [member.student_id for member in group.members]
+    members = active_members(group.members)
+    student_ids = [member.student_id for member in members]
     now = datetime.utcnow()
     payment_month = _month_start(now.date())
     entry_months = list({selected_month, payment_month})
@@ -62,7 +64,7 @@ def save_payments(db: Session, group: Group, user_id: int, form_data: dict) -> d
         for entry in existing_entries
     }
 
-    for member in group.members:
+    for member in members:
         student_id = member.student_id
         payment_day = _resolve_payment_day(
             form_data.get(f"payment_day_{student_id}"),

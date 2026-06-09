@@ -6,6 +6,7 @@ from app.models.group import (
     GroupHomeworkSubmission, GroupHomeworkNotification,
 )
 from app.utils.datetime_helpers import parse_homework_deadline as _parse_homework_deadline
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 import logging
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,10 @@ def save_homework_record(
         try:
             student_ids = [
                 student_id for (student_id,) in db.query(GroupMember.student_id)
-                .filter(GroupMember.group_id == group.id)
+                .filter(
+                    GroupMember.group_id == group.id,
+                    GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+                )
                 .all()
             ]
             notifications_created = []

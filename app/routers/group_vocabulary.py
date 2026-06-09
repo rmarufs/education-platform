@@ -21,6 +21,7 @@ from app.deps.auth import get_user as _get_user
 from app.services.group_vocabulary_service import (
     parse_words_bulk, create_vocabulary_attempt_record, is_vocabulary_anticheat_schema_mismatch, create_vocabulary_set_record, update_vocabulary_set_record, delete_vocabulary_set_record
 )
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS, is_active_group_member
 
 router = APIRouter()
 
@@ -289,6 +290,7 @@ def vocab_start_page(
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
 
     if not membership and not can_preview_as_owner:
@@ -374,6 +376,7 @@ def vocab_quiz_page(
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
 
     if not membership and not can_preview_as_owner:
@@ -493,6 +496,8 @@ async def vocab_submit_answer(
     user, redirect = _require_login(request, db)
     if redirect:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    if not is_active_group_member(db, group_id, user.id):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     attempt = db.query(VocabularyAttempt).filter(
         VocabularyAttempt.id == attempt_id,
@@ -552,6 +557,8 @@ async def vocab_report_second_anticheat_warning(
         raise HTTPException(status_code=401, detail="Not authenticated")
     if not user.is_student:
         raise HTTPException(status_code=403, detail="Only students can report vocabulary anti-cheat warnings")
+    if not is_active_group_member(db, group_id, user.id):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     try:
         attempt = db.query(VocabularyAttempt).filter(
@@ -619,6 +626,8 @@ async def vocab_complete(
     user, redirect = _require_login(request, db)
     if redirect:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    if not is_active_group_member(db, group_id, user.id):
+        raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     attempt = db.query(VocabularyAttempt).filter(
         VocabularyAttempt.id == attempt_id,

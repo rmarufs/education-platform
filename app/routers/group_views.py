@@ -15,6 +15,7 @@ from app.models.organization import Organization, OrganizationTeacher, Organizat
 from app.deps.auth import get_user as _get_user
 
 from app.services.group_lesson_service import ordered_group_lessons as _ordered_group_lessons
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 router = APIRouter()
 
@@ -198,6 +199,7 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
+        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
 
     if not membership:
@@ -255,6 +257,5 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return RedirectResponse(next_url, status_code=302)
 
     return RedirectResponse("/dashboard/student", status_code=302)
-
 
 
