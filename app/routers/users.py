@@ -77,6 +77,13 @@ def _homework_target_url(group_id: int, lesson_id: int, anchor: str | None = Non
     return f"{url}#{anchor}" if anchor else url
 
 
+def _is_group_member(db: Session, group_id: int, student_id: int) -> bool:
+    return db.query(GroupMember.id).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.student_id == student_id,
+    ).first() is not None
+
+
 def _load_student_notifications(db: Session, student_id: int) -> list[dict]:
     try:
         homework_reply_submissions = (
@@ -134,6 +141,8 @@ def _load_student_notifications(db: Session, student_id: int) -> list[dict]:
         group = lesson.group if lesson else None
         if not homework or not lesson or not group:
             continue
+        if not _is_group_member(db, group.id, student_id):
+            continue
         teacher = submission.reviewed_by or group.teacher
         student_notifications.append({
             "id": f"homework-reply-{submission.id}",
@@ -160,6 +169,8 @@ def _load_student_notifications(db: Session, student_id: int) -> list[dict]:
         lesson = homework.lesson if homework else None
         group = lesson.group if lesson else None
         if not homework or not lesson or not group:
+            continue
+        if not _is_group_member(db, group.id, student_id):
             continue
         teacher = homework.created_by or group.teacher
         student_notifications.append({
@@ -403,6 +414,11 @@ def open_homework_reply_notification(submission_id: int, request: Request, db: S
     group = lesson.group if lesson else None
     if not homework or not lesson or not group:
         return RedirectResponse("/dashboard/student", status_code=302)
+    if not _is_group_member(db, group.id, user.id):
+        if submission.homework_reply_read_at is None:
+            submission.homework_reply_read_at = datetime.utcnow()
+            db.commit()
+        return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     if submission.homework_reply_read_at is None:
         submission.homework_reply_read_at = datetime.utcnow()
@@ -459,6 +475,11 @@ def open_new_homework_notification(notification_id: int, request: Request, db: S
     group = lesson.group if lesson else None
     if not homework or not lesson or not group:
         return RedirectResponse("/dashboard/student", status_code=302)
+    if not _is_group_member(db, group.id, user.id):
+        if notification.read_at is None:
+            notification.read_at = datetime.utcnow()
+            db.commit()
+        return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     if notification.read_at is None:
         notification.read_at = datetime.utcnow()

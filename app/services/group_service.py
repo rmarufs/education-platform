@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import Optional, List
 from sqlalchemy.orm import Session, joinedload
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupJournalEntry, GroupPaymentEntry
+from app.models.group import Group, GroupMember, GroupJournalEntry, GroupPaymentEntry, GroupHomework, GroupHomeworkNotification
 
 def get_org_for_group(db: Session, group_id: int, user: User) -> tuple[Organization, Group]:
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
@@ -209,6 +210,17 @@ def remove_student_from_group(db: Session, org: Organization, group_id: int, stu
             GroupPaymentEntry.group_id == group_id,
             GroupPaymentEntry.student_id == student_id,
         ).delete(synchronize_session=False)
+        homework_ids = db.query(GroupHomework.id).filter(
+            GroupHomework.group_id == group_id,
+        )
+        db.query(GroupHomeworkNotification).filter(
+            GroupHomeworkNotification.homework_id.in_(homework_ids),
+            GroupHomeworkNotification.student_id == student_id,
+            GroupHomeworkNotification.read_at.is_(None),
+        ).update(
+            {GroupHomeworkNotification.read_at: datetime.utcnow()},
+            synchronize_session=False,
+        )
         db.delete(member)
         db.commit()
 
