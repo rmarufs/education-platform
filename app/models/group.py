@@ -78,6 +78,12 @@ class GroupMember(Base):
     paid_until = Column(Date, nullable=True)
     last_paid_at = Column(DateTime, nullable=True)
     joined_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), default="active", server_default=sa_text("'active'"), nullable=False)
+    removed_at = Column(DateTime, nullable=True)
+    left_at = Column(DateTime, nullable=True)
+    removed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    last_joined_at = Column(DateTime, nullable=True)
 
     group = relationship("Group", back_populates="members")
     student = relationship("User", foreign_keys=[student_id])
