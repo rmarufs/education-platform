@@ -40,6 +40,7 @@ class Group(Base):
 class GroupModule(Base):
     __tablename__ = "group_modules"
     __table_args__ = (
+        UniqueConstraint("id", "group_id", name="uq_group_modules_id_group_id"),
         Index("ix_group_modules_group_id", "group_id"),
         Index("ix_group_modules_id", "id"),
     )
@@ -55,6 +56,8 @@ class GroupModule(Base):
         "GroupLesson",
         back_populates="group_module",
         order_by="GroupLesson.order",
+        primaryjoin="GroupModule.id == GroupLesson.group_module_id",
+        foreign_keys="GroupLesson.group_module_id",
     )
 
 
@@ -84,6 +87,11 @@ class GroupLesson(Base):
     __tablename__ = "group_lessons"
     __table_args__ = (
         UniqueConstraint("id", "group_id", name="uq_group_lessons_id_group_id"),
+        ForeignKeyConstraint(
+            ["group_module_id", "group_id"],
+            ["group_modules.id", "group_modules.group_id"],
+            name="fk_group_lessons_module_group",
+        ),
         Index("ix_group_lessons_group_id_order", "group_id", "order"),
         Index("ix_group_lessons_group_module_id", "group_module_id"),
     )
@@ -100,7 +108,12 @@ class GroupLesson(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     group = relationship("Group", back_populates="lessons")
-    group_module = relationship("GroupModule", back_populates="lessons")
+    group_module = relationship(
+        "GroupModule",
+        back_populates="lessons",
+        primaryjoin="GroupModule.id == GroupLesson.group_module_id",
+        foreign_keys=[group_module_id],
+    )
     materials = relationship("GroupMaterial", back_populates="lesson", cascade="all, delete-orphan")
     journal_entries = relationship(
         "GroupJournalEntry",
