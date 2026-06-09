@@ -241,7 +241,7 @@ def group_remove_student(
     user, org = result
     
     try:
-        remove_student_from_group(db, org, group_id, student_id)
+        remove_student_from_group(db, org, group_id, student_id, removed_by_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return RedirectResponse(f"/groups/{group_id}/manage", status_code=302)

@@ -3,7 +3,8 @@ from typing import Optional, List
 from sqlalchemy.orm import Session, joinedload
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
-from app.models.group import Group, GroupMember, GroupJournalEntry, GroupPaymentEntry, GroupHomework, GroupHomeworkNotification
+from app.models.group import Group, GroupMember, GroupHomework, GroupHomeworkNotification
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 def get_org_for_group(db: Session, group_id: int, user: User) -> tuple[Organization, Group]:
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
@@ -134,13 +135,25 @@ def add_student_to_group(db: Session, org: Organization, group_id: int, student_
         GroupMember.group_id == group_id,
         GroupMember.student_id == student_id,
     ).first()
+    now = datetime.utcnow()
     if not existing:
         member = GroupMember(
             group_id=group_id,
             student_id=student_id,
             grade=grade,
+            status=ACTIVE_GROUP_MEMBER_STATUS,
+            updated_at=now,
         )
         db.add(member)
+        db.commit()
+    elif existing.status != ACTIVE_GROUP_MEMBER_STATUS:
+        existing.status = ACTIVE_GROUP_MEMBER_STATUS
+        existing.removed_at = None
+        existing.left_at = None
+        existing.removed_by_id = None
+        existing.last_joined_at = now
+        existing.updated_at = now
+        existing.grade = grade
         db.commit()
     return True
 
@@ -166,25 +179,39 @@ def bulk_add_students_to_group(db: Session, org: Organization, group_id: int, st
     ).all()
     org_member_ids = {row[0] for row in org_members}
 
-    existing_members = db.query(GroupMember.student_id).filter(
+    existing_members = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id.in_(selected_ids),
     ).all()
-    existing_ids = {row[0] for row in existing_members}
+    existing_by_student_id = {member.student_id: member for member in existing_members}
 
+    now = datetime.utcnow()
     added_count = 0
     skipped_count = 0
     for sid in selected_ids:
         if sid not in org_member_ids:
             continue
-        if sid in existing_ids:
+        existing = existing_by_student_id.get(sid)
+        if existing and existing.status == ACTIVE_GROUP_MEMBER_STATUS:
             skipped_count += 1
+            continue
+        if existing:
+            existing.status = ACTIVE_GROUP_MEMBER_STATUS
+            existing.removed_at = None
+            existing.left_at = None
+            existing.removed_by_id = None
+            existing.last_joined_at = now
+            existing.updated_at = now
+            existing.grade = grade
+            added_count += 1
             continue
 
         db.add(GroupMember(
             group_id=group_id,
             student_id=sid,
             grade=grade,
+            status=ACTIVE_GROUP_MEMBER_STATUS,
+            updated_at=now,
         ))
         added_count += 1
 
@@ -193,7 +220,13 @@ def bulk_add_students_to_group(db: Session, org: Organization, group_id: int, st
 
     return added_count, skipped_count
 
-def remove_student_from_group(db: Session, org: Organization, group_id: int, student_id: int):
+def remove_student_from_group(
+    db: Session,
+    org: Organization,
+    group_id: int,
+    student_id: int,
+    removed_by_id: int | None = None,
+):
     group = db.query(Group).filter(Group.id == group_id, Group.organization_id == org.id).first()
     if not group:
         raise ValueError("Группа не найдена")
@@ -202,14 +235,12 @@ def remove_student_from_group(db: Session, org: Organization, group_id: int, stu
         GroupMember.student_id == student_id,
     ).first()
     if member:
-        db.query(GroupJournalEntry).filter(
-            GroupJournalEntry.group_id == group_id,
-            GroupJournalEntry.student_id == student_id,
-        ).delete(synchronize_session=False)
-        db.query(GroupPaymentEntry).filter(
-            GroupPaymentEntry.group_id == group_id,
-            GroupPaymentEntry.student_id == student_id,
-        ).delete(synchronize_session=False)
+        now = datetime.utcnow()
+        member.status = "removed"
+        member.removed_at = now
+        member.left_at = None
+        member.removed_by_id = removed_by_id
+        member.updated_at = now
         homework_ids = db.query(GroupHomework.id).filter(
             GroupHomework.group_id == group_id,
         )
@@ -218,10 +249,9 @@ def remove_student_from_group(db: Session, org: Organization, group_id: int, stu
             GroupHomeworkNotification.student_id == student_id,
             GroupHomeworkNotification.read_at.is_(None),
         ).update(
-            {GroupHomeworkNotification.read_at: datetime.utcnow()},
+            {GroupHomeworkNotification.read_at: now},
             synchronize_session=False,
         )
-        db.delete(member)
         db.commit()
 
 def update_group_avatar(db: Session, group: Group, avatar_url: str):

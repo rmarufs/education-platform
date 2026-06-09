@@ -99,9 +99,13 @@ def group_manage(group_id: int, request: Request, db: Session = Depends(get_db))
             OrganizationStudent.organization_id == org.id,
             OrganizationStudent.status == "accepted",
         ).all()
-        member_ids = {m.student_id for m in group.members}
+        active_member_ids = {
+            member.student_id
+            for member in group.members
+            if member.status == ACTIVE_GROUP_MEMBER_STATUS
+        }
         available_students = [
-            s.student for s in org_student_links if s.student_id not in member_ids
+            s.student for s in org_student_links if s.student_id not in active_member_ids
         ]
 
         return templates.TemplateResponse("groups/manage.html", {
@@ -257,5 +261,4 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return RedirectResponse(next_url, status_code=302)
 
     return RedirectResponse("/dashboard/student", status_code=302)
-
 
