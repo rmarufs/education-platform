@@ -210,6 +210,7 @@ async def register(
     org_id: Optional[int] = Form(None),          # ID организации при регистрации учителя
     student_org_id: Optional[int] = Form(None),  # ID организации при регистрации студента
     gender: Optional[str] = Form(None),          # пол
+    privacy_agreement: Optional[str] = Form(None),
     document: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
@@ -242,6 +243,20 @@ async def register(
         "student_org_id": student_org_id or "",
         "gender": gender or "",
     }
+
+    if privacy_agreement not in ("1", "on", "true"):
+        return templates.TemplateResponse(
+            "auth/register.html",
+            _register_context(
+                request,
+                role,
+                form_values,
+                error_key="validation.privacy_required",
+                error_field="privacy_agreement_student" if role == "student" else "privacy_agreement_standard",
+                error_step=5 if role == "student" else None,
+            ),
+            status_code=400,
+        )
 
     if role == "student" and not first_name:
         return templates.TemplateResponse(

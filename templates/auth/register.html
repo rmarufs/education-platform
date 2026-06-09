@@ -156,6 +156,15 @@
                     <p class="form-error" id="student-org-error"></p>
                     <p class="form-hint" id="student-org-hint" data-i18n="auth.application_will_be_sent">auth.application_will_be_sent</p>
                 </div>
+                <div class="privacy-consent" id="privacy-consent-student">
+                    <input type="checkbox" id="privacy_agreement_student" name="privacy_agreement" value="1" class="privacy-checkbox" required disabled>
+                    <label for="privacy_agreement_student">
+                        <span data-i18n="auth.privacy_agreement">auth.privacy_agreement</span>
+                        <a href="/privacy-policy" target="_blank" rel="noopener" data-i18n="footer.privacy">footer.privacy</a>
+                        <span data-i18n="auth.privacy_agreement_suffix">auth.privacy_agreement_suffix</span>
+                    </label>
+                    <span class="form-error" id="privacy_agreement_student-error"></span>
+                </div>
                 <div class="student-wizard-actions student-wizard-actions--split">
                     <button type="button" class="btn btn-outline" data-student-back data-i18n="auth.back">auth.back</button>
                     <button type="submit" class="btn btn-primary" data-i18n="auth.register">auth.register</button>
@@ -313,6 +322,16 @@
                 </div>
             </div>
 
+            <div class="privacy-consent" id="privacy-consent-standard">
+                <input type="checkbox" id="privacy_agreement_standard" name="privacy_agreement" value="1" class="privacy-checkbox" required>
+                <label for="privacy_agreement_standard">
+                    <span data-i18n="auth.privacy_agreement">auth.privacy_agreement</span>
+                    <a href="/privacy-policy" target="_blank" rel="noopener" data-i18n="footer.privacy">footer.privacy</a>
+                    <span data-i18n="auth.privacy_agreement_suffix">auth.privacy_agreement_suffix</span>
+                </label>
+                <span class="form-error" id="privacy_agreement_standard-error"></span>
+            </div>
+
             <div class="standard-submit-row">
                 <button type="submit" class="btn btn-primary btn-full" data-i18n="register.submit">register.submit</button>
             </div>
@@ -351,6 +370,9 @@
     const studentOrgSearch = document.getElementById('student-org-search');
     const studentOrgInput = document.getElementById('student_org_id');
     const studentOrgHint = document.getElementById('student-org-hint');
+    const studentPrivacyConsent = document.getElementById('privacy-consent-student');
+    const standardPrivacyConsent = document.getElementById('privacy-consent-standard');
+    const privacyInputs = Array.from(document.querySelectorAll('input[name="privacy_agreement"]'));
     const totalStudentSteps = 5;
     let studentStep = 1;
     let studentOrgMode = 'skip';
@@ -388,6 +410,10 @@
         nameGroup.hidden = isStudent;
         accountFields.forEach((field) => field.hidden = isStudent && studentStep !== 4);
         teacherOrgSelect.disabled = !isTeacher;
+        studentPrivacyConsent.hidden = !isStudent || studentStep !== 5;
+        standardPrivacyConsent.hidden = isStudent;
+        document.getElementById('privacy_agreement_student').disabled = !isStudent;
+        document.getElementById('privacy_agreement_standard').disabled = isStudent;
 
         document.getElementById('gender_student').disabled = !isStudent;
         document.getElementById('gender_teacher').disabled = !isTeacher;
@@ -416,6 +442,7 @@
         });
         accountFields.forEach((field) => field.hidden = step !== 4);
         studentStep2Actions.hidden = step !== 4;
+        studentPrivacyConsent.hidden = step !== 5;
         document.querySelectorAll('[data-step-dot]').forEach((dot) => {
             dot.classList.toggle('is-active', Number(dot.dataset.stepDot) <= step);
         });
@@ -466,6 +493,14 @@
             return false;
         }
         return true;
+    }
+
+    function validatePrivacyAgreement() {
+        privacyInputs.forEach((input) => input.classList.remove('error'));
+        const activeInput = privacyInputs.find((input) => !input.disabled);
+        if (!activeInput || activeInput.checked) return true;
+        showFieldError(activeInput.id, tr('validation.privacy_required'));
+        return false;
     }
 
     function isValidPhone(value) {
@@ -667,6 +702,11 @@
                 }
             }
         }
+        if (!validatePrivacyAgreement()) {
+            event.preventDefault();
+            if (role === 'student') showStudentStep(5);
+            return;
+        }
     });
 
     function applyServerError() {
@@ -687,6 +727,9 @@
             } else if (selectedRoleInput.value === 'teacher') {
                 showFieldError('gender_teacher', message);
             }
+        } else if (field === 'privacy_agreement_student') {
+            showStudentStep(5);
+            showFieldError(field, message);
         } else {
             showFieldError(field, message);
         }

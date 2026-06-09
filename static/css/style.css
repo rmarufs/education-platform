@@ -1356,6 +1356,35 @@ body.dark .logo-copy::after {
   margin-top: 8px;
 }
 
+.privacy-consent {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.privacy-consent input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+}
+
+.privacy-consent label {
+  color: var(--text);
+  font-size: .85rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.privacy-consent .form-error {
+  grid-column: 2;
+}
+
 .course-cover-field {
   display: flex;
   flex-direction: column;
@@ -4387,6 +4416,50 @@ body { transition: background-color .3s ease, color .3s ease; }
   background: var(--surface-soft);
   border: 1px solid var(--border);
   border-radius: 16px;
+}
+
+.privacy-hero {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 55%, #059669 100%);
+}
+
+.privacy-policy-page {
+  padding-top: 36px;
+}
+
+.privacy-policy-card {
+  display: grid;
+  gap: 32px;
+}
+
+.privacy-policy-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.privacy-policy-heading h2 {
+  color: var(--text);
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+
+.privacy-policy-meta {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.privacy-policy-text h3 {
+  color: var(--text);
+  font-size: 1.05rem;
+  margin: 1.5rem 0 .45rem;
+}
+
+.privacy-policy-text h3:first-child {
+  margin-top: 0;
+}
+
+.privacy-policy-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
 }
 
 .section-grid {

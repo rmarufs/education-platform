@@ -92,6 +92,12 @@ def contact_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("pages/contact.html", {"request": request, "user": user})
 
 
+@router.get("/privacy-policy", response_class=HTMLResponse)
+def privacy_policy_page(request: Request, db: Session = Depends(get_db)):
+    user = get_user(request, db)
+    return templates.TemplateResponse("pages/privacy_policy.html", {"request": request, "user": user})
+
+
 @router.post("/contact")
 def contact_submit(
     request: Request,
