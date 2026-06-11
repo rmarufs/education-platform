@@ -301,7 +301,9 @@ def organization_students(request: Request, db: Session = Depends(get_db)):
     org = db.query(Organization).filter(Organization.user_id == user.id).first()
 
     from app.services.organization_service import get_organization_students_lists
-    accepted_students, pending_students = get_organization_students_lists(db, org.id) if org else ([], [])
+    accepted_students, pending_students, student_groups_by_id = (
+        get_organization_students_lists(db, org.id) if org else ([], [], {})
+    )
 
     return templates.TemplateResponse(
         "organization/students.html",
@@ -311,6 +313,7 @@ def organization_students(request: Request, db: Session = Depends(get_db)):
             "org": org,
             "org_students": accepted_students,
             "pending_students": pending_students,
+            "student_groups_by_id": student_groups_by_id,
         }
     )
 

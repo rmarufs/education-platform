@@ -142,7 +142,7 @@ def get_organization_teachers_lists(db: Session, org_id: int) -> tuple[list, lis
     return accepted, pending, rejected
 
 
-def get_organization_students_lists(db: Session, org_id: int) -> tuple[list, list]:
+def get_organization_students_lists(db: Session, org_id: int) -> tuple[list, list, dict[int, list[dict]]]:
     """Get accepted and pending students for an organization."""
     org_students = db.query(OrganizationStudent).options(
         joinedload(OrganizationStudent.student)
@@ -153,7 +153,33 @@ def get_organization_students_lists(db: Session, org_id: int) -> tuple[list, lis
 
     accepted_students = [s for s in org_students if s.status == "accepted"]
     pending_students = [s for s in org_students if s.status == "pending"]
-    return accepted_students, pending_students
+    accepted_student_ids = [s.student_id for s in accepted_students]
+    student_groups_by_id: dict[int, list[dict]] = {}
+    if accepted_student_ids:
+        group_rows = (
+            db.query(
+                GroupMember.student_id,
+                Group.id,
+                Group.name,
+                GroupMember.grade,
+            )
+            .join(Group, Group.id == GroupMember.group_id)
+            .filter(
+                Group.organization_id == org_id,
+                GroupMember.student_id.in_(accepted_student_ids),
+                GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+            )
+            .order_by(Group.name.asc())
+            .all()
+        )
+        for student_id, group_id, group_name, grade in group_rows:
+            student_groups_by_id.setdefault(student_id, []).append({
+                "id": group_id,
+                "name": group_name,
+                "grade": grade,
+            })
+
+    return accepted_students, pending_students, student_groups_by_id
 
 
 def get_organization_teacher_courses(db: Session, org_id: int, teacher_id: int) -> tuple[User | None, list[Course]]:
