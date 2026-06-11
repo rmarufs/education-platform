@@ -31,38 +31,38 @@
                         <div class="org-staff-email">{{ s_link.student.email }}</div>
                         <div class="org-student-details org-student-details-pending">
                             <div class="org-student-detail">
-                                <span class="org-student-detail-label" data-i18n="org.student_card_student_phone">Телефон ученика</span>
+                                <span class="org-student-detail-label" data-i18n="org.student_card_student_phone"></span>
                                 <span class="org-student-detail-value {% if not s_link.student.phone_number %}is-empty{% endif %}">
-                                    {% if s_link.student.phone_number %}{{ s_link.student.phone_number }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                    {% if s_link.student.phone_number %}{{ s_link.student.phone_number }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                                 </span>
                             </div>
                             <div class="org-student-detail">
-                                <span class="org-student-detail-label" data-i18n="org.student_card_parent">Родитель</span>
+                                <span class="org-student-detail-label" data-i18n="org.student_card_parent"></span>
                                 <span class="org-student-detail-value {% if not s_link.student.parent_contact_name %}is-empty{% endif %}">
-                                    {% if s_link.student.parent_contact_name %}{{ s_link.student.parent_contact_name }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                    {% if s_link.student.parent_contact_name %}{{ s_link.student.parent_contact_name }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                                 </span>
                             </div>
                             <div class="org-student-detail">
-                                <span class="org-student-detail-label" data-i18n="org.student_card_parent_phone">Телефон родителя</span>
+                                <span class="org-student-detail-label" data-i18n="org.student_card_parent_phone"></span>
                                 <span class="org-student-detail-value {% if not s_link.student.parent_contact_phone %}is-empty{% endif %}">
-                                    {% if s_link.student.parent_contact_phone %}{{ s_link.student.parent_contact_phone }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                    {% if s_link.student.parent_contact_phone %}{{ s_link.student.parent_contact_phone }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                                 </span>
                             </div>
                             <div class="org-student-detail">
-                                <span class="org-student-detail-label" data-i18n="org.student_card_birth_date">Дата рождения</span>
+                                <span class="org-student-detail-label" data-i18n="org.student_card_birth_date"></span>
                                 <span class="org-student-detail-value {% if not s_link.student.birth_date %}is-empty{% endif %}">
-                                    {% if s_link.student.birth_date %}{{ s_link.student.birth_date.strftime("%d.%m.%Y") }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                    {% if s_link.student.birth_date %}{{ s_link.student.birth_date.strftime("%d.%m.%Y") }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                                 </span>
                             </div>
                             <div class="org-student-detail">
-                                <span class="org-student-detail-label" data-i18n="org.student_card_gender">Пол</span>
+                                <span class="org-student-detail-label" data-i18n="org.student_card_gender"></span>
                                 <span class="org-student-detail-value {% if not s_link.student.gender %}is-empty{% endif %}">
                                     {% if s_link.student.gender == "male" %}
                                         <span data-i18n="auth.gender_male">Мужской</span>
                                     {% elif s_link.student.gender == "female" %}
                                         <span data-i18n="auth.gender_female">Женский</span>
                                     {% else %}
-                                        <span data-i18n="org.student_card_not_specified">Не указано</span>
+                                        <span data-i18n="org.student_card_not_specified"></span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -133,45 +133,45 @@
 
                     <div class="org-student-indicators">
                         <div class="org-student-indicator">
-                            <span class="org-student-indicator-label" data-i18n="org.student_card_student_phone">Телефон ученика</span>
+                            <span class="org-student-indicator-label" data-i18n="org.student_card_student_phone"></span>
                             <span class="org-student-indicator-value {% if not link.student.phone_number %}is-empty{% endif %}">
-                                {% if link.student.phone_number %}{{ link.student.phone_number }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                {% if link.student.phone_number %}{{ link.student.phone_number }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                             </span>
                         </div>
                         <div class="org-student-indicator">
-                            <span class="org-student-indicator-label" data-i18n="org.student_card_parent">Родитель</span>
+                            <span class="org-student-indicator-label" data-i18n="org.student_card_parent"></span>
                             <span class="org-student-indicator-value {% if not link.student.parent_contact_name %}is-empty{% endif %}">
-                                {% if link.student.parent_contact_name %}{{ link.student.parent_contact_name }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                {% if link.student.parent_contact_name %}{{ link.student.parent_contact_name }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                             </span>
                         </div>
                         <div class="org-student-indicator">
-                            <span class="org-student-indicator-label" data-i18n="org.student_card_parent_phone">Телефон родителя</span>
+                            <span class="org-student-indicator-label" data-i18n="org.student_card_parent_phone"></span>
                             <span class="org-student-indicator-value {% if not link.student.parent_contact_phone %}is-empty{% endif %}">
-                                {% if link.student.parent_contact_phone %}{{ link.student.parent_contact_phone }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                {% if link.student.parent_contact_phone %}{{ link.student.parent_contact_phone }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                             </span>
                         </div>
                         <div class="org-student-indicator">
-                            <span class="org-student-indicator-label" data-i18n="org.student_card_birth_date">Дата рождения</span>
+                            <span class="org-student-indicator-label" data-i18n="org.student_card_birth_date"></span>
                             <span class="org-student-indicator-value {% if not link.student.birth_date %}is-empty{% endif %}">
-                                {% if link.student.birth_date %}{{ link.student.birth_date.strftime("%d.%m.%Y") }}{% else %}<span data-i18n="org.student_card_not_specified">Не указано</span>{% endif %}
+                                {% if link.student.birth_date %}{{ link.student.birth_date.strftime("%d.%m.%Y") }}{% else %}<span data-i18n="org.student_card_not_specified"></span>{% endif %}
                             </span>
                         </div>
                         <div class="org-student-indicator">
-                            <span class="org-student-indicator-label" data-i18n="org.student_card_gender">Пол</span>
+                            <span class="org-student-indicator-label" data-i18n="org.student_card_gender"></span>
                             <span class="org-student-indicator-value {% if not link.student.gender %}is-empty{% endif %}">
                                 {% if link.student.gender == "male" %}
                                     <span data-i18n="auth.gender_male">Мужской</span>
                                 {% elif link.student.gender == "female" %}
                                     <span data-i18n="auth.gender_female">Женский</span>
                                 {% else %}
-                                    <span data-i18n="org.student_card_not_specified">Не указано</span>
+                                    <span data-i18n="org.student_card_not_specified"></span>
                                 {% endif %}
                             </span>
                         </div>
                     </div>
 
                     <div class="org-student-groups">
-                        <div class="org-student-groups-title" data-i18n="org.student_card_groups">Группы ученика</div>
+                        <div class="org-student-groups-title" data-i18n="org.student_card_groups"></div>
                         {% if student_groups %}
                         <div class="org-student-group-list">
                             {% for group in student_groups %}
@@ -184,7 +184,7 @@
                             {% endfor %}
                         </div>
                         {% else %}
-                        <span class="org-student-groups-empty" data-i18n="org.student_card_no_groups">Нет групп</span>
+                        <span class="org-student-groups-empty" data-i18n="org.student_card_no_groups"></span>
                         {% endif %}
                     </div>
                 </div>
