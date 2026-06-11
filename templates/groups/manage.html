@@ -389,6 +389,20 @@
             </div>
             {% endif %}
         </div>
+
+        {% if user.is_org %}
+        <section class="manage-section group-danger-zone">
+            <div>
+                <div class="section-label" data-i18n="group.delete_zone_title">Удаление группы</div>
+                <p class="text-muted group-danger-zone-text" data-i18n="group.delete_zone_desc">Удаление группы является необратимым действием. Все связанные уроки, ученики и записи группы будут удалены.</p>
+            </div>
+            <form action="/groups/{{ group.id }}/delete" method="POST" class="group-delete-form"
+                  data-group-name="{{ group.name | e }}"
+                  onsubmit="confirmAndSubmit(event, 'group.confirm_delete_group', '', {name: this.dataset.groupName})">
+                <button type="submit" class="btn btn-outline btn-sm group-delete-btn">🗑 <span data-i18n="group.delete">Удалить группу</span></button>
+            </form>
+        </section>
+        {% endif %}
     </div>
 </div>
 
@@ -758,6 +772,28 @@
 .lesson-materials { margin-top: 8px; padding-left: 36px; font-size: 0.85rem; }
 .group-content-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .group-students-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.group-danger-zone {
+    margin-top: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-color: color-mix(in srgb, var(--error, #e53e3e) 24%, var(--border, rgba(0,0,0,0.07)));
+}
+.group-danger-zone-text {
+    margin: 6px 0 0;
+    max-width: 720px;
+    font-size: 0.9rem;
+}
+.group-delete-form { margin: 0; flex: 0 0 auto; }
+.group-delete-btn {
+    color: var(--error, #e53e3e);
+    border-color: color-mix(in srgb, var(--error, #e53e3e) 45%, var(--border, rgba(0,0,0,0.12)));
+}
+.group-delete-btn:hover {
+    color: var(--error, #e53e3e);
+    background: color-mix(in srgb, var(--error, #e53e3e) 8%, transparent);
+}
 .empty-mini { text-align: center; color: var(--text-muted); font-size: 0.875rem; padding: 20px 0; }
 .breadcrumb { display: flex; align-items: center; }
 @media (max-width: 640px) {
@@ -771,6 +807,9 @@
     .module-header, .lesson-manage-main { align-items: flex-start; }
     .lesson-inline-quiz, .lesson-materials { padding-left: 0; }
     .google-forms-header, .google-forms-actions { flex-wrap: wrap; }
+    .group-danger-zone { flex-direction: column; }
+    .group-delete-form,
+    .group-delete-btn { width: 100%; justify-content: center; }
 }
 </style>
 <script>

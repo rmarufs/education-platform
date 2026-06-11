@@ -60,11 +60,6 @@
                     <a href="/groups/{{ group.id }}/manage" class="btn btn-primary btn-sm" data-i18n="group.manage">
                         ⚙️ <span data-i18n="group.manage">Управление</span>
                     </a>
-                    <form action="/groups/{{ group.id }}/delete" method="POST" style="margin:0;"
-                          data-group-name="{{ group.name | e }}"
-                          onsubmit="confirmAndSubmit(event, 'group.confirm_delete_group', '', {name: this.dataset.groupName})">
-                        <button type="submit" class="btn btn-danger btn-sm">🗑 <span data-i18n="group.delete">Удалить группу</span></button>
-                    </form>
                 </div>
             </div>
             {% endfor %}
