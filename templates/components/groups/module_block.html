@@ -32,17 +32,23 @@
   <ul class="lessons-list">
     {% set current_module_lessons = module_lessons if module_lessons is defined else (module.lessons|sort(attribute='order')) %}
     {% for lesson in current_module_lessons %}
-    {% set lesson_view_url = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
-    {% set lesson_delete_action = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id ~ "/delete" %}
-    {% set lesson_material_delete_action_prefix = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
+    {% if authoring_context == 'course' %}
+      {% set lesson_view_url = "/lessons/" ~ lesson.id %}
+      {% set lesson_delete_action = "/lessons/" ~ lesson.id ~ "/delete" %}
+      {% set lesson_material_delete_action_prefix = "/lessons/" ~ lesson.id %}
+    {% else %}
+      {% set lesson_view_url = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
+      {% set lesson_delete_action = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id ~ "/delete" %}
+      {% set lesson_material_delete_action_prefix = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
+    {% endif %}
     {% with lesson_row_actions_style = module_lesson_actions_style, lesson_row_vocab_style = module_lesson_vocab_style, lesson_row_is_unassigned = false,
             lesson_view_url = lesson_view_url,
             lesson_delete_action = lesson_delete_action,
             lesson_material_delete_action_prefix = lesson_material_delete_action_prefix,
-            lesson_show_homework = true,
-            lesson_show_vocabulary = true,
-            lesson_show_materials = true,
-            lesson_show_google_forms_inline = true %}
+            lesson_show_homework = lesson_show_homework | default(true),
+            lesson_show_vocabulary = lesson_show_vocabulary | default(true),
+            lesson_show_materials = lesson_show_materials | default(true),
+            lesson_show_google_forms_inline = lesson_show_google_forms_inline | default(true) %}
     {% include "components/groups/lesson_row.html" %}
     {% endwith %}
     {% else %}

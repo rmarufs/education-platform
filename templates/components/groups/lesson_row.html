@@ -19,6 +19,7 @@
         data-lesson-id="{{ lesson.id }}"
         data-lesson-title="{{ lesson.title | e }}"
         data-lesson-video="{{ (lesson.video_url or '') | e }}"
+        data-lesson-video-filename="{{ (lesson.video_filename or '') | e }}"
         data-lesson-cover="{{ (lesson.cover_url or '') | e }}"
         data-lesson-desc="{{ (lesson.description or '') | e }}"
         {% if authoring_context == 'group' or not authoring_context %}

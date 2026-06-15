@@ -39,73 +39,20 @@
     <div class="section-label" data-i18n="manage.modules_lbl">Модули курса</div>
 
     {% for module in course.modules %}
-    <div class="module-block fade-in" id="module-{{ module.id }}">
-      <div class="module-header">
-        <span class="module-index">{{ loop.index }}</span>
-        <h3 class="module-title">{{ module.title }}</h3>
-        <div class="module-actions">
-          <button class="btn btn-outline btn-xs"
-            data-module-id="{{ module.id }}"
-            data-module-title="{{ module.title | e }}"
-            data-module-desc="{{ (module.description or '') | e }}"
-            onclick="openEditModuleModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
-          <button class="btn btn-danger btn-xs"
-            data-module-id="{{ module.id }}"
-            onclick="deleteModule(this.dataset.moduleId)">🗑<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
-        </div>
-      </div>
-
-      {% if module.description %}
-      <div class="module-description rich-text-content">{{ module.description | clean_html }}</div>
-      {% endif %}
-
-      <!-- Уроки модуля -->
-      <ul class="lessons-list">
-        {% for lesson in module.lessons %}
-        <li class="lesson-item">
-          <div class="lesson-manage-main">
-            <span class="lesson-icon">{{ "🎬" if lesson.video_url else ("🖼️" if lesson.cover_url else "📄") }}</span>
-            <span class="lesson-title">{{ lesson.title }}</span>
-            <div class="lesson-meta">
-              {% if lesson.materials %}
-                <span class="badge" data-i18n="manage.files_count" data-i18n-params='{"count":{{ lesson.materials|length }}}'>{{ lesson.materials|length }} файл(ов)</span>
-              {% endif %}
-            </div>
-            <div class="lesson-actions" style="display: flex; gap: 4px;">
-              <a href="/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁<span class="manage-btn-label" data-i18n="manage.view">Просмотр</span></a>
-              <button type="button" class="btn btn-outline btn-xs"
-                data-lesson-id="{{ lesson.id }}"
-                data-lesson-title="{{ lesson.title | e }}"
-                data-lesson-video="{{ (lesson.video_url or '') | e }}"
-                data-lesson-video-filename="{{ (lesson.video_filename or '') | e }}"
-                data-lesson-cover="{{ (lesson.cover_url or '') | e }}"
-                data-lesson-desc="{{ (lesson.description or '') | e }}"
-                onclick="openEditLessonModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
-              <form action="/lessons/{{ lesson.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'manage.confirm_delete_lesson', 'confirm.action_irreversible')">
-                <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="action.delete" data-i18n-prop="title">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
-              </form>
-            </div>
-          </div>
-          <div class="lesson-inline-quiz">
-            {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
-          </div>
-        </li>
-        {% else %}
-        <li class="lesson-item text-muted" data-i18n="manage.no_lessons">Уроков ещё нет</li>
-        {% endfor %}
-      </ul>
-
-      <!-- Добавить урок к модулю -->
-      <button class="btn btn-outline btn-sm add-lesson-btn"
-        data-module-id="{{ module.id }}"
-        onclick="openAddLessonModal(this.dataset.moduleId)" data-i18n="manage.add_lesson">
-        + Добавить урок
-      </button>
-
-      <div class="manage-quiz-block">
-        {{ render_google_forms_editor(module.quiz_url, "module", module.id, "Модуль: " ~ module.title) }}
-      </div>
-    </div>
+    {% with
+      authoring_context="course",
+      module_dom_id="module-" ~ module.id,
+      module_delete_mode="js",
+      module_show_description=true,
+      module_show_order_data=false,
+      module_lessons=module.lessons,
+      lesson_show_homework=false,
+      lesson_show_vocabulary=false,
+      lesson_show_materials=false,
+      lesson_show_google_forms_inline=true
+    %}
+    {% include "components/groups/module_block.html" %}
+    {% endwith %}
     {% else %}
     <div class="empty-state">
       <span class="empty-icon">📦</span>
