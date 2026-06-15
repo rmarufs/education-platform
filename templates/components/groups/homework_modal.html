@@ -1,0 +1,61 @@
+<div class="modal-overlay" id="homework-modal" onclick="if(event.target===this) closeModal('homework-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="homework-modal-title" data-i18n="homework.add">Добавить домашнее задание</h2>
+            <button class="modal-close" onclick="closeModal('homework-modal')">✕</button>
+        </div>
+        <form id="homework-form" method="POST" enctype="multipart/form-data">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="hw-title" data-i18n="homework.short_title">Короткое название</label>
+                    <input type="text" id="hw-title" name="title" class="form-input" required data-i18n="homework.short_title_ph" data-i18n-prop="placeholder" placeholder="Например: Практика к уроку" />
+                </div>
+                <div class="form-group">
+                    <label for="hw-description" data-i18n="homework.description">Описание задания</label>
+                    <textarea id="hw-description" name="description" class="form-input" rows="6" required data-i18n="homework.description_ph" data-i18n-prop="placeholder" placeholder="Что нужно сделать ученику?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="hw-material-url" data-i18n="homework.material_url">Ссылка на видео или материал</label>
+                    <input type="url" id="hw-material-url" name="material_url" class="form-input" data-i18n="homework.material_url_ph" data-i18n-prop="placeholder" placeholder="https://..." />
+                </div>
+                <div class="form-group">
+                    <label for="hw-material-file" data-i18n="homework.upload_file">Загрузить материал</label>
+                    <input type="file" id="hw-material-file" name="material_file" class="form-input"
+                           accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+                    <p class="form-hint" data-i18n="homework.upload_hint">PDF, DOC, TXT или изображение до 50MB.</p>
+                    <p id="hw-current-material" class="form-hint" hidden></p>
+                </div>
+                <div class="form-group">
+                    <label class="homework-deadline-toggle" for="hw-deadline-enabled">
+                        <input type="checkbox" id="hw-deadline-enabled" name="deadline_enabled" value="1" />
+                        <span data-i18n="homework.set_deadline">homework.set_deadline</span>
+                    </label>
+                    <div class="homework-deadline-field" id="hw-deadline-field" hidden>
+                        <label for="hw-deadline" data-i18n="homework.deadline">Дедлайн</label>
+                        <input type="datetime-local" id="hw-deadline" name="deadline" class="form-input" disabled />
+                        <span class="form-error" id="hw-deadline-error"></span>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <form id="homework-delete-form" method="POST"></form>
+
+        <div id="hw-delete-confirm-block" style="display: none; padding: 15px; background: var(--bg-secondary, #f9f9f9); border-radius: 8px; margin-bottom: 15px; text-align: center;">
+            <p style="margin: 0 0 10px 0; color: var(--error, #e53e3e); font-weight: 500;">
+                <span data-i18n="homework.delete">Удалить домашнее задание?</span> <span data-i18n="confirm.action_irreversible">Это действие нельзя отменить.</span>
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('hw-delete-confirm-block').style.display='none'; document.getElementById('hw-default-buttons').style.display='flex';" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" form="homework-delete-form" class="btn btn-danger btn-sm" data-i18n="action.delete">Удалить</button>
+            </div>
+        </div>
+
+        <div class="modal-footer" id="hw-default-buttons" style="display: flex;">
+            <button type="button" class="btn btn-outline" onclick="closeModal('homework-modal')" data-i18n="group.cancel">Отмена</button>
+            <button type="button" id="homework-delete-btn" class="btn btn-outline homework-delete-icon-btn" hidden onclick="document.getElementById('hw-delete-confirm-block').style.display='block'; document.getElementById('hw-default-buttons').style.display='none';" data-i18n="homework.delete_aria" data-i18n-prop="title" aria-label="homework.delete_aria">
+                <span class="homework-delete-icon" aria-hidden="true">🗑️</span>
+            </button>
+            <button type="submit" form="homework-form" class="btn btn-primary" data-i18n="homework.save">Сохранить</button>
+        </div>
+    </div>
+</div>

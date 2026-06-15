@@ -1,0 +1,24 @@
+<div class="modal-overlay" id="add-module-modal" onclick="if(event.target===this) closeModal('add-module-modal')">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 data-i18n="group.new_module">Новый модуль</h2>
+            <button class="modal-close" onclick="closeModal('add-module-modal')">✕</button>
+        </div>
+        <form action="/groups/{{ group.id }}/modules/create" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="gm-title" data-i18n="group.module_title">Название модуля</label>
+                    <input type="text" id="gm-title" name="title" class="form-input" required data-i18n="group.module_title_ph" data-i18n-prop="placeholder" placeholder="Например: Модуль 1" />
+                </div>
+                <div class="form-group">
+                    <label for="gm-order" data-i18n="group.module_order">Порядок модуля</label>
+                    <input type="number" id="gm-order" name="order_index" class="form-input" value="{{ group_modules|length }}" min="0" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('add-module-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.add_module">+ Добавить модуль</button>
+            </div>
+        </form>
+    </div>
+</div>

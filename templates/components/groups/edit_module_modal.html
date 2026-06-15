@@ -1,0 +1,24 @@
+<div class="modal-overlay" id="edit-module-modal" onclick="if(event.target===this) closeModal('edit-module-modal')">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 data-i18n="group.edit_module">Редактировать модуль</h2>
+            <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
+        </div>
+        <form id="edit-module-form" method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="egm-title" data-i18n="group.module_title">Название модуля</label>
+                    <input type="text" id="egm-title" name="title" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label for="egm-order" data-i18n="group.module_order">Порядок модуля</label>
+                    <input type="number" id="egm-order" name="order_index" class="form-input" min="0" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('edit-module-modal')" data-i18n="group.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
