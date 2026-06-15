@@ -1,0 +1,20 @@
+{# Mobile-only: отдельный slim-блок результата (над кнопками) #}
+{% if membership and not can_preview_as_owner %}
+<div class="gl-mob-result-bar">
+  <span class="gl-mob-result-label"
+        data-i18n="journal.result_lesson">Результат урока:</span>
+  {% if journal_entry %}
+    {% if journal_entry.present %}
+    <span class="gl-mob-badge gl-mob-badge--present" data-i18n="journal.student_present">Присутствовал</span>
+    {% else %}
+    <span class="gl-mob-badge gl-mob-badge--absent" data-i18n="journal.student_absent">Отсутствовал</span>
+    {% endif %}
+    {% if journal_entry.grade %}
+    <span class="gl-mob-grade gl-mob-grade--{{ journal_entry.grade }}">{{ journal_entry.grade }}</span>
+    {% endif %}
+  {% else %}
+  <span class="gl-mob-result-empty"
+        data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
+  {% endif %}
+</div>
+{% endif %}

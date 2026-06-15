@@ -21,30 +21,7 @@
       {% endif %}
     </div>
 
-    {% if membership and not can_preview_as_owner %}
-    {# Desktop: отдельный блок результата #}
-    <section class="lesson-materials group-lesson-journal-result gl-journal-desktop">
-      <h3 data-i18n="journal.my_result">Мой результат по уроку</h3>
-      {% if journal_entry %}
-        {% if journal_entry.present %}
-        <p class="text-muted" style="margin:0;">
-          <span class="badge badge-primary" data-i18n="journal.student_present">Присутствовал</span>
-          {% if journal_entry.grade %}
-          <span data-i18n="journal.student_grade" data-i18n-params='{{ {"grade": journal_entry.grade} | tojson }}'>Оценка: {{ journal_entry.grade }}</span>
-          {% else %}
-          <span data-i18n="journal.student_no_grade">Оценка пока не выставлена.</span>
-          {% endif %}
-        </p>
-        {% else %}
-        <p class="text-muted" style="margin:0;">
-          <span class="badge badge-secondary" data-i18n="journal.student_absent">Отсутствовал</span>
-        </p>
-        {% endif %}
-      {% else %}
-      <p class="text-muted" style="margin:0;" data-i18n="journal.student_not_marked">Пока не отмечено.</p>
-      {% endif %}
-    </section>
-    {% endif %}
+    {% include "components/groups/lesson_journal_panel.html" %}
 
     <!-- Материалы (Desktop-only: на mobile используется accordion ниже) -->
     {% if lesson.materials %}
@@ -190,26 +167,7 @@
     </section>
     {% endif %}
 
-      {# Mobile-only: отдельный slim-блок результата (над кнопками) #}
-      {% if membership and not can_preview_as_owner %}
-      <div class="gl-mob-result-bar">
-        <span class="gl-mob-result-label"
-              data-i18n="journal.result_lesson">Результат урока:</span>
-        {% if journal_entry %}
-          {% if journal_entry.present %}
-          <span class="gl-mob-badge gl-mob-badge--present" data-i18n="journal.student_present">Присутствовал</span>
-          {% else %}
-          <span class="gl-mob-badge gl-mob-badge--absent" data-i18n="journal.student_absent">Отсутствовал</span>
-          {% endif %}
-          {% if journal_entry.grade %}
-          <span class="gl-mob-grade gl-mob-grade--{{ journal_entry.grade }}">{{ journal_entry.grade }}</span>
-          {% endif %}
-        {% else %}
-        <span class="gl-mob-result-empty"
-              data-i18n="journal.not_marked_yet">Результаты пока не отмечены</span>
-        {% endif %}
-      </div>
-      {% endif %}
+    {% include "components/groups/lesson_mobile_result_panel.html" %}
 
     <div class="lesson-complete-bar">
       {# Desktop: стандартный блок кнопок #}
