@@ -1,7 +1,7 @@
 {% set lesson_row_actions_style = lesson_row_actions_style | default(false) %}
 {% set lesson_row_vocab_style = lesson_row_vocab_style | default(false) %}
 {% set lesson_row_is_unassigned = lesson_row_is_unassigned | default(false) %}
-<li class="lesson-item" id="lesson-item-{{ lesson.id }}">
+<li class="lesson-item"{% if authoring_context == 'group' or not authoring_context %} id="lesson-item-{{ lesson.id }}"{% endif %}>
   <div class="lesson-manage-main">
     <span class="lesson-icon">{{ "🎬" if lesson.video_url else ("🖼️" if lesson.cover_url else "📄") }}</span>
     <span class="lesson-title">{{ lesson.title }}</span>
@@ -14,16 +14,19 @@
       {% endif %}
     </div>
     <div class="lesson-actions"{% if lesson_row_actions_style %} style="display: flex; gap: 4px;"{% endif %}>
-      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}" class="btn btn-secondary btn-xs">👁<span class="manage-btn-label" data-i18n="manage.view">Просмотр</span></a>
+      <a href="{{ lesson_view_url }}" class="btn btn-secondary btn-xs">👁<span class="manage-btn-label" data-i18n="manage.view">Просмотр</span></a>
       <button type="button" class="btn btn-outline btn-xs"
         data-lesson-id="{{ lesson.id }}"
         data-lesson-title="{{ lesson.title | e }}"
         data-lesson-video="{{ (lesson.video_url or '') | e }}"
         data-lesson-cover="{{ (lesson.cover_url or '') | e }}"
         data-lesson-desc="{{ (lesson.description or '') | e }}"
+        {% if authoring_context == 'group' or not authoring_context %}
         data-lesson-order="{{ lesson.order }}"
         data-lesson-module-id="{% if lesson_row_is_unassigned %}{% else %}{{ lesson.group_module_id or '' }}{% endif %}"
+        {% endif %}
         onclick="openEditLessonModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
+      {% if lesson_show_homework %}
       <button type="button" class="btn btn-outline btn-xs"
         data-lesson-id="{{ lesson.id }}"
         data-homework-title="{{ (lesson.homework.title if lesson.homework else '') | e }}"
@@ -33,18 +36,19 @@
         data-homework-deadline="{{ lesson.homework.deadline.strftime('%Y-%m-%dT%H:%M') if lesson.homework and lesson.homework.deadline else '' }}"
         data-has-homework="{{ '1' if lesson.homework else '0' }}"
         onclick="openHomeworkModal(this.dataset)">📌{% if lesson.homework %}<span class="manage-btn-label" data-i18n="homework.edit">Редактировать домашнее задание</span>{% else %}<span class="manage-btn-label" data-i18n="homework.add">Добавить домашнее задание</span>{% endif %}</button>
-      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
+      {% endif %}
+      <form action="{{ lesson_delete_action }}" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_lesson', 'confirm.action_irreversible')">
         <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" title="Удалить урок" data-i18n="group.confirm_delete_lesson" data-i18n-prop="title">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
       </form>
     </div>
   </div>
-  {% if lesson.materials %}
+  {% if lesson.materials and lesson_show_materials %}
   <div class="lesson-materials">
     <ul class="simple-list" style="margin: 0;">
       {% for mat in lesson.materials %}
       <li style="display:flex;align-items:center;gap:10px;">
         <a href="{{ mat.file_url }}" target="_blank" style="color: var(--primary);">📎 {{ mat.title }}</a>
-        <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/materials/{{ mat.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_material', 'confirm.action_irreversible')">
+        <form action="{{ lesson_material_delete_action_prefix }}/materials/{{ mat.id }}/delete" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_material', 'confirm.action_irreversible')">
           <button type="submit" class="btn btn-danger btn-xs" style="padding: 2px 6px; font-size: 0.75rem;" title="Удалить материал" data-i18n="group.confirm_delete_material" data-i18n-prop="title">✕</button>
         </form>
       </li>
@@ -52,9 +56,12 @@
     </ul>
   </div>
   {% endif %}
+  {% if lesson_show_google_forms_inline %}
   <div class="lesson-inline-quiz">
     {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
   </div>
+  {% endif %}
+  {% if lesson_show_vocabulary %}
   <div class="lesson-inline-vocab"{% if lesson_row_vocab_style %} style="padding-left:36px;"{% endif %}>
     {% for vocab in lesson.vocabularies %}
     <div style="display:flex;align-items:center;gap:8px;padding:4px 0 0;">
@@ -69,4 +76,5 @@
     {% endfor %}
     <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/create" class="btn btn-outline btn-xs" style="margin-top:6px;">+ <span data-i18n="vocabulary.add_vocab">Добавить словарь</span></a>
   </div>
+  {% endif %}
 </li>

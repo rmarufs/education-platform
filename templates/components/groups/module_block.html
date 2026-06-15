@@ -20,7 +20,17 @@
 
   <ul class="lessons-list">
     {% for lesson in module.lessons|sort(attribute='order') %}
-    {% with lesson_row_actions_style = module_lesson_actions_style, lesson_row_vocab_style = module_lesson_vocab_style, lesson_row_is_unassigned = false %}
+    {% set lesson_view_url = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
+    {% set lesson_delete_action = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id ~ "/delete" %}
+    {% set lesson_material_delete_action_prefix = "/groups/" ~ group.id ~ "/lessons/" ~ lesson.id %}
+    {% with lesson_row_actions_style = module_lesson_actions_style, lesson_row_vocab_style = module_lesson_vocab_style, lesson_row_is_unassigned = false,
+            lesson_view_url = lesson_view_url,
+            lesson_delete_action = lesson_delete_action,
+            lesson_material_delete_action_prefix = lesson_material_delete_action_prefix,
+            lesson_show_homework = true,
+            lesson_show_vocabulary = true,
+            lesson_show_materials = true,
+            lesson_show_google_forms_inline = true %}
     {% include "components/groups/lesson_row.html" %}
     {% endwith %}
     {% else %}

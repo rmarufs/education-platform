@@ -73,12 +73,12 @@
 
     {% if group_modules or unassigned_lessons %}
       {% for module in group_modules %}
-      {% with module_index = loop.index, module_lesson_actions_style = false, module_lesson_vocab_style = true, module_delete_title_first = true %}
+      {% with authoring_context="group", module_index = loop.index, module_lesson_actions_style = false, module_lesson_vocab_style = true, module_delete_title_first = true %}
       {% include "components/groups/module_block.html" %}
       {% endwith %}
       {% endfor %}
 
-      {% with unassigned_lesson_actions_style = false, unassigned_lesson_vocab_style = true %}
+      {% with authoring_context="group", unassigned_lesson_actions_style = false, unassigned_lesson_vocab_style = true %}
       {% include "components/groups/unassigned_lessons_block.html" %}
       {% endwith %}
     {% else %}
