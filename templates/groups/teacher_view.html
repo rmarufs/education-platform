@@ -148,11 +148,11 @@
 {% include "components/groups/edit_module_modal.html" %}
 {% endwith %}
 
-{% with lesson_add_action="/groups/" ~ group.id ~ "/lessons/create" %}
+{% with authoring_context="group", lesson_add_action="/groups/" ~ group.id ~ "/lessons/create" %}
 {% include "components/groups/add_lesson_modal.html" %}
 {% endwith %}
 
-{% with lesson_edit_action="" %}
+{% with authoring_context="group", lesson_edit_action="" %}
 {% include "components/groups/edit_lesson_modal.html" %}
 {% endwith %}
 

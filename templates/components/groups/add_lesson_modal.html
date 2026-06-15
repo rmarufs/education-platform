@@ -1,6 +1,7 @@
 {% set add_lesson_modal_overlay_onclick = add_lesson_modal_overlay_onclick | default("if(event.target===this) closeModal('add-lesson-modal')") %}
 <div class="modal-overlay" id="add-lesson-modal" onclick="{{ add_lesson_modal_overlay_onclick }}">
     <div class="modal"{% if add_lesson_modal_stop_propagation | default(false) %} onclick="event.stopPropagation()"{% endif %}>
+        {% if authoring_context == 'group' or not authoring_context %}
         <div class="modal-header">
             <h2 data-i18n="group.new_lesson">Новый урок</h2>
             <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
@@ -50,5 +51,44 @@
                 <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
             </div>
         </form>
+        {% elif authoring_context == 'course' %}
+        <div class="modal-header">
+            <h2 data-i18n="manage.new_lesson">Новый урок</h2>
+            <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
+        </div>
+        <form action="{{ lesson_add_action }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="add-lesson-module-id" name="module_id" value="" />
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
+                    <input type="text" id="l-title" name="title" class="form-input" required />
+                </div>
+{% with lesson_media_prefix = "l", lesson_media_show_video_placeholder = true %}
+{% include "components/authoring/lesson_media_fields.html" %}
+{% endwith %}
+                <div class="form-group">
+                    <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
+                    <div class="rich-editor">
+                        <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
+                        <div class="rich-editor-shell">
+                            <div id="l-desc" class="rich-editor-surface" contenteditable="true"
+                                 data-placeholder="Описание урока"
+                                 data-i18n="manage.lesson_desc"
+                                 data-i18n-prop="data-placeholder"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word)</label>
+                    <input type="file" id="l-files" name="files" multiple class="form-input"
+                           accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="cursor:pointer;" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="action.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
+            </div>
+        </form>
+        {% endif %}
     </div>
 </div>
