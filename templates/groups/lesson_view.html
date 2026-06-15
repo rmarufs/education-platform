@@ -40,45 +40,7 @@
     </section>
     {% endif %}
 
-    {% if lesson.vocabularies %}
-    <section class="lesson-materials vocab-lesson-section">
-      <h3 data-i18n="vocabulary.section_title">📚 Словари</h3>
-      <div class="vocab-cards-list">
-        {% for vocab in lesson.vocabularies %}
-        <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}"
-           class="vocab-card-link">
-          <div class="vocab-card-item">
-            <span class="vocab-card-icon">📖</span>
-            <div class="vocab-card-info">
-              <div class="vocab-card-title">{{ vocab.title }}</div>
-              <div class="vocab-card-meta">
-                {{ vocab.items | length }} <span data-i18n="vocabulary.words_count">слов</span>
-              </div>
-            </div>
-            <span class="vocab-card-arrow">→</span>
-          </div>
-        </a>
-        {% endfor %}
-      </div>
-      {% if can_preview_as_owner %}
-      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/create"
-         class="btn btn-outline btn-sm" style="margin-top: 12px;">
-        + <span data-i18n="vocabulary.add_vocab">Добавить словарь</span>
-      </a>
-      {% endif %}
-    </section>
-    {% elif can_preview_as_owner %}
-    <section class="lesson-materials vocab-lesson-section">
-      <h3 data-i18n="vocabulary.section_title">📚 Словари</h3>
-      <div class="empty-state" style="padding: 20px 0;">
-        <p class="text-muted" data-i18n="vocabulary.no_vocabs">Словарей пока нет.</p>
-      </div>
-      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/create"
-         class="btn btn-outline btn-sm">
-        + <span data-i18n="vocabulary.add_vocab">Добавить словарь</span>
-      </a>
-    </section>
-    {% endif %}
+    {% include "components/groups/vocab_grid.html" %}
 
     {% if lesson.quiz_url %}
     <section class="lesson-materials group-lesson-quiz-section">

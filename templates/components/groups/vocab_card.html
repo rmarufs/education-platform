@@ -1,0 +1,13 @@
+<a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/vocabulary/{{ vocab.id }}"
+   class="vocab-card-link">
+  <div class="vocab-card-item">
+    <span class="vocab-card-icon">📖</span>
+    <div class="vocab-card-info">
+      <div class="vocab-card-title">{{ vocab.title }}</div>
+      <div class="vocab-card-meta">
+        {{ vocab.items | length }} <span data-i18n="vocabulary.words_count">слов</span>
+      </div>
+    </div>
+    <span class="vocab-card-arrow">→</span>
+  </div>
+</a>
