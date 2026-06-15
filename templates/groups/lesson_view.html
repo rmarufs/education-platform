@@ -49,76 +49,7 @@
     </section>
     {% endif %}
 
-    {%- set has_materials_block = lesson.materials -%}
-    {%- set has_homework_block = lesson.homework -%}
-    {% if has_materials_block or has_homework_block %}
-    {#- Mobile accordion wrapper: объединяет «Материалы» и «Домашнее задание» в одну строку -#}
-    <div class="gl-mob-accordion" id="gl-mob-accordion">
-
-      {# ── Заголовки-кнопки (одна строка, 50/50) ── #}
-      <div class="gl-mob-accordion__tabs" role="tablist">
-        {% if has_materials_block %}
-        <button type="button"
-                class="gl-mob-accordion__tab{% if not has_homework_block %} gl-mob-accordion__tab--full{% endif %}"
-                id="gl-mob-tab-mat"
-                role="tab"
-                aria-expanded="false"
-                aria-controls="gl-mob-panel-mat"
-                data-gl-mob-tab="mat">
-          <span class="gl-mob-accordion__tab-icon" aria-hidden="true">📎</span>
-          <span data-i18n="lesson.materials">Материалы</span>
-          <span class="gl-mob-accordion__tab-chevron" aria-hidden="true">›</span>
-        </button>
-        {% endif %}
-        {% if has_homework_block %}
-        <button type="button"
-                class="gl-mob-accordion__tab{% if not has_materials_block %} gl-mob-accordion__tab--full{% endif %}"
-                id="gl-mob-tab-hw"
-                role="tab"
-                aria-expanded="false"
-                aria-controls="gl-mob-panel-hw"
-                data-gl-mob-tab="hw">
-          <span class="gl-mob-accordion__tab-icon" aria-hidden="true">📝</span>
-          <span data-i18n="homework.title">Домашнее задание</span>
-          <span class="gl-mob-accordion__tab-chevron" aria-hidden="true">›</span>
-        </button>
-        {% endif %}
-      </div>
-
-      {# ── Панели с содержимым (оригинальный контент) ── #}
-      {% if has_materials_block %}
-      <div class="gl-mob-accordion__panel-wrap" id="gl-mob-panel-mat" role="tabpanel" aria-labelledby="gl-mob-tab-mat">
-        <div class="gl-mob-accordion__panel">
-          <div class="gl-mob-accordion__panel-inner">
-            <ul class="materials-list">
-              {% for m in lesson.materials %}
-              <li class="material-item">
-                <span class="material-icon">📄</span>
-                <a href="{{ m.file_url }}" target="_blank" rel="noopener">
-                  {{ m.title or m.file_url.split("/")[-1] }}
-                </a>
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if has_homework_block %}
-      <div class="gl-mob-accordion__panel-wrap" id="gl-mob-panel-hw" role="tabpanel" aria-labelledby="gl-mob-tab-hw">
-        <div class="gl-mob-accordion__panel">
-          <div class="gl-mob-accordion__panel-inner gl-mob-accordion__panel-hw-inner">
-            <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
-               class="btn btn-primary gl-mob-accordion__hw-btn"
-               data-i18n="homework.view">Домашнее задание</a>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
-    </div>{# /gl-mob-accordion #}
-    {% endif %}
+    {% include "components/groups/lesson_mobile_accordion.html" %}
 
     {# Desktop-only homework section (скрыта на mobile через CSS) #}
     {% if lesson.homework %}
