@@ -194,22 +194,9 @@
                         {% endwith %}
                         {% endfor %}
 
-                        {% if unassigned_lessons %}
-                        <div class="module-block fade-in group-unassigned-lessons">
-                            <div class="module-header">
-                                <span class="module-index">•</span>
-                                <h3 class="module-title" data-i18n="group.lessons_without_module">Уроки без модуля</h3>
-                            </div>
-
-                            <ul class="lessons-list">
-                                {% for lesson in unassigned_lessons %}
-                                {% with lesson_row_actions_style = true, lesson_row_vocab_style = false, lesson_row_is_unassigned = true %}
-                                {% include "components/groups/lesson_row.html" %}
-                                {% endwith %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
+                        {% with unassigned_lesson_actions_style = true, unassigned_lesson_vocab_style = false %}
+                        {% include "components/groups/unassigned_lessons_block.html" %}
+                        {% endwith %}
                         {% else %}
                         <div class="empty-state" style="padding:40px;">
                             <span class="empty-icon" style="font-size: 2.5rem; margin-bottom: 10px; display: block;">📦</span>
