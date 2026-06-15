@@ -349,7 +349,7 @@
           <input type="text" id="l-title" name="title" class="form-input" required />
         </div>
 {% with lesson_media_prefix = "l", lesson_media_show_video_placeholder = true %}
-{% include "components/groups/lesson_media_fields.html" %}
+{% include "components/authoring/lesson_media_fields.html" %}
 {% endwith %}
         <div class="form-group">
           <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
@@ -391,7 +391,7 @@
           <input type="text" id="el-title" name="title" class="form-input" required />
         </div>
 {% with lesson_media_prefix = "el" %}
-{% include "components/groups/lesson_media_fields.html" %}
+{% include "components/authoring/lesson_media_fields.html" %}
 {% endwith %}
         <div class="form-group">
           <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>

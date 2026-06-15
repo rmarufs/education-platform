@@ -12,7 +12,7 @@
                     <input type="text" id="l-title" name="title" class="form-input" required data-i18n="group.lesson_title_ph" data-i18n-prop="placeholder" placeholder="Например: Тема 1. Введение" />
                 </div>
 {% with lesson_media_prefix = "l", lesson_media_show_video_placeholder = true %}
-{% include "components/groups/lesson_media_fields.html" %}
+{% include "components/authoring/lesson_media_fields.html" %}
 {% endwith %}
                 <div class="form-group">
                     <label for="l-desc" data-i18n="manage.lesson_desc">Описание урока</label>
