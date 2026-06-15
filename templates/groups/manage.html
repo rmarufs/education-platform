@@ -230,12 +230,12 @@
 
 {% if user.id == group.teacher_id %}
 <!-- Модалка: Добавить модуль -->
-{% with module_add_action="/groups/" ~ group.id ~ "/modules/create" %}
+{% with authoring_context="group", module_add_action="/groups/" ~ group.id ~ "/modules/create" %}
 {% include "components/groups/add_module_modal.html" %}
 {% endwith %}
 
 <!-- Модалка: Редактировать модуль -->
-{% with module_edit_action="" %}
+{% with authoring_context="group", module_edit_action="" %}
 {% include "components/groups/edit_module_modal.html" %}
 {% endwith %}
 {% endif %}

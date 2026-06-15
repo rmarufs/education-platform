@@ -1,5 +1,6 @@
 <div class="modal-overlay" id="edit-module-modal" onclick="if(event.target===this) closeModal('edit-module-modal')">
     <div class="modal">
+        {% if authoring_context == 'group' or not authoring_context %}
         <div class="modal-header">
             <h2 data-i18n="group.edit_module">Редактировать модуль</h2>
             <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
@@ -20,5 +21,35 @@
                 <button type="submit" class="btn btn-primary" data-i18n="group.save">Сохранить</button>
             </div>
         </form>
+        {% elif authoring_context == 'course' %}
+        <div class="modal-header">
+            <h2 data-i18n="manage.edit_module">Редактировать модуль</h2>
+            <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
+        </div>
+        <form id="edit-module-form"{% if module_edit_action %} action="{{ module_edit_action }}"{% endif %} method="POST">
+            <div class="modal-scroll-body">
+                <div class="form-group">
+                    <label for="em-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
+                    <input type="text" id="em-title" name="title" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label data-i18n="manage.module_desc">Описание модуля</label>
+                    <div class="rich-editor">
+                        <input type="hidden" id="em-desc-input" name="description" class="rich-editor-input" value="" />
+                        <div class="rich-editor-shell">
+                            <div id="em-desc-surface" class="rich-editor-surface" contenteditable="true"
+                                 data-placeholder="Описание модуля"
+                                 data-i18n="manage.module_desc"
+                                 data-i18n-prop="data-placeholder"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('edit-module-modal')" data-i18n="action.cancel">Отмена</button>
+                <button type="submit" class="btn btn-primary" data-i18n="manage.module_save">Сохранить модуль</button>
+            </div>
+        </form>
+        {% endif %}
     </div>
 </div>
