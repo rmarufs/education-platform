@@ -1,0 +1,32 @@
+{% if is_teach_mode and vocabulary_anticheat_warnings %}
+<section class="vocab-teacher-anticheat-list" aria-live="polite">
+  {% for warning in vocabulary_anticheat_warnings %}
+  {% set warning_time = warning.flagged_at.strftime("%d.%m.%Y %H:%M") if warning.flagged_at else "" %}
+  <article class="vocab-teacher-anticheat-card"
+           id="vocab-teacher-anticheat-{{ warning.attempt_id }}"
+           data-vocab-anticheat-card
+           data-attempt-id="{{ warning.attempt_id }}">
+    <div class="vocab-teacher-anticheat-icon" aria-hidden="true">!</div>
+    <div class="vocab-teacher-anticheat-content">
+      <div class="vocab-teacher-anticheat-title" data-i18n="vocabulary.teacher_anticheat_title">vocabulary.teacher_anticheat_title</div>
+      <div class="vocab-teacher-anticheat-message"
+           data-i18n="vocabulary.teacher_anticheat_message"
+           data-i18n-params='{{ {"student": warning.student_name, "vocab": warning.vocab_title} | tojson }}'>vocabulary.teacher_anticheat_message</div>
+      {% if warning_time %}
+      <div class="vocab-teacher-anticheat-time"
+           data-i18n="vocabulary.teacher_anticheat_time"
+           data-i18n-params='{{ {"time": warning_time} | tojson }}'>vocabulary.teacher_anticheat_time</div>
+      {% endif %}
+    </div>
+    <button type="button"
+            class="vocab-teacher-anticheat-close"
+            data-vocab-anticheat-close
+            data-i18n="notification.close"
+            data-i18n-prop="aria-label"
+            aria-label="notification.close">
+      <span aria-hidden="true">×</span>
+    </button>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
