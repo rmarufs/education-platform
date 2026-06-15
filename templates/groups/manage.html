@@ -189,42 +189,9 @@
 
                     {% if group_modules or unassigned_lessons %}
                         {% for module in group_modules %}
-                        <div class="module-block fade-in" id="group-module-{{ module.id }}">
-                            <div class="module-header">
-                                <span class="module-index">{{ loop.index }}</span>
-                                <h3 class="module-title">{{ module.title }}</h3>
-                                <div class="module-actions">
-                                    <button type="button" class="btn btn-outline btn-xs"
-                                        data-module-id="{{ module.id }}"
-                                        data-module-title="{{ module.title | e }}"
-                                        data-module-order="{{ module.order_index }}"
-                                        onclick="openEditModuleModal(this.dataset)">✏️<span class="manage-btn-label" data-i18n="course.edit">Изменить</span></button>
-                                    <form action="/groups/{{ group.id }}/modules/{{ module.id }}/delete" method="POST" style="margin:0;" onsubmit="confirmAndSubmit(event, 'group.confirm_delete_module', 'group.confirm_delete_module_hint')">
-                                        <button type="submit" class="btn btn-outline btn-xs" style="color: var(--error); border-color: var(--error);" data-i18n="group.confirm_delete_module" data-i18n-prop="title" title="Удалить модуль">🗑️<span class="manage-btn-label" data-i18n="action.delete">Удалить</span></button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            <ul class="lessons-list">
-                                {% for lesson in module.lessons|sort(attribute='order') %}
-                                {% with lesson_row_actions_style = true, lesson_row_vocab_style = false, lesson_row_is_unassigned = false %}
-                                {% include "components/groups/lesson_row.html" %}
-                                {% endwith %}
-                                {% else %}
-                                <li class="lesson-item text-muted" data-i18n="group.no_lessons">Уроков пока нет</li>
-                                {% endfor %}
-                            </ul>
-
-                            <button class="btn btn-outline btn-sm add-lesson-btn"
-                                data-module-id="{{ module.id }}"
-                                onclick="openAddLessonModal(this.dataset.moduleId)" data-i18n="group.add_lesson">
-                                + Добавить урок
-                            </button>
-
-                            <div class="manage-quiz-block">
-                                {{ render_google_forms_editor(module.quiz_url, "module", module.id, "Модуль: " ~ module.title) }}
-                            </div>
-                        </div>
+                        {% with module_index = loop.index, module_lesson_actions_style = true, module_lesson_vocab_style = false, module_delete_title_first = false %}
+                        {% include "components/groups/module_block.html" %}
+                        {% endwith %}
                         {% endfor %}
 
                         {% if unassigned_lessons %}
