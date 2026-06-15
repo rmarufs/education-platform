@@ -140,9 +140,13 @@
   </section>
 </div>
 
+{% with module_add_action="/groups/" ~ group.id ~ "/modules/create" %}
 {% include "components/groups/add_module_modal.html" %}
+{% endwith %}
 
+{% with module_edit_action="" %}
 {% include "components/groups/edit_module_modal.html" %}
+{% endwith %}
 
 {% include "components/groups/add_lesson_modal.html" %}
 

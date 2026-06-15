@@ -4,7 +4,7 @@
             <h2 data-i18n="group.edit_module">Редактировать модуль</h2>
             <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
         </div>
-        <form id="edit-module-form" method="POST">
+        <form id="edit-module-form"{% if module_edit_action %} action="{{ module_edit_action }}"{% endif %} method="POST">
             <div class="modal-scroll-body">
                 <div class="form-group">
                     <label for="egm-title" data-i18n="group.module_title">Название модуля</label>

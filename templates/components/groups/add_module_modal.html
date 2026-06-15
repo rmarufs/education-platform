@@ -4,7 +4,7 @@
             <h2 data-i18n="group.new_module">Новый модуль</h2>
             <button class="modal-close" onclick="closeModal('add-module-modal')">✕</button>
         </div>
-        <form action="/groups/{{ group.id }}/modules/create" method="POST">
+        <form action="{{ module_add_action }}" method="POST">
             <div class="modal-scroll-body">
                 <div class="form-group">
                     <label for="gm-title" data-i18n="group.module_title">Название модуля</label>
