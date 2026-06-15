@@ -276,89 +276,14 @@
 </div>
 
 <!-- MODAL: Добавить урок -->
-<div class="modal-overlay" id="add-lesson-modal" onclick="if(event.target===this) closeModal('add-lesson-modal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 data-i18n="manage.new_lesson">Новый урок</h2>
-      <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
-    </div>
-    <form action="/lessons/create" method="POST" enctype="multipart/form-data">
-      <input type="hidden" id="add-lesson-module-id" name="module_id" value="" />
-      <div class="modal-scroll-body">
-        <div class="form-group">
-          <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>
-          <input type="text" id="l-title" name="title" class="form-input" required />
-        </div>
-{% with lesson_media_prefix = "l", lesson_media_show_video_placeholder = true %}
-{% include "components/authoring/lesson_media_fields.html" %}
+{% with authoring_context="course", lesson_add_action="/lessons/create" %}
+{% include "components/groups/add_lesson_modal.html" %}
 {% endwith %}
-        <div class="form-group">
-          <label for="l-desc" data-i18n="manage.lesson_desc">Описание / текст</label>
-          <div class="rich-editor">
-            <input type="hidden" id="l-desc-input" name="description" class="rich-editor-input" value="" />
-            <div class="rich-editor-shell">
-              <div id="l-desc" class="rich-editor-surface" contenteditable="true"
-                   data-placeholder="Описание урока"
-                   data-i18n="manage.lesson_desc"
-                   data-i18n-prop="data-placeholder"></div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="l-files" data-i18n="manage.lesson_files">📎 Прикрепить материалы (PDF, Word)</label>
-          <input type="file" id="l-files" name="files" multiple class="form-input"
-                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="cursor:pointer;" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('add-lesson-modal')" data-i18n="action.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="manage.lesson_create">Создать урок</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <!-- MODAL: Редактировать урок -->
-<div class="modal-overlay" id="edit-lesson-modal" onclick="if(event.target===this) closeModal('edit-lesson-modal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 data-i18n="manage.edit_lesson">Редактировать урок</h2>
-      <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>
-    </div>
-    <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
-      <div class="modal-scroll-body">
-        <div class="form-group">
-          <label for="el-title" data-i18n="manage.lesson_title">Название</label>
-          <input type="text" id="el-title" name="title" class="form-input" required />
-        </div>
-{% with lesson_media_prefix = "el" %}
-{% include "components/authoring/lesson_media_fields.html" %}
+{% with authoring_context="course", lesson_edit_action="" %}
+{% include "components/groups/edit_lesson_modal.html" %}
 {% endwith %}
-        <div class="form-group">
-          <label for="el-desc" data-i18n="manage.lesson_desc">Описание</label>
-          <div class="rich-editor">
-            <input type="hidden" id="el-desc-input" name="description" class="rich-editor-input" value="" />
-            <div class="rich-editor-shell">
-              <div id="el-desc" class="rich-editor-surface" contenteditable="true"
-                   data-placeholder="Описание урока"
-                   data-i18n="manage.lesson_desc"
-                   data-i18n-prop="data-placeholder"></div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="el-files" data-i18n="manage.lesson_files">📎 Добавить материалы (PDF, Word)</label>
-          <input type="file" id="el-files" name="files" multiple class="form-input"
-                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="cursor:pointer;" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('edit-lesson-modal')" data-i18n="action.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="action.save">Сохранить</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <script>
 // Локальные определения для модальных окон (не зависят от порядка загрузки courses.js)
