@@ -181,73 +181,14 @@
 </div>
 
 <!-- MODAL: Добавить модуль -->
-<div class="modal-overlay" id="add-module-modal" onclick="if(event.target===this) closeModal('add-module-modal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 data-i18n="manage.new_module">Новый модуль</h2>
-      <button class="modal-close" onclick="closeModal('add-module-modal')">✕</button>
-    </div>
-    <form action="/modules/create" method="POST">
-      <input type="hidden" name="course_id" value="{{ course.id }}" />
-      <div class="modal-scroll-body">
-        <div class="form-group">
-          <label for="m-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
-          <input type="text" id="m-title" name="title" class="form-input" data-i18n="manage.new_mod_ph" data-i18n-prop="placeholder" required />
-        </div>
-        <div class="form-group">
-          <label data-i18n="manage.module_desc">Описание модуля</label>
-          <div class="rich-editor">
-            <input type="hidden" id="m-desc-input" name="description" class="rich-editor-input" value="" />
-            <div class="rich-editor-shell">
-              <div id="m-desc-surface" class="rich-editor-surface" contenteditable="true"
-                   data-placeholder="Описание модуля"
-                   data-i18n="manage.module_desc"
-                   data-i18n-prop="data-placeholder"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('add-module-modal')" data-i18n="action.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="manage.add_mod_btn">+ Модуль</button>
-      </div>
-    </form>
-  </div>
-</div>
+{% with authoring_context="course", module_add_action="/modules/create" %}
+{% include "components/groups/add_module_modal.html" %}
+{% endwith %}
 
 <!-- MODAL: Редактировать модуль -->
-<div class="modal-overlay" id="edit-module-modal" onclick="if(event.target===this) closeModal('edit-module-modal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 data-i18n="manage.edit_module">Редактировать модуль</h2>
-      <button class="modal-close" onclick="closeModal('edit-module-modal')">✕</button>
-    </div>
-    <form id="edit-module-form" method="POST">
-      <div class="modal-scroll-body">
-        <div class="form-group">
-          <label for="em-title" data-i18n="manage.new_mod_ph">Название нового модуля</label>
-          <input type="text" id="em-title" name="title" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label data-i18n="manage.module_desc">Описание модуля</label>
-          <div class="rich-editor">
-            <input type="hidden" id="em-desc-input" name="description" class="rich-editor-input" value="" />
-            <div class="rich-editor-shell">
-              <div id="em-desc-surface" class="rich-editor-surface" contenteditable="true"
-                   data-placeholder="Описание модуля"
-                   data-i18n="manage.module_desc"
-                   data-i18n-prop="data-placeholder"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeModal('edit-module-modal')" data-i18n="action.cancel">Отмена</button>
-        <button type="submit" class="btn btn-primary" data-i18n="manage.module_save">Сохранить модуль</button>
-      </div>
-    </form>
-  </div>
-</div>
+{% with authoring_context="course", module_edit_action="" %}
+{% include "components/groups/edit_module_modal.html" %}
+{% endwith %}
 
 <!-- MODAL: Редактировать курс -->
 <div class="modal-overlay" id="edit-course-modal" onclick="if(event.target===this) closeModal('edit-course-modal')">
