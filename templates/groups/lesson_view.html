@@ -23,22 +23,7 @@
 
     {% include "components/groups/lesson_journal_panel.html" %}
 
-    <!-- Материалы (Desktop-only: на mobile используется accordion ниже) -->
-    {% if lesson.materials %}
-    <section class="lesson-materials gl-desktop-materials">
-      <h3 data-i18n="lesson.materials">📎 Материалы</h3>
-      <ul class="materials-list">
-        {% for m in lesson.materials %}
-        <li class="material-item">
-          <span class="material-icon">📄</span>
-          <a href="{{ m.file_url }}" target="_blank" rel="noopener">
-            {{ m.title or m.file_url.split("/")[-1] }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </section>
-    {% endif %}
+    {% include "components/groups/lesson_materials_panel.html" %}
 
     {% include "components/groups/vocab_grid.html" %}
 
@@ -51,14 +36,7 @@
 
     {% include "components/groups/lesson_mobile_accordion.html" %}
 
-    {# Desktop-only homework section (скрыта на mobile через CSS) #}
-    {% if lesson.homework %}
-    <section class="lesson-materials group-lesson-homework-section gl-desktop-homework">
-      <h3 data-i18n="homework.title">Домашнее задание</h3>
-      <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
-         class="btn btn-primary" data-i18n="homework.view">Домашнее задание</a>
-    </section>
-    {% endif %}
+    {% include "components/groups/lesson_homework_panel.html" %}
 
     {% include "components/groups/lesson_mobile_result_panel.html" %}
 

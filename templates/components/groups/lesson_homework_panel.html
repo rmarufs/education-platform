@@ -1,0 +1,8 @@
+{# Desktop-only homework section (скрыта на mobile через CSS) #}
+{% if lesson.homework %}
+<section class="lesson-materials group-lesson-homework-section gl-desktop-homework">
+  <h3 data-i18n="homework.title">Домашнее задание</h3>
+  <a href="/groups/{{ group.id }}/lessons/{{ lesson.id }}/homework{{ lesson_mode_suffix }}"
+     class="btn btn-primary" data-i18n="homework.view">Домашнее задание</a>
+</section>
+{% endif %}

@@ -1,0 +1,16 @@
+<!-- Материалы (Desktop-only: на mobile используется accordion ниже) -->
+{% if lesson.materials %}
+<section class="lesson-materials gl-desktop-materials">
+  <h3 data-i18n="lesson.materials">📎 Материалы</h3>
+  <ul class="materials-list">
+    {% for m in lesson.materials %}
+    <li class="material-item">
+      <span class="material-icon">📄</span>
+      <a href="{{ m.file_url }}" target="_blank" rel="noopener">
+        {{ m.title or m.file_url.split("/")[-1] }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
