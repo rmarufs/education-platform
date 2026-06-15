@@ -4,7 +4,7 @@
             <h2 data-i18n="group.edit_lesson">Редактировать урок</h2>
             <button class="modal-close" onclick="closeModal('edit-lesson-modal')">✕</button>
         </div>
-        <form id="edit-lesson-form" method="POST" enctype="multipart/form-data">
+        <form id="edit-lesson-form"{% if lesson_edit_action %} action="{{ lesson_edit_action }}"{% endif %} method="POST" enctype="multipart/form-data">
             <div class="modal-scroll-body">
                 <div class="form-group">
                     <label for="el-title" data-i18n="manage.lesson_title">Название урока</label>

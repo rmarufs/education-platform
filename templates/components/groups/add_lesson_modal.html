@@ -5,7 +5,7 @@
             <h2 data-i18n="group.new_lesson">Новый урок</h2>
             <button class="modal-close" onclick="closeModal('add-lesson-modal')">✕</button>
         </div>
-        <form action="/groups/{{ group.id }}/lessons/create" method="POST" enctype="multipart/form-data">
+        <form action="{{ lesson_add_action }}" method="POST" enctype="multipart/form-data">
             <div class="modal-scroll-body">
                 <div class="form-group">
                     <label for="l-title" data-i18n="manage.lesson_title">Название урока</label>

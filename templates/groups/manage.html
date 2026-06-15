@@ -308,12 +308,14 @@
 
 {% if user.id == group.teacher_id %}
 <!-- Модалка: Добавить урок -->
-{% with add_lesson_modal_overlay_onclick = "closeModal('add-lesson-modal')", add_lesson_modal_stop_propagation = true %}
+{% with add_lesson_modal_overlay_onclick = "closeModal('add-lesson-modal')", add_lesson_modal_stop_propagation = true, lesson_add_action="/groups/" ~ group.id ~ "/lessons/create" %}
 {% include "components/groups/add_lesson_modal.html" %}
 {% endwith %}
 
 <!-- Модалка: Редактировать урок -->
+{% with lesson_edit_action="" %}
 {% include "components/groups/edit_lesson_modal.html" %}
+{% endwith %}
 
 <!-- Модалка: Домашнее задание -->
 {% include "components/groups/homework_modal.html" %}
