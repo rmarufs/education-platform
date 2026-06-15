@@ -189,7 +189,14 @@
 
                     {% if group_modules or unassigned_lessons %}
                         {% for module in group_modules %}
-                        {% with authoring_context="group", module_index = loop.index, module_lesson_actions_style = true, module_lesson_vocab_style = false, module_delete_title_first = false %}
+                        {% set module_dom_id = "group-module-" ~ module.id %}
+                        {% set module_delete_action = "/groups/" ~ group.id ~ "/modules/" ~ module.id ~ "/delete" %}
+                        {% with authoring_context="group", module_index = loop.index, module_lesson_actions_style = true, module_lesson_vocab_style = false, module_delete_title_first = false,
+                                module_dom_id = module_dom_id,
+                                module_delete_mode = "form",
+                                module_delete_action = module_delete_action,
+                                module_show_description = false,
+                                module_show_order_data = true %}
                         {% include "components/groups/module_block.html" %}
                         {% endwith %}
                         {% endfor %}
