@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% from "_course_macros.html" import course_cover %}
-{% from "shared/_empty_state.html" import render_empty_state %}
+{% from "macros/course.html" import course_cover %}
+{% from "components/cards/empty_state.html" import render_empty_state %}
 {% block title %}Курсы — {{ teacher.name }} — Фурузон{% endblock %}
 
 {% block content %}
 <div class="dashboard">
     {% set active_page = "teachers" %}
-    {% include "_org_sidebar.html" %}
+    {% include "components/navigation/org_sidebar.html" %}
 
     <div class="dashboard-main">
         <!-- Навигация + заголовок -->

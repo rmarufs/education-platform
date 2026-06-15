@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% from "_course_macros.html" import course_cover %}
-{% from "shared/_empty_state.html" import render_empty_state %}
-{% from "shared/_course_card.html" import render_public_course_card %}
+{% from "macros/course.html" import course_cover %}
+{% from "components/cards/empty_state.html" import render_empty_state %}
+{% from "components/cards/course_card.html" import render_public_course_card %}
 {% block title_key %}role.teacher{% endblock %}
 {% block title %}{{ teacher.name }} — Фурузон{% endblock %}
 

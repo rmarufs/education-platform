@@ -7,9 +7,9 @@
 <div class="dashboard{% if analytics_scope == "teacher" %} user-dashboard user-dashboard--teacher{% endif %}">
     {% set active_page = "groups" %}
     {% if analytics_scope == "organization" %}
-        {% include "_org_sidebar.html" %}
+        {% include "components/navigation/org_sidebar.html" %}
     {% else %}
-        {% include "_teacher_sidebar.html" %}
+        {% include "components/navigation/teacher_sidebar.html" %}
     {% endif %}
 
     <div class="dashboard-main">

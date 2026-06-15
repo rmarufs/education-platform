@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% from "_course_macros.html" import course_cover %}
-{% from "_announcement_cards.html" import render_announcement_cards %}
+{% from "macros/course.html" import course_cover %}
+{% from "components/cards/announcement_card.html" import render_announcement_cards %}
 {% block title_key %}nav.dashboard{% endblock %}
 {% block title %}Кабинет преподавателя — Фурузон{% endblock %}
 {% block body_class %}user-dashboard-page{% endblock %}
@@ -8,7 +8,7 @@
 {% block content %}
 <div class="dashboard user-dashboard user-dashboard--teacher">
     {% set active_page = "dashboard" %}
-    {% include "_teacher_sidebar.html" %}
+    {% include "components/navigation/teacher_sidebar.html" %}
 
     <!-- Основной контент -->
     <div class="dashboard-main">

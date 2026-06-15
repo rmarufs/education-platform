@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% from "_course_macros.html" import course_cover %}
-{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
+{% from "macros/course.html" import course_cover %}
+{% from "macros/quiz_authoring.html" import render_google_forms_editor with context %}
 {% block title %}{{ lesson.title }} — Фурузон{% endblock %}
 
 {% block content %}

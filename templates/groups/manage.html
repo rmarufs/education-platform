@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "_quiz_authoring_macros.html" import render_google_forms_editor with context %}
+{% from "macros/quiz_authoring.html" import render_google_forms_editor with context %}
 {% block title %}{{ group.name }} — Управление группой — Фурузон{% endblock %}
 
 {% block content %}
 <div class="dashboard">
     {% set active_page = "groups" %}
-    {% include "_org_sidebar.html" %}
+    {% include "components/navigation/org_sidebar.html" %}
 
     <div class="dashboard-main group-manage-main">
         <!-- Хлебные крошки -->

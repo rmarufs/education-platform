@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_announcement_cards.html" import render_announcement_cards %}
+{% from "components/cards/announcement_card.html" import render_announcement_cards %}
 {% block title_key %}group.my_groups{% endblock %}
 {% block title %}Мои группы — Фурузон{% endblock %}
 {% block body_class %}user-dashboard-page{% endblock %}
@@ -7,7 +7,7 @@
 {% block content %}
 <div class="dashboard user-dashboard user-dashboard--teacher">
     {% set active_page = "groups" %}
-    {% include "_teacher_sidebar.html" %}
+    {% include "components/navigation/teacher_sidebar.html" %}
 
     <div class="dashboard-main">
         <div class="dashboard-header teacher-dashboard-header">

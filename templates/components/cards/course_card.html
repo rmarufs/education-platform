@@ -1,4 +1,4 @@
-{% from "_course_macros.html" import course_cover %}
+{% from "macros/course.html" import course_cover %}
 
 {% macro render_public_course_card(course, meta_html, button_text_key, button_fallback, button_full=False, animation_delay=None) %}
 <div class="course-card reveal"{% if animation_delay is not none %} style="animation-delay: {{ animation_delay }};"{% endif %}>
