@@ -1,0 +1,12 @@
+    <div class="modal-overlay" id="logout-modal" aria-hidden="true">
+        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="logout-modal-title" data-i18n="confirm.logout">Вы уверены, что хотите выйти?</h2>
+                <button class="modal-close" type="button" onclick="closeLogoutModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-footer confirm-modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeLogoutModal()" data-i18n="action.cancel">Отмена</button>
+                <button type="button" class="btn btn-danger" id="logout-confirm-btn" data-i18n="confirm.logout_yes">Да, выйти</button>
+            </div>
+        </div>
+    </div>

@@ -1,0 +1,20 @@
+    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobile-menu" class="mobile-menu">
+        <nav class="mobile-menu-nav">
+            <a href="/courses/catalog" class="mobile-menu-link {% if request and request.url.path == '/courses/catalog' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📚</span><span data-i18n="nav.courses">Курсҳо</span></a>
+            <a href="/search" class="mobile-menu-link {% if request and request.url.path == '/search' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔍</span><span data-i18n="nav.search">Ҷустуҷӯ</span></a>
+            <a href="/how-it-works" class="mobile-menu-link {% if request and request.url.path == '/how-it-works' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📖</span><span data-i18n="nav.how_it_works">Тарзи кор</span></a>
+            <a href="/about" class="mobile-menu-link {% if request and request.url.path == '/about' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">ℹ️</span><span data-i18n="nav.about">Дар бораи мо</span></a>
+            <a href="/contact" class="mobile-menu-link {% if request and request.url.path == '/contact' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📬</span><span data-i18n="nav.contact">Тамос</span></a>
+            {% if user %}
+            {% if user.is_admin %}
+            <a href="/admin" class="mobile-menu-link {% if request and request.url.path == '/admin' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔧</span><span data-i18n="nav.admin">Панели мудир</span></a>
+            {% endif %}
+            <a href="/dashboard" class="mobile-menu-link {% if request and request.url.path == '/dashboard' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📊</span><span data-i18n="nav.dashboard">Кабинет</span></a>
+            <a href="#" class="mobile-menu-link" data-logout-link data-logout-url="/logout"><span class="mobile-menu-icon" aria-hidden="true">🚪</span><span data-i18n="nav.logout">Баромадан</span></a>
+            {% else %}
+            <a href="/login" class="mobile-menu-link {% if request and request.url.path == '/login' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔑</span><span data-i18n="nav.login">Вуруд</span></a>
+            <a href="/register" class="mobile-menu-link {% if request and request.url.path == '/register' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">✍️</span><span data-i18n="nav.register">Сабти ном</span></a>
+            {% endif %}
+        </nav>
+    </div>

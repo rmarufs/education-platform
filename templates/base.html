@@ -37,124 +37,13 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="/" class="nav-logo" aria-label="Furuzon">
-                <span class="logo-mark" aria-hidden="true">
-                    <picture>
-                        <source srcset="/static/images/logo-furuzon-mark.webp" type="image/webp" />
-                        <img class="logo-icon-img" src="/static/images/logo-furuzon-mark.png" alt="" width="40" height="40" loading="eager" decoding="async" />
-                    </picture>
-                </span>
-                <span class="logo-copy">
-                    <span class="logo-text">Furuzon</span>
-                </span>
-            </a>
+    {% include "components/navigation/navbar.html" %}
 
-            <div class="nav-links">
-                <div class="nav-center-links">
-                    <a href="/courses/catalog" class="nav-link {% if request and request.url.path == '/courses/catalog' %}active{% endif %}" data-i18n="nav.courses">Курсҳо</a>
-                    <a href="/search" class="nav-link {% if request and request.url.path == '/search' %}active{% endif %}" data-i18n="nav.search">Ҷустуҷӯ</a>
-                    <a href="/how-it-works" class="nav-link {% if request and request.url.path == '/how-it-works' %}active{% endif %}" data-i18n="nav.how_it_works">Тарзи кор</a>
-                    <a href="/about" class="nav-link {% if request and request.url.path == '/about' %}active{% endif %}" data-i18n="nav.about">Дар бораи мо</a>
-                    <a href="/contact" class="nav-link {% if request and request.url.path == '/contact' %}active{% endif %}" data-i18n="nav.contact">Тамос</a>
-                </div>
+    {% include "components/navigation/mobile_menu.html" %}
 
-                <div class="nav-auth-links">
-                    <span class="nav-divider"></span>
-                    {% if user %}
-                        {% if user.is_admin %}
-                        <a href="/admin" class="btn btn-outline btn-sm" data-i18n="nav.admin">Панели мудир</a>
-                        {% endif %}
-                        {% if user.avatar_url %}
-                          <img src="{{ user.avatar_url }}" class="avatar" alt="{{ user.name }}"
-                               style="width:32px;height:32px;">
-                        {% else %}
-                          <div class="avatar avatar-placeholder" style="width:32px;height:32px;font-size:.85rem;">{{ (user.name or "F")[0]|upper }}</div>
-                        {% endif %}
-                        <span class="nav-greeting" data-i18n="nav.hello" data-i18n-params='{"name":"{{ user.name }}"}'>Салом, {{ user.name }}</span>
-                        <a href="/dashboard" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Кабинет</a>
-                        <a href="#" class="btn btn-outline btn-sm" data-logout-link data-logout-url="/logout" data-i18n="nav.logout">Баромадан</a>
-                    {% else %}
-                        <a href="/login" class="btn btn-secondary btn-sm" data-i18n="nav.login">Вуруд</a>
-                        <a href="/register" class="btn btn-primary btn-sm" data-i18n="nav.register">Сабти ном</a>
-                    {% endif %}
-                </div>
+    {% include "components/modals/logout_modal.html" %}
 
-                {% if user %}
-                <a href="{% if user.is_admin %}/admin{% else %}/dashboard{% endif %}" class="mobile-nav-avatar" data-i18n="nav.dashboard" data-i18n-prop="aria-label" aria-label="Кабинет">
-                    {% if user.avatar_url %}
-                        <img src="{{ user.avatar_url }}" alt="{{ user.name }}">
-                    {% else %}
-                        <span>{{ (user.name or "F")[0]|upper }}</span>
-                    {% endif %}
-                </a>
-                {% endif %}
-
-                <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle theme" title="Toggle theme">🌙</button>
-
-
-                <div class="lang-switcher">
-                    <button class="lang-btn" id="lang-ru" onclick="setLang('ru')" type="button">RU</button>
-                    <span class="lang-divider">|</span>
-                    <button class="lang-btn" id="lang-tj" onclick="setLang('tj')" type="button">TJ</button>
-                </div>
-
-                <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger-btn" aria-label="Меню" type="button">
-                    <span></span><span></span><span></span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
-    <div id="mobile-menu" class="mobile-menu">
-        <nav class="mobile-menu-nav">
-            <a href="/courses/catalog" class="mobile-menu-link {% if request and request.url.path == '/courses/catalog' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📚</span><span data-i18n="nav.courses">Курсҳо</span></a>
-            <a href="/search" class="mobile-menu-link {% if request and request.url.path == '/search' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔍</span><span data-i18n="nav.search">Ҷустуҷӯ</span></a>
-            <a href="/how-it-works" class="mobile-menu-link {% if request and request.url.path == '/how-it-works' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📖</span><span data-i18n="nav.how_it_works">Тарзи кор</span></a>
-            <a href="/about" class="mobile-menu-link {% if request and request.url.path == '/about' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">ℹ️</span><span data-i18n="nav.about">Дар бораи мо</span></a>
-            <a href="/contact" class="mobile-menu-link {% if request and request.url.path == '/contact' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📬</span><span data-i18n="nav.contact">Тамос</span></a>
-            {% if user %}
-            {% if user.is_admin %}
-            <a href="/admin" class="mobile-menu-link {% if request and request.url.path == '/admin' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔧</span><span data-i18n="nav.admin">Панели мудир</span></a>
-            {% endif %}
-            <a href="/dashboard" class="mobile-menu-link {% if request and request.url.path == '/dashboard' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">📊</span><span data-i18n="nav.dashboard">Кабинет</span></a>
-            <a href="#" class="mobile-menu-link" data-logout-link data-logout-url="/logout"><span class="mobile-menu-icon" aria-hidden="true">🚪</span><span data-i18n="nav.logout">Баромадан</span></a>
-            {% else %}
-            <a href="/login" class="mobile-menu-link {% if request and request.url.path == '/login' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">🔑</span><span data-i18n="nav.login">Вуруд</span></a>
-            <a href="/register" class="mobile-menu-link {% if request and request.url.path == '/register' %}active{% endif %}"><span class="mobile-menu-icon" aria-hidden="true">✍️</span><span data-i18n="nav.register">Сабти ном</span></a>
-            {% endif %}
-        </nav>
-    </div>
-
-    <div class="modal-overlay" id="logout-modal" aria-hidden="true">
-        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h2 id="logout-modal-title" data-i18n="confirm.logout">Вы уверены, что хотите выйти?</h2>
-                <button class="modal-close" type="button" onclick="closeLogoutModal()" aria-label="Close">✕</button>
-            </div>
-            <div class="modal-footer confirm-modal-actions">
-                <button type="button" class="btn btn-outline" onclick="closeLogoutModal()" data-i18n="action.cancel">Отмена</button>
-                <button type="button" class="btn btn-danger" id="logout-confirm-btn" data-i18n="confirm.logout_yes">Да, выйти</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Глобальная модалка подтверждения (заменяет нативный confirm) -->
-    <div class="modal-overlay" id="confirm-modal" aria-hidden="true">
-        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h2 id="confirm-modal-title" id="confirm-modal-message"></h2>
-                <button class="modal-close" type="button" onclick="_resolveConfirmModal(false)" aria-label="Close">✕</button>
-            </div>
-            <p class="confirm-modal-text" id="confirm-modal-hint" hidden></p>
-            <div class="modal-footer confirm-modal-actions">
-                <button type="button" class="btn btn-outline" id="confirm-modal-cancel" onclick="_resolveConfirmModal(false)" data-i18n="action.cancel">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirm-modal-ok" onclick="_resolveConfirmModal(true)" data-i18n="confirm.confirm">Подтвердить</button>
-            </div>
-        </div>
-    </div>
+    {% include "components/modals/confirm_modal.html" %}
 
     <form id="logout-form" method="post" action="/logout" hidden>
       <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}" />
@@ -164,28 +53,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer-enhanced">
-        <div class="footer-shell">
-            <div class="footer-grid">
-                <nav class="footer-links" aria-label="Footer">
-                    <a href="/about" data-i18n="nav.about">Дар бораи мо</a>
-                    <a href="/contact" data-i18n="nav.contact">Тамос</a>
-                    <a href="/privacy-policy" data-i18n="footer.privacy">Сиёсати махфият</a>
-                </nav>
-                <div class="footer-socials">
-                    <a href="#" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-                    </a>
-                    <a href="#" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/></svg>
-                    </a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>© 2026 Фурузон. <span data-i18n="footer.rights">Ҳамаи ҳуқуқҳо ҳифз шудаанд.</span></p>
-            </div>
-        </div>
-    </footer>
+    {% include "components/navigation/footer.html" %}
 
     <button id="scroll-top-btn" class="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Наверх" type="button">↑</button>
 

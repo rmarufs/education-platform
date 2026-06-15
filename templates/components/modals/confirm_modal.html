@@ -1,0 +1,14 @@
+    <!-- Глобальная модалка подтверждения (заменяет нативный confirm) -->
+    <div class="modal-overlay" id="confirm-modal" aria-hidden="true">
+        <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="confirm-modal-title" id="confirm-modal-message"></h2>
+                <button class="modal-close" type="button" onclick="_resolveConfirmModal(false)" aria-label="Close">✕</button>
+            </div>
+            <p class="confirm-modal-text" id="confirm-modal-hint" hidden></p>
+            <div class="modal-footer confirm-modal-actions">
+                <button type="button" class="btn btn-outline" id="confirm-modal-cancel" onclick="_resolveConfirmModal(false)" data-i18n="action.cancel">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirm-modal-ok" onclick="_resolveConfirmModal(true)" data-i18n="confirm.confirm">Подтвердить</button>
+            </div>
+        </div>
+    </div>
