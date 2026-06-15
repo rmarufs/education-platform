@@ -1,0 +1,59 @@
+<div class="lesson-complete-bar">
+  {# Desktop: стандартный блок кнопок #}
+  <div class="lesson-complete-actions gl-complete-desktop">
+    {% if previous_lesson %}
+    <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline" data-i18n="group.previous_lesson">← Предыдущий урок</a>
+    {% else %}
+    <a href="{{ group_return_url }}" class="btn btn-outline" data-i18n="group.back_to_group">← К группе</a>
+    {% endif %}
+
+    {% if next_lesson %}
+      {% if membership and user.is_student and not can_preview_as_owner %}
+      {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
+      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form">
+        <button type="submit" class="btn btn-primary" data-i18n="lesson.next">Далее</button>
+      </form>
+      {% else %}
+      <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+      {% endif %}
+    {% else %}
+      {% if membership and user.is_student and not can_preview_as_owner %}
+      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form">
+        <button type="submit" class="btn btn-primary" data-i18n="group.finish">Завершить</button>
+      </form>
+      {% else %}
+      <a href="{{ group_return_url }}" class="btn btn-primary" data-i18n="group.finish">Завершить</a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {# Mobile: кнопки навигации #}
+  <div class="gl-complete-mobile">
+    {# «К группе» — слева #}
+    {% if previous_lesson %}
+    <a href="/groups/{{ group.id }}/lessons/{{ previous_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.previous_lesson">← Пред.</a>
+    {% else %}
+    <a href="{{ group_return_url }}" class="btn btn-outline gl-complete-mobile__nav-btn gl-complete-mobile__nav-btn--secondary" data-i18n="group.back_to_group">← К группе</a>
+    {% endif %}
+
+    {# «Далее» — справа #}
+    {% if next_lesson %}
+      {% if membership and user.is_student and not can_preview_as_owner %}
+      {% set next_lesson_url = "/groups/" ~ group.id ~ "/lessons/" ~ next_lesson.id %}
+      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ next_lesson_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+        <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</button>
+      </form>
+      {% else %}
+      <a href="/groups/{{ group.id }}/lessons/{{ next_lesson.id }}{{ lesson_mode_suffix }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="lesson.next">Далее</a>
+      {% endif %}
+    {% else %}
+      {% if membership and user.is_student and not can_preview_as_owner %}
+      <form action="/groups/{{ group.id }}/lessons/{{ lesson.id }}/complete?next={{ group_return_url|urlencode }}" method="POST" class="group-lesson-complete-nav-form gl-complete-mobile__nav-form">
+        <button type="submit" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</button>
+      </form>
+      {% else %}
+      <a href="{{ group_return_url }}" class="btn btn-primary gl-complete-mobile__nav-btn" data-i18n="group.finish">Завершить</a>
+      {% endif %}
+    {% endif %}
+  </div>{# /gl-complete-mobile #}
+</div>{# /lesson-complete-bar #}
