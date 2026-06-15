@@ -1,0 +1,402 @@
+.group-lesson-quiz-nav {
+    text-decoration: none;
+  }
+
+  .vocab-teacher-anticheat-list {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+  }
+  .vocab-teacher-anticheat-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px 10px 12px;
+    border: 1px solid var(--border, rgba(0,0,0,0.08));
+    border-left: 3px solid var(--warning, #f59e0b);
+    border-radius: 10px;
+    background: var(--bg-card, #fff);
+    color: var(--text, #111827);
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+  }
+  .vocab-teacher-anticheat-card[hidden] {
+    display: none;
+  }
+  .vocab-teacher-anticheat-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--warning, #f59e0b) 16%, transparent);
+    color: var(--warning, #f59e0b);
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .vocab-teacher-anticheat-content {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .vocab-teacher-anticheat-title {
+    color: var(--text, #111827);
+    font-size: 0.86rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+  .vocab-teacher-anticheat-message,
+  .vocab-teacher-anticheat-time {
+    color: var(--text-muted, #64748b);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+  .vocab-teacher-anticheat-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  .vocab-teacher-anticheat-close:hover,
+  .vocab-teacher-anticheat-close:focus-visible {
+    background: color-mix(in srgb, var(--text-muted, #64748b) 10%, transparent);
+    color: var(--text, #111827);
+    outline: none;
+  }
+  html[data-theme="dark"] .vocab-teacher-anticheat-card,
+  body.dark .vocab-teacher-anticheat-card {
+    background: var(--bg-card);
+    border-color: var(--border);
+    border-left-color: var(--warning, #f59e0b);
+    box-shadow: 0 5px 16px rgba(0,0,0,0.16);
+  }
+
+  .group-lesson-quiz-section,
+  .group-lesson-homework-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+
+  /* Vocabulary cards */
+  .vocab-lesson-section {}
+  .vocab-cards-list { display: flex; flex-direction: column; gap: 8px; }
+  .vocab-card-link { text-decoration: none; display: block; }
+  .vocab-card-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg-secondary, #f8fafc);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 12px;
+    padding: 14px 18px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .vocab-card-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 10px rgba(99,102,241,0.12);
+  }
+  .vocab-card-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .vocab-card-info { flex: 1; min-width: 0; }
+  .vocab-card-title { font-weight: 600; color: var(--text); font-size: 0.95rem; }
+  .vocab-card-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  .vocab-card-arrow { font-size: 1.1rem; color: var(--primary); font-weight: 700; flex-shrink: 0; }
+
+  @media (max-width: 768px) {
+    .group-lesson-quiz-section,
+    .group-lesson-homework-section {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .group-lesson-quiz-section .btn,
+    .group-lesson-homework-section .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .vocab-teacher-anticheat-card {
+      padding: 9px;
+    }
+
+    .vocab-teacher-anticheat-message,
+    .vocab-teacher-anticheat-time {
+      font-size: 0.76rem;
+    }
+  }
+
+  /* ── Mobile accordion: Материалы + Домашнее задание (только мобайл) ── */
+
+  /* Desktop: accordion скрыт, стандартные секции видны */
+  .gl-mob-accordion { display: none; }
+  .gl-desktop-homework { display: flex; }
+  .gl-desktop-materials { display: block; }
+  /* Блок результата и мобильный нижний блок: desktop-default */
+  .gl-journal-desktop { display: block; }
+  .gl-complete-desktop { display: flex; }
+  .gl-complete-mobile { display: none; }
+  .gl-mob-result-bar { display: none; }
+
+  @media (max-width: 768px) {
+    /* На mobile: оригинальные секции скрыты, accordion виден */
+    .gl-desktop-homework { display: none !important; }
+    .gl-desktop-materials { display: none !important; }
+    .gl-mob-accordion { display: block; margin: 12px 0; }
+
+    /* Скрываем desktop-блоки результата и нижних кнопок */
+    .gl-journal-desktop { display: none !important; }
+    .gl-complete-desktop { display: none !important; }
+    /* ── Mobile: отдельный slim-блок результата ── */
+    .gl-mob-result-bar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 14px;
+      margin-bottom: 6px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 38px;
+    }
+
+    /* Лейбл «REZULTAT» */
+    .gl-mob-result-label {
+      font-family: inherit;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+
+    /* Бейдж присутствия */
+    .gl-mob-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .gl-mob-badge--present {
+      background: color-mix(in srgb, #22c55e 15%, transparent);
+      color: #16a34a;
+      border: 1px solid color-mix(in srgb, #22c55e 30%, transparent);
+    }
+    .gl-mob-badge--absent {
+      background: color-mix(in srgb, #ef4444 12%, transparent);
+      color: #dc2626;
+      border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
+    }
+
+    /* Grade badge: цифра с цветом 1–5 */
+    .gl-mob-grade {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .gl-mob-grade--1 { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .gl-mob-grade--2 { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+    .gl-mob-grade--3 { background: #fefce8; color: #a16207; border: 1px solid #fde047; }
+    .gl-mob-grade--4 { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .gl-mob-grade--5 { background: #dcfce7; color: #15803d; border: 1px solid #4ade80; }
+
+    /* Текст пустого состояния */
+    .gl-mob-result-empty {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* ── Mobile: кнопки навигации ── */
+    .gl-complete-mobile {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .gl-complete-mobile__nav-form {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    .gl-complete-mobile__nav-btn {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      text-align: center;
+    }
+
+    .gl-complete-mobile__nav-btn--secondary {
+      font-size: 0.85rem;
+      padding: 8px 10px;
+      opacity: 0.85;
+    }
+
+    /* ── Общая карточка-обёртка accordion ── */
+    .gl-mob-accordion {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    /* Строка заголовков 50/50 */
+    .gl-mob-accordion__tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gl-mob-accordion__tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 10px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      line-height: 1.3;
+      text-align: center;
+      transition: color 0.18s, background 0.18s;
+      position: relative;
+      min-height: 46px;
+    }
+
+    /* Разделитель между кнопками */
+    .gl-mob-accordion__tab + .gl-mob-accordion__tab {
+      border-left: 1px solid var(--border);
+    }
+
+    /* Единственная кнопка (если есть что-то одно из двух) */
+    .gl-mob-accordion__tab--full {
+      flex: 1 1 100%;
+    }
+
+    .gl-mob-accordion__tab:hover,
+    .gl-mob-accordion__tab:focus-visible {
+      background: var(--surface-soft);
+      color: var(--text);
+      outline: none;
+    }
+
+    /* Активная (раскрытая) кнопка */
+    .gl-mob-accordion__tab[aria-expanded="true"] {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* Активная подчёркивающая линия снизу */
+    .gl-mob-accordion__tab[aria-expanded="true"]::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .gl-mob-accordion__tab-icon {
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+
+    /* Шеврон */
+    .gl-mob-accordion__tab-chevron {
+      margin-left: auto;
+      font-size: 1rem;
+      transition: transform 0.22s ease;
+      flex-shrink: 0;
+      color: var(--text-subtle);
+    }
+
+    .gl-mob-accordion__tab[aria-expanded="true"] .gl-mob-accordion__tab-chevron {
+      transform: rotate(90deg);
+      color: var(--primary);
+    }
+
+    /* Панели с контентом — плавное раскрытие через grid trick */
+    .gl-mob-accordion__panel-wrap {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.25s ease;
+    }
+
+    .gl-mob-accordion__panel-wrap.is-open {
+      grid-template-rows: 1fr;
+    }
+
+    .gl-mob-accordion__panel {
+      overflow: hidden;
+    }
+
+    .gl-mob-accordion__panel-inner {
+      padding: 12px;
+    }
+
+    /* Контент домашнего задания (совмещён с panel-inner) */
+    .gl-mob-accordion__panel-hw-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .gl-mob-accordion__hw-btn {
+      width: 100%;
+      justify-content: center;
+      min-height: 44px;
+      font-size: 0.95rem;
+    }
+
+    /* Dark mode */
+    html[data-theme="dark"] .gl-mob-accordion,
+    body.dark .gl-mob-accordion {
+      background: var(--bg-card);
+      border-color: var(--border);
+    }
+
+    html[data-theme="dark"] .gl-mob-accordion__tab[aria-expanded="true"],
+    body.dark .gl-mob-accordion__tab[aria-expanded="true"] {
+      background: color-mix(in srgb, var(--primary) 12%, var(--bg-card));
+      color: var(--primary);
+    }
+  }
