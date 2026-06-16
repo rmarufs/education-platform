@@ -1,0 +1,53 @@
+<!-- Секция: Моя организация -->
+<section class="student-org-section" style="margin-bottom: 32px;">
+    <div class="section-label" data-i18n="student.my_org">🏢 Мой учебный центр</div>
+    {% if student_org_link and student_org_link.status == 'accepted' %}
+    <div class="org-card org-card--accepted">
+        <div class="org-card__info">
+            <div class="org-card__icon">
+                {% if student_org_link.organization.logo_url %}
+                    <img src="{{ student_org_link.organization.logo_url }}" alt="{{ student_org_link.organization.name }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+                {% else %}
+                    🏢
+                {% endif %}
+            </div>
+            <div class="org-card__text">
+                <div class="org-card__name"><a href="/organization/{{ student_org_link.organization.id }}" class="org-card__name-link">{{ student_org_link.organization.name }}</a></div>
+                {% if student_org_link.organization.description %}
+                <div class="org-card__desc">{{ student_org_link.organization.description | striptags | truncate(120) }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="org-card__actions">
+            <a href="/organization/{{ student_org_link.organization.id }}" class="btn btn-outline btn-sm org-card__btn" data-i18n="org.open_btn">👁 Профиль</a>
+            <form action="/organization/student/leave" method="POST" style="margin: 0;" onsubmit="confirmAndSubmit(event, 'confirm.leave_center')">
+                <button type="submit" class="btn btn-outline btn-sm org-card__btn org-card__btn--danger" data-i18n="student.leave_center">Покинуть центр</button>
+            </form>
+        </div>
+    </div>
+    {% elif student_org_link and student_org_link.status == 'pending' %}
+    <div class="org-card org-card--pending">
+        <div class="org-card__info">
+            <div class="org-card__icon">⏳</div>
+            <div class="org-card__text">
+                <div class="org-card__name" data-i18n="student.pending_in_center" data-i18n-params='{"name": "{{ student_org_link.organization.name|escape }}"}'>Заявка на рассмотрении в центре {{ student_org_link.organization.name }}</div>
+                <div class="org-card__desc" data-i18n="student.awaiting_approval">Пожалуйста, ожидайте одобрения заявки администратором центра.</div>
+            </div>
+        </div>
+        <div class="org-card__actions">
+            <form action="/organization/student/leave" method="POST" style="margin: 0;">
+                <button type="submit" class="btn btn-outline btn-sm org-card__btn" data-i18n="student.cancel_request">Отменить заявку</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="font-size:2rem;">💭</div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.95rem;margin-bottom:2px;" data-i18n="student.no_org">Вы не состоите ни в одном учебном центре</div>
+            <div style="font-size:.85rem;color:var(--text-muted);" data-i18n="student.no_org_desc">Вступите в учебный центр, чтобы получить доступ к его курсам</div>
+        </div>
+        <a href="/search" class="btn btn-primary btn-sm"><span data-i18n="student.find_org">🔍 Найти учебный центр</span></a>
+    </div>
+    {% endif %}
+</section>

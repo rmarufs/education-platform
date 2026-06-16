@@ -1,0 +1,35 @@
+{% if student_notifications %}
+<section class="student-notifications">
+    <div class="section-label" data-i18n="notification.homework_replies">Уведомления</div>
+    <div class="student-notification-list">
+        {% for item in student_notifications %}
+        <article class="student-notification-card student-notification-card--{{ item.kind }}" id="{{ item.id }}">
+            <div class="student-notification-content">
+                <div class="student-notification-topline">
+                    <span class="student-notification-badge">
+                        <span aria-hidden="true">{{ item.icon }}</span>
+                        <span data-i18n="{{ item.badge_key }}">{{ item.badge }}</span>
+                    </span>
+                    {% if item.time_at %}
+                    <span class="student-notification-time" data-i18n="{{ item.time_key }}" data-i18n-params='{{ {"time": item.time_at.strftime("%d.%m.%Y %H:%M")} | tojson }}'>{{ item.time_at.strftime("%d.%m.%Y %H:%M") }}</span>
+                    {% endif %}
+                    <form action="{{ item.dismiss_url }}" method="POST" class="student-notification-dismiss-form">
+                        <button type="submit" class="student-notification-dismiss" data-i18n="notification.close" data-i18n-prop="aria-label" aria-label="Закрыть">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </form>
+                </div>
+                <h2 data-i18n="{{ item.title_key }}">{{ item.title }}</h2>
+                <p class="student-notification-meta">
+                    {% if item.group %}<span>{{ item.group.name }}</span>{% endif %}
+                    {% if item.lesson %}<span aria-hidden="true">·</span><span>{{ item.lesson.title }}</span>{% endif %}
+                </p>
+                <div class="student-notification-footer">
+                    <a href="{{ item.open_url }}" class="student-notification-action" data-i18n="{{ item.action_key }}">{{ item.action }}</a>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

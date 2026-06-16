@@ -1,0 +1,38 @@
+<!-- Боковая панель -->
+<aside class="sidebar">
+    <div class="sidebar-profile">
+        <div class="avatar-upload-wrapper" onclick="document.getElementById('sidebar-avatar-input').click()" style="cursor:pointer;">
+            {% if user.avatar_url %}
+                <img src="{{ user.avatar_url }}" class="avatar" id="sidebar-avatar-img" alt="{{ user.name }}">
+            {% else %}
+                <div class="avatar avatar-placeholder" id="sidebar-avatar-placeholder">{{ (user.name or "F")[0]|upper }}</div>
+            {% endif %}
+            <div class="avatar-upload-overlay" style="display:none">📷</div>
+        </div>
+        <input type="file" id="sidebar-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadSidebarAvatar(this)">
+        <div class="profile-info">
+            <h3>{{ user.name }}</h3>
+            <span class="role-badge role-student" data-i18n="role.student">Студент</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="#groups" class="sidebar-link active" data-section-target="groups">
+            <span class="link-icon">👥</span>
+            <span data-i18n="group.my_groups">Мои группы</span>
+        </a>
+        <a href="#courses" class="sidebar-link" data-section-target="courses">
+            <span class="link-icon">📚</span>
+            <span data-i18n="student.my_courses">Мои курсы</span>
+        </a>
+        {% if student_org_link and student_org_link.status == 'accepted' %}
+        <a href="/organization/{{ student_org_link.organization.id }}" class="sidebar-link">
+            <span class="link-icon">🏢</span>
+            <span data-i18n="student.my_org">Мой учебный центр</span>
+        </a>
+        {% endif %}
+        <a href="#" class="sidebar-link" data-logout-link data-logout-url="/logout">
+            <span class="link-icon">🚪</span>
+            <span data-i18n="nav.logout">Выйти</span>
+        </a>
+    </nav>
+</aside>

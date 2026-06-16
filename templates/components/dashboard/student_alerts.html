@@ -1,0 +1,11 @@
+{% if show_removed_notification %}
+<div class="alert alert-warning" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; background-color: var(--warning-light, #fef3c7); color: var(--warning-dark, #92400e); border: 1px solid var(--warning, #f59e0b);">
+    <span data-i18n="student.removed_notification">Вы были удалены из учебного центра</span>
+</div>
+{% endif %}
+
+{% if request.query_params.get('error') == 'access_denied' %}
+<div class="alert alert-danger" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; background-color: var(--error-light, #fee2e2); color: var(--error-dark, #991b1b); border: 1px solid var(--error, #ef4444);">
+    <span data-i18n="group.access_denied">У вас нет доступа к этой группе.</span>
+</div>
+{% endif %}
