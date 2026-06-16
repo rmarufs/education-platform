@@ -1,0 +1,27 @@
+<!-- Google Forms тест -->
+{% if lesson.quiz_url and user and (user.role.value != "student" or lesson_test_visible) %}
+<section class="lesson-google-forms-promo">
+  <div class="google-forms-banner">
+    <span class="banner-icon">📋</span>
+    <div>
+      <h3>Тест</h3>
+      <p class="text-muted">Проверьте свои знания с помощью теста</p>
+    </div>
+    <button type="button" 
+            class="btn btn-primary"
+            onclick="openGoogleFormsIframe('{{ lesson.quiz_url }}', 'Тест: {{ lesson.title }}')">
+      Пройти тест →
+    </button>
+  </div>
+</section>
+{% elif lesson.quiz_url and user and user.is_student %}
+<section class="lesson-google-forms-promo">
+  <div class="google-forms-banner google-forms-locked">
+    <span class="banner-icon">🔒</span>
+    <div>
+      <h3>Тест</h3>
+      <p>Тест откроется после отметки урока как пройденного.</p>
+    </div>
+  </div>
+</section>
+{% endif %}

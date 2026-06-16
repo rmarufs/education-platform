@@ -70,55 +70,7 @@
   <!-- Основной контент -->
   <main class="lesson-content">
 
-    {% set lesson_image = lesson.cover_url %}
-    <!-- Видео: внешние ссылки (YouTube) или HTML5 -->
-    {% if lesson.video_url %}
-    <div class="protected-video-container">
-      {% set vid = lesson.video_url %}
-      {% if "youtube.com" in vid or "youtu.be" in vid %}
-        {% set vid_id = youtube_video_id(vid) %}
-
-        {% if vid_id %}
-        <div class="video-container">
-          <iframe
-            src="https://www.youtube.com/embed/{{ vid_id }}"
-            title="YouTube video player"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-        </div>
-        {% else %}
-        <p>Не удалось открыть видео. <a href="{{ vid }}" target="_blank" rel="noopener noreferrer">Открыть ссылку</a></p>
-        {% endif %}
-      {% else %}
-        <div class="vp-shell" data-vp-provider="html5" data-video-token="{{ lesson.video_url | b64encode }}">
-          <div class="vp-stage">
-            <video class="vp-video" playsinline webkit-playsinline preload="metadata" controlsList="nodownload" disablePictureInPicture></video>
-            <div class="vp-click-layer" aria-hidden="true"></div>
-            <div class="vp-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
-            <div class="vp-big-play" aria-hidden="true">▶</div>
-          </div>
-          <div class="vp-controls">
-            <button type="button" class="vp-btn vp-play" aria-label="Play/Pause">▶</button>
-            <div class="vp-progress" role="slider" aria-label="Прогресс видео" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-              <div class="vp-progress-fill"></div>
-              <span class="vp-progress-handle" aria-hidden="true"></span>
-            </div>
-            <span class="vp-time">0:00 / 0:00</span>
-            <button type="button" class="vp-btn vp-mute" aria-label="Звук">🔊</button>
-            <button type="button" class="vp-btn vp-fullscreen" aria-label="Полный экран">⛶</button>
-          </div>
-        </div>
-      {% endif %}
-    </div>
-    
-    {% elif lesson_image is not none and lesson_image|string|trim != '' %}
-    <div class="lesson-cover-main">
-      <img src="{{ lesson_image }}" alt="{{ lesson.title }}"
-           style="display:block;width:100%;height:auto;max-height:720px;object-fit:contain;border-radius:12px;margin-bottom:16px;">
-    </div>
-    {% endif %}
+    {% include "components/lessons/lesson_media.html" %}
 
     <!-- Заголовок и описание -->
     <div class="lesson-header">
@@ -128,72 +80,11 @@
       {% endif %}
     </div>
 
-    <!-- Материалы -->
-    {% if lesson.materials %}
-    <section class="lesson-materials">
-      <h3 data-i18n="lesson.materials">📎 Материалы</h3>
-      <ul class="materials-list">
-        {% for m in lesson.materials %}
-        <li class="material-item">
-          <span class="material-icon">
-            {% if m.file_type == "pdf" %}🔴{% elif m.file_type in ["ppt","pptx"] %}🟠{% else %}📄{% endif %}
-          </span>
-          <a href="{{ m.file_url }}" target="_blank" rel="noopener">
-            {{ m.title or m.file_url.split("/")[-1] }}
-          </a>
-          <span class="badge">{{ m.file_type | upper }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </section>
-    {% endif %}
+    {% include "components/lessons/lesson_materials_panel.html" %}
 
-    <!-- Google Forms тест -->
-    {% if lesson.quiz_url and user and (user.role.value != "student" or lesson_test_visible) %}
-    <section class="lesson-google-forms-promo">
-      <div class="google-forms-banner">
-        <span class="banner-icon">📋</span>
-        <div>
-          <h3>Тест</h3>
-          <p class="text-muted">Проверьте свои знания с помощью теста</p>
-        </div>
-        <button type="button" 
-                class="btn btn-primary"
-                onclick="openGoogleFormsIframe('{{ lesson.quiz_url }}', 'Тест: {{ lesson.title }}')">
-          Пройти тест →
-        </button>
-      </div>
-    </section>
-    {% elif lesson.quiz_url and user and user.is_student %}
-    <section class="lesson-google-forms-promo">
-      <div class="google-forms-banner google-forms-locked">
-        <span class="banner-icon">🔒</span>
-        <div>
-          <h3>Тест</h3>
-          <p>Тест откроется после отметки урока как пройденного.</p>
-        </div>
-      </div>
-    </section>
-    {% endif %}
+    {% include "components/lessons/lesson_google_forms_panel.html" %}
 
-    <!-- Прогресс студента -->
-    {% if user and user.is_student %}
-    <div class="lesson-complete-bar">
-      {% if progress and progress.completed %}
-        <div class="lesson-complete-actions">
-          <button type="button" class="btn btn-outline lesson-done-button" disabled data-i18n="lesson.done">Пройдено</button>
-          <a href="{{ continue_url or ('/lessons/' ~ lesson.id ~ '/continue') }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
-        </div>
-      {% else %}
-        <div class="lesson-complete-actions">
-          <form action="/lessons/{{ lesson.id }}/complete" method="POST">
-            <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Завершить</button>
-          </form>
-          <a href="{{ next_lesson_url or ('/lessons/' ~ lesson.id ~ '/continue') }}" class="btn btn-outline" data-i18n="lesson.next">Далее</a>
-        </div>
-      {% endif %}
-    </div>
-    {% endif %}
+    {% include "components/lessons/lesson_progress_nav.html" %}
 
     <!-- Форма отзыва о преподавателе -->
     {% if show_review_form %}

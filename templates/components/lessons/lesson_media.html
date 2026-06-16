@@ -1,0 +1,49 @@
+{% set lesson_image = lesson.cover_url %}
+<!-- Видео: внешние ссылки (YouTube) или HTML5 -->
+{% if lesson.video_url %}
+<div class="protected-video-container">
+  {% set vid = lesson.video_url %}
+  {% if "youtube.com" in vid or "youtu.be" in vid %}
+    {% set vid_id = youtube_video_id(vid) %}
+
+    {% if vid_id %}
+    <div class="video-container">
+      <iframe
+        src="https://www.youtube.com/embed/{{ vid_id }}"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>
+    {% else %}
+    <p>Не удалось открыть видео. <a href="{{ vid }}" target="_blank" rel="noopener noreferrer">Открыть ссылку</a></p>
+    {% endif %}
+  {% else %}
+    <div class="vp-shell" data-vp-provider="html5" data-video-token="{{ lesson.video_url | b64encode }}">
+      <div class="vp-stage">
+        <video class="vp-video" playsinline webkit-playsinline preload="metadata" controlsList="nodownload" disablePictureInPicture></video>
+        <div class="vp-click-layer" aria-hidden="true"></div>
+        <div class="vp-watermark" aria-hidden="true">{{ user.username if user else 'Student' }}</div>
+        <div class="vp-big-play" aria-hidden="true">▶</div>
+      </div>
+      <div class="vp-controls">
+        <button type="button" class="vp-btn vp-play" aria-label="Play/Pause">▶</button>
+        <div class="vp-progress" role="slider" aria-label="Прогресс видео" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+          <div class="vp-progress-fill"></div>
+          <span class="vp-progress-handle" aria-hidden="true"></span>
+        </div>
+        <span class="vp-time">0:00 / 0:00</span>
+        <button type="button" class="vp-btn vp-mute" aria-label="Звук">🔊</button>
+        <button type="button" class="vp-btn vp-fullscreen" aria-label="Полный экран">⛶</button>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% elif lesson_image is not none and lesson_image|string|trim != '' %}
+<div class="lesson-cover-main">
+  <img src="{{ lesson_image }}" alt="{{ lesson.title }}"
+       style="display:block;width:100%;height:auto;max-height:720px;object-fit:contain;border-radius:12px;margin-bottom:16px;">
+</div>
+{% endif %}

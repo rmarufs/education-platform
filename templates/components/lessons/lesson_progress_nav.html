@@ -1,0 +1,18 @@
+<!-- Прогресс студента -->
+{% if user and user.is_student %}
+<div class="lesson-complete-bar">
+  {% if progress and progress.completed %}
+    <div class="lesson-complete-actions">
+      <button type="button" class="btn btn-outline lesson-done-button" disabled data-i18n="lesson.done">Пройдено</button>
+      <a href="{{ continue_url or ('/lessons/' ~ lesson.id ~ '/continue') }}" class="btn btn-primary" data-i18n="lesson.next">Далее</a>
+    </div>
+  {% else %}
+    <div class="lesson-complete-actions">
+      <form action="/lessons/{{ lesson.id }}/complete" method="POST">
+        <button type="submit" class="btn btn-primary" data-i18n="lesson.mark_done">Завершить</button>
+      </form>
+      <a href="{{ next_lesson_url or ('/lessons/' ~ lesson.id ~ '/continue') }}" class="btn btn-outline" data-i18n="lesson.next">Далее</a>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
