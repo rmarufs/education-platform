@@ -1,0 +1,191 @@
+function toggleReplyForm(commentId) {
+  const form = document.getElementById('reply-form-' + commentId);
+  if (!form) return;
+  if (form.style.display === 'none' || !form.style.display) {
+    // Скрыть все формы
+    document.querySelectorAll('.reply-form').forEach(f => f.style.display = 'none');
+    form.style.display = 'flex';
+    form.querySelector('input[name="text"]').focus();
+  } else {
+    form.style.display = 'none';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const layout = document.getElementById('lesson-layout');
+  const sidebar = document.getElementById('lesson-sidebar');
+  const overlay = document.getElementById('lesson-sidebar-overlay');
+  const toggle = document.getElementById('lesson-sidebar-toggle');
+  const closeBtn = document.getElementById('lesson-sidebar-close');
+  const desktopMq = window.matchMedia('(min-width: 769px)');
+
+  if (!layout || !sidebar || !toggle || !overlay) return;
+
+  function setPageScrollLocked(locked) {
+    const isLocked = document.body.classList.contains('lesson-sidebar-open');
+    if (locked === isLocked) return;
+
+    if (locked) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.dataset.lessonScrollY = String(scrollY);
+      document.body.classList.add('lesson-sidebar-open');
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      return;
+    }
+
+    const scrollY = Number.parseInt(document.body.dataset.lessonScrollY || '0', 10) || 0;
+    document.body.classList.remove('lesson-sidebar-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    delete document.body.dataset.lessonScrollY;
+    window.scrollTo(0, scrollY);
+  }
+
+  function syncSidebarLabel() {
+    const isOpen = layout.classList.contains('sidebar-open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    const label = toggle.querySelector('.lesson-sidebar-toggle-text');
+    if (label) {
+      label.textContent = t(isOpen ? 'lesson.sidebar_close' : 'lesson.sidebar_open');
+    }
+  }
+
+  function setSidebarOpen(open) {
+    layout.classList.toggle('sidebar-open', open);
+    if (desktopMq.matches) {
+      setPageScrollLocked(false);
+    } else {
+      setPageScrollLocked(open);
+    }
+    syncSidebarLabel();
+  }
+
+  toggle.addEventListener('click', () => {
+    setSidebarOpen(!layout.classList.contains('sidebar-open'));
+  });
+
+  closeBtn?.addEventListener('click', () => setSidebarOpen(false));
+  overlay.addEventListener('click', () => setSidebarOpen(false));
+
+  document.querySelectorAll('[data-module-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const group = trigger.closest('.lesson-module-group');
+      if (!group) return;
+      const nextState = !group.classList.contains('is-expanded');
+      group.classList.toggle('is-expanded', nextState);
+      trigger.setAttribute('aria-expanded', String(nextState));
+    });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      setSidebarOpen(false);
+    }
+  });
+
+  document.addEventListener('languageChanged', syncSidebarLabel);
+  window.addEventListener('resize', () => {
+    if (desktopMq.matches) {
+      setPageScrollLocked(false);
+    }
+  });
+  window.addEventListener('pagehide', () => setPageScrollLocked(false));
+
+  syncSidebarLabel();
+  initStarPicker();
+});
+
+// ── \u0417\u0432\u0451\u0437\u0434\u044b \u043e\u0442\u0437\u044b\u0432\u0430 ───────────────────────────────────────────────────────
+function initStarPicker() {
+  const picker = document.getElementById('review-star-picker');
+  if (!picker) return;
+
+  const stars = Array.from(picker.querySelectorAll('.star-pick-item'));
+  const hidden = document.getElementById('review-rating-value');
+  let selected = 0;
+
+  function highlight(upTo) {
+    stars.forEach((s, i) => {
+      s.classList.toggle('star-pick-item--lit', i < upTo);
+      s.classList.toggle('star-pick-item--selected', i < selected);
+    });
+  }
+
+  function commit(value) {
+    selected = value;
+    hidden.value = value;
+    stars.forEach((s, i) => {
+      s.classList.toggle('star-pick-item--selected', i < value);
+      s.classList.toggle('star-pick-item--lit', false);
+      s.setAttribute('aria-checked', i < value ? 'true' : 'false');
+    });
+  }
+
+  stars.forEach((star, idx) => {
+    star.addEventListener('mouseenter', () => highlight(idx + 1));
+    star.addEventListener('click',      () => commit(idx + 1));
+    star.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commit(idx + 1); }
+    });
+  });
+
+  picker.addEventListener('mouseleave', () => highlight(selected));
+}
+
+async function submitReview(teacherId, courseId) {
+  const ratingInput = document.getElementById('review-rating-value');
+  if (!ratingInput || !ratingInput.value) {
+    // Мягко подсветим звёзды вместо alert
+    const picker = document.getElementById('review-star-picker');
+    if (picker) {
+      picker.classList.add('star-picker--shake');
+      setTimeout(() => picker.classList.remove('star-picker--shake'), 600);
+    }
+    return;
+  }
+  const rating = ratingInput.value;
+  const comment = document.getElementById('review-comment').value;
+
+  const formData = new FormData();
+  formData.append('teacher_id', teacherId);
+  formData.append('course_id', courseId);
+  formData.append('rating', rating);
+  formData.append('comment', comment);
+
+  const btn = document.getElementById('review-submit-btn');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+    const response = await fetch('/reviews/submit', {
+      method: 'POST',
+      body: formData
+    });
+    if (response.ok) {
+      const block = document.getElementById('review-promo-block');
+      block.style.transition = 'opacity 0.4s ease';
+      block.style.opacity = '0';
+      setTimeout(() => {
+        block.innerHTML = `
+          <div class="review-thankyou">
+            <span class="review-thankyou-icon">⭐</span>
+            <h3 class="review-thankyou-title">Спасибо за ваш отзыв!</h3>
+            <p>Ваша оценка помогает нам стать лучше.</p>
+          </div>
+        `;
+        block.style.opacity = '1';
+      }, 400);
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      showToast('Ошибка: ' + (errorData.detail || 'Не удалось отправить отзыв'), 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Отправить отзыв'; }
+    }
+  } catch (err) {
+    showToast('Ошибка сети', 'error');
+  }
+}
