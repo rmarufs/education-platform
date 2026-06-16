@@ -1,0 +1,183 @@
+.group-teach-page {
+  max-width: 980px;
+}
+.group-teach-header .manage-header-actions {
+  align-items: center;
+}
+.group-teach-group-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  margin-bottom: 18px;
+}
+.group-teach-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.group-teach-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.group-teach-group-card h2,
+.group-teach-group-card p {
+  margin: 0;
+}
+.group-teach-list,
+.group-teach-module,
+.group-teach-lessons {
+  display: grid;
+  gap: 12px;
+}
+.group-teach-module {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card, #fff);
+}
+.group-teach-module-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.group-teach-module-head h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1rem;
+}
+.group-teach-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text, #111);
+  text-decoration: none;
+  background: var(--surface-soft);
+  flex: 1;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+.group-teach-lesson-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.group-teach-homework-btn {
+  flex-shrink: 0;
+}
+.group-teach-lesson:hover {
+  transform: translateY(-1px);
+  border-color: rgba(99,102,241,0.35);
+  box-shadow: 0 10px 26px rgba(99,102,241,0.12);
+}
+.group-teach-lesson:focus-visible {
+  outline: 3px solid rgba(99,102,241,0.28);
+  outline-offset: 2px;
+}
+.group-teach-lesson-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--primary, #6366f1);
+  color: #fff;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.group-teach-lesson-main {
+  flex: 1;
+  min-width: 0;
+}
+.group-teach-lesson-main strong,
+.group-teach-lesson-main small {
+  display: block;
+}
+.group-teach-lesson-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-teach-lesson-main small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 3px;
+}
+html[data-theme="dark"] .group-teach-group-card,
+body.dark .group-teach-group-card,
+html[data-theme="dark"] .group-teach-lesson,
+body.dark .group-teach-lesson {
+  background: var(--surface-soft);
+}
+html[data-theme="dark"] .group-teach-module,
+body.dark .group-teach-module {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .group-teach-lesson:hover,
+body.dark .group-teach-lesson:hover {
+  background: var(--surface-muted);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  box-shadow: 0 10px 26px rgba(0,0,0,0.28);
+}
+html[data-theme="dark"] .group-teach-lesson .btn-secondary,
+body.dark .group-teach-lesson .btn-secondary {
+  background: var(--surface-muted);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+html[data-theme="dark"] .group-teach-lesson:hover .btn-secondary,
+body.dark .group-teach-lesson:hover .btn-secondary {
+  background: var(--surface-strong);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border-strong));
+}
+@media (max-width: 700px) {
+  .group-teach-header {
+    align-items: stretch;
+  }
+  .group-teach-header .manage-header-actions,
+  .group-teach-header .btn {
+    width: 100%;
+  }
+  .group-teach-lesson {
+    align-items: flex-start;
+  }
+  .group-teach-lesson-row {
+    flex-direction: column;
+  }
+  .group-teach-lesson .btn {
+    align-self: stretch;
+    justify-content: center;
+    min-width: 96px;
+  }
+  .group-teach-homework-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .group-teach-lesson {
+    flex-wrap: wrap;
+  }
+  .group-teach-lesson-main {
+    flex: 1 1 calc(100% - 48px);
+  }
+  .group-teach-lesson .btn {
+    flex: 1 1 100%;
+  }
+}
