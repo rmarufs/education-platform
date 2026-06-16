@@ -1,0 +1,24 @@
+<!-- Мои курсы (Активные) -->
+<section class="student-dashboard-section" data-section="courses">
+{% if my_courses %}
+<section style="margin-bottom: 40px;">
+    <div class="section-label" data-i18n="student.my_courses">Мои курсы</div>
+    <div class="courses-grid">
+        {% for item in my_courses %}
+        {% include "components/dashboard/student_course_card.html" %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if not my_courses %}
+<!-- Если нет курсов, предлагаем перейти в каталог -->
+<section>
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p data-i18n="student.no_courses">Вы пока не записаны ни на один курс.</p>
+        <a href="/courses/catalog" class="btn btn-primary" style="margin-top: 15px; display: inline-block;" data-i18n="student.catalog_cta">Перейти в каталог</a>
+    </div>
+</section>
+{% endif %}
+</section>

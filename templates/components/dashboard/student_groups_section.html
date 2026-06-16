@@ -1,0 +1,17 @@
+<!-- Мои группы -->
+<section class="student-dashboard-section" data-section="groups" style="margin-bottom: 32px;">
+    <div class="section-label" data-i18n="{{ 'group.my_group' if student_groups|length == 1 else 'group.my_groups' }}">{{ 'Моя группа' if student_groups|length == 1 else 'Мои группы' }}</div>
+    {% include "components/dashboard/student_analytics_cards.html" %}
+    {% if student_groups %}
+    <div class="student-groups-universal">
+        {% for group in student_groups %}
+        {% include "components/dashboard/student_group_card.html" %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 20px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-md);">
+        <span class="empty-icon" style="font-size: 1.5rem; margin-bottom: 8px; display: block;">👥</span>
+        <p style="margin: 0;" class="text-muted" data-i18n="group.no_student_groups">Вы пока не добавлены ни в одну группу.</p>
+    </div>
+    {% endif %}
+</section>

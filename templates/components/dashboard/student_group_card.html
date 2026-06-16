@@ -1,0 +1,28 @@
+<div class="group-card student-group-card-desktop fade-in">
+    <div class="group-card-header">
+        {% if group.avatar_url %}
+        <img src="{{ group.avatar_url }}" alt="{{ group.name }}" class="group-icon group-icon-img">
+        {% else %}
+        <div class="group-icon">{{ (group.name or "F")[0]|upper }}</div>
+        {% endif %}
+        <div class="group-meta">
+            <h3 class="group-name">{{ group.name }}</h3>
+            {% if group.organization %}
+            <span>{{ group.organization.name }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if group.description %}
+    <p class="group-description">{{ group.description[:100] }}{% if group.description|length > 100 %}…{% endif %}</p>
+    {% endif %}
+    <div class="group-stats">
+        {% if group.teacher %}
+        <div class="group-stat"><span class="group-stat-icon">👨‍🏫</span><span>{{ group.teacher.name }}</span></div>
+        {% endif %}
+        <div class="group-stat"><span class="group-stat-icon">📚</span><span data-i18n="course_page.lessons_count" data-i18n-params='{{ {"count": group.lessons|length} | tojson }}'>{{ group.lessons|length }} урок(ов)</span></div>
+    </div>
+    {% set has_group_progress = group_progress_map.get(group.id) %}
+    <div class="group-card-footer">
+        <a href="/groups/{{ group.id }}/continue" class="btn btn-primary btn-sm" data-i18n="{{ 'course_page.continue_learning' if has_group_progress else 'org.open_btn' }}">{{ 'Продолжить' if has_group_progress else 'Открыть' }}</a>
+    </div>
+</div>

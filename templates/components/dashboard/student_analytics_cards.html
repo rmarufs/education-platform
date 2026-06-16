@@ -1,0 +1,28 @@
+<div class="student-analytics-cards">
+    <div class="student-analytics-card">
+        <div class="student-analytics-label" data-i18n="analytics.attendance">Посещаемость</div>
+        {% if student_analytics.attendance_percent is not none %}
+        <div class="student-analytics-value">{{ student_analytics.present_count }} / {{ student_analytics.marked_count }}</div>
+        <div class="student-analytics-bar" aria-hidden="true">
+            <div class="student-analytics-bar-fill student-analytics-bar-fill--{{ 'good' if student_analytics.attendance_percent >= 80 else 'warn' if student_analytics.attendance_percent >= 60 else 'risk' }}" style="width: {{ student_analytics.attendance_percent }}%;"></div>
+        </div>
+        <div class="student-analytics-note">{{ student_analytics.attendance_percent }}%</div>
+        {% else %}
+        <div class="student-analytics-value" data-i18n="analytics.no_data_short">Нет данных</div>
+        <div class="student-analytics-note" data-i18n="analytics.no_data">Пока нет данных</div>
+        {% endif %}
+    </div>
+    <div class="student-analytics-card">
+        <div class="student-analytics-label" data-i18n="journal.average">Средний балл</div>
+        {% if student_analytics.average_grade is not none %}
+        <div class="student-analytics-value">{{ student_analytics.average_grade }}</div>
+        <div class="student-analytics-bar" aria-hidden="true">
+            <div class="student-analytics-bar-fill student-analytics-bar-fill--{{ 'good' if student_analytics.average_grade >= 4 else 'warn' if student_analytics.average_grade >= 3 else 'risk' }}" style="width: {{ student_analytics.average_grade * 20 }}%;"></div>
+        </div>
+        <div class="student-analytics-note" data-i18n="analytics.grade_count" data-i18n-params='{{ {"count": student_analytics.grade_count} | tojson }}'>{{ student_analytics.grade_count }} оценок</div>
+        {% else %}
+        <div class="student-analytics-value" data-i18n="analytics.no_data_short">Нет данных</div>
+        <div class="student-analytics-note" data-i18n="analytics.no_data">Пока нет данных</div>
+        {% endif %}
+    </div>
+</div>
