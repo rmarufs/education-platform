@@ -1,0 +1,58 @@
+{% if not is_guest_access %}
+<!-- Комментарии (Q&A) -->
+<section class="lesson-comments">
+  <h3 data-i18n="lesson.qa">💬 Вопросы и ответы</h3>
+
+  {% if user %}
+  <form action="/lessons/{{ lesson.id }}/comment" method="POST" class="comment-form">
+    <textarea name="text" class="form-input" rows="3"
+              data-i18n="lesson.ask_ph" placeholder="Задайте вопрос..."></textarea>
+    <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.send">Отправить</button>
+  </form>
+  {% else %}
+  <p class="text-muted"><a href="/login" data-i18n="nav.login">Войдите</a>, <span data-i18n="lesson.login_req">чтобы оставить комментарий</span></p>
+  {% endif %}
+
+  <div class="comments-list">
+    {% for comment in top_comments %}
+    <div class="comment-card" id="comment-{{ comment.id }}">
+      <div class="comment-author">
+        <span class="avatar-xs">{{ comment.author.name[0].upper() }}</span>
+        <strong>{{ comment.author.name }}</strong>
+        <span class="comment-time text-muted">{{ comment.created_at.strftime("%d.%m.%Y %H:%M") }}</span>
+      </div>
+      <p class="comment-text">{{ comment.text }}</p>
+
+      <!-- Кнопка "Ответить" — только для корневых комментариев -->
+      {% if user %}
+      <button type="button" class="btn btn-outline btn-xs"
+              onclick="toggleReplyForm({{ comment.id }})"
+              data-i18n="lesson.reply_btn">↩ Ответить</button>
+      {% endif %}
+
+      <!-- Ответы -->
+      {% for reply in comment.replies %}
+      <div class="reply-card">
+        <span class="avatar-xs">{{ reply.author.name[0].upper() }}</span>
+        <strong>{{ reply.author.name }}</strong>
+        <span class="text-muted">{{ reply.created_at.strftime("%d.%m.%Y %H:%M") }}</span>
+        <p>{{ reply.text }}</p>
+      </div>
+      {% endfor %}
+
+      <!-- Форма ответа (скрыта по умолчанию) -->
+      {% if user %}
+      <form action="/comments/{{ comment.id }}/reply" method="POST"
+            class="reply-form" id="reply-form-{{ comment.id }}" style="display:none;">
+        <input type="text" name="text" class="form-input form-input-sm"
+               data-i18n="lesson.reply_ph" placeholder="Ответить..." required />
+        <button type="submit" class="btn btn-outline btn-xs" data-i18n="lesson.send">Отправить</button>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted" data-i18n="lesson.no_comments">Комментариев ещё нет. Будьте первым!</p>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

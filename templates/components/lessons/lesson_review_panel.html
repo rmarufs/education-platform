@@ -1,0 +1,26 @@
+<!-- Форма отзыва о преподавателе -->
+{% if show_review_form %}
+<section class="lesson-review-promo" id="review-promo-block">
+  <div class="review-form-panel">
+    <div class="review-form-header">
+      <span class="review-form-icon">⭐</span>
+      <h3 class="review-form-title" data-i18n="review.title">Как вы оцениваете качество преподавания?</h3>
+    </div>
+
+    <div class="star-picker" id="review-star-picker" role="radiogroup" aria-label="Выберите оценку">
+      <span class="star-pick-item" data-value="1" role="radio" aria-label="1 звезда" tabindex="0">★</span>
+      <span class="star-pick-item" data-value="2" role="radio" aria-label="2 звезды" tabindex="0">★</span>
+      <span class="star-pick-item" data-value="3" role="radio" aria-label="3 звезды" tabindex="0">★</span>
+      <span class="star-pick-item" data-value="4" role="radio" aria-label="4 звезды" tabindex="0">★</span>
+      <span class="star-pick-item" data-value="5" role="radio" aria-label="5 звёзд" tabindex="0">★</span>
+    </div>
+    <input type="hidden" id="review-rating-value" value="" />
+
+    <textarea id="review-comment" class="review-comment-input" placeholder="Добавить комментарий..." rows="2"></textarea>
+
+    <button type="button" id="review-submit-btn" class="btn-review-submit" onclick="submitReview({{ course.teacher_id }}, {{ course.id }})">
+      Отправить отзыв
+    </button>
+  </div>
+</section>
+{% endif %}

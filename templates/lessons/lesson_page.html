@@ -5,67 +5,7 @@
 
 {% block content %}
 <div class="lesson-layout" id="lesson-layout">
-  <button type="button"
-          class="lesson-sidebar-toggle"
-          id="lesson-sidebar-toggle"
-          aria-controls="lesson-sidebar"
-          aria-expanded="false">
-    <span class="lesson-sidebar-toggle-icon" aria-hidden="true">
-      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-menu">☰</span>
-      <span class="lesson-sidebar-toggle-glyph lesson-sidebar-toggle-glyph-close">✕</span>
-    </span>
-    <span class="lesson-sidebar-toggle-text" data-i18n="lesson.sidebar_open">Уроки курса</span>
-  </button>
-
-  <div class="lesson-sidebar-overlay" id="lesson-sidebar-overlay"></div>
-
-  <!-- Боковая навигация по урокам -->
-  <aside class="lesson-sidebar" id="lesson-sidebar">
-    <div class="lesson-sidebar-head">
-      <div class="lesson-sidebar-course">
-        {{ course_cover(course, "course-cover-sidebar-sm") }}
-        <div class="lesson-sidebar-title">
-          <a href="/courses/{{ course.id }}" data-i18n="lesson.back_course" data-i18n-params='{"title": "{{ course.title }}"}'>← {{ course.title }}</a>
-        </div>
-      </div>
-      <button type="button" class="lesson-sidebar-close" id="lesson-sidebar-close" aria-label="Close">✕</button>
-    </div>
-
-    <div class="lesson-sidebar-body">
-    {% for module in course.modules %}
-    {% set is_current_module = module.lessons | selectattr('id', 'equalto', lesson.id) | list | length > 0 %}
-    <div class="lesson-module-group {{ 'is-expanded' if is_current_module else '' }}">
-      <button type="button"
-              class="lesson-module-trigger"
-              data-module-trigger
-              aria-expanded="{{ 'true' if is_current_module else 'false' }}">
-        <span class="lesson-module-trigger-main">
-          <span class="module-index">{{ loop.index }}</span>
-          <span class="lesson-module-meta">
-            <span class="lesson-module-label">{{ module.title }}</span>
-            <span class="lesson-module-count" data-i18n="course_page.lessons_count" data-i18n-params='{"count": {{ module.lessons|length }}}'>{{ module.lessons|length }} урок(ов)</span>
-          </span>
-        </span>
-        <span class="lesson-module-chevron" aria-hidden="true">▾</span>
-      </button>
-      <div class="lesson-module-panel">
-        <div class="lesson-module-panel-inner">
-          {% for l in module.lessons %}
-          <a href="/lessons/{{ l.id }}"
-             class="lesson-nav-item {{ 'active' if l.id == lesson.id else '' }} {{ 'done' if progress_data and progress_data.get(l.id) else '' }}">
-            <span class="lesson-nav-icon">{{ "🎬" if l.video_url else "📄" }}</span>
-            <span class="lesson-nav-title">{{ l.title }}</span>
-            {% if progress_data and progress_data.get(l.id) %}
-            <span class="lesson-nav-check" aria-hidden="true" title="Пройдено" data-i18n="lesson.completed" data-i18n-prop="title">✓</span>
-            {% endif %}
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-    </div>
-  </aside>
+  {% include "components/lessons/lesson_sidebar.html" %}
 
   <!-- Основной контент -->
   <main class="lesson-content">
@@ -86,120 +26,11 @@
 
     {% include "components/lessons/lesson_progress_nav.html" %}
 
-    <!-- Форма отзыва о преподавателе -->
-    {% if show_review_form %}
-    <section class="lesson-review-promo" id="review-promo-block">
-      <div class="review-form-panel">
-        <div class="review-form-header">
-          <span class="review-form-icon">⭐</span>
-          <h3 class="review-form-title" data-i18n="review.title">Как вы оцениваете качество преподавания?</h3>
-        </div>
+    {% include "components/lessons/lesson_review_panel.html" %}
 
-        <div class="star-picker" id="review-star-picker" role="radiogroup" aria-label="Выберите оценку">
-          <span class="star-pick-item" data-value="1" role="radio" aria-label="1 звезда" tabindex="0">★</span>
-          <span class="star-pick-item" data-value="2" role="radio" aria-label="2 звезды" tabindex="0">★</span>
-          <span class="star-pick-item" data-value="3" role="radio" aria-label="3 звезды" tabindex="0">★</span>
-          <span class="star-pick-item" data-value="4" role="radio" aria-label="4 звезды" tabindex="0">★</span>
-          <span class="star-pick-item" data-value="5" role="radio" aria-label="5 звёзд" tabindex="0">★</span>
-        </div>
-        <input type="hidden" id="review-rating-value" value="" />
+    {% include "components/lessons/lesson_teacher_tools.html" %}
 
-        <textarea id="review-comment" class="review-comment-input" placeholder="Добавить комментарий..." rows="2"></textarea>
-
-        <button type="button" id="review-submit-btn" class="btn-review-submit" onclick="submitReview({{ course.teacher_id }}, {{ course.id }})">
-          Отправить отзыв
-        </button>
-      </div>
-    </section>
-    {% endif %}
-
-    <!-- Учитель: добавить материал / квиз -->
-    {% if user and user.is_teacher %}
-    <section class="teacher-tools">
-      <h3 data-i18n="lesson.tools">⚙️ Инструменты преподавателя</h3>
-      <div class="teacher-tools-grid">
-
-        <!-- Добавить материал -->
-        <form action="/lessons/{{ lesson.id }}/material" method="POST" class="tool-form">
-          <h4 data-i18n="lesson.add_mat">📎 Добавить материал</h4>
-          <input type="text" name="title" class="form-input" data-i18n="lesson.mat_title" placeholder="Название" />
-          <input type="url" name="file_url" class="form-input" data-i18n="lesson.mat_link" placeholder="Ссылка на файл" required />
-          <select name="file_type" class="form-input">
-            <option value="pdf">PDF</option>
-            <option value="doc">DOC</option>
-            <option value="docx">DOCX</option>
-          </select>
-          <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.mat_add">Добавить</button>
-        </form>
-
-        <!-- Google Forms тест -->
-        <div class="tool-form">
-          <h4>📋 Управление тестом</h4>
-          {{ render_google_forms_editor(lesson.quiz_url, "lesson", lesson.id, "Урок: " ~ lesson.title) }}
-        </div>
-
-      </div>
-    </section>
-    {% endif %}
-
-    {% if not is_guest_access %}
-    <!-- Комментарии (Q&A) -->
-    <section class="lesson-comments">
-      <h3 data-i18n="lesson.qa">💬 Вопросы и ответы</h3>
-
-      {% if user %}
-      <form action="/lessons/{{ lesson.id }}/comment" method="POST" class="comment-form">
-        <textarea name="text" class="form-input" rows="3"
-                  data-i18n="lesson.ask_ph" placeholder="Задайте вопрос..."></textarea>
-        <button type="submit" class="btn btn-outline btn-sm" data-i18n="lesson.send">Отправить</button>
-      </form>
-      {% else %}
-      <p class="text-muted"><a href="/login" data-i18n="nav.login">Войдите</a>, <span data-i18n="lesson.login_req">чтобы оставить комментарий</span></p>
-      {% endif %}
-
-      <div class="comments-list">
-        {% for comment in top_comments %}
-        <div class="comment-card" id="comment-{{ comment.id }}">
-          <div class="comment-author">
-            <span class="avatar-xs">{{ comment.author.name[0].upper() }}</span>
-            <strong>{{ comment.author.name }}</strong>
-            <span class="comment-time text-muted">{{ comment.created_at.strftime("%d.%m.%Y %H:%M") }}</span>
-          </div>
-          <p class="comment-text">{{ comment.text }}</p>
-
-          <!-- Кнопка "Ответить" — только для корневых комментариев -->
-          {% if user %}
-          <button type="button" class="btn btn-outline btn-xs"
-                  onclick="toggleReplyForm({{ comment.id }})"
-                  data-i18n="lesson.reply_btn">↩ Ответить</button>
-          {% endif %}
-
-          <!-- Ответы -->
-          {% for reply in comment.replies %}
-          <div class="reply-card">
-            <span class="avatar-xs">{{ reply.author.name[0].upper() }}</span>
-            <strong>{{ reply.author.name }}</strong>
-            <span class="text-muted">{{ reply.created_at.strftime("%d.%m.%Y %H:%M") }}</span>
-            <p>{{ reply.text }}</p>
-          </div>
-          {% endfor %}
-
-          <!-- Форма ответа (скрыта по умолчанию) -->
-          {% if user %}
-          <form action="/comments/{{ comment.id }}/reply" method="POST"
-                class="reply-form" id="reply-form-{{ comment.id }}" style="display:none;">
-            <input type="text" name="text" class="form-input form-input-sm"
-                   data-i18n="lesson.reply_ph" placeholder="Ответить..." required />
-            <button type="submit" class="btn btn-outline btn-xs" data-i18n="lesson.send">Отправить</button>
-          </form>
-          {% endif %}
-        </div>
-        {% else %}
-        <p class="text-muted" data-i18n="lesson.no_comments">Комментариев ещё нет. Будьте первым!</p>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
+    {% include "components/lessons/lesson_comments_panel.html" %}
 
   </main>
 </div>
