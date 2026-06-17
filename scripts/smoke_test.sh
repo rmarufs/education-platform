@@ -32,7 +32,13 @@ require_path "tests"
 log "Checking Python syntax"
 "$PYTHON_BIN" -m compileall -q main.py app tests scripts/check_i18n.py
 
+log "Checking i18n keys"
+"$PYTHON_BIN" scripts/check_i18n.py
+
 log "Running unit tests"
 "$PYTHON_BIN" -m unittest discover -s tests -p "test*.py"
+
+log "Running pytest"
+"$PYTHON_BIN" -m pytest -q
 
 log "Smoke test passed"
