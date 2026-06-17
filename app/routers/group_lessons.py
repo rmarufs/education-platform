@@ -20,7 +20,6 @@ from app.models.group import (
 )
 from app.models.vocabulary import VocabularyAttempt, VocabularySet
 from app.models.user import User
-from app.models.organization import Organization
 from app.utils.image import upload_lesson_image
 from app.utils.upload_constants import (
     IMAGE_EXTENSIONS as GROUP_LESSON_COVER_EXTENSIONS,
@@ -31,6 +30,7 @@ from app.utils.upload_constants import (
 from app.utils.uploads import validate_upload_file
 from app.deps.auth import get_user as _get_user
 from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
+from app.services.group_permissions import can_manage_group_content, is_active_group_member
 
 from app.services.group_lesson_service import (
     ordered_group_lessons,
@@ -47,16 +47,8 @@ def _require_login(request: Request, db: Session):
         return None, RedirectResponse("/login", status_code=302)
     return user, None
 
-def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        return bool(org and group.organization_id == org.id)
-    if user.is_teacher:
-        return group.teacher_id == user.id
-    return False
-
 def _can_manage_lessons(user: User, group: Group, db: Session) -> bool:
-    return _can_manage_group_content(user, group, db)
+    return can_manage_group_content(db, user, group)
 
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
     user = _get_user(request, db)
@@ -66,7 +58,7 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
+    if not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
     return user, group
 
@@ -135,21 +127,21 @@ async def save_group_quiz_url(
         group = db.query(Group).filter(Group.id == scope_id).first()
         if not group:
             raise HTTPException(status_code=404, detail="Group not found")
-        if not _can_manage_group_content(user, group, db):
+        if not can_manage_group_content(db, user, group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         group.quiz_url = quiz_url
     elif scope_name == "module":
         module = db.query(GroupModule).filter(GroupModule.id == scope_id).first()
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        if not _can_manage_group_content(user, module.group, db):
+        if not can_manage_group_content(db, user, module.group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         module.quiz_url = quiz_url
     elif scope_name == "lesson":
         lesson = db.query(GroupLesson).options(joinedload(GroupLesson.group)).filter(GroupLesson.id == scope_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        if not _can_manage_group_content(user, lesson.group, db):
+        if not can_manage_group_content(db, user, lesson.group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         lesson.quiz_url = quiz_url
     else:
@@ -179,21 +171,21 @@ async def delete_group_quiz_url(
         group = db.query(Group).filter(Group.id == scope_id).first()
         if not group:
             raise HTTPException(status_code=404, detail="Group not found")
-        if not _can_manage_group_content(user, group, db):
+        if not can_manage_group_content(db, user, group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         group.quiz_url = None
     elif scope_name == "module":
         module = db.query(GroupModule).filter(GroupModule.id == scope_id).first()
         if not module:
             raise HTTPException(status_code=404, detail="Module not found")
-        if not _can_manage_group_content(user, module.group, db):
+        if not can_manage_group_content(db, user, module.group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         module.quiz_url = None
     elif scope_name == "lesson":
         lesson = db.query(GroupLesson).options(joinedload(GroupLesson.group)).filter(GroupLesson.id == scope_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        if not _can_manage_group_content(user, lesson.group, db):
+        if not can_manage_group_content(db, user, lesson.group):
             raise HTTPException(status_code=403, detail="Unauthorized")
         lesson.quiz_url = None
     else:
@@ -531,13 +523,7 @@ def group_continue(group_id: int, request: Request, db: Session = Depends(get_db
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    membership = db.query(GroupMember.id).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
-        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-    ).first()
-
-    if not membership:
+    if not is_active_group_member(db, group_id, user.id):
         return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     next_lesson = get_next_group_lesson_for_student(db, group, user.id)
@@ -571,13 +557,16 @@ def group_lesson_view(group_id: int, lesson_id: int, request: Request, db: Sessi
     if not group.is_active and not can_preview_as_owner:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    membership = db.query(GroupMember).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
-        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-    ).first()
+    has_active_membership = is_active_group_member(db, group_id, user.id)
+    membership = None
+    if has_active_membership:
+        membership = db.query(GroupMember).filter(
+            GroupMember.group_id == group_id,
+            GroupMember.student_id == user.id,
+            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
+        ).first()
 
-    if not membership and not can_preview_as_owner:
+    if not has_active_membership and not can_preview_as_owner:
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
 
     lesson = db.query(GroupLesson).options(
@@ -710,12 +699,7 @@ def group_lesson_complete(group_id: int, lesson_id: int, request: Request, db: S
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    membership = db.query(GroupMember.id).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
-        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-    ).first()
-    if not membership:
+    if not is_active_group_member(db, group_id, user.id):
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
 
     lesson = db.query(GroupLesson.id).filter(
