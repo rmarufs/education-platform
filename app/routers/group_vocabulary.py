@@ -16,12 +16,15 @@ from app.models.vocabulary import (
     VocabularySet, VocabularyItem, VocabularyAttempt, VocabularyAttemptAnswer
 )
 from app.models.user import User
-from app.models.organization import Organization
 from app.deps.auth import get_user as _get_user
+from app.services.group_permissions import (
+    can_attempt_group_vocabulary,
+    can_manage_group_content,
+)
 from app.services.group_vocabulary_service import (
     parse_words_bulk, create_vocabulary_attempt_record, is_vocabulary_anticheat_schema_mismatch, create_vocabulary_set_record, update_vocabulary_set_record, delete_vocabulary_set_record
 )
-from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS, is_active_group_member
+from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 
 router = APIRouter()
 
@@ -32,15 +35,6 @@ def _require_login(request: Request, db: Session):
     return user, None
 
 
-def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        return bool(org and group.organization_id == org.id)
-    if user.is_teacher:
-        return group.teacher_id == user.id
-    return False
-
-
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
     user = _get_user(request, db)
     if not user:
@@ -49,7 +43,7 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
+    if not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
     return user, group
 
@@ -69,7 +63,7 @@ def vocab_create_page(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     lesson = db.query(GroupLesson).filter(
@@ -105,7 +99,7 @@ async def vocab_create(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     lesson = db.query(GroupLesson).filter(
@@ -151,7 +145,7 @@ def vocab_edit_page(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     lesson = db.query(GroupLesson).filter(
@@ -205,7 +199,7 @@ async def vocab_edit(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     vocab = db.query(VocabularySet).filter(
@@ -249,7 +243,7 @@ def vocab_delete(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     vocab = db.query(VocabularySet).filter(
@@ -283,7 +277,7 @@ def vocab_start_page(
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    can_preview_as_owner = _can_manage_group_content(user, group, db)
+    can_preview_as_owner = can_manage_group_content(db, user, group)
     if not group.is_active and not can_preview_as_owner:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
@@ -369,7 +363,7 @@ def vocab_quiz_page(
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    can_preview_as_owner = _can_manage_group_content(user, group, db)
+    can_preview_as_owner = can_manage_group_content(db, user, group)
     if not group.is_active and not can_preview_as_owner:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
@@ -496,7 +490,7 @@ async def vocab_submit_answer(
     user, redirect = _require_login(request, db)
     if redirect:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if not is_active_group_member(db, group_id, user.id):
+    if not can_attempt_group_vocabulary(db, user, group_id):
         raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     attempt = db.query(VocabularyAttempt).filter(
@@ -557,7 +551,7 @@ async def vocab_report_second_anticheat_warning(
         raise HTTPException(status_code=401, detail="Not authenticated")
     if not user.is_student:
         raise HTTPException(status_code=403, detail="Only students can report vocabulary anti-cheat warnings")
-    if not is_active_group_member(db, group_id, user.id):
+    if not can_attempt_group_vocabulary(db, user, group_id):
         raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     try:
@@ -626,7 +620,7 @@ async def vocab_complete(
     user, redirect = _require_login(request, db)
     if redirect:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if not is_active_group_member(db, group_id, user.id):
+    if not can_attempt_group_vocabulary(db, user, group_id):
         raise HTTPException(status_code=403, detail="Нет доступа к этой группе")
 
     attempt = db.query(VocabularyAttempt).filter(
@@ -682,7 +676,7 @@ def vocab_results_page(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     lesson = db.query(GroupLesson).filter(
@@ -747,7 +741,7 @@ async def vocab_toggle_retake(
         return RedirectResponse("/login", status_code=302)
 
     group = db.query(Group).filter(Group.id == group_id).first()
-    if not group or not _can_manage_group_content(user, group, db):
+    if not group or not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     vocab = db.query(VocabularySet).filter(
