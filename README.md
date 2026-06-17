@@ -1,149 +1,125 @@
-# Архитектурный Анализ Проекта «Фурузон»
+# Furuzon
 
-Данный документ представляет собой глубокий структурный и архитектурный анализ образовательной платформы «Фурузон», разработанной для студентов и преподавателей.
+Furuzon is a server-rendered educational platform for courses, groups,
+organizations, lessons, homework, materials, reviews, notifications, and admin
+workflows.
 
----
+## Tech Stack
 
-## 1. ОБЩИЙ ОБЗОР ПРОЕКТА
-- **Название проекта:** Фурузон (Furuzon)
-- **Назначение:** Современная образовательная платформа (LMS), решающая проблему доступности качественного образования. Позволяет преподавателям создавать и управлять курсами, а студентам — проходить обучение, смотреть видеоуроки, скачивать материалы и сдавать тесты.
-- **Тип:** Full-stack Web Application (серверный рендеринг — SSR).
-- **Основные функции:**
-  - Регистрация и авторизация (роли: Студент, Преподаватель, Администратор).
-  - Управление курсами (создание, модули, дарсҳо/уроки, прикрепление файлов).
-  - Интеграция видеоплеера (YouTube) с кастомным интерфейсом.
-  - Система тестирования (Квизы) с сохранением результатов.
-  - Отслеживание прогресса студентов.
-  - Двуязычный интерфейс (Русский и Тоҷикӣ) через кастомную систему локализации.
-  - Панель управления (Admin panel) для модерации заявок преподавателей.
+- Python 3.11.8
+- FastAPI with Jinja2 server-side rendering
+- SQLAlchemy with PostgreSQL
+- Alembic migrations
+- Vanilla JavaScript and static CSS
+- Cloudinary for selected media upload flows
+- `unittest` and `pytest` regression tests
+- GitHub Actions minimal CI
+- Local/dev Docker Compose setup
 
-## 2. АРХИТЕКТУРА
-- **Архитектурный стиль:** Модульный монолит (Modular Monolith) со слоистой архитектурой.
-- **Основные компоненты системы:**
-  - **Routing Layer (Маршрутизация):** FastAPI роутеры, обрабатывающие HTTP-запросы.
-  - **Business Logic Layer:** Логика проверки прав, обработки данных и управления бизнес-процессами (встроена в роутеры и сервисные функции).
-  - **Data Access Layer:** ORM-модели (SQLAlchemy) для взаимодействия с базой данных.
-  - **View Layer:** Шаблонизатор Jinja2 для генерации HTML-страниц на стороне сервера.
-  - **Client Layer:** Браузер, исполняющий Vanilla JS для интерактивности (плеер, квизы, переключение языков).
-- **Взаимодействие:**
-  Клиент отправляет стандартный HTTP-запрос (GET/POST) ➔ FastAPI обрабатывает его через зависимости (получение сессии БД, пользователя) ➔ SQLAlchemy выполняет SQL-запросы к PostgreSQL ➔ Данные передаются в Jinja2 шаблон ➔ Сгенерированный HTML возвращается клиенту.
+## Local Setup Without Docker
 
-```text
-[Browser (Client)]
-       |  (HTTP / HTML / JS)
-       v
-[FastAPI App (main.py)] --- Middleware (Sessions, GZip)
-       |
-       |---> [Routers (app/routers/)] ---> [Business Logic]
-       |                                          |
-       |---> [Templates (Jinja2)]                 v
-       |                                [Models (app/models/)]
-       |---> [Static Assets (CSS/JS)]             |
-                                                  v
-                                          [PostgreSQL DB]
+Create a virtual environment and install dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-## 3. СТРУКТУРА ПРОЕКТА
-Дерево директорий оптимизировано для FastAPI приложения:
+Create local environment settings:
 
-```text
-education_platform/
-├── app/                  # Основной бэкенд код
-│   ├── models/           # SQLAlchemy модели (Course, User, Lesson и т.д.)
-│   ├── routers/          # Разделенные FastAPI роутеры (auth, courses, admin)
-│   ├── config.py         # Настройки и загрузка переменных окружения
-│   ├── database.py       # Подключение к БД и сессии
-│   └── dependencies.py   # FastAPI зависимости (например, получение текущего юзера)
-├── static/               # Статические файлы
-│   ├── css/              # Таблицы стилей
-│   ├── js/               # Клиентские скрипты (вкл. i18n.js)
-│   └── img/              # Изображения и иконки
-├── templates/            # HTML шаблоны Jinja2 (по папкам: admin, errors и т.д.)
-├── data/                 # Директория для локальных данных/файлов (если используется)
-├── requirements.txt      # Зависимости Python
-└── main.py               # Точка входа в приложение
+```bash
+cp config/.env.example config/.env
 ```
-**Точка входа:** Файл `main.py` инициализирует FastAPI, подключает middleware (SessionMiddleware, GZipMiddleware), монтирует статику, инициализирует БД и подключает все роутеры.
 
-## 4. ТЕХНОЛОГИИ И СТЕК
-- **Языки программирования:** Python 3, JavaScript (Vanilla ES6+), HTML5, CSS3.
-- **Фреймворк:** **FastAPI** (высокопроизводительный асинхронный веб-фреймворк).
-- **Шаблонизатор:** **Jinja2** (интегрирован с FastAPI).
-- **Библиотеки:**
-  - `SQLAlchemy`: ORM для работы с базами данных.
-  - `psycopg2-binary`: Драйвер для PostgreSQL.
-  - `bcrypt` & `itsdangerous`: Криптография, хеширование паролей и безопасные токены.
-  - `Cloudinary`: Интеграция для облачного хранения медиафайлов.
-  - `python-multipart`: Обработка форм с файлами (upload).
-- **Сервер / Запуск:** `uvicorn` (ASGI сервер), `gunicorn` (для production).
+Edit `config/.env` and provide at least:
 
-## 5. БЭКЕНД
-- **API Тип:** Преимущественно Server-Side Rendering (возврат HTML), но есть эндпоинты, возвращающие JSON (например, для проверки ответов квизов).
-- **Основные роутеры:**
-  - `auth.py`: Регистрация, логин, логаут.
-  - `courses.py` / `lessons.py` / `modules.py`: CRUD операции для учебного контента.
-  - `admin.py`: Логика модерации платформы.
-  - `quizzes.py`: Управление логикой тестирования и сохранения прогресса.
-- **База данных:** Взаимодействие происходит синхронно/асинхронно через SQLAlchemy `SessionLocal`.
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
-## 6. ФРОНТЕНД
-- **Фреймворк:** Не используется тяжелый SPA-фреймворк (React/Vue). Применяется **Vanilla JS**.
-- **Управление состоянием:** Состояние пользователя хранится на сервере в сессии. На клиенте локальное состояние используется для UI (текущий вопрос квиза, открытый таб, язык платформы через LocalStorage).
-- **Локализация:** Собственное решение в `static/js/i18n.js`, которое динамически переводит текстовые узлы DOM (data-i18n) без перезагрузки страницы.
+The app loads `config/.env` first and falls back to root `.env` only when
+`config/.env` does not exist.
 
-## 7. БАЗА ДАННЫХ
-- **Тип БД:** Реляционная база данных (PostgreSQL).
-- **Основные сущности:**
-  - `User`: Пользователи платформы (роли: guest, student, teacher, admin).
-  - `Course`, `Module`, `Lesson`: Иерархия учебного контента.
-  - `Material`: Прикрепленные файлы (PDF, DOCX, PPTX).
-  - `Quiz`, `Question`, `QuizResult`: Система тестирования.
-  - `Progress`: Отслеживание завершенных уроков для студентов.
-  - `Review`: Отзывы и оценки курсов.
-- **Связи:** Сильно нормализованная схема с активным использованием Foreign Keys и связей One-to-Many / Many-to-Many (через ORM `relationship`).
+Apply database migrations:
 
-## 8. ИНФРАСТРУКТУРА И ДЕПЛОЙ
-- **Запуск:** Приложение готово к деплою на Linux-серверах (VPS) с использованием Gunicorn/Uvicorn.
-- **Переменные окружения:** Управление конфигурацией через файл `.env` (Секретные ключи, URL базы данных, ключи Cloudinary).
-- **Контейнеризация:** В текущей структуре отсутствует `Dockerfile` или `docker-compose.yml`, что говорит о классическом деплое через systemd или виртуальные окружения.
+```bash
+alembic upgrade head
+```
 
-## 9. АУТЕНТИФИКАЦИЯ И БЕЗОПАСНОСТЬ
-- **Механизм:** Сессионная аутентификация через `SessionMiddleware` (signed cookies). Токены JWT явно не используются для сессий.
-- **Авторизация (RBAC):** Настроена на уровне зависимостей FastAPI (проверка `user.role` перед выполнением действия).
-- **Безопасность данных:** Пароли надежно хешируются алгоритмом bcrypt. Загрузка файлов контролируется (разрешены только определенные типы и размеры).
+Run the app:
 
-## 10. ТЕСТИРОВАНИЕ
-- **Статус:** Директория `tests/` пуста (содержит только `.gitkeep`).
-- **Инструменты:** Автоматизированное тестирование (Unit/Integration) на данный момент не внедрено. Тестирование производится вручную.
+```bash
+uvicorn main:app --reload
+```
 
-## 11. СИЛЬНЫЕ СТОРОНЫ И ПРОБЛЕМЫ
-**Что сделано хорошо:**
-- ✅ **Производительность:** Использование FastAPI и кэширования (например, `_get_popular_courses_cached`) делает приложение очень быстрым.
-- ✅ **Простая и надежная архитектура:** Монолит на SSR легко понимать, разрабатывать и дебажить.
-- ✅ **Локализация:** Легковесная клиентская локализация не нагружает сервер лишними запросами.
-- ✅ **База данных:** Грамотно спроектированная реляционная схема с ORM.
+## Docker Setup
 
-**Потенциальные проблемы / Узкие места:**
-- ⚠️ **Отсутствие тестов:** Любой крупный рефакторинг может привести к скрытым багам.
-- ⚠️ **Сильная связность UI и Бэкенда:** Если в будущем потребуется мобильное приложение (iOS/Android), текущие эндпоинты, возвращающие HTML, не подойдут — придется дублировать логику для чистого REST/GraphQL API.
-- ⚠️ **Деплоймент:** Отсутствие Docker усложняет развертывание приложения новым разработчикам или на новых серверах.
+The Docker Compose setup is for local development only:
 
-## 12. РЕКОМЕНДАЦИИ ПО УЛУЧШЕНИЮ
-1. **Тестирование:** Внедрить `pytest` и написать базовые unit-тесты для CRUD операций и бизнес-логики (особенно для расчета прогресса и квизов).
-2. **Инфраструктура:** Добавить `Dockerfile` и `docker-compose.yml` (с образом PostgreSQL) для упрощения локальной разработки и деплоя.
-3. **Архитектура (на будущее):** Если планируется расширение платформы на мобильные устройства, начать постепенное выделение `/api/v1/...` роутов, которые возвращают чистый JSON.
-4. **Интерактивность:** Для усложнения UI без перехода на тяжелые SPA-фреймворки рассмотреть внедрение библиотеки **HTMX** (идеально сочетается с Jinja2 и FastAPI).
-5. **Безопасность:** Добавить механизмы защиты от CSRF атак для всех POST/PUT/DELETE запросов.
+```bash
+docker compose up --build
+```
 
-## 13. УПРАВЛЕНИЕ МИГРАЦИЯМИ БАЗЫ ДАННЫХ (ALEMBIC)
-В проекте используется инструмент **Alembic** для управления схемой базы данных. `Base.metadata.create_all` больше не используется для создания таблиц, поэтому при развертывании или изменении схемы нужно применять миграции.
+Apply migrations manually:
 
-- **Применить миграции (обновить базу данных до последней версии):**
-  ```bash
-  alembic upgrade head
-  ```
+```bash
+docker compose run --rm app alembic upgrade head
+```
 
-- **Создать новую миграцию (после изменения моделей SQLAlchemy):**
-  ```bash
-  alembic revision --autogenerate -m "описание_изменений"
-  ```
+See [docs/docker.md](docs/docker.md) for volumes, environment variables, and
+production warnings.
+
+## Tests And Smoke Checks
+
+Run the same local quality gate used during Phase 2:
+
+```bash
+python3 -m compileall -q app main.py
+python3 -m unittest -q
+python3 -m pytest -q
+bash scripts/smoke_test.sh
+```
+
+`scripts/smoke_test.sh` also runs the i18n key checker and pytest suite.
+
+## Migrations
+
+Alembic migrations live in `alembic/versions/`.
+
+Apply existing migrations:
+
+```bash
+alembic upgrade head
+```
+
+Create a new migration after model changes:
+
+```bash
+alembic revision --autogenerate -m "describe change"
+```
+
+Do not rewrite applied migration history without a dedicated migration task.
+
+## Developer Docs
+
+- [docs/development.md](docs/development.md): developer runbook and checklist.
+- [docs/docker.md](docs/docker.md): local Docker guide.
+- [docs/dependency_policy.md](docs/dependency_policy.md): dependency upgrade
+  policy and risky dependency notes.
+- [docs/architecture.md](docs/architecture.md): architecture and repository
+  structure notes.
+
+## Runtime Data
+
+Runtime uploads and private files can be written under:
+
+- `data/private_uploads/`
+- `static/uploads/`
+- `static/materials/`
+- `static/documents/` for legacy paths
+
+Do not commit real `.env` files, secrets, local databases, logs, backups, or
+uploaded user files.
