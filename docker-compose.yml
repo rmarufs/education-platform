@@ -1,0 +1,45 @@
+# Local development only. Do not use this compose file as production config.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: furuzon
+      POSTGRES_USER: furuzon
+      POSTGRES_PASSWORD: furuzon
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U furuzon -d furuzon"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      AUTO_APPLY_MIGRATIONS: "false"
+      ENABLE_API_DOCS: "true"
+      SECRET_KEY: dev-only-change-me
+      DATABASE_URL: postgresql://furuzon:furuzon@db:5432/furuzon
+      CLOUDINARY_CLOUD_NAME: dev-dummy-cloudinary-cloud
+      CLOUDINARY_API_KEY: dev-dummy-cloudinary-key
+      CLOUDINARY_API_SECRET: dev-dummy-cloudinary-secret
+    volumes:
+      - private_uploads:/app/data/private_uploads
+      - static_uploads:/app/static/uploads
+      - static_materials:/app/static/materials
+      - static_documents:/app/static/documents
+
+volumes:
+  postgres_data:
+  private_uploads:
+  static_uploads:
+  static_materials:
+  static_documents:
