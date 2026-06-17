@@ -593,3 +593,131 @@ def test_inactive_student_cannot_download_own_old_homework_submission(client, db
     )
 
     assert response.status_code == 403
+
+
+def test_org_owner_can_open_group_manage(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+
+    login_as(client, org_user)
+    response = client.get(f"/groups/{group.id}/manage", follow_redirects=False)
+
+    assert response.status_code == 200
+
+
+def test_unrelated_org_gets_404_on_group_manage(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    other_org_user = _user(db_session, role=UserRole.organization, email="other-org@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    _organization(db_session, other_org_user, name="Other Org")
+    group = _group(db_session, organization)
+
+    login_as(client, other_org_user)
+    response = client.get(f"/groups/{group.id}/manage", follow_redirects=False)
+
+    assert response.status_code == 404
+
+
+def test_assigned_teacher_can_open_group_manage(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+
+    login_as(client, teacher)
+    response = client.get(f"/groups/{group.id}/manage", follow_redirects=False)
+
+    assert response.status_code == 200
+
+
+def test_unrelated_teacher_gets_403_on_group_manage(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    other_teacher = _user(db_session, role=UserRole.teacher, email="other@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+
+    login_as(client, other_teacher)
+    response = client.get(f"/groups/{group.id}/manage", follow_redirects=False)
+
+    assert response.status_code == 403
+
+
+def test_assigned_teacher_can_open_group_teach_for_active_group(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+
+    login_as(client, teacher)
+    response = client.get(f"/groups/{group.id}/teach", follow_redirects=False)
+
+    assert response.status_code == 200
+
+
+def test_teacher_gets_403_on_group_teach_for_inactive_or_unassigned_group(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    other_teacher = _user(db_session, role=UserRole.teacher, email="other@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    inactive_group = _group(db_session, organization, teacher=teacher)
+    inactive_group.is_active = False
+    unassigned_group = _group(db_session, organization, teacher=teacher)
+    db_session.commit()
+
+    login_as(client, teacher)
+    inactive_response = client.get(f"/groups/{inactive_group.id}/teach", follow_redirects=False)
+    assert inactive_response.status_code == 403
+
+    login_as(client, other_teacher)
+    unassigned_response = client.get(f"/groups/{unassigned_group.id}/teach", follow_redirects=False)
+    assert unassigned_response.status_code == 403
+
+
+def test_active_student_can_open_group_student_view(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    _membership(db_session, group, student)
+
+    login_as(client, student)
+    response = client.get(f"/groups/{group.id}/view", follow_redirects=False)
+
+    assert response.status_code == 200
+
+
+def test_inactive_or_non_member_student_redirects_from_group_student_view(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    inactive_student = _user(db_session, role=UserRole.student, email="inactive@example.test")
+    non_member = _user(db_session, role=UserRole.student, email="non-member@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    _membership(db_session, group, inactive_student, status="removed")
+
+    login_as(client, inactive_student)
+    inactive_response = client.get(f"/groups/{group.id}/view", follow_redirects=False)
+    assert inactive_response.status_code == 302
+    assert inactive_response.headers["location"] == "/dashboard/student?error=access_denied"
+
+    login_as(client, non_member)
+    non_member_response = client.get(f"/groups/{group.id}/view", follow_redirects=False)
+    assert non_member_response.status_code == 302
+    assert non_member_response.headers["location"] == "/dashboard/student?error=access_denied"
+
+
+def test_admin_gets_no_implicit_group_manage_or_teach_access(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    admin = _user(db_session, role=UserRole.admin, email="admin@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+
+    login_as(client, admin)
+    manage_response = client.get(f"/groups/{group.id}/manage", follow_redirects=False)
+    assert manage_response.status_code == 403
+
+    teach_response = client.get(f"/groups/{group.id}/teach", follow_redirects=False)
+    assert teach_response.status_code == 302
+    assert teach_response.headers["location"] == "/login"

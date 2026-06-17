@@ -13,6 +13,7 @@ from app.models.vocabulary import VocabularySet, VocabularyAttempt
 from app.models.user import User
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.deps.auth import get_user as _get_user
+from app.services.group_permissions import can_manage_group_content, is_active_group_member
 
 from app.services.group_lesson_service import ordered_group_lessons as _ordered_group_lessons
 from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
@@ -33,15 +34,6 @@ def _require_teacher(request: Request, db: Session):
     return user, None
 
 
-def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        return bool(org and group.organization_id == org.id)
-    if user.is_teacher:
-        return group.teacher_id == user.id
-    return False
-
-
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
     user = _get_user(request, db)
     if not user:
@@ -50,7 +42,7 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
+    if not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
     return user, group
 
@@ -199,15 +191,14 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    # Check membership
+    if not is_active_group_member(db, group_id, user.id):
+        return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
+
     membership = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
         GroupMember.student_id == user.id,
         GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
     ).first()
-
-    if not membership:
-        return RedirectResponse("/dashboard/student?error=access_denied", status_code=302)
 
     ordered_lessons = _ordered_group_lessons(group)
     ordered_lesson_ids = [lesson.id for lesson in ordered_lessons]
@@ -261,4 +252,3 @@ def group_student_view(group_id: int, request: Request, db: Session = Depends(ge
         return RedirectResponse(next_url, status_code=302)
 
     return RedirectResponse("/dashboard/student", status_code=302)
-
