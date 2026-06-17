@@ -99,7 +99,7 @@
                         {% endif %}
 
                         {% if ot.attachment %}
-                        <a href="{{ ot.attachment }}" target="_blank" class="org-attachment-link">📎 Прикреплённый файл</a>
+                        <a href="/organization/teacher-applications/{{ ot.id }}/attachment" target="_blank" class="org-attachment-link">📎 Прикреплённый файл</a>
                         {% endif %}
 
                         <p class="org-pending-date" data-i18n="org.request_date" data-i18n-params='{"date": "{{ ot.created_at.strftime("%d.%m.%Y") }}"}'>Подал заявку: {{ ot.created_at.strftime("%d.%m.%Y") }}</p>

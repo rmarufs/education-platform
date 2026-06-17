@@ -44,6 +44,12 @@ logs/
 data/logs/
 data/backups/
 backups/
+data/private_uploads/*
+!data/private_uploads/.gitkeep
+!data/private_uploads/teacher_documents/
+!data/private_uploads/teacher_documents/.gitkeep
+!data/private_uploads/application_attachments/
+!data/private_uploads/application_attachments/.gitkeep
 
 # ── Pytest / Coverage ────────────────────────────
 .pytest_cache/

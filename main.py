@@ -84,7 +84,18 @@ app.add_middleware(
 )
 
 # Статические файлы (CSS, JS, изображения)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+class PublicStaticFiles(StaticFiles):
+    _blocked_prefixes = ("documents/", "uploads/applications/")
+    _blocked_exact = ("documents", "uploads/applications")
+
+    async def get_response(self, path, scope):
+        normalized_path = path.replace("\\", "/").lstrip("/")
+        if normalized_path in self._blocked_exact or normalized_path.startswith(self._blocked_prefixes):
+            raise StarletteHTTPException(status_code=404)
+        return await super().get_response(path, scope)
+
+
+app.mount("/static", PublicStaticFiles(directory="static"), name="static")
 
 from app.ui import templates
 

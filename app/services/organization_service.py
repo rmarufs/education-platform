@@ -13,6 +13,7 @@ from app.models.course import Course
 from app.models.group import Group, GroupMember
 from app.utils.group_membership import ACTIVE_GROUP_MEMBER_STATUS
 from app.models.review import Review
+from app.utils.private_uploads import APPLICATION_ATTACHMENTS, private_upload_destination
 from app.utils.uploads import validate_upload_file
 
 
@@ -559,7 +560,7 @@ def teacher_apply_organization_service(
 
     attachment_path = None
     if attachment and getattr(attachment, "filename", None):
-        import os, uuid, shutil
+        import uuid, shutil
         
         upload = validate_upload_file(
             attachment,
@@ -567,13 +568,10 @@ def teacher_apply_organization_service(
             max_bytes=APPLICATION_ATTACHMENT_MAX_BYTES,
             invalid_type_message="Недопустимый тип файла вложения",
         )
-        upload_dir = "static/uploads/applications"
-        os.makedirs(upload_dir, exist_ok=True)
         safe_name = f"{uuid.uuid4().hex}_{upload.safe_filename}"
-        dest = os.path.join(upload_dir, safe_name)
+        attachment_path, dest = private_upload_destination(APPLICATION_ATTACHMENTS, safe_name)
         with open(dest, "wb") as f:
             shutil.copyfileobj(attachment.file, f)
-        attachment_path = f"/{dest}"
 
     try:
         org_teacher = OrganizationTeacher(

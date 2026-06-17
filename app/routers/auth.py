@@ -2,7 +2,6 @@
 import hashlib
 import html
 import logging
-import os
 import re
 import secrets
 import uuid
@@ -20,6 +19,7 @@ from app.deps.auth import get_user
 from app.models.user import PasswordResetToken, User, UserRole
 from app.models.organization import Organization, OrganizationTeacher, OrganizationStudent
 from app.utils.email import send_email
+from app.utils.private_uploads import TEACHER_DOCUMENTS, private_upload_destination
 from app.utils.rate_limit import limiter
 from app.utils.uploads import validate_upload_file
 
@@ -489,12 +489,10 @@ async def register(
         # Документ необязателен — сохраняем если есть
         if document and document.filename:
             upload = _validate_teacher_document(document)
-            os.makedirs("static/documents", exist_ok=True)
             filename = f"{uuid.uuid4().hex}_{upload.safe_filename}"
-            save_path = f"static/documents/{filename}"
+            doc_path, save_path = private_upload_destination(TEACHER_DOCUMENTS, filename)
             with open(save_path, "wb") as buffer:
                 shutil.copyfileobj(document.file, buffer)
-            doc_path = "/" + save_path
 
     elif role == "organization":
         # Организации ждут одобрения — создаём неактивными

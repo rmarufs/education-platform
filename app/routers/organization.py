@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, Request, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 
@@ -19,6 +19,7 @@ from app.models.course import Course
 from app.models.group import Group, GroupMember
 from app.utils.announcements import VALID_AUDIENCES, get_visible_announcement
 from app.utils.datetime_helpers import parse_optional_datetime as _parse_optional_datetime
+from app.utils.private_uploads import APPLICATION_ATTACHMENTS, resolve_private_upload_path
 from app.utils.uploads import validate_upload_file
 
 router = APIRouter()
@@ -289,6 +290,37 @@ def organization_teachers(request: Request, db: Session = Depends(get_db)):
             "rejected_teachers": rejected,
         }
     )
+
+
+@router.get("/organization/teacher-applications/{application_id:int}/attachment")
+def download_teacher_application_attachment(
+    application_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_user(request, db)
+    if not user:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    application = db.query(OrganizationTeacher).filter(
+        OrganizationTeacher.id == application_id,
+    ).first()
+    if not application or not application.attachment:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    allowed = user.is_admin
+    if user.is_org:
+        org = db.query(Organization).filter(Organization.user_id == user.id).first()
+        allowed = allowed or bool(org and org.id == application.organization_id)
+    if user.role in {UserRole.teacher, UserRole.teacher_pending}:
+        allowed = allowed or application.teacher_id == user.id
+
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    file_path = resolve_private_upload_path(application.attachment, APPLICATION_ATTACHMENTS)
+    return FileResponse(file_path, filename=file_path.name)
+
 
 # ── Список учеников + входящие заявки ────────────────────────────────
 

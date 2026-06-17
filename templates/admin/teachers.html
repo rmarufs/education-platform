@@ -50,7 +50,7 @@
                 <td>{{ t.created_at.strftime("%d.%m.%Y %H:%M") }}</td>
                 <td>
                     {% if t.documents %}
-                    <a href="{{ t.documents }}" target="_blank" class="admin-doc-link">📄 Открыть</a>
+                    <a href="/admin/teachers/{{ t.id }}/document" target="_blank" class="admin-doc-link">📄 Открыть</a>
                     {% else %}
                     <span class="admin-muted">—</span>
                     {% endif %}

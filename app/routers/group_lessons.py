@@ -16,7 +16,7 @@ from app.database import get_db
 from app.ui import templates
 from app.models.group import (
     Group, GroupModule, GroupLesson, GroupMaterial, GroupMember,
-    GroupLessonProgress, GroupJournalEntry
+    GroupLessonProgress, GroupJournalEntry, GroupHomeworkNotification
 )
 from app.models.vocabulary import VocabularyAttempt, VocabularySet
 from app.models.user import User

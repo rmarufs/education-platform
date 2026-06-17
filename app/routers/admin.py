@@ -1,8 +1,7 @@
 # Роутер админ-панели
-import os
 from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -35,6 +34,11 @@ from app.models.organization import (
 )
 from app.models.quiz import QuizAttempt, QuizResult
 from app.models.review import Review
+from app.utils.private_uploads import (
+    TEACHER_DOCUMENTS,
+    delete_private_upload,
+    resolve_private_upload_path,
+)
 
 router = APIRouter(prefix="/admin")
 from app.ui import templates
@@ -61,12 +65,7 @@ def _is_last_admin(db: Session, user: User) -> bool:
 def _delete_user_document(user: User) -> None:
     if not user.documents:
         return
-    file_path = user.documents.lstrip("/")
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-        except OSError:
-            pass
+    delete_private_upload(user.documents, TEACHER_DOCUMENTS)
 
 
 def _delete_user_courses(db: Session, user: User) -> None:
@@ -262,6 +261,17 @@ def admin_teachers(request: Request, db: Session = Depends(get_db)):
     })
 
 
+@router.get("/teachers/{teacher_id:int}/document")
+def download_teacher_document(teacher_id: int, request: Request, db: Session = Depends(get_db)):
+    get_admin(request, db)
+    teacher = db.query(User).filter(User.id == teacher_id).first()
+    if not teacher or not teacher.documents:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+
+    file_path = resolve_private_upload_path(teacher.documents, TEACHER_DOCUMENTS)
+    return FileResponse(file_path, filename=file_path.name)
+
+
 @router.post("/teachers/{user_id:int}/approve")
 def approve_teacher(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_admin(request, db)
@@ -287,9 +297,7 @@ def reject_teacher(user_id: int, request: Request, db: Session = Depends(get_db)
 
     # Удаляем документ, если есть
     if teacher.documents:
-        file_path = teacher.documents.lstrip("/")
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        _delete_user_document(teacher)
         teacher.documents = None
 
     teacher.role = UserRole.student
@@ -527,6 +535,6 @@ def admin_delete_course(course_id: int, request: Request, db: Session = Depends(
     db.delete(course)
     db.commit()
 
-    from main import invalidate_courses_cache
+    from app.routers.pages import invalidate_courses_cache
     invalidate_courses_cache()
     return RedirectResponse("/admin/courses", status_code=302)
