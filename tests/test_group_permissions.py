@@ -1,4 +1,12 @@
-from app.models.group import Group, GroupLesson, GroupMember
+from fastapi.responses import Response
+
+from app.models.group import (
+    Group,
+    GroupHomework,
+    GroupHomeworkSubmission,
+    GroupLesson,
+    GroupMember,
+)
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.services.group_permissions import (
@@ -65,6 +73,48 @@ def _lesson(db_session, group: Group, *, title: str = "RBAC Lesson") -> GroupLes
     db_session.commit()
     db_session.refresh(lesson)
     return lesson
+
+
+def _homework(
+    db_session,
+    group: Group,
+    lesson: GroupLesson,
+    *,
+    title: str = "RBAC Homework",
+    material_url: str | None = None,
+) -> GroupHomework:
+    homework = GroupHomework(
+        group_id=group.id,
+        lesson_id=lesson.id,
+        title=title,
+        description="Homework",
+        material_url=material_url,
+        material_filename="homework-file.txt" if material_url else None,
+    )
+    db_session.add(homework)
+    db_session.commit()
+    db_session.refresh(homework)
+    return homework
+
+
+def _submission(
+    db_session,
+    homework: GroupHomework,
+    student: User,
+    *,
+    file_url: str | None = None,
+) -> GroupHomeworkSubmission:
+    submission = GroupHomeworkSubmission(
+        homework_id=homework.id,
+        student_id=student.id,
+        file_url=file_url,
+        filename="submission-file.txt" if file_url else None,
+        comment="Submitted",
+    )
+    db_session.add(submission)
+    db_session.commit()
+    db_session.refresh(submission)
+    return submission
 
 
 def test_organization_owner_can_manage_group_content(db_session):
@@ -268,6 +318,277 @@ def test_inactive_student_is_denied_group_lesson_view(client, db_session, login_
     login_as(client, student)
     response = client.get(
         f"/groups/{group.id}/lessons/{lesson.id}",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+
+
+def test_organization_owner_can_save_delete_group_homework(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+
+    csrf_token = login_as(client, org_user)
+    save_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/save",
+        data={"title": "Saved Homework", "description": "Saved"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert save_response.status_code == 302
+    assert save_response.headers["location"] == f"/groups/{group.id}/manage?success=homework_saved"
+    homework = db_session.query(GroupHomework).filter_by(group_id=group.id, lesson_id=lesson.id).first()
+    assert homework
+
+    delete_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/delete",
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert delete_response.status_code == 302
+    assert delete_response.headers["location"] == f"/groups/{group.id}/manage?success=homework_deleted"
+    assert db_session.get(GroupHomework, homework.id) is None
+
+
+def test_assigned_teacher_can_save_delete_group_homework(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+    lesson = _lesson(db_session, group)
+
+    csrf_token = login_as(client, teacher)
+    save_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/save",
+        data={"title": "Teacher Homework", "description": "Saved"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert save_response.status_code == 302
+    assert save_response.headers["location"] == f"/groups/{group.id}/manage?success=homework_saved"
+    homework = db_session.query(GroupHomework).filter_by(group_id=group.id, lesson_id=lesson.id).first()
+    assert homework
+
+    delete_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/delete",
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert delete_response.status_code == 302
+    assert delete_response.headers["location"] == f"/groups/{group.id}/manage?success=homework_deleted"
+    assert db_session.get(GroupHomework, homework.id) is None
+
+
+def test_unrelated_teacher_and_admin_are_denied_group_homework_management(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    other_teacher = _user(db_session, role=UserRole.teacher, email="other@example.test")
+    admin = _user(db_session, role=UserRole.admin, email="admin@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+    lesson = _lesson(db_session, group)
+
+    csrf_token = login_as(client, other_teacher)
+    teacher_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/save",
+        data={"title": "Denied", "description": "Denied"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert teacher_response.status_code == 403
+
+    csrf_token = login_as(client, admin)
+    admin_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/save",
+        data={"title": "Denied", "description": "Denied"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert admin_response.status_code == 403
+
+
+def test_active_student_can_view_and_submit_group_homework(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+    homework = _homework(db_session, group, lesson)
+    _membership(db_session, group, student)
+
+    csrf_token = login_as(client, student)
+    view_response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework",
+        follow_redirects=False,
+    )
+    assert view_response.status_code == 200
+
+    submit_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/submit",
+        data={"comment": "My answer"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert submit_response.status_code == 302
+    assert submit_response.headers["location"] == (
+        f"/groups/{group.id}/lessons/{lesson.id}/homework?success=submit_success"
+    )
+    assert db_session.query(GroupHomeworkSubmission).filter_by(
+        homework_id=homework.id,
+        student_id=student.id,
+    ).first()
+
+
+def test_inactive_student_is_denied_group_homework_view_and_submit(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+    _homework(db_session, group, lesson)
+    _membership(db_session, group, student, status="removed")
+
+    csrf_token = login_as(client, student)
+    view_response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework",
+        follow_redirects=False,
+    )
+    assert view_response.status_code == 403
+
+    submit_response = client.post(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/submit",
+        data={"comment": "My answer"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert submit_response.status_code == 403
+
+
+def test_manager_can_review_group_homework(client, db_session, login_as):
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    teacher = _user(db_session, role=UserRole.teacher, email="teacher@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization, teacher=teacher)
+    lesson = _lesson(db_session, group)
+    homework = _homework(db_session, group, lesson)
+    _membership(db_session, group, student)
+    submission = _submission(db_session, homework, student)
+
+    csrf_token = login_as(client, teacher)
+    review_response = client.get(
+        f"/groups/{group.id}/homework/review?lesson_id={lesson.id}",
+        follow_redirects=False,
+    )
+    assert review_response.status_code == 200
+
+    save_response = client.post(
+        f"/groups/{group.id}/homework/review/{submission.id}",
+        data={"teacher_comment": "Reviewed"},
+        headers={"x-csrf-token": csrf_token},
+        follow_redirects=False,
+    )
+    assert save_response.status_code == 302
+    assert save_response.headers["location"] == (
+        f"/groups/{group.id}/homework/review?lesson_id={lesson.id}&success=review_saved"
+    )
+    db_session.refresh(submission)
+    assert submission.reviewed_by_id == teacher.id
+
+
+def test_homework_material_download_allows_active_student(client, db_session, login_as, monkeypatch):
+    import app.routers.group_homework as group_homework_router
+
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+    _homework(db_session, group, lesson, material_url="https://example.test/homework.txt")
+    _membership(db_session, group, student)
+    monkeypatch.setattr(
+        group_homework_router,
+        "_download_remote_file",
+        lambda file_url, filename: Response("downloaded"),
+    )
+
+    login_as(client, student)
+    response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/material/download",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    assert response.text == "downloaded"
+
+
+def test_homework_submission_download_keeps_owner_and_membership_rules(client, db_session, login_as, monkeypatch):
+    import app.routers.group_homework as group_homework_router
+
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    other_student = _user(db_session, role=UserRole.student, email="other-student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+    homework = _homework(db_session, group, lesson)
+    _membership(db_session, group, student)
+    _membership(db_session, group, other_student)
+    submission = _submission(
+        db_session,
+        homework,
+        student,
+        file_url="https://example.test/submission.txt",
+    )
+    monkeypatch.setattr(
+        group_homework_router,
+        "_download_remote_file",
+        lambda file_url, filename: Response("downloaded"),
+    )
+
+    login_as(client, student)
+    own_response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/submissions/{submission.id}/download",
+        follow_redirects=False,
+    )
+    assert own_response.status_code == 200
+    assert own_response.text == "downloaded"
+
+    login_as(client, other_student)
+    other_response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/submissions/{submission.id}/download",
+        follow_redirects=False,
+    )
+    assert other_response.status_code == 403
+
+
+def test_inactive_student_cannot_download_own_old_homework_submission(client, db_session, login_as, monkeypatch):
+    import app.routers.group_homework as group_homework_router
+
+    org_user = _user(db_session, role=UserRole.organization, email="org@example.test")
+    student = _user(db_session, role=UserRole.student, email="student@example.test")
+    organization = _organization(db_session, org_user, name="Owner Org")
+    group = _group(db_session, organization)
+    lesson = _lesson(db_session, group)
+    homework = _homework(db_session, group, lesson)
+    _membership(db_session, group, student, status="removed")
+    submission = _submission(
+        db_session,
+        homework,
+        student,
+        file_url="https://example.test/submission.txt",
+    )
+    monkeypatch.setattr(
+        group_homework_router,
+        "_download_remote_file",
+        lambda file_url, filename: Response("downloaded"),
+    )
+
+    login_as(client, student)
+    response = client.get(
+        f"/groups/{group.id}/lessons/{lesson.id}/homework/submissions/{submission.id}/download",
         follow_redirects=False,
     )
 

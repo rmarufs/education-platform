@@ -17,8 +17,8 @@ from app.models.group import (
     GroupHomeworkSubmission, GroupHomeworkNotification, GroupJournalEntry
 )
 from app.models.user import User
-from app.models.organization import Organization
 from app.deps.auth import get_user as _get_user
+from app.services.group_permissions import can_manage_group_content, is_active_group_member
 from app.services.group_lesson_service import ordered_group_lessons as _ordered_group_lessons
 from app.deps.cloudinary import cloudinary
 
@@ -55,15 +55,6 @@ def _require_login(request: Request, db: Session):
     return user, None
 
 
-def _can_manage_group_content(user: User, group: Group, db: Session) -> bool:
-    if user.is_org:
-        org = db.query(Organization).filter(Organization.user_id == user.id).first()
-        return bool(org and group.organization_id == org.id)
-    if user.is_teacher:
-        return group.teacher_id == user.id
-    return False
-
-
 def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple[User, Group]:
     user = _get_user(request, db)
     if not user:
@@ -72,7 +63,7 @@ def _get_manageable_group(group_id: int, request: Request, db: Session) -> tuple
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
+    if not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
     return user, group
 
@@ -185,19 +176,19 @@ def group_homework_view(group_id: int, lesson_id: int, request: Request, db: Ses
     homework = lesson.homework
     mode = request.query_params.get("mode", "").strip()
     is_teach_mode = mode == "teach" and user.is_teacher and group.teacher_id == user.id
-    can_manage = _can_manage_group_content(user, group, db)
+    can_manage = can_manage_group_content(db, user, group)
     if not group.is_active and not can_manage:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
     membership = None
     if user.is_student:
+        if not is_active_group_member(db, group_id, user.id):
+            raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
         membership = db.query(GroupMember).filter(
             GroupMember.group_id == group_id,
             GroupMember.student_id == user.id,
             GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
         ).first()
-        if not membership:
-            raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
     elif not can_manage and not is_teach_mode:
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
@@ -314,12 +305,7 @@ async def group_homework_submit(
     if not lesson.group.is_active:
         raise HTTPException(status_code=404, detail="Группа не найдена")
 
-    membership = db.query(GroupMember.id).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
-        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-    ).first()
-    if not membership:
+    if not is_active_group_member(db, group_id, user.id):
         raise HTTPException(status_code=403, detail="Вы не являетесь членом этой группы")
 
     if homework.deadline and homework.deadline < datetime.utcnow():
@@ -369,12 +355,8 @@ def group_homework_material_download(
     if not homework or not homework.material_url:
         raise HTTPException(status_code=404, detail="Файл не найден")
 
-    is_member = db.query(GroupMember.id).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.student_id == user.id,
-        GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-    ).first() is not None
-    if not (_can_manage_group_content(user, lesson.group, db) or is_member):
+    is_member = is_active_group_member(db, group_id, user.id)
+    if not (can_manage_group_content(db, user, lesson.group) or is_member):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     return _download_remote_file(homework.material_url, homework.material_filename or "homework-file")
@@ -403,13 +385,9 @@ def group_homework_submission_download(
 
     is_submission_owner_with_access = (
         submission.student_id == user.id
-        and db.query(GroupMember.id).filter(
-            GroupMember.group_id == group_id,
-            GroupMember.student_id == user.id,
-            GroupMember.status == ACTIVE_GROUP_MEMBER_STATUS,
-        ).first() is not None
+        and is_active_group_member(db, group_id, user.id)
     )
-    if not (_can_manage_group_content(user, lesson.group, db) or is_submission_owner_with_access):
+    if not (can_manage_group_content(db, user, lesson.group) or is_submission_owner_with_access):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     return _download_remote_file(submission.file_url, submission.filename or "homework-submission")
@@ -436,7 +414,7 @@ def group_homework_review(group_id: int, request: Request, db: Session = Depends
     ).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Группа не найдена")
-    if not _can_manage_group_content(user, group, db):
+    if not can_manage_group_content(db, user, group):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     members = sorted(
