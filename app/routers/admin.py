@@ -358,21 +358,43 @@ def admin_remove_from_org(user_id: int, request: Request, db: Session = Depends(
 # ── Управление организациями ─────────────────────────────────────────────────
 
 @router.get("/organizations", response_class=HTMLResponse)
-def admin_organizations(request: Request, db: Session = Depends(get_db)):
+def admin_organizations(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     admin = get_admin(request, db)
     from app.models.organization import Organization
 
-    all_orgs = (
-        db.query(Organization)
+    base_query = db.query(Organization)
+    total = base_query.count()
+    total_pages = (total + per_page - 1) // per_page
+    orgs = (
+        base_query
         .options(joinedload(Organization.user))
         .order_by(Organization.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
+    page_numbers = sorted({
+        1,
+        total_pages,
+        *range(max(1, page - 2), min(total_pages, page + 2) + 1),
+    }) if total_pages else []
 
     return templates.TemplateResponse("admin/organizations.html", {
         "request": request,
         "user": admin,
-        "orgs": all_orgs,
+        "orgs": orgs,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1,
+        "page_numbers": page_numbers,
     })
 
 
