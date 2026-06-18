@@ -6,7 +6,7 @@
 <div class="admin-header">
     <div>
         <h1 data-i18n="admin.users.title">👥 Управление пользователями</h1>
-        <p data-i18n="admin.users.subtitle" data-i18n-params='{"count":{{ users_list|length }}}'>Всего: {{ users_list|length }} пользователей</p>
+        <p data-i18n="admin.users.subtitle" data-i18n-params='{"count":{{ total }}}'>Всего: {{ total }} пользователей</p>
     </div>
 </div>
 
@@ -38,6 +38,7 @@
 <!-- Поиск -->
 <form action="/admin/users" method="GET" class="admin-search">
     <input type="text" name="q" value="{{ q }}" placeholder="Поиск по имени или email..." class="admin-search-input" data-i18n="admin.users.search_placeholder" data-i18n-prop="placeholder" />
+    <input type="hidden" name="per_page" value="{{ per_page }}" />
     <button type="submit" class="admin-btn admin-btn-info" data-i18n="admin.users.search_btn">🔍 Найти</button>
     {% if q %}
     <a href="/admin/users" class="admin-btn admin-btn-outline" data-i18n="admin.users.reset">✕ Сбросить</a>
@@ -121,6 +122,26 @@
         </tbody>
     </table>
 </div>
+{% if total_pages > 1 %}
+<div class="admin-users-pagination" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;">
+    <div class="admin-muted" style="font-size:0.85rem;">Страница {{ page }} из {{ total_pages }}</div>
+    <div class="admin-actions" style="align-items:center;">
+        {% set base_query = 'q=' ~ (q|urlencode) ~ '&per_page=' ~ per_page ~ '&' if q else 'per_page=' ~ per_page ~ '&' %}
+        {% if has_prev %}
+        <a href="/admin/users?{{ base_query }}page={{ page - 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Previous</a>
+        {% endif %}
+        {% for p in page_numbers %}
+            {% if not loop.first and p > page_numbers[loop.index0 - 1] + 1 %}
+            <span class="admin-muted" style="padding:0 4px;">...</span>
+            {% endif %}
+            <a href="/admin/users?{{ base_query }}page={{ p }}" class="admin-btn {{ 'admin-btn-info' if p == page else 'admin-btn-outline' }} admin-btn-sm" aria-current="{{ 'page' if p == page else 'false' }}">{{ p }}</a>
+        {% endfor %}
+        {% if has_next %}
+        <a href="/admin/users?{{ base_query }}page={{ page + 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% else %}
 <div class="admin-empty">
     <div class="admin-empty-icon">🔍</div>

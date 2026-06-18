@@ -1,6 +1,6 @@
 # Роутер админ-панели
 from urllib.parse import urlencode
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -411,21 +411,47 @@ def admin_delete_org(org_id: int, request: Request, db: Session = Depends(get_db
 # ── Управление пользователями ────────────────────────────────────────────────
 
 @router.get("/users", response_class=HTMLResponse)
-def admin_users(request: Request, q: str = "", db: Session = Depends(get_db)):
+def admin_users(
+    request: Request,
+    q: str = "",
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     admin = get_admin(request, db)
 
-    query = db.query(User).order_by(User.created_at.desc())
+    query = db.query(User)
     if q:
         query = query.filter(
             (User.name.ilike(f"%{q}%")) | (User.email.ilike(f"%{q}%"))
         )
-    users = query.all()
+    total = query.count()
+    total_pages = (total + per_page - 1) // per_page
+    users = (
+        query
+        .order_by(User.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+    page_numbers = sorted({
+        1,
+        total_pages,
+        *range(max(1, page - 2), min(total_pages, page + 2) + 1),
+    }) if total_pages else []
 
     return templates.TemplateResponse("admin/users.html", {
         "request": request,
         "user": admin,
         "users_list": users,
         "q": q,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1,
+        "page_numbers": page_numbers,
     })
 
 
