@@ -218,28 +218,43 @@ def admin_index(request: Request, db: Session = Depends(get_db)):
 # ── Заявки преподавателей ────────────────────────────────────────────────────
 
 @router.get("/teachers", response_class=HTMLResponse)
-def admin_teachers(request: Request, db: Session = Depends(get_db)):
+def admin_teachers(
+    request: Request,
+    pending_page: int = Query(1, ge=1),
+    active_page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     admin = get_admin(request, db)
 
     from app.models.organization import Organization, OrganizationTeacher
 
-    # Все заявки (teacher_pending)
+    pending_query = db.query(User).filter(User.role == UserRole.teacher_pending)
+    active_query = db.query(User).filter(User.role == UserRole.teacher)
+    pending_total = pending_query.count()
+    active_total = active_query.count()
+    pending_total_pages = (pending_total + per_page - 1) // per_page
+    active_total_pages = (active_total + per_page - 1) // per_page
+
+    # Заявки (teacher_pending) на текущей странице
     pending_teachers = (
-        db.query(User)
-        .filter(User.role == UserRole.teacher_pending)
+        pending_query
         .order_by(User.created_at.desc())
+        .offset((pending_page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
-    # Все активные преподаватели
+    # Активные преподаватели на текущей странице
     active_teachers = (
-        db.query(User)
-        .filter(User.role == UserRole.teacher)
+        active_query
         .order_by(User.created_at.desc())
+        .offset((active_page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
-    # Маппинг teacher_id → организация
+    # Маппинг teacher_id → организация для видимых строк
     all_teacher_ids = [t.id for t in pending_teachers + active_teachers]
     org_map = {}
     if all_teacher_ids:
@@ -251,6 +266,16 @@ def admin_teachers(request: Request, db: Session = Depends(get_db)):
         )
         for link in links:
             org_map[link.teacher_id] = link
+    pending_page_numbers = sorted({
+        1,
+        pending_total_pages,
+        *range(max(1, pending_page - 2), min(pending_total_pages, pending_page + 2) + 1),
+    }) if pending_total_pages else []
+    active_page_numbers = sorted({
+        1,
+        active_total_pages,
+        *range(max(1, active_page - 2), min(active_total_pages, active_page + 2) + 1),
+    }) if active_total_pages else []
 
     return templates.TemplateResponse("admin/teachers.html", {
         "request": request,
@@ -258,6 +283,19 @@ def admin_teachers(request: Request, db: Session = Depends(get_db)):
         "pending_teachers": pending_teachers,
         "active_teachers": active_teachers,
         "org_map": org_map,
+        "pending_total": pending_total,
+        "pending_page": pending_page,
+        "pending_total_pages": pending_total_pages,
+        "pending_has_next": pending_page < pending_total_pages,
+        "pending_has_prev": pending_page > 1,
+        "pending_page_numbers": pending_page_numbers,
+        "active_total": active_total,
+        "active_page": active_page,
+        "active_total_pages": active_total_pages,
+        "active_has_next": active_page < active_total_pages,
+        "active_has_prev": active_page > 1,
+        "active_page_numbers": active_page_numbers,
+        "per_page": per_page,
     })
 
 

@@ -11,7 +11,7 @@
 </div>
 
 <!-- ── Заявки на рассмотрении ──────────────────────────────────────── -->
-<h2 style="margin: 24px 0 12px; font-size: 1.1rem; font-weight: 600;">⏳ Заявки на рассмотрении ({{ pending_teachers|length }})</h2>
+<h2 style="margin: 24px 0 12px; font-size: 1.1rem; font-weight: 600;">⏳ Заявки на рассмотрении ({{ pending_total }})</h2>
 
 {% if pending_teachers %}
 <div class="admin-table-wrap">
@@ -70,6 +70,26 @@
         </tbody>
     </table>
 </div>
+{% if pending_total_pages > 1 %}
+<div class="admin-teachers-pagination" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;">
+    <div class="admin-muted" style="font-size:0.85rem;">Страница {{ pending_page }} из {{ pending_total_pages }}</div>
+    <div class="admin-actions" style="align-items:center;">
+        {% set pending_base_query = 'active_page=' ~ active_page ~ '&per_page=' ~ per_page ~ '&' %}
+        {% if pending_has_prev %}
+        <a href="/admin/teachers?{{ pending_base_query }}pending_page={{ pending_page - 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Previous</a>
+        {% endif %}
+        {% for p in pending_page_numbers %}
+            {% if not loop.first and p > pending_page_numbers[loop.index0 - 1] + 1 %}
+            <span class="admin-muted" style="padding:0 4px;">...</span>
+            {% endif %}
+            <a href="/admin/teachers?{{ pending_base_query }}pending_page={{ p }}" class="admin-btn {{ 'admin-btn-info' if p == pending_page else 'admin-btn-outline' }} admin-btn-sm" aria-current="{{ 'page' if p == pending_page else 'false' }}">{{ p }}</a>
+        {% endfor %}
+        {% if pending_has_next %}
+        <a href="/admin/teachers?{{ pending_base_query }}pending_page={{ pending_page + 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% else %}
 <div class="admin-empty">
     <div class="admin-empty-icon">🎉</div>
@@ -78,7 +98,7 @@
 {% endif %}
 
 <!-- ── Все преподаватели ──────────────────────────────────────────────── -->
-<h2 style="margin: 36px 0 12px; font-size: 1.1rem; font-weight: 600;">✅ Активные преподаватели ({{ active_teachers|length }})</h2>
+<h2 style="margin: 36px 0 12px; font-size: 1.1rem; font-weight: 600;">✅ Активные преподаватели ({{ active_total }})</h2>
 
 {% if active_teachers %}
 <div class="admin-table-wrap">
@@ -129,6 +149,26 @@
         </tbody>
     </table>
 </div>
+{% if active_total_pages > 1 %}
+<div class="admin-teachers-pagination" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;">
+    <div class="admin-muted" style="font-size:0.85rem;">Страница {{ active_page }} из {{ active_total_pages }}</div>
+    <div class="admin-actions" style="align-items:center;">
+        {% set active_base_query = 'pending_page=' ~ pending_page ~ '&per_page=' ~ per_page ~ '&' %}
+        {% if active_has_prev %}
+        <a href="/admin/teachers?{{ active_base_query }}active_page={{ active_page - 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Previous</a>
+        {% endif %}
+        {% for p in active_page_numbers %}
+            {% if not loop.first and p > active_page_numbers[loop.index0 - 1] + 1 %}
+            <span class="admin-muted" style="padding:0 4px;">...</span>
+            {% endif %}
+            <a href="/admin/teachers?{{ active_base_query }}active_page={{ p }}" class="admin-btn {{ 'admin-btn-info' if p == active_page else 'admin-btn-outline' }} admin-btn-sm" aria-current="{{ 'page' if p == active_page else 'false' }}">{{ p }}</a>
+        {% endfor %}
+        {% if active_has_next %}
+        <a href="/admin/teachers?{{ active_base_query }}active_page={{ active_page + 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% else %}
 <div class="admin-empty">
     <p>Нет активных преподавателей</p>
