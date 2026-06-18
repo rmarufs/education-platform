@@ -509,13 +509,23 @@ def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
 # ── Управление курсами ──────────────────────────────────────────────────────
 
 @router.get("/courses", response_class=HTMLResponse)
-def admin_courses(request: Request, db: Session = Depends(get_db)):
+def admin_courses(
+    request: Request,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     admin = get_admin(request, db)
 
+    base_query = db.query(Course)
+    total = base_query.count()
+    total_pages = (total + per_page - 1) // per_page
     courses = (
-        db.query(Course)
-        .options(joinedload(Course.teacher), joinedload(Course.modules).joinedload(Module.lessons))
+        base_query
+        .options(joinedload(Course.teacher))
         .order_by(Course.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
@@ -542,11 +552,23 @@ def admin_courses(request: Request, db: Session = Depends(get_db)):
         }
         for course in courses
     ]
+    page_numbers = sorted({
+        1,
+        total_pages,
+        *range(max(1, page - 2), min(total_pages, page + 2) + 1),
+    }) if total_pages else []
 
     return templates.TemplateResponse("admin/courses.html", {
         "request": request,
         "user": admin,
         "course_data": course_data,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1,
+        "page_numbers": page_numbers,
     })
 
 

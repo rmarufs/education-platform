@@ -6,7 +6,7 @@
 <div class="admin-header">
     <div>
         <h1 data-i18n="admin.courses.title">📚 Управление курсами</h1>
-        <p data-i18n="admin.courses.subtitle" data-i18n-params='{"count":{{ course_data|length }}}'>Всего: {{ course_data|length }} курсов</p>
+        <p data-i18n="admin.courses.subtitle" data-i18n-params='{"count":{{ total }}}'>Всего: {{ total }} курсов</p>
     </div>
 </div>
 
@@ -64,6 +64,26 @@
         </tbody>
     </table>
 </div>
+{% if total_pages > 1 %}
+<div class="admin-courses-pagination" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;">
+    <div class="admin-muted" style="font-size:0.85rem;">Страница {{ page }} из {{ total_pages }}</div>
+    <div class="admin-actions" style="align-items:center;">
+        {% set base_query = 'per_page=' ~ per_page ~ '&' %}
+        {% if has_prev %}
+        <a href="/admin/courses?{{ base_query }}page={{ page - 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Previous</a>
+        {% endif %}
+        {% for p in page_numbers %}
+            {% if not loop.first and p > page_numbers[loop.index0 - 1] + 1 %}
+            <span class="admin-muted" style="padding:0 4px;">...</span>
+            {% endif %}
+            <a href="/admin/courses?{{ base_query }}page={{ p }}" class="admin-btn {{ 'admin-btn-info' if p == page else 'admin-btn-outline' }} admin-btn-sm" aria-current="{{ 'page' if p == page else 'false' }}">{{ p }}</a>
+        {% endfor %}
+        {% if has_next %}
+        <a href="/admin/courses?{{ base_query }}page={{ page + 1 }}" class="admin-btn admin-btn-outline admin-btn-sm">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% else %}
 <div class="admin-empty">
     <div class="admin-empty-icon">📚</div>
